@@ -21,12 +21,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="checkOutDate"     column="check_out_date"    />
         <result property="months"           column="months"            />
         <result property="contractFile"     column="contract_file"     />
+        <result property="personnelFile"    column="personnel_file"    />
         <result property="billStatus"       column="bill_status"       />
         <result property="approveStatus"    column="approve_status"    />
         <result property="approveBy"        column="approve_by"        />
         <result property="approveTime"      column="approve_time"      />
         <result property="payTime"          column="pay_time"          />
         <result property="payMethod"        column="pay_method"        />
+        <result property="payVoucher"       column="pay_voucher"       />
         <result property="transactionNo"    column="transaction_no"    />
         <result property="delFlag"          column="del_flag"          />
         <result property="createBy"         column="create_by"         />
@@ -39,9 +41,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectEnterpriseBillVo">
         SELECT bill_id, bill_no, batch_id, batch_no, batch_name, enterprise_name,
                contact_person, contact_phone, house_count, total_amount, discount_amount, final_amount,
-               check_in_date, check_out_date, months, contract_file,
+               check_in_date, check_out_date, months, contract_file, personnel_file,
                bill_status, approve_status, approve_by, approve_time,
-               pay_time, pay_method, transaction_no,
+               pay_time, pay_method, pay_voucher, transaction_no,
                del_flag, create_by, create_time, update_by, update_time, remark
         FROM hz_qiyebill
     </sql>
@@ -127,12 +129,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="checkOutDate != null">check_out_date = #{checkOutDate},</if>
             <if test="months != null">months = #{months},</if>
             <if test="contractFile != null">contract_file = #{contractFile},</if>
+            <if test="personnelFile != null">personnel_file = #{personnelFile},</if>
             <if test="billStatus != null">bill_status = #{billStatus},</if>
             <if test="approveStatus != null">approve_status = #{approveStatus},</if>
             <if test="approveBy != null">approve_by = #{approveBy},</if>
             <if test="approveTime != null">approve_time = #{approveTime},</if>
             <if test="payTime != null">pay_time = #{payTime},</if>
             <if test="payMethod != null">pay_method = #{payMethod},</if>
+            <if test="payVoucher != null">pay_voucher = #{payVoucher},</if>
             <if test="transactionNo != null">transaction_no = #{transactionNo},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             update_time = #{updateTime},

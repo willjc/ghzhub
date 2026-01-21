@@ -175,3 +175,12 @@ export function approveEnterpriseBill(billId, data) {
     data: data
   })
 }
+
+// 管理端线下支付企业账单
+export function payEnterpriseBill(billId, data) {
+  return request({
+    url: '/system/enterpriseBill/pay/' + billId,
+    method: 'post',
+    data: data
+  })
+}

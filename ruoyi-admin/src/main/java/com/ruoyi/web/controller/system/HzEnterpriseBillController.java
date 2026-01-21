@@ -112,4 +112,21 @@ public class HzEnterpriseBillController extends BaseController {
         int result = enterpriseBillService.approveBill(billId, approved, approveBy);
         return toAjax(result);
     }
+
+    /**
+     * 管理端线下支付企业账单
+     */
+    @PreAuthorize("@ss.hasPermi('system:enterpriseBill:pay')")
+    @Log(title = "企业账单支付", businessType = BusinessType.UPDATE)
+    @PostMapping("/pay/{billId}")
+    public AjaxResult adminPay(@PathVariable Long billId, @RequestBody(required = false) com.alibaba.fastjson2.JSONObject params) {
+        String payMethod = null;
+        String payVoucher = null;
+        if (params != null) {
+            payMethod = params.getString("payMethod");
+            payVoucher = params.getString("payVoucher");
+        }
+        int result = enterpriseBillService.adminPayBill(billId, payMethod, payVoucher);
+        return toAjax(result);
+    }
 }

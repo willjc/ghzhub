@@ -1,13 +1,27 @@
 package com.ruoyi.web.controller.h5;
 
+import com.ruoyi.common.config.RuoYiConfig;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.file.FileUploadUtils;
 import com.ruoyi.system.domain.HzEnterpriseBill;
+import com.ruoyi.system.domain.HzEnterpriseBatchHouse;
+import com.ruoyi.system.domain.HzEnterpriseBatch;
+import com.ruoyi.system.mapper.HzEnterpriseBatchHouseMapper;
+import com.ruoyi.system.mapper.HzEnterpriseBatchMapper;
 import com.ruoyi.system.service.IHzEnterpriseBillService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.OutputStream;
+import java.util.*;
 
 /**
  * 企业账单用户端Controller
@@ -21,6 +35,15 @@ public class HzEnterpriseBillAppController extends BaseController {
     @Autowired
     private IHzEnterpriseBillService enterpriseBillService;
 
+    @Autowired
+    private HzEnterpriseBatchHouseMapper batchHouseMapper;
+
+    @Autowired
+    private HzEnterpriseBatchMapper enterpriseBatchMapper;
+
+    @Autowired
+    private ResourceLoader resourceLoader;
+
     /**
      * 获取我的企业账单列表（根据登录用户手机号）
      */
@@ -31,6 +54,151 @@ public class HzEnterpriseBillAppController extends BaseController {
         }
         List<HzEnterpriseBill> list = enterpriseBillService.selectBillsByContactPhone(phone);
         return success(list);
+    }
+
+    /**
+     * 获取已支付的账单列表（用于入住办理）
+     */
+    @GetMapping("/paidBills")
+    public AjaxResult getPaidBills(@RequestParam String phone) {
+        if (phone == null || phone.trim().isEmpty()) {
+            return error("联系方式不能为空");
+        }
+        List<HzEnterpriseBill> allBills = enterpriseBillService.selectBillsByContactPhone(phone);
+        // 过滤出已支付状态且未上传人员名单的账单
+        List<HzEnterpriseBill> paidBills = new ArrayList<>();
+        for (HzEnterpriseBill bill : allBills) {
+            if ("2".equals(bill.getBillStatus()) && StringUtils.isEmpty(bill.getPersonnelFile())) {
+                paidBills.add(bill);
+            }
+        }
+        return success(paidBills);
+    }
+
+    /**
+     * 获取入住办理信息（账单+房源信息）
+     */
+    @GetMapping("/checkinInfo/{billId}")
+    public AjaxResult getCheckinInfo(@PathVariable("billId") Long billId) {
+        HzEnterpriseBill bill = enterpriseBillService.selectEnterpriseBillById(billId);
+        if (bill == null) {
+            return error("账单不存在");
+        }
+
+        // 构建返回数据
+        Map<String, Object> result = new HashMap<>();
+        result.put("bill", bill);
+
+        // 获取批次信息（包含项目名称）
+        String batchName = bill.getBatchName();  // 账单中已包含批次名称
+        String projectNames = "";  // 项目名称列表
+
+        // 获取项目名称和房间号
+        List<String> houseNos = new ArrayList<>();
+        List<String> projectNameList = new ArrayList<>();
+
+        if (bill.getBatchId() != null) {
+            // 获取批次详情（包含项目名称）
+            HzEnterpriseBatch batch = enterpriseBatchMapper.selectEnterpriseBatchById(bill.getBatchId());
+            if (batch != null) {
+                batchName = batch.getBatchName();
+                if (StringUtils.isNotEmpty(batch.getProjectName())) {
+                    projectNames = batch.getProjectName();
+                }
+            }
+
+            // 获取房源详细信息（含房间号）
+            List<Map<String, Object>> houseDetails = batchHouseMapper.selectHouseDetailsByBatchId(bill.getBatchId());
+            if (houseDetails != null && !houseDetails.isEmpty()) {
+                for (Map<String, Object> houseDetail : houseDetails) {
+                    String houseNo = (String) houseDetail.get("house_no");
+                    if (StringUtils.isNotEmpty(houseNo)) {
+                        houseNos.add(houseNo);
+                    }
+                    // 如果批次没有项目名称，从房源中获取
+                    if (StringUtils.isEmpty(projectNames)) {
+                        String projectName = (String) houseDetail.get("project_name");
+                        if (StringUtils.isNotEmpty(projectName) && !projectNameList.contains(projectName)) {
+                            projectNameList.add(projectName);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 如果从批次没获取到项目名称，使用从房源获取的列表
+        if (StringUtils.isEmpty(projectNames) && !projectNameList.isEmpty()) {
+            projectNames = String.join(", ", projectNameList);
+        }
+
+        result.put("batchName", batchName);           // 批次名称
+        result.put("projectNames", projectNames);      // 项目名称（逗号分隔）
+        result.put("houseNos", String.join(", ", houseNos));  // 房间号（逗号分隔）
+
+        // 获取批次关联的房源（保留原有逻辑）
+        if (bill.getBatchId() != null) {
+            List<HzEnterpriseBatchHouse> houses = batchHouseMapper.selectHousesByBatchId(bill.getBatchId());
+            result.put("houses", houses);
+            result.put("houseCount", houses != null ? houses.size() : 0);
+        } else {
+            result.put("houses", new ArrayList<>());
+            result.put("houseCount", 0);
+        }
+
+        return success(result);
+    }
+
+    /**
+     * 提交入住办理（上传人员名单）
+     */
+    @PostMapping("/submitCheckin")
+    public AjaxResult submitCheckin(@RequestParam("billId") Long billId,
+                                     @RequestParam(value = "file", required = false) MultipartFile file) {
+        try {
+            String personnelFile = null;
+            if (file != null && !file.isEmpty()) {
+                // 上传文件
+                String fileName = FileUploadUtils.upload(RuoYiConfig.getUploadPath(), file);
+                personnelFile = fileName;
+            }
+
+            int result = enterpriseBillService.submitCheckin(billId, personnelFile);
+            return toAjax(result);
+        } catch (Exception e) {
+            return error("上传失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 下载人员名单Excel模版
+     */
+    @GetMapping("/downloadTemplate")
+    public void downloadTemplate(HttpServletResponse response) {
+        try {
+            // 从静态资源目录读取模版文件
+            Resource resource = resourceLoader.getResource("classpath:static/template/人员名单模版.xlsx");
+            if (!resource.exists()) {
+                // 如果模版文件不存在，返回提示
+                response.setContentType("text/plain;charset=UTF-8");
+                response.getWriter().write("模版文件不存在，请联系管理员");
+                return;
+            }
+
+            File file = resource.getFile();
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition", "attachment; filename=personnel_template.xlsx");
+
+            try (FileInputStream fis = new FileInputStream(file);
+                 OutputStream os = response.getOutputStream()) {
+                byte[] buffer = new byte[1024];
+                int len;
+                while ((len = fis.read(buffer)) > 0) {
+                    os.write(buffer, 0, len);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("下载模版文件失败", e);
+        }
     }
 
     /**

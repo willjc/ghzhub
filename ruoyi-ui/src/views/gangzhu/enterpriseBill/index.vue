@@ -120,7 +120,7 @@
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="250">
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -136,6 +136,14 @@
             @click="handleApproveItem(scope.row)"
             v-hasPermi="['system:enterpriseBill:approve']"
           >审核</el-button>
+          <el-button
+            v-if="scope.row.billStatus === '1'"
+            size="mini"
+            type="text"
+            icon="el-icon-money"
+            @click="handlePay(scope.row)"
+            v-hasPermi="['system:enterpriseBill:pay']"
+          >支付</el-button>
           <el-button
             v-if="scope.row.contractFile"
             size="mini"
@@ -184,9 +192,38 @@
           <el-tag v-else-if="viewData.approveStatus === '1'" type="success">已通过</el-tag>
           <el-tag v-else-if="viewData.approveStatus === '2'" type="danger">已拒绝</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="合同文件" :span="2">
+        <el-descriptions-item label="支付方式">
+          <span v-if="viewData.payMethod">{{ getPayMethodText(viewData.payMethod) }}</span>
+          <span v-else style="color: #909399">未支付</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="支付时间">
+          <span v-if="viewData.payTime">{{ parseTime(viewData.payTime, '{y}-{m}-{d} {h}:{i}') }}</span>
+          <span v-else style="color: #909399">未支付</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="支付凭证" :span="2">
+          <div v-if="viewData.payVoucher" class="voucher-container">
+            <el-image
+              v-if="isImage(viewData.payVoucher)"
+              :src="getImageUrl(viewData.payVoucher)"
+              :preview-src-list="[getImageUrl(viewData.payVoucher)]"
+              fit="contain"
+              style="width: 100px; height: 100px; cursor: pointer;"
+            />
+            <el-link v-else :href="getImageUrl(viewData.payVoucher)" target="_blank" type="primary">
+              <i class="el-icon-document"></i> 查看凭证
+            </el-link>
+          </div>
+          <span v-else style="color: #909399">未上传</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="合同文件">
           <el-link v-if="viewData.contractFile" :href="getContractUrl(viewData.contractFile)" target="_blank" type="primary">
             <i class="el-icon-document"></i> 查看合同
+          </el-link>
+          <span v-else style="color: #909399">未上传</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="人员名单">
+          <el-link v-if="viewData.personnelFile" :href="getImageUrl(viewData.personnelFile)" target="_blank" type="primary">
+            <i class="el-icon-document"></i> 查看名单
           </el-link>
           <span v-else style="color: #909399">未上传</span>
         </el-descriptions-item>
@@ -199,11 +236,45 @@
         <el-button @click="viewOpen = false">关 闭</el-button>
       </div>
     </el-dialog>
+
+    <!-- 支付对话框 -->
+    <el-dialog title="线下支付" :visible.sync="payOpen" width="500px" append-to-body>
+      <el-form ref="payForm" :model="payForm" :rules="payRules" label-width="100px">
+        <el-form-item label="支付方式" prop="payMethod">
+          <el-select v-model="payForm.payMethod" placeholder="请选择支付方式" style="width: 100%">
+            <el-option label="现金" value="现金" />
+            <el-option label="银行转账" value="银行转账" />
+            <el-option label="微信转账" value="微信转账" />
+            <el-option label="支付宝转账" value="支付宝转账" />
+            <el-option label="其他" value="其他" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="支付凭证" prop="payVoucher">
+          <el-upload
+            class="upload-demo"
+            :action="uploadUrl"
+            :headers="uploadHeaders"
+            :show-file-list="true"
+            :on-success="handleUploadSuccess"
+            :before-upload="beforeUpload"
+            :limit="1"
+          >
+            <el-button size="small" icon="el-icon-upload">点击上传</el-button>
+            <div slot="tip" class="el-upload__tip">支持jpg、png、pdf格式，文件大小不超过10MB</div>
+          </el-upload>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="payOpen = false">取 消</el-button>
+        <el-button type="primary" @click="submitPay">确 定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listEnterpriseBill, getEnterpriseBill, approveEnterpriseBill } from "@/api/gangzhu/enterprise";
+import { listEnterpriseBill, getEnterpriseBill, approveEnterpriseBill, payEnterpriseBill } from "@/api/gangzhu/enterprise";
+import { getToken } from "@/utils/auth";
 
 export default {
   name: "EnterpriseBill",
@@ -219,6 +290,18 @@ export default {
       title: "",
       viewOpen: false,
       viewData: {},
+      // 支付对话框
+      payOpen: false,
+      payForm: {
+        payMethod: null,
+        payVoucher: null
+      },
+      payRules: {
+        payMethod: [{ required: true, message: "请选择支付方式", trigger: "change" }]
+      },
+      currentPayBillId: null,
+      uploadUrl: process.env.VUE_APP_BASE_API + "/common/upload",
+      uploadHeaders: { Authorization: "Bearer " + getToken() },
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -297,6 +380,48 @@ export default {
         this.$modal.msgSuccess("审核成功");
       }).catch(() => {});
     },
+    /** 支付按钮操作 */
+    handlePay(row) {
+      this.currentPayBillId = row.billId;
+      this.payForm = {
+        payMethod: null,
+        payVoucher: null
+      };
+      this.payOpen = true;
+    },
+    /** 上传前校验 */
+    beforeUpload(file) {
+      const isImage = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'application/pdf';
+      const isLt10M = file.size / 1024 / 1024 < 10;
+      if (!isImage) {
+        this.$message.error('只支持上传jpg、png、pdf格式的文件!');
+      }
+      if (!isLt10M) {
+        this.$message.error('上传文件大小不能超过 10MB!');
+      }
+      return isImage && isLt10M;
+    },
+    /** 上传成功回调 */
+    handleUploadSuccess(response, file, fileList) {
+      if (response.code === 200) {
+        this.payForm.payVoucher = response.fileName;
+        this.$message.success("上传成功");
+      } else {
+        this.$message.error(response.msg || "上传失败");
+      }
+    },
+    /** 提交支付 */
+    submitPay() {
+      this.$refs.payForm.validate(valid => {
+        if (valid) {
+          payEnterpriseBill(this.currentPayBillId, this.payForm).then(() => {
+            this.$message.success("支付成功");
+            this.payOpen = false;
+            this.getList();
+          });
+        }
+      });
+    },
     /** 下载合同 */
     handleDownloadContract(row) {
       const url = this.getContractUrl(row.contractFile);
@@ -309,6 +434,32 @@ export default {
         return contractFile;
       }
       return process.env.VUE_APP_BASE_API + contractFile;
+    },
+    /** 获取图片URL */
+    getImageUrl(url) {
+      if (!url) return '';
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+      }
+      return process.env.VUE_APP_BASE_API + url;
+    },
+    /** 判断是否为图片 */
+    isImage(url) {
+      if (!url) return false;
+      const ext = url.substring(url.lastIndexOf('.') + 1).toLowerCase();
+      return ['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(ext);
+    },
+    /** 获取支付方式文本 */
+    getPayMethodText(payMethod) {
+      const methods = {
+        '在线支付': '在线支付',
+        '现金': '现金',
+        '银行转账': '银行转账',
+        '微信转账': '微信转账',
+        '支付宝转账': '支付宝转账',
+        '其他': '其他'
+      };
+      return methods[payMethod] || payMethod;
     },
     /** 导出按钮操作 */
     handleExport() {

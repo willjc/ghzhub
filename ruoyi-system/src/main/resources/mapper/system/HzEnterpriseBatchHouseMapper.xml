@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzEnterpriseBatchHouseMapper">
+
+    <resultMap type="com.ruoyi.system.domain.HzEnterpriseBatchHouse" id="HzEnterpriseBatchHouseResult">
+        <result property="id" column="id" />
+        <result property="batchId" column="batch_id" />
+        <result property="houseId" column="house_id" />
+        <result property="houseCode" column="house_code" />
+        <result property="allocationStatus" column="allocation_status" />
+        <result property="allocationTime" column="allocation_time" />
+        <result property="delFlag" column="del_flag" />
+        <result property="createBy" column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy" column="update_by" />
+        <result property="updateTime" column="update_time" />
+        <result property="remark" column="remark" />
+    </resultMap>
+
+    <sql id="selectHzEnterpriseBatchHouseVo">
+        select id, batch_id, house_id, house_code, allocation_status, allocation_time,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        from hz_enterprise_batch_house
+    </sql>
+
+    <!-- 根据批次ID查询房源列表 -->
+    <select id="selectHousesByBatchId" resultMap="HzEnterpriseBatchHouseResult">
+        <include refid="selectHzEnterpriseBatchHouseVo"/>
+        where batch_id = #{batchId}
+          and del_flag = '0'
+        order by id
+    </select>
+
+    <!-- 根据批次ID查询房源详细信息(含房间号) -->
+    <select id="selectHouseDetailsByBatchId" resultType="java.util.Map">
+        SELECT
+            bh.house_id,
+            h.house_no,
+            h.house_code,
+            p.project_name
+        FROM hz_enterprise_batch_house bh
+        LEFT JOIN hz_house h ON bh.house_id = h.house_id
+        LEFT JOIN hz_project p ON h.project_id = p.project_id
+        WHERE bh.batch_id = #{batchId}
+          AND bh.del_flag = '0'
+        ORDER BY bh.id
+    </select>
+
+</mapper>

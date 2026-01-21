@@ -112,4 +112,23 @@ public interface IHzEnterpriseBillService {
      * @return 结果
      */
     int payBill(Long billId, String payMethod, String transactionNo);
+
+    /**
+     * 管理端线下支付账单
+     *
+     * @param billId     账单ID
+     * @param payMethod  支付方式
+     * @param payVoucher 支付凭证文件路径
+     * @return 结果
+     */
+    int adminPayBill(Long billId, String payMethod, String payVoucher);
+
+    /**
+     * 提交入住办理（上传人员名单）
+     *
+     * @param billId        账单ID
+     * @param personnelFile 人员名单文件路径
+     * @return 结果
+     */
+    int submitCheckin(Long billId, String personnelFile);
 }

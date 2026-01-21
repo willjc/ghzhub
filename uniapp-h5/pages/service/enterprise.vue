@@ -77,8 +77,16 @@
 		<scroll-view class="scroll-content" scroll-y v-if="currentTab === 'checkin' && !showCheckinDetail">
 			<view class="house-card" v-for="(item, index) in checkinList" :key="index">
 				<view class="house-row">
-					<text class="house-label">小区</text>
-					<text class="house-value">{{ item.community }}</text>
+					<text class="house-label">批次</text>
+					<text class="house-value">{{ item.batchName || item.community }}</text>
+				</view>
+				<view class="house-row">
+					<text class="house-label">项目</text>
+					<text class="house-value">{{ item.projectNames || '-' }}</text>
+				</view>
+				<view class="house-row">
+					<text class="house-label">房间号</text>
+					<text class="house-value">{{ item.houseNos || '-' }}</text>
 				</view>
 				<view class="house-row">
 					<text class="house-label">租期</text>
@@ -89,7 +97,7 @@
 					<text class="house-value">{{ item.rent }}</text>
 				</view>
 				<view class="house-row with-border">
-					<text class="house-label">押金</text>
+					<text class="house-label">状态</text>
 					<text class="house-value">{{ item.deposit }}</text>
 				</view>
 				<view class="house-btn-wrap">
@@ -108,10 +116,18 @@
 					<view class="card-indicator"></view>
 					<text class="card-title">入住信息</text>
 				</view>
-				
+
 				<view class="detail-row">
-					<text class="detail-label">小区</text>
-					<text class="detail-value">{{ currentCheckinItem.community }}</text>
+					<text class="detail-label">批次</text>
+					<text class="detail-value">{{ currentCheckinItem.batchName || '-' }}</text>
+				</view>
+				<view class="detail-row">
+					<text class="detail-label">项目</text>
+					<text class="detail-value">{{ currentCheckinItem.projectNames || '-' }}</text>
+				</view>
+				<view class="detail-row">
+					<text class="detail-label">房间号</text>
+					<text class="detail-value">{{ currentCheckinItem.houseNos || '-' }}</text>
 				</view>
 				<view class="detail-row">
 					<text class="detail-label">租期</text>
@@ -122,7 +138,11 @@
 					<text class="detail-value">{{ currentCheckinItem.rent }}</text>
 				</view>
 				<view class="detail-row">
-					<text class="detail-label">押金</text>
+					<text class="detail-label">房源数量</text>
+					<text class="detail-value">{{ currentCheckinItem.houseCount || 0 }} 套</text>
+				</view>
+				<view class="detail-row">
+					<text class="detail-label">状态</text>
 					<text class="detail-value">{{ currentCheckinItem.deposit }}</text>
 				</view>
 			</view>
@@ -194,18 +214,11 @@
 				</view>
 			</view>
 		</scroll-view>
-		
-		<!-- 底部按钮 -->
-		<view class="bottom-btn-container" v-if="currentTab === 'pay'">
-			<view class="bottom-btn" @click="handlePay">
-				<text class="bottom-btn-text">在线缴费</text>
-			</view>
-		</view>
 	</view>
 </template>
 
 <script>
-import { get, post } from '@/utils/request'
+import { get, post, BASE_URL } from '@/utils/request'
 
 export default {
 	data() {
@@ -215,30 +228,13 @@ export default {
 			billList: [],
 			loading: false,
 			userInfo: null,
-			// 入住办理数据（保留原有功能）
-			checkinList: [
-				{
-					id: 1,
-					community: '美好人家',
-					rentPeriod: '2024年2月2日 至2025年2月1日',
-					rent: '2000元/月',
-					deposit: '2000元',
-					status: 'pending'
-				},
-				{
-					id: 2,
-					community: '美好人家',
-					rentPeriod: '2024年2月2日 至2025年2月1日',
-					rent: '2000元/月',
-					deposit: '2000元',
-					status: 'done'
-				}
-			],
+			// 入住办理数据
+			checkinList: [],
 			showCheckinDetail: false,
 			currentCheckinItem: {},
-			uploadedFiles: [
-				{ name: 'AAAGCFF.PDF', size: '12.5Mb' }
-			],
+			currentCheckinBill: null,
+			currentCheckinHouses: [],
+			uploadedFiles: [],
 			// 退租办理相关
 			checkoutList: [
 				{
@@ -346,31 +342,165 @@ export default {
 			// 切换到在线缴费时重新加载
 			if (tab === 'pay') {
 				this.loadBills()
+			} else if (tab === 'checkin') {
+				// 切换到入住办理时加载已支付账单
+				this.loadPaidBills()
+			}
+		},
+
+		// 加载已支付的账单（用于入住办理）
+		async loadPaidBills() {
+			if (!this.userInfo || !this.userInfo.phone) {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				})
+				setTimeout(() => {
+					uni.navigateTo({
+						url: '/pages/login/index'
+					})
+				}, 1500)
+				return
+			}
+
+			this.loading = true
+			try {
+				const res = await get('/h5/app/enterpriseBill/paidBills', {
+					phone: this.userInfo.phone
+				})
+				// 转换为入住办理列表格式
+				this.checkinList = (res.data || []).map(bill => ({
+					id: bill.billId,
+					billId: bill.billId,
+					billNo: bill.billNo,
+					batchName: bill.batchName,
+					projectNames: '', // 列表页暂不显示项目名称
+					houseNos: '', // 列表页暂不显示房间号
+					community: bill.batchName || '未命名小区',
+					rentPeriod: `${bill.checkInDate} 至 ${bill.checkOutDate}`,
+					rent: `¥${bill.finalAmount}`,
+					deposit: '已支付',
+					status: bill.personnelFile ? 'done' : 'pending'
+				}))
+			} catch (err) {
+				console.error('加载已支付账单失败:', err)
+				this.checkinList = []
+			} finally {
+				this.loading = false
 			}
 		},
 
 		// 入住办理
-		handleCheckin(item) {
-			this.currentCheckinItem = item
-			this.showCheckinDetail = true
+		async handleCheckin(item) {
+			if (item.status === 'done') {
+				uni.showToast({
+					title: '已办理入住',
+					icon: 'none'
+				})
+				return
+			}
+
+			// 获取入住办理详情
+			uni.showLoading({
+				title: '加载中...'
+			})
+			try {
+				const res = await get(`/h5/app/enterpriseBill/checkinInfo/${item.billId}`)
+				const bill = res.data.bill
+				const houses = res.data.houses || []
+
+				this.currentCheckinBill = bill
+				this.currentCheckinHouses = houses
+
+				// 构建显示数据 - 使用后端返回的批次、项目、房间号信息
+				this.currentCheckinItem = {
+					id: item.billId,
+					billId: item.billId,
+					billNo: item.billNo,
+					batchName: res.data.batchName || bill.batchName,
+					projectNames: res.data.projectNames || '',
+					houseNos: res.data.houseNos || '',
+					community: bill.batchName || item.community,
+					rentPeriod: `${bill.checkInDate} 至 ${bill.checkOutDate}`,
+					rent: `¥${bill.finalAmount}`,
+					deposit: '已支付',
+					houseCount: res.data.houseCount || 0
+				}
+
+				this.showCheckinDetail = true
+			} catch (err) {
+				console.error('获取详情失败:', err)
+				uni.showToast({
+					title: '获取详情失败',
+					icon: 'none'
+				})
+			} finally {
+				uni.hideLoading()
+			}
 		},
 
 		// 返回列表
 		handleBack() {
 			this.showCheckinDetail = false
 			this.currentCheckinItem = {}
+			this.currentCheckinBill = null
+			this.currentCheckinHouses = []
+			this.uploadedFiles = []
 		},
 
 		// 下载模版
 		handleDownloadTemplate() {
-			uni.showToast({
-				title: '模版下载中...',
-				icon: 'none'
+			uni.showLoading({
+				title: '下载中...'
+			})
+			// 调用后端接口下载模版
+			const url = `${BASE_URL}/h5/app/enterpriseBill/downloadTemplate`
+			uni.downloadFile({
+				url: url,
+				success: (res) => {
+					uni.hideLoading()
+					if (res.statusCode === 200) {
+						// 打开文件
+						uni.openDocument({
+							filePath: res.tempFilePath,
+							showMenu: true
+						})
+					} else {
+						uni.showToast({
+							title: '下载失败',
+							icon: 'none'
+						})
+					}
+				},
+				fail: () => {
+					uni.hideLoading()
+					uni.showToast({
+						title: '下载失败',
+						icon: 'none'
+					})
+				}
 			})
 		},
 
 		// 选择文件
 		handleChooseFile() {
+			// #ifdef H5
+			const input = document.createElement('input')
+			input.type = 'file'
+			input.accept = '.xlsx,.xls,.rar,.zip,.doc,.docx,.pdf,.jpg,.jpeg,.png'
+			input.onchange = (e) => {
+				const file = e.target.files[0]
+				if (file) {
+					const sizeInMb = (file.size / 1024 / 1024).toFixed(1) + 'Mb'
+					this.uploadedFiles = [{
+						name: file.name,
+						size: sizeInMb,
+						file: file
+					}]
+				}
+			}
+			input.click()
+			// #endif
 			// #ifdef MP-WEIXIN
 			uni.chooseMessageFile({
 				count: 1,
@@ -380,36 +510,8 @@ export default {
 					const sizeInMb = (file.size / 1024 / 1024).toFixed(1) + 'Mb'
 					this.uploadedFiles.push({
 						name: file.name,
-						size: sizeInMb
-					})
-				}
-			})
-			// #endif
-			// #ifdef H5
-			const input = document.createElement('input')
-			input.type = 'file'
-			input.accept = '.rar,.zip,.doc,.docx,.pdf,.jpg,.jpeg,.png'
-			input.onchange = (e) => {
-				const file = e.target.files[0]
-				if (file) {
-					const sizeInMb = (file.size / 1024 / 1024).toFixed(1) + 'Mb'
-					this.uploadedFiles.push({
-						name: file.name,
-						size: sizeInMb
-					})
-				}
-			}
-			input.click()
-			// #endif
-			// #ifdef APP-PLUS
-			uni.chooseImage({
-				count: 1,
-				success: (res) => {
-					const path = res.tempFilePaths[0]
-					const name = path.substring(path.lastIndexOf('/') + 1)
-					this.uploadedFiles.push({
-						name: name,
-						size: '未知大小'
+						size: sizeInMb,
+						tempFilePath: file.path
 					})
 				}
 			})
@@ -422,7 +524,7 @@ export default {
 		},
 
 		// 保存入住办理
-		handleSaveCheckin() {
+		async handleSaveCheckin() {
 			if (this.uploadedFiles.length === 0) {
 				uni.showToast({
 					title: '请上传人员名单',
@@ -430,13 +532,65 @@ export default {
 				})
 				return
 			}
-			uni.showToast({
-				title: '保存成功',
-				icon: 'success'
+
+			uni.showLoading({
+				title: '上传中...'
 			})
-			setTimeout(() => {
-				this.handleBack()
-			}, 1500)
+
+			try {
+				// #ifdef H5
+				// H5环境使用FormData上传
+				const formData = new FormData()
+				formData.append('billId', this.currentCheckinItem.billId)
+				formData.append('file', this.uploadedFiles[0].file)
+
+				const response = await fetch(`${BASE_URL}/h5/app/enterpriseBill/submitCheckin`, {
+					method: 'POST',
+					headers: {
+						'Authorization': `Bearer ${uni.getStorageSync('token')}`
+					},
+					body: formData
+				})
+				const result = await response.json()
+				// #endif
+
+				// #ifdef MP-WEIXIN
+				const result = await uni.uploadFile({
+					url: `${BASE_URL}/h5/app/enterpriseBill/submitCheckin`,
+					filePath: this.uploadedFiles[0].tempFilePath,
+					name: 'file',
+					formData: {
+						billId: this.currentCheckinItem.billId
+					}
+				})
+				// #endif
+
+				uni.hideLoading()
+
+				if (result.code === 200 || JSON.parse(result.data)?.code === 200) {
+					uni.showToast({
+						title: '提交成功',
+						icon: 'success'
+					})
+					setTimeout(() => {
+						this.handleBack()
+						// 重新加载列表
+						this.loadPaidBills()
+					}, 1500)
+				} else {
+					uni.showToast({
+						title: result.msg || '提交失败',
+						icon: 'none'
+					})
+				}
+			} catch (err) {
+				uni.hideLoading()
+				console.error('上传失败:', err)
+				uni.showToast({
+					title: '上传失败',
+					icon: 'none'
+				})
+			}
 		},
 
 		// 退租办理
@@ -732,34 +886,6 @@ export default {
 	.empty-text {
 		color: #999999;
 		font-size: 28rpx;
-		font-family: "PingFang SC", "苹方-简", sans-serif;
-	}
-
-	/* 底部按钮 */
-	.bottom-btn-container {
-		position: fixed;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		padding: 24rpx;
-		background: #f5f6fc;
-	}
-
-	.bottom-btn {
-		width: 702rpx;
-		height: 92rpx;
-		border-radius: 20rpx;
-		background: linear-gradient(270deg, #4fc7ff 0%, #0f73ff 100%);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin: 0 auto;
-	}
-
-	.bottom-btn-text {
-		color: #ffffff;
-		font-size: 36rpx;
-		font-weight: 600;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
 	}
 

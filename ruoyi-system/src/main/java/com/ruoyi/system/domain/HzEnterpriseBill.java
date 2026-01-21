@@ -88,6 +88,10 @@ public class HzEnterpriseBill extends BaseEntity {
     @TableField("contract_file")
     private String contractFile;
 
+    /** 人员名单文件路径 */
+    @TableField("personnel_file")
+    private String personnelFile;
+
     /** 账单状态(0待审核 1已审核 2已支付 3已关闭) */
     @TableField("bill_status")
     private String billStatus;
@@ -113,6 +117,10 @@ public class HzEnterpriseBill extends BaseEntity {
     /** 支付方式 */
     @TableField("pay_method")
     private String payMethod;
+
+    /** 支付凭证文件路径 */
+    @TableField("pay_voucher")
+    private String payVoucher;
 
     /** 交易流水号 */
     @TableField("transaction_no")
@@ -250,6 +258,14 @@ public class HzEnterpriseBill extends BaseEntity {
         this.contractFile = contractFile;
     }
 
+    public String getPersonnelFile() {
+        return personnelFile;
+    }
+
+    public void setPersonnelFile(String personnelFile) {
+        this.personnelFile = personnelFile;
+    }
+
     public String getBillStatus() {
         return billStatus;
     }
@@ -298,6 +314,14 @@ public class HzEnterpriseBill extends BaseEntity {
         this.payMethod = payMethod;
     }
 
+    public String getPayVoucher() {
+        return payVoucher;
+    }
+
+    public void setPayVoucher(String payVoucher) {
+        this.payVoucher = payVoucher;
+    }
+
     public String getTransactionNo() {
         return transactionNo;
     }
@@ -333,12 +357,14 @@ public class HzEnterpriseBill extends BaseEntity {
                 .append("checkOutDate", getCheckOutDate())
                 .append("months", getMonths())
                 .append("contractFile", getContractFile())
+                .append("personnelFile", getPersonnelFile())
                 .append("billStatus", getBillStatus())
                 .append("approveStatus", getApproveStatus())
                 .append("approveBy", getApproveBy())
                 .append("approveTime", getApproveTime())
                 .append("payTime", getPayTime())
                 .append("payMethod", getPayMethod())
+                .append("payVoucher", getPayVoucher())
                 .append("transactionNo", getTransactionNo())
                 .append("delFlag", getDelFlag())
                 .append("createBy", getCreateBy())

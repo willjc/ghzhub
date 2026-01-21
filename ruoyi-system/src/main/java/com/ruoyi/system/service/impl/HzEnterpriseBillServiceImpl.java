@@ -243,4 +243,59 @@ public class HzEnterpriseBillServiceImpl implements IHzEnterpriseBillService {
 
         return enterpriseBillMapper.updateEnterpriseBill(bill);
     }
+
+    /**
+     * 管理端线下支付账单
+     *
+     * @param billId     账单ID
+     * @param payMethod  支付方式
+     * @param payVoucher 支付凭证文件路径
+     * @return 结果
+     */
+    @Override
+    @Transactional
+    public int adminPayBill(Long billId, String payMethod, String payVoucher) {
+        HzEnterpriseBill bill = enterpriseBillMapper.selectEnterpriseBillById(billId);
+        if (bill == null) {
+            throw new ServiceException("账单不存在");
+        }
+
+        // 只有已审核状态可以支付
+        if (!"1".equals(bill.getBillStatus())) {
+            throw new ServiceException("账单状态不正确，只有已审核状态的账单可以支付");
+        }
+
+        bill.setBillStatus("2"); // 已支付
+        bill.setPayTime(new Date());
+        bill.setPayMethod(payMethod);
+        bill.setPayVoucher(payVoucher);
+        bill.setUpdateTime(new Date());
+
+        return enterpriseBillMapper.updateEnterpriseBill(bill);
+    }
+
+    /**
+     * 提交入住办理（上传人员名单）
+     *
+     * @param billId        账单ID
+     * @param personnelFile 人员名单文件路径
+     * @return 结果
+     */
+    @Override
+    public int submitCheckin(Long billId, String personnelFile) {
+        HzEnterpriseBill bill = enterpriseBillMapper.selectEnterpriseBillById(billId);
+        if (bill == null) {
+            throw new ServiceException("账单不存在");
+        }
+
+        // 只有已支付状态可以办理入住
+        if (!"2".equals(bill.getBillStatus())) {
+            throw new ServiceException("账单状态不正确，只有已支付状态的账单可以办理入住");
+        }
+
+        bill.setPersonnelFile(personnelFile);
+        bill.setUpdateTime(new Date());
+
+        return enterpriseBillMapper.updateEnterpriseBill(bill);
+    }
 }
