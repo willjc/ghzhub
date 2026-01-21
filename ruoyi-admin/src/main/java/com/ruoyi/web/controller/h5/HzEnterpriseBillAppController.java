@@ -11,6 +11,7 @@ import com.ruoyi.system.domain.HzEnterpriseBatch;
 import com.ruoyi.system.mapper.HzEnterpriseBatchHouseMapper;
 import com.ruoyi.system.mapper.HzEnterpriseBatchMapper;
 import com.ruoyi.system.service.IHzEnterpriseBillService;
+import com.ruoyi.system.service.IHzEnterpriseCheckoutService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -34,6 +35,9 @@ public class HzEnterpriseBillAppController extends BaseController {
 
     @Autowired
     private IHzEnterpriseBillService enterpriseBillService;
+
+    @Autowired
+    private IHzEnterpriseCheckoutService checkoutService;
 
     @Autowired
     private HzEnterpriseBatchHouseMapper batchHouseMapper;
@@ -230,5 +234,96 @@ public class HzEnterpriseBillAppController extends BaseController {
         // 实际项目应对接支付接口
         int result = enterpriseBillService.payBill(billId, payMethod != null ? payMethod : "在线支付", transactionNo);
         return toAjax(result);
+    }
+
+    /**
+     * 获取可退租账单列表（已支付且已上传人员名单）
+     */
+    @GetMapping("/checkoutBills")
+    public AjaxResult getCheckoutBills(@RequestParam String phone) {
+        if (phone == null || phone.trim().isEmpty()) {
+            return error("联系方式不能为空");
+        }
+
+        List<HzEnterpriseBill> allBills = enterpriseBillService.selectBillsByContactPhone(phone);
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (HzEnterpriseBill bill : allBills) {
+            // 只处理已支付且已上传人员名单的账单
+            if ("2".equals(bill.getBillStatus()) && StringUtils.isNotEmpty(bill.getPersonnelFile())) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("billId", bill.getBillId());
+                item.put("billNo", bill.getBillNo());
+                item.put("batchName", bill.getBatchName());
+                item.put("enterpriseName", bill.getEnterpriseName());
+
+                // 获取项目名称和房间号
+                String projectNames = "";
+                List<String> houseNos = new ArrayList<>();
+
+                if (bill.getBatchId() != null) {
+                    HzEnterpriseBatch batch = enterpriseBatchMapper.selectEnterpriseBatchById(bill.getBatchId());
+                    if (batch != null && StringUtils.isNotEmpty(batch.getProjectName())) {
+                        projectNames = batch.getProjectName();
+                    }
+
+                    List<Map<String, Object>> houseDetails = batchHouseMapper.selectHouseDetailsByBatchId(bill.getBatchId());
+                    if (houseDetails != null && !houseDetails.isEmpty()) {
+                        for (Map<String, Object> houseDetail : houseDetails) {
+                            String houseNo = (String) houseDetail.get("house_no");
+                            if (StringUtils.isNotEmpty(houseNo)) {
+                                houseNos.add(houseNo);
+                            }
+                        }
+                    }
+                }
+
+                item.put("projectNames", projectNames);
+                item.put("houseNos", String.join(", ", houseNos));
+                item.put("rentPeriod", formatDate(bill.getCheckInDate()) + " 至 " + formatDate(bill.getCheckOutDate()));
+                item.put("finalAmount", bill.getFinalAmount());
+
+                // 检查是否已申请退租
+                var checkout = checkoutService.selectCheckoutByBillId(bill.getBillId());
+                item.put("checkoutStatus", checkout != null ? "applied" : "pending");
+
+                result.add(item);
+            }
+        }
+
+        return success(result);
+    }
+
+    /**
+     * 提交退租申请
+     */
+    @PostMapping("/submitCheckout")
+    public AjaxResult submitCheckout(@RequestBody(required = false) com.alibaba.fastjson2.JSONObject params) {
+        if (params == null) {
+            return error("参数不能为空");
+        }
+        Long billId = params.getLong("billId");
+
+        if (billId == null) {
+            return error("账单ID不能为空");
+        }
+
+        try {
+            int result = checkoutService.submitCheckout(billId);
+            return toAjax(result);
+        } catch (Exception e) {
+            return error(e.getMessage());
+        }
+    }
+
+    /**
+     * 格式化日期
+     */
+    private String formatDate(Date date) {
+        if (date == null) {
+            return "";
+        }
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+        return sdf.format(date);
     }
 }

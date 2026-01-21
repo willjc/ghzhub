@@ -101,6 +101,7 @@
 			return {
 				housingType: '',
 				appealId: '',
+				userId: null, // 当前登录用户ID
 
 				// 学历
 				education: '',
@@ -124,6 +125,24 @@
 			}
 		},
 		onLoad(options) {
+			// 获取用户信息
+			const userInfo = uni.getStorageSync('userInfo')
+			if (!userInfo || !userInfo.userId) {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				})
+				setTimeout(() => {
+					uni.navigateTo({
+						url: '/pages/login/index'
+					})
+				}, 1500)
+				return
+			}
+
+			// 保存用户ID
+			this.userId = userInfo.userId
+
 			if (options.type) {
 				this.housingType = options.type
 			}
@@ -182,6 +201,15 @@
 
 			// 提交申诉
 			handleSubmit() {
+				// 确保用户已登录
+				if (!this.userId) {
+					uni.showToast({
+						title: '请先登录',
+						icon: 'none'
+					})
+					return
+				}
+
 				// 表单验证
 				if (!this.education) {
 					uni.showToast({
@@ -251,6 +279,7 @@
 
 					// 提交申诉数据
 					const appealData = {
+						userId: this.userId,  // 用户ID
 						appealReason: this.education,  // 申诉的学历
 						appealAttachments: fileNames.join(',')  // 图片路径，逗号分隔
 					}

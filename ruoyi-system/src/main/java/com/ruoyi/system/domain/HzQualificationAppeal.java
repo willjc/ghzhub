@@ -65,6 +65,10 @@ public class HzQualificationAppeal extends BaseEntity {
     @TableField("del_flag")
     private String delFlag;
 
+    /** 用户ID（前端传递，不存储到数据库） */
+    @TableField(exist = false)
+    private Long userId;
+
     public void setAppealId(Long appealId) {
         this.appealId = appealId;
     }
@@ -159,6 +163,14 @@ public class HzQualificationAppeal extends BaseEntity {
 
     public String getDelFlag() {
         return delFlag;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public Long getUserId() {
+        return userId;
     }
 
     @Override

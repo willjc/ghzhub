@@ -184,3 +184,30 @@ export function payEnterpriseBill(billId, data) {
     data: data
   })
 }
+
+// ========== 企业退租申请相关接口 ==========
+
+// 查询企业退租申请列表
+export function listEnterpriseCheckout(query) {
+  return request({
+    url: '/system/enterpriseCheckout/list',
+    method: 'get',
+    params: query
+  })
+}
+
+// 查询企业退租申请详细
+export function getEnterpriseCheckout(checkoutId) {
+  return request({
+    url: '/system/enterpriseCheckout/' + checkoutId,
+    method: 'get'
+  })
+}
+
+// 删除企业退租申请
+export function delEnterpriseCheckout(checkoutIds) {
+  return request({
+    url: '/system/enterpriseCheckout/' + checkoutIds,
+    method: 'delete'
+  })
+}

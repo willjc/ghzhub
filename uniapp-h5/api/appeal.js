@@ -5,9 +5,10 @@ import { get } from '@/utils/request'
 
 /**
  * 获取当前用户的申诉列表
+ * @param {Number} userId 用户ID
  */
-export function getAppealList() {
-  return get('/h5/qualification/appeal/list')
+export function getAppealList(userId) {
+  return get('/h5/qualification/appeal/list', { userId })
 }
 
 /**

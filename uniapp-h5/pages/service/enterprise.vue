@@ -209,10 +209,29 @@
 		
 		<!-- 退租办理内容 - 列表 -->
 		<scroll-view class="scroll-content" scroll-y v-if="currentTab === 'checkout'">
+			<!-- 空状态 -->
+			<view class="empty-state" v-if="checkoutList.length === 0 && !loading">
+				<image class="empty-icon" src="/static/empty@2x.png" mode="aspectFit"></image>
+				<text class="empty-text">暂无可退租账单</text>
+				<text class="empty-tip">已支付且已办理入住的账单可申请退租</text>
+			</view>
+
 			<view class="house-card" v-for="(item, index) in checkoutList" :key="index">
 				<view class="house-row">
-					<text class="house-label">小区</text>
-					<text class="house-value">{{ item.community }}</text>
+					<text class="house-label">批次</text>
+					<text class="house-value">{{ item.batchName }}</text>
+				</view>
+				<view class="house-row">
+					<text class="house-label">公司名</text>
+					<text class="house-value">{{ item.enterpriseName }}</text>
+				</view>
+				<view class="house-row">
+					<text class="house-label">项目</text>
+					<text class="house-value">{{ item.projectNames }}</text>
+				</view>
+				<view class="house-row">
+					<text class="house-label">房间号</text>
+					<text class="house-value">{{ item.houseNos }}</text>
 				</view>
 				<view class="house-row">
 					<text class="house-label">租期</text>
@@ -223,12 +242,12 @@
 					<text class="house-value">{{ item.rent }}</text>
 				</view>
 				<view class="house-row with-border">
-					<text class="house-label">押金</text>
-					<text class="house-value">{{ item.deposit }}</text>
+					<text class="house-label">状态</text>
+					<text class="house-value" :class="{ 'applied': item.checkoutStatus === 'applied' }">{{ item.deposit }}</text>
 				</view>
 				<view class="house-btn-wrap">
-					<view class="house-btn" @click="handleCheckout(item)">
-						<text class="house-btn-text">{{ item.status === 'done' ? '查看详情' : '退租办理' }}</text>
+					<view class="house-btn" :class="{ 'disabled': item.checkoutStatus === 'applied' }" @click="handleCheckout(item)">
+						<text class="house-btn-text">{{ item.checkoutStatus === 'applied' ? '已申请' : '退租办理' }}</text>
 					</view>
 				</view>
 			</view>
@@ -255,16 +274,7 @@ export default {
 			currentCheckinHouses: [],
 			uploadedFiles: [],
 			// 退租办理相关
-			checkoutList: [
-				{
-					id: 1,
-					community: '美好人家',
-					rentPeriod: '2024年2月2日 至2025年2月1日',
-					rent: '2000元/月',
-					deposit: '2000元',
-					status: 'pending'
-				}
-			]
+			checkoutList: []
 		}
 	},
 	onLoad() {
@@ -364,6 +374,9 @@ export default {
 			} else if (tab === 'checkin') {
 				// 切换到入住办理时加载已支付账单
 				this.loadPaidBills()
+			} else if (tab === 'checkout') {
+				// 切换到退租办理时加载可退租账单
+				this.loadCheckoutBills()
 			}
 		},
 
@@ -620,17 +633,88 @@ export default {
 		},
 
 		// 退租办理
-		handleCheckout(item) {
-			if (item.status === 'done') {
+		async handleCheckout(item) {
+			if (item.checkoutStatus === 'applied') {
+				// 已申请，显示提示
 				uni.showToast({
-					title: '查看详情功能开发中',
-					icon: 'none'
+					title: '已申请退租，等待工作人员联系您',
+					icon: 'none',
+					duration: 2000
 				})
 			} else {
+				// 未申请，弹出确认框
+				uni.showModal({
+					title: '确认退租',
+					content: '确认申请退租？申请后将由工作人员联系您办理退租手续。',
+					success: async (res) => {
+						if (res.confirm) {
+							uni.showLoading({
+								title: '提交中...'
+							})
+							try {
+								await post('/h5/app/enterpriseBill/submitCheckout', {
+									billId: item.billId
+								})
+								uni.hideLoading()
+								uni.showToast({
+									title: '申请成功',
+									icon: 'success'
+								})
+								// 重新加载列表
+								this.loadCheckoutBills()
+							} catch (err) {
+								uni.hideLoading()
+								uni.showToast({
+									title: err.msg || '申请失败',
+									icon: 'none'
+								})
+							}
+						}
+					}
+				})
+			}
+		},
+
+		// 加载可退租账单
+		async loadCheckoutBills() {
+			if (!this.userInfo || !this.userInfo.phone) {
 				uni.showToast({
-					title: '退租办理功能开发中',
+					title: '请先登录',
 					icon: 'none'
 				})
+				setTimeout(() => {
+					uni.navigateTo({
+						url: '/pages/login/index'
+					})
+				}, 1500)
+				return
+			}
+
+			this.loading = true
+			try {
+				const res = await get('/h5/app/enterpriseBill/checkoutBills', {
+					phone: this.userInfo.phone
+				})
+				const data = res.data || []
+				// 格式化数据，保持与入住办理类似的格式
+				this.checkoutList = data.map(item => ({
+					id: item.billId,
+					billId: item.billId,
+					billNo: item.billNo,
+					batchName: item.batchName || '未命名批次',
+					enterpriseName: item.enterpriseName || '-',
+					projectNames: item.projectNames || '-',
+					houseNos: item.houseNos || '-',
+					rentPeriod: item.rentPeriod,
+					rent: `¥${item.finalAmount}`,
+					deposit: item.checkoutStatus === 'applied' ? '已申请退租' : '可申请退租',
+					checkoutStatus: item.checkoutStatus
+				}))
+			} catch (err) {
+				console.error('加载可退租账单失败:', err)
+				this.checkoutList = []
+			} finally {
+				this.loading = false
 			}
 		},
 
@@ -696,6 +780,13 @@ export default {
 		color: #999999;
 		font-size: 28rpx;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
+	}
+
+	.empty-tip {
+		color: #cccccc;
+		font-size: 24rpx;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+		margin-top: 12rpx;
 	}
 
 	/* 账单卡片 */
@@ -1009,6 +1100,14 @@ export default {
 		font-size: 28rpx;
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
+	}
+
+	.house-btn.disabled {
+		background: #cccccc;
+	}
+
+	.house-value.applied {
+		color: #52c41a;
 	}
 
 	/* 详情页样式 */

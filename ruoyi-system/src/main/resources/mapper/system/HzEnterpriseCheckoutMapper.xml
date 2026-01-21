@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzEnterpriseCheckoutMapper">
+
+    <resultMap type="com.ruoyi.system.domain.HzEnterpriseCheckout" id="EnterpriseCheckoutResult">
+        <result property="checkoutId"      column="checkout_id"      />
+        <result property="checkoutNo"      column="checkout_no"      />
+        <result property="billId"          column="bill_id"          />
+        <result property="batchId"         column="batch_id"         />
+        <result property="batchNo"         column="batch_no"         />
+        <result property="batchName"       column="batch_name"       />
+        <result property="enterpriseName"  column="enterprise_name"  />
+        <result property="contactPerson"   column="contact_person"   />
+        <result property="contactPhone"    column="contact_phone"    />
+        <result property="projectName"     column="project_name"     />
+        <result property="houseInfo"       column="house_info"       />
+        <result property="houseCount"      column="house_count"      />
+        <result property="totalAmount"     column="total_amount"     />
+        <result property="discountAmount"  column="discount_amount"  />
+        <result property="finalAmount"     column="final_amount"     />
+        <result property="checkInDate"     column="check_in_date"    />
+        <result property="checkOutDate"    column="check_out_date"   />
+        <result property="months"          column="months"           />
+        <result property="checkoutStatus"  column="checkout_status"  />
+        <result property="applyTime"       column="apply_time"       />
+        <result property="delFlag"         column="del_flag"         />
+        <result property="createBy"        column="create_by"        />
+        <result property="createTime"      column="create_time"      />
+        <result property="updateBy"        column="update_by"        />
+        <result property="updateTime"      column="update_time"      />
+        <result property="remark"          column="remark"           />
+    </resultMap>
+
+    <sql id="selectEnterpriseCheckoutVo">
+        SELECT checkout_id, checkout_no, bill_id, batch_id, batch_no, batch_name,
+               enterprise_name, contact_person, contact_phone, project_name, house_info, house_count,
+               total_amount, discount_amount, final_amount,
+               check_in_date, check_out_date, months, checkout_status, apply_time,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM hz_qiyetuizu
+    </sql>
+
+    <select id="selectCheckoutList" parameterType="com.ruoyi.system.domain.HzEnterpriseCheckout" resultMap="EnterpriseCheckoutResult">
+        <include refid="selectEnterpriseCheckoutVo"/>
+        <where>
+            del_flag = '0'
+            <if test="checkoutNo != null and checkoutNo != ''">
+                AND checkout_no LIKE CONCAT('%', #{checkoutNo}, '%')
+            </if>
+            <if test="batchId != null">
+                AND batch_id = #{batchId}
+            </if>
+            <if test="batchName != null and batchName != ''">
+                AND batch_name LIKE CONCAT('%', #{batchName}, '%')
+            </if>
+            <if test="enterpriseName != null and enterpriseName != ''">
+                AND enterprise_name LIKE CONCAT('%', #{enterpriseName}, '%')
+            </if>
+            <if test="contactPhone != null and contactPhone != ''">
+                AND contact_phone LIKE CONCAT('%', #{contactPhone}, '%')
+            </if>
+            <if test="checkoutStatus != null and checkoutStatus != ''">
+                AND checkout_status = #{checkoutStatus}
+            </if>
+        </where>
+        ORDER BY apply_time DESC
+    </select>
+
+    <select id="selectCheckoutById" parameterType="Long" resultMap="EnterpriseCheckoutResult">
+        <include refid="selectEnterpriseCheckoutVo"/>
+        WHERE checkout_id = #{checkoutId} AND del_flag = '0'
+    </select>
+
+    <select id="selectCheckoutByBillId" parameterType="Long" resultMap="EnterpriseCheckoutResult">
+        <include refid="selectEnterpriseCheckoutVo"/>
+        WHERE bill_id = #{billId} AND del_flag = '0'
+    </select>
+
+    <select id="selectCheckoutsByContactPhone" parameterType="String" resultMap="EnterpriseCheckoutResult">
+        <include refid="selectEnterpriseCheckoutVo"/>
+        WHERE contact_phone = #{contactPhone}
+          AND del_flag = '0'
+        ORDER BY apply_time DESC
+    </select>
+
+    <insert id="insertCheckout" parameterType="com.ruoyi.system.domain.HzEnterpriseCheckout" useGeneratedKeys="true" keyProperty="checkoutId">
+        INSERT INTO hz_qiyetuizu (
+            checkout_no, bill_id, batch_id, batch_no, batch_name, enterprise_name,
+            contact_person, contact_phone, project_name, house_info, house_count,
+            total_amount, discount_amount, final_amount,
+            check_in_date, check_out_date, months, checkout_status, apply_time,
+            create_by, create_time, remark
+        ) VALUES (
+            #{checkoutNo}, #{billId}, #{batchId}, #{batchNo}, #{batchName}, #{enterpriseName},
+            #{contactPerson}, #{contactPhone}, #{projectName}, #{houseInfo}, #{houseCount},
+            #{totalAmount}, #{discountAmount}, #{finalAmount},
+            #{checkInDate}, #{checkOutDate}, #{months}, #{checkoutStatus}, #{applyTime},
+            #{createBy}, #{createTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateCheckout" parameterType="com.ruoyi.system.domain.HzEnterpriseCheckout">
+        UPDATE hz_qiyetuizu
+        <set>
+            <if test="checkoutNo != null and checkoutNo != ''">checkout_no = #{checkoutNo},</if>
+            <if test="billId != null">bill_id = #{billId},</if>
+            <if test="batchId != null">batch_id = #{batchId},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="batchName != null">batch_name = #{batchName},</if>
+            <if test="enterpriseName != null">enterprise_name = #{enterpriseName},</if>
+            <if test="contactPerson != null">contact_person = #{contactPerson},</if>
+            <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+            <if test="projectName != null">project_name = #{projectName},</if>
+            <if test="houseInfo != null">house_info = #{houseInfo},</if>
+            <if test="houseCount != null">house_count = #{houseCount},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="discountAmount != null">discount_amount = #{discountAmount},</if>
+            <if test="finalAmount != null">final_amount = #{finalAmount},</if>
+            <if test="checkInDate != null">check_in_date = #{checkInDate},</if>
+            <if test="checkOutDate != null">check_out_date = #{checkOutDate},</if>
+            <if test="months != null">months = #{months},</if>
+            <if test="checkoutStatus != null">checkout_status = #{checkoutStatus},</if>
+            <if test="applyTime != null">apply_time = #{applyTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = #{updateTime},
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE checkout_id = #{checkoutId}
+    </update>
+
+    <delete id="deleteCheckoutById" parameterType="Long">
+        UPDATE hz_qiyetuizu SET del_flag = '2' WHERE checkout_id = #{checkoutId}
+    </delete>
+
+    <delete id="deleteCheckoutByIds" parameterType="String">
+        UPDATE hz_qiyetuizu SET del_flag = '2' WHERE checkout_id IN
+        <foreach item="checkoutId" collection="array" open="(" separator="," close=")">
+            #{checkoutId}
+        </foreach>
+    </delete>
+
+</mapper>

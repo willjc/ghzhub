@@ -80,10 +80,29 @@
 		data() {
 			return {
 				qualificationList: [],
-				housingType: '' // talent, guaranteed, market
+				housingType: '', // talent, guaranteed, market
+				userId: null // 当前登录用户ID
 			}
 		},
 		onLoad(options) {
+			// 获取用户信息
+			const userInfo = uni.getStorageSync('userInfo')
+			if (!userInfo || !userInfo.userId) {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				})
+				setTimeout(() => {
+					uni.navigateTo({
+						url: '/pages/login/index'
+					})
+				}, 1500)
+				return
+			}
+
+			// 保存用户ID
+			this.userId = userInfo.userId
+
 			if (options.type) {
 				this.housingType = options.type
 			}
@@ -92,9 +111,11 @@
 		methods: {
 			// 加载资格数据
 			async loadQualificationData() {
+				if (!this.userId) return
+
 				try {
 					uni.showLoading({ title: '加载中...' })
-					const res = await getAppealList()
+					const res = await getAppealList(this.userId)
 
 					if (res.code === 200 && res.data) {
 						// 将后端数据映射为前端需要的格式

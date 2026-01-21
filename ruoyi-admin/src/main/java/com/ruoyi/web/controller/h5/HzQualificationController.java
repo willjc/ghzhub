@@ -91,8 +91,11 @@ public class HzQualificationController extends BaseController {
      */
     @PostMapping("/appeal")
     public AjaxResult appeal(@RequestBody HzQualificationAppeal appeal) {
-        // TODO: 从登录态获取userId
-        Long userId = 1L; // 暂时模拟
+        // 从前端传递的参数中获取userId
+        Long userId = appeal.getUserId();
+        if (userId == null) {
+            return error("用户未登录");
+        }
 
         // 学历申诉不需要租户信息，直接使用用户ID
         appeal.setTenantId(userId);  // 这里tenant_id实际存储的是user_id
@@ -105,9 +108,11 @@ public class HzQualificationController extends BaseController {
      * 查询当前用户的申诉列表
      */
     @GetMapping("/appeal/list")
-    public AjaxResult appealList() {
-        // TODO: 从登录态获取userId
-        Long userId = 1L; // 暂时模拟
+    public AjaxResult appealList(@RequestParam(required = false) Long userId) {
+        // 从前端传递的参数中获取userId
+        if (userId == null) {
+            return error("用户未登录");
+        }
 
         // 学历申诉不需要租户信息，tenant_id字段实际存储的是user_id
         // 使用VO方法返回包含用户信息的列表
