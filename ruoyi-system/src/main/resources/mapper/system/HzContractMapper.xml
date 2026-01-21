@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzContractMapper">
+
+    <!-- 根据用户ID查询合同列表（关联项��、楼栋、单元信息） -->
+    <select id="selectContractVOByUserId" resultType="java.util.HashMap">
+        SELECT
+            c.contract_id,
+            c.contract_no,
+            c.contract_status,
+            c.contract_type,
+            c.start_date,
+            c.end_date,
+            c.rent_price,
+            c.deposit,
+            c.rent_months,
+            c.payment_cycle,
+            c.sign_time,
+            c.tenant_id,
+            c.tenant_name,
+            c.house_id,
+            c.project_id,
+            p.project_name,
+            b.building_name,
+            u.unit_name,
+            h.house_no
+        FROM hz_contract c
+        LEFT JOIN hz_project p ON c.project_id = p.project_id
+        LEFT JOIN hz_house h ON c.house_id = h.house_id
+        LEFT JOIN hz_building b ON h.building_id = b.building_id
+        LEFT JOIN hz_unit u ON h.unit_id = u.unit_id
+        WHERE c.tenant_id = #{userId}
+          AND c.del_flag = '0'
+        ORDER BY c.create_time DESC
+    </select>
+
+</mapper>

@@ -1,0 +1,2014 @@
+{
+  "工作量详表-新": [
+    {
+      "港好住": "序号",
+      "Unnamed: 1": "系统\n平台",
+      "Unnamed: 2": "一级\n功能",
+      "Unnamed: 3": "二级功能",
+      "Unnamed: 4": "三级功能",
+      "Unnamed: 5": "四级功能",
+      "Unnamed: 6": "功能描述",
+      "Unnamed: 7": "优先级"
+    },
+    {
+      "港好住": null,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": null,
+      "Unnamed: 7": null
+    },
+    {
+      "港好住": 1,
+      "Unnamed: 1": "移动端",
+      "Unnamed: 2": "登录",
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、对接郑好办用户体系；\n2、用户信息采集；\n3、港区保租房、人才公寓管理现行办法告知；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 2,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "首页",
+      "Unnamed: 3": "搜索",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、支持通过房源关键词搜索房源入口；\n2、支持搜索列表展示；\n3、支持分类搜索功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 3,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "banner位展示",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、支持政策通知、办事指引等发布信息展示；\n2、支持点击轮播图跳转相应内容；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 4,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "金刚位展示",
+      "Unnamed: 4": "人才公寓",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、支持按后台管理配置展示人才公寓功能入口；\n2、支持点击相应功能入口进入功能详情页面；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 5,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "保租房",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、支持按后台管理配置展示保租房功能入口；\n2、支持点击相应功能入口进入功能详情页面；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 6,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "市场租赁",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、支持按后台管理配置展示市场租赁功能入口；\n2、支持点击相应功能入口进入功能详情页面；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 7,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "地图找房",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、房源地图点位展示\n2、可根据区域、小区、户型进行筛选；\n3、支持保租房、市场化房源、人才公寓房源筛选；\n4、跳转到房源详情；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 8,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "人才家园",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、支持按后台管理配置展示人才家园功能入口；\n2、支持点击相应功能入口进入功能详情页面；\n3、支持查看人才家园信息详情；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 9,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "政策文件",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、支持按后台管理配置展示政策文件功能入口；\n2、支持点击相应功能入口进入功能详情页面；\n3、支持查看政策文件信息详情；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 10,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "资料上传",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、支持按后台管理配置展示资料上传功能入口；\n2、支持点击相应功能入口进入功能详情页面；\n3、支持上传资料功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 11,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "优惠券",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、支持按后台管理配置展示优惠券功能入口；\n2、支持点击相应功能入口进入功能详情页面；\n3、支持领取优惠券功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 12,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "我的消息",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、支持按后台管理配置展示我的消息功能入口；\n2、支持点击相应功能入口进入功能详情页面；\n3、支持查看我的消息信息详情；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 13,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "通知公告",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、支持按后台管理配置展示通知公告功能入口；\n2、支持点击相应功能入口进入功能详情页面；\n3、支持查看通知公告信息详情；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 14,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "项目列表",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、支持切换展示人才公寓、保租房、市场租赁三种类别项目信息；\n2、支持点击项目列表数据跳转查看项目介绍详情；\n3、支持点击查看更多查看不同类别项目数据；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 15,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "办事",
+      "Unnamed: 3": "人才公寓",
+      "Unnamed: 4": "资格申诉",
+      "Unnamed: 5": "资格不符项列表",
+      "Unnamed: 6": "1、展示用户自动资格校验不符合项；\n2、支持用户手动刷新校验结果；（后台调取社保信息（郑州市）、婚姻信息（郑州市）、学历信息（郑州市）、住房信息（港区）、保租房信息（港区））\n3、对于不符合项，用户可以填写申诉原因进行资格申诉；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 16,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "资格申诉记录",
+      "Unnamed: 6": "展示用户曾针对不同资格不符申诉结果进行记录查询；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 17,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "选房",
+      "Unnamed: 5": "搜索",
+      "Unnamed: 6": "为用户提供项目房源搜索入口，便于用户快速查找项目房源；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 18,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "项目列表",
+      "Unnamed: 6": "展示项目房源列表数据，包括项目名称、是否存在房源、房源套数、地址、房租价格、距当前位置等信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 19,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "项目详情",
+      "Unnamed: 6": "1、展示项目详情信息，包括项目照片、项目基本信息、项目介绍等信息；\n2、为用户提供查看房源信息功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 20,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "承诺书",
+      "Unnamed: 6": "用户在查看房源前，需签订承诺书；为用户提供承诺书查询、签订功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 21,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "房源列表",
+      "Unnamed: 6": "1、展示项目内房源信息，包括楼栋、单元、房间等信息；\n2、支持条件筛选房源；（户型、楼层、朝向等）",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 22,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "房源详情",
+      "Unnamed: 6": "1、展示房源详细信息，包括房源照片，基本信息、公示信息、周边配套设施、楼盘介绍、动态等信息\n2、展示房源详细地址信息及距离当前地址距离，支持跳转第三方地图导航；\n3、支持查看管家电话；\n4、支持选定房源操作；\n5、VR看房：通过 VR 技术沉浸式漫游房屋实景，360° 无死角查看房间布局、采光及细节。",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 23,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "预约看房",
+      "Unnamed: 6": "针对查看的房源详情信息，支持在线填写预约看房信息，进行预约看房；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 24,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "合同签署",
+      "Unnamed: 6": "1、展示用户所选房源签订所需合同信息；\n2、支持用户在线签署合同并提供合同下载功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 25,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "押金缴纳",
+      "Unnamed: 6": "1、展示用户签订合同后的房源信息，为用户提供押金缴纳功能；\n2、押金缴纳前提供提示上传材料功能，在规定时间内未上传材料则退回押金，取消合同；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 26,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "入住办理",
+      "Unnamed: 5": "入住列表",
+      "Unnamed: 6": "展示用户所签订的合同信息，包含已入住、未入住及待入住确认的合同信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 27,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "入住申请",
+      "Unnamed: 6": "1、为用户提供入住申请服务，用户在线填写申请信息，提交后台审核后进行入住确认；\n2、支持取消申请、修改申请；（后台签收后，不可再进行修改）",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 28,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "入住确认",
+      "Unnamed: 6": "1、为用户提供申请入住审批进度信息；\n2、支持用户勾选房间物品并核对物品状态，核对后确认入住完成；\n3、为用户提供用户签字功能，签字确认入住；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 29,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "入住详情",
+      "Unnamed: 6": "为用户展示办理入住详情信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 30,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "退租办理",
+      "Unnamed: 5": "退租列表",
+      "Unnamed: 6": "1、为用户真是房源基本信息、房租账单信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 31,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "退租申请",
+      "Unnamed: 6": "1、为用户提供退租申请服务，用户在线填写申请信息，提交后台审核后进行退租确认；\n2、支持取消申请、修改申请；（后台签收后，不可再进行修改）",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 32,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "退租确认",
+      "Unnamed: 6": "1、为用户提供退租申请审批进度信息、配套物品信息、退费信息；\n2、为用户提供用户签字功能，签字确认退租；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 33,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "退租详情",
+      "Unnamed: 6": "为用户展示退租详情信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 34,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "续租",
+      "Unnamed: 5": "合同列表",
+      "Unnamed: 6": "为用户展示需续租合同基本信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 35,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "续租校验",
+      "Unnamed: 6": "为用户提供续租前资格校验功能，需校验办理资格是否符合、是否存在欠费等条件；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 36,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "合同签订",
+      "Unnamed: 6": "1、为用户提供续租合同信息；\n2、支持用户在线签订续租合同及合同下载功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 37,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "租金缴纳提示",
+      "Unnamed: 6": "为用户提供租金缴纳提示功能，缴费前为用户提供合同审核进度，合同审核通过后可进行租金缴纳；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 38,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "账单缴费",
+      "Unnamed: 5": "账单列表",
+      "Unnamed: 6": "展示当前用户当前账单及历史账单数据，包含押金账单及房租账单；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 39,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "账单缴费",
+      "Unnamed: 6": "1、支持调用三方支付方式在线支付；（港区支付接口）\n2、支持计算优惠进行在线缴费；\n3、支持选择租期账单进行缴费，押金为缴时，无法选择租期账单进行缴费；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 40,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "我的合同",
+      "Unnamed: 5": "合同列表",
+      "Unnamed: 6": "展示租户当前合同及历史合同；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 41,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "合同签订",
+      "Unnamed: 6": "为用户提供合同签署功能，提供合同详情信息及线上签字功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 42,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "租金缴纳",
+      "Unnamed: 6": "为用户提供租金缴纳功能，跳转账单缴费列表选择账期进行租金在线缴纳；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 43,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "续租校验",
+      "Unnamed: 6": "为用户提供续租前资格校验功能，需校验办理资格是否符合、是否存在欠费等条件；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 44,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "续租合同签订",
+      "Unnamed: 6": "支持用户在线签订续租合同及合同下载功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 45,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "开票",
+      "Unnamed: 5": "开票记录",
+      "Unnamed: 6": "展示租户申请开票记录，支持查询开票详情；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 46,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "申请开票",
+      "Unnamed: 6": "1、为用户展示开票合同基本信息及账期，用户可选择账期进行开票；\n2、为用户提供开票信息录入功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 47,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "发票信息",
+      "Unnamed: 6": "为用户提供开票信息服务，支持在线预览发票信息及下载发票信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 48,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "我的预约",
+      "Unnamed: 5": "预约列表",
+      "Unnamed: 6": "展示用户预约看房历史记录，支持取消看房及确认看房操作；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": null,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "合住人申请",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供合住人申请信息录入功能，待审批后可进行入住；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 50,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "调换房申请",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为租户提供调换房申请入口，支持查看调换房记录及详情，发起申请等功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 51,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "保租房",
+      "Unnamed: 4": "资格申诉",
+      "Unnamed: 5": "资格不符项列表",
+      "Unnamed: 6": "1、展示用户自动资格校验不符合项；\n2、支持用户手动刷新校验结果；（后台调取社保信息（郑州市）、婚姻信息（郑州市）、学历信息（郑州市）、住房信息（港区）、保租房信息（港区））\n3、对于不符合项，用户可以填写申诉原因进行资格申诉；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 52,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "资格申诉记录",
+      "Unnamed: 6": "展示用户曾针对不同资格不符申诉结果进行记录查询；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 53,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "选房",
+      "Unnamed: 5": "搜索",
+      "Unnamed: 6": "为用户提供项目房源搜索入口，便于用户快速查找项目房源；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 54,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "项目列表",
+      "Unnamed: 6": "展示项目房源列表数据，包括项目名称、是否存在房源、房源套数、地址、房租价格、距当前位置等信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 55,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "项目详情",
+      "Unnamed: 6": "1、展示项目详情信息，包括项目照片、项目基本信息、项目介绍等信息；\n2、为用户提供查看房源信息功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 56,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "承诺书",
+      "Unnamed: 6": "用户在查看房源前，需签订承诺书；为用户提供承诺书查询、签订功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 57,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "房源列表",
+      "Unnamed: 6": "1、展示项目内房源信息，包括楼栋、单元、房间等信息；\n2、支持条件筛选房源；（户型、楼层、朝向等）",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 58,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "房源详情",
+      "Unnamed: 6": "1、展示房源详细信息，包括房源照片，基本信息、公示信息、周边配套设施、楼盘介绍、动态等信息\n2、展示房源详细地址信息及距离当前地址距离，支持跳转第三方地图导航；\n3、支持查看管家电话；\n4、支持选定房源操作；\n5、VR看房：通过 VR 技术沉浸式漫游房屋实景，360° 无死角查看房间布局、采光及细节。",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 59,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "预约看房",
+      "Unnamed: 6": "针对查看的房源详情信息，支持在线填写预约看房信息，进行预约看房；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 60,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "合同签署",
+      "Unnamed: 6": "1、展示用户所选房源签订所需合同信息；\n2、支持用户在线签署合同并提供合同下载功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 61,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "押金缴纳",
+      "Unnamed: 6": "1、展示用户签订合同后的房源信息，为用户提供押金缴纳功能；\n2、押金缴纳前提供提示上传材料功能，在规定时间内未上传材料则退回押金，取消合同；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 62,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "入住办理",
+      "Unnamed: 5": "入住列表",
+      "Unnamed: 6": "展示用户所签订的合同信息，包含已入住、未入住及待入住确认的合同信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 63,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "入住申请",
+      "Unnamed: 6": "1、为用户提供入住申请服务，用户在线填写申请信息，提交后台审核后进行入住确认；\n2、支持取消申请、修改申请；（后台签收后，不可再进行修改）",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 64,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "入住确认",
+      "Unnamed: 6": "1、为用户提供申请入住审批进度信息；\n2、支持用户勾选房间物品并核对物品状态，核对后确认入住完成；\n3、为用户提供用户签字功能，签字确认入住；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 65,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "入住详情",
+      "Unnamed: 6": "为用户展示办理入住详情信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 66,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "退租办理",
+      "Unnamed: 5": "退租列表",
+      "Unnamed: 6": "1、为用户真是房源基本信息、房租账单信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 67,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "退租申请",
+      "Unnamed: 6": "1、为用户提供退租申请服务，用户在线填写申请信息，提交后台审核后进行退租确认；\n2、支持取消申请、修改申请；（后台签收后，不可再进行修改）",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 68,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "入住办理",
+      "Unnamed: 5": "退租确认",
+      "Unnamed: 6": "1、为用户提供退租申请审批进度信息、配套物品信息、退费信息；\n2、为用户提供用户签字功能，签字确认退租；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 69,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "退租详情",
+      "Unnamed: 6": "为用户展示退租详情信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 70,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "续租",
+      "Unnamed: 5": "合同列表",
+      "Unnamed: 6": "为用户展示需续租合同基本信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 71,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "续租校验",
+      "Unnamed: 6": "为用户提供续租前资格校验功能，需校验办理资格是否符合、是否存在欠费等条件；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 72,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "合同签订",
+      "Unnamed: 6": "1、为用户提供续租合同信息；\n2、支持用户在线签订续租合同及合同下载功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 73,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "租金缴纳提示",
+      "Unnamed: 6": "为用户提供租金缴纳提示功能，缴费前为用户提供合同审核进度，合同审核通过后可进行租金缴纳；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 74,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "账单缴费",
+      "Unnamed: 5": "账单列表",
+      "Unnamed: 6": "展示当前用户当前账单及历史账单数据，包含押金账单及房租账单；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 75,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "账单缴费",
+      "Unnamed: 6": "1、支持调用三方支付方式在线支付；（港区支付接口）\n2、支持计算优惠进行在线缴费；\n3、支持选择租期账单进行缴费，押金为缴时，无法选择租期账单进行缴费；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 76,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "我的合同",
+      "Unnamed: 5": "合同列表",
+      "Unnamed: 6": "展示租户当前合同及历史合同；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 77,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "合同签订",
+      "Unnamed: 6": "为用户提供合同签署功能，提供合同详情信息及线上签字功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 78,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "租金缴纳",
+      "Unnamed: 6": "为用户提供租金缴纳功能，跳转账单缴费列表选择账期进行租金在线缴纳；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 79,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "续租校验",
+      "Unnamed: 6": "为用户提供续租前资格校验功能，需校验办理资格是否符合、是否存在欠费等条件；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 80,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "续租合同签订",
+      "Unnamed: 6": "支持用户在线签订续租合同及合同下载功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 81,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "开票",
+      "Unnamed: 5": "开票记录",
+      "Unnamed: 6": "展示租户申请开票记录，支持查询开票详情；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 82,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "申请开票",
+      "Unnamed: 6": "1、为用户展示开票合同基本信息及账期，用户可选择账期进行开票；\n2、为用户提供开票信息录入功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 83,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "发票信息",
+      "Unnamed: 6": "为用户提供开票信息服务，支持在线预览发票信息及下载发票信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 84,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "我的预约",
+      "Unnamed: 5": "预约列表",
+      "Unnamed: 6": "展示用户预约看房历史记录，支持取消看房及确认看房操作；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": null,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "合住人申请",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供合住人申请信息录入功能，待审批后可进行入住；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 86,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "调换房申请",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为租户提供调换房申请入口，支持查看调换房记录及详情，发起申请等功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 87,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "市场租赁",
+      "Unnamed: 4": "选房",
+      "Unnamed: 5": "搜索",
+      "Unnamed: 6": "为用户提供项目房源搜索入口，便于用户快速查找项目房源；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 88,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "项目列表",
+      "Unnamed: 6": "展示项目房源列表数据，包括项目名称、是否存在房源、房源套数、地址、房租价格、距当前位置等信息；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 89,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "项目详情",
+      "Unnamed: 6": "1、展示项目详情信息，包括项目照片、项目基本信息、项目介绍等信息；\n2、为用户提供查看房源信息功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 90,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "承诺书",
+      "Unnamed: 6": "用户在查看房源前，需签订承诺书；为用户提供承诺书查询、签订功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 91,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "房源列表",
+      "Unnamed: 6": "1、展示项目内房源信息，包括楼栋、单元、房间等信息；\n2、支持条件筛选房源；（户型、楼层、朝向等）",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 92,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "房源详情",
+      "Unnamed: 6": "1、展示房源详细信息，包括房源照片，基本信息、公示信息、周边配套设施、楼盘介绍、动态等信息\n2、展示房源详细地址信息及距离当前地址距离，支持跳转第三方地图导航；\n3、支持查看管家电话；\n4、支持选定房源操作；\n5、VR看房：通过 VR 技术沉浸式漫游房屋实景，360° 无死角查看房间布局、采光及细节。",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 93,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "预约看房",
+      "Unnamed: 6": "针对查看的房源详情信息，支持在线填写预约看房信息，进行预约看房；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 94,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "合同签署",
+      "Unnamed: 6": "1、展示用户所选房源签订所需合同信息；\n2、支持用户在线签署合同并提供合同下载功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 95,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "押金缴纳",
+      "Unnamed: 6": "1、展示用户签订合同后的房源信息，为用户提供押金缴纳功能；\n2、押金缴纳前提供提示上传材料功能，在规定时间内未上传材料则退回押金，取消合同；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 96,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "入住办理",
+      "Unnamed: 5": "入住列表",
+      "Unnamed: 6": "展示用户所签订的合同信息，包含已入住、未入住及待入住确认的合同信息；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 97,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "入住申请",
+      "Unnamed: 6": "1、为用户提供入住申请服务，用户在线填写申请信息，提交后台审核后进行入住确认；\n2、支持取消申请、修改申请；（后台签收后，不可再进行修改）",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 98,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "入住确认",
+      "Unnamed: 6": "1、为用户提供申请入住审批进度信息；\n2、支持用户勾选房间物品并核对物品状态，核对后确认入住完成；\n3、为用户提供用户签字功能，签字确认入住；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 99,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "入住详情",
+      "Unnamed: 6": "为用户展示办理入住详情信息；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 100,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "退租办理",
+      "Unnamed: 5": "退租列表",
+      "Unnamed: 6": "1、为用户真是房源基本信息、房租账单信息；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 101,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "退租申请",
+      "Unnamed: 6": "1、为用户提供退租申请服务，用户在线填写申请信息，提交后台审核后进行退租确认；\n2、支持取消申请、修改申请；（后台签收后，不可再进行修改）",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 102,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "入住办理",
+      "Unnamed: 5": "退租确认",
+      "Unnamed: 6": "1、为用户提供退租申请审批进度信息、配套物品信息、退费信息；\n2、为用户提供用户签字功能，签字确认退租；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 103,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "退租详情",
+      "Unnamed: 6": "为用户展示退租详情信息；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 104,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "续租",
+      "Unnamed: 5": "合同列表",
+      "Unnamed: 6": "为用户展示需续租合同基本信息；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 105,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "续租校验",
+      "Unnamed: 6": "为用户提供续租前资格校验功能，需校验是否存在欠费等条件；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 106,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "合同签订",
+      "Unnamed: 6": "1、为用户提供续租合同信息；\n2、支持用户在线签订续租合同及合同下载功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 107,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "租金缴纳提示",
+      "Unnamed: 6": "为用户提供租金缴纳提示功能，缴费前为用户提供合同审核进度，合同审核通过后可进行租金缴纳；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 108,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "账单缴费",
+      "Unnamed: 5": "账单列表",
+      "Unnamed: 6": "展示当前用户当前账单及历史账单数据，包含押金账单及房租账单；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 109,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "账单缴费",
+      "Unnamed: 6": "1、支持调用三方支付方式在线支付；（港区支付接口）\n2、支持计算优惠进行在线缴费；\n3、支持选择租期账单进行缴费，押金为缴时，无法选择租期账单进行缴费；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 110,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "我的合同",
+      "Unnamed: 5": "合同列表",
+      "Unnamed: 6": "展示租户当前合同及历史合同，支持新签约合同倒计时功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 111,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "合同签订",
+      "Unnamed: 6": "为用户提供合同签署功能，提供合同详情信息及线上签字功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 112,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "租金缴纳",
+      "Unnamed: 6": "为用户提供租金缴纳功能，跳转账单缴费列表选择账期进行租金在线缴纳；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 113,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "续租校验",
+      "Unnamed: 6": "为用户提供续租前资格校验功能，需校验办理资格是否符合、是否存在欠费等条件；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 114,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "续租合同签订",
+      "Unnamed: 6": "支持用户在线签订续租合同及合同下载功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 115,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "开票",
+      "Unnamed: 5": "开票记录",
+      "Unnamed: 6": "展示租户申请开票记录，支持查询开票详情；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 116,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "申请开票",
+      "Unnamed: 6": "1、为用户展示开票合同基本信息及账期，用户可选择账期进行开票；\n2、为用户提供开票信息录入功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 117,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "发票信息",
+      "Unnamed: 6": "为用户提供开票信息服务，支持在线预览发票信息及下载发票信息；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 118,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "我的预约",
+      "Unnamed: 5": "预约列表",
+      "Unnamed: 6": "展示用户预约看房历史记录，支持取消看房及确认看房操作；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 119,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "合住人申请",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供合住人申请信息录入功能，待审批后可进行入住；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 120,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "调换房申请",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为租户提供调换房申请入口，支持查看调换房记录及详情，发起申请等功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 121,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "服务",
+      "Unnamed: 3": "投诉及建议",
+      "Unnamed: 4": "投诉记录",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示租户投诉记录，支持查询投诉详情；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 122,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "发起投诉",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供投诉建议录入功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 123,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "保洁订单",
+      "Unnamed: 4": "搜索",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供保洁订单搜索功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 124,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "保洁订单",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示租户保洁订单记录信息，支持查看详情；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 125,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "保洁申请",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为租户提供保洁申请服务，支持用户创建保洁订单；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 126,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "评价",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供订单评价服务，支持用户输入评价内容；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 127,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "搬家订单",
+      "Unnamed: 4": "搜索",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供搬家订单搜索功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 128,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "搬家订单",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示租户搬家订单记录信息，支持查看详情；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 129,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "搬家申请",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为租户提供搬家申请服务，支持用户创建搬家订单；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 130,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "评价",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供订单评价服务，支持用户输入评价内容；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 131,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "物业报修",
+      "Unnamed: 4": "报修记录",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示租户报修记录，支持查询报修详情；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 132,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "报修申请",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为租户提供报修申请服务，支持用户创建报修订单；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 133,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "评价",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供订单评价服务，支持用户输入评价内容；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 134,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "企业客户",
+      "Unnamed: 4": "在线缴费",
+      "Unnamed: 5": "缴费信息",
+      "Unnamed: 6": "为用户提供集中分配房源项目信息，支持用户输入单位信息进行在线缴费；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 135,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "入住办理",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供集中分配房源项目信息，支持用户上传入住人员名单提交入住申请；（提供入住人员模版）",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 136,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "退租办理",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供集中分配房源项目信息，支持用户选择账期进行退租申请；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 137,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "合同备案",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为租户后续买房提供代购补贴合同备案功能入口，支持查询历史备案、审批进度及发起备案申请等功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 138,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "代购补贴",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为租户后续买房提供代购补贴申请功能入口，支持查询历史申请、审批进度及发起代购补贴申请、签署陈诺书等功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 139,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "我的",
+      "Unnamed: 3": "账号资料",
+      "Unnamed: 4": "账号资料展示",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示用户账号资料信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 140,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "我的消息",
+      "Unnamed: 4": "消息列表",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示用户所收到的系统通知消息，支持查看消息详情；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 141,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "我的房源",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示租户所选房源信息，支持查看房源详情；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 142,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "我的合同",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示租户当前合同及历史合同；支持合同签订、租金缴纳、续租校验、续租合同签订等功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 143,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "申诉记录",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示用户曾针对不同资格不符申诉结果进行记录查询；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 144,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "信息维护",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示租户个人信息，支持用户在线修改编辑；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 145,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "优惠券",
+      "Unnamed: 4": "优惠券列表",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示当前租户所领取的优惠券，支持前往使用功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 146,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "关于我们",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示公司信息等信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 147,
+      "Unnamed: 1": "后台管理",
+      "Unnamed: 2": "登录",
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "登录页面设计，用户可通过账号、密码进行系统登录。",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 148,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "首页",
+      "Unnamed: 3": "财务数据统计",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "1、默认统计当前月份财务数据，包括应收金额、实收金额、预计应收金额、逾期金额、退款金额等数据；\n2、支持按月筛选统计数据结果；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 149,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "房源数据",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "统计房源总房间数、已租房间数、空房间数、维修房间数、当前出租率、累计出租率、用户转化率等数据信息",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 150,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "租户数据",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "统计租户婚姻状态数据及户籍数据，包括：已婚、未婚、离异、其他；本地户籍、外地户籍、未知户籍等；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 151,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "客户分析",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "统计学历类型及职业类型数据分析；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 152,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "项目台账",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "默认统计项目本月默认金额，支持点击查看条状项目台账统计列表查看详情；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 153,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "资产管理",
+      "Unnamed: 3": "项目管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供项目管理功能，包括小区、产业园、厂房等房源项目管理。支持对项目的新增、编辑、删除、查询、导入、导出、房型管理等功能；\n1、查询：为用户提供项目信息搜索查询功能，查询条件包括：小区、行政区、配租方式等；\n2、新增：支持补充项目所需字段信息，新增项目；\n3、编辑：支持按需编辑项目信息；\n4、删除：支持删除项目信息功能；\n5、导入：支持按照模版导入项目信息；\n6、导出：支持选择项目信息导出项目信息；\n7、房型管理：支持对项目内房型进行新增、编辑、删除、等操作；\n8、详情：支持查看项目详情操作；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 154,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "房源管理",
+      "Unnamed: 4": "房源列表",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供项目内房源管理功能，支持对房源的新增、编辑、删除、查询、导入、导出、上架、下架、常规分配、集中分配等功能；\n1、查询：为用户提供房源信息搜索功能，查询条件包括：小区名称、楼栋、单元、分类类型、房源状态、上架状态等；\n2、新增：支持填写房源所需字段信息，新增房源数据；\n3、编辑：支持按需编辑房源信息；\n4、删除：支持删除房源信息；\n5、导入：支持按模版导入房源信息；\n6、导出：支持按模版导出房源信息；\n7、上架：支持将房源信息上架到前端平台展示；\n8、下架：支持将未分配的房源从前端平台下架；\n9、常规分配：支持对未配租房源进行配租处理；\n10、集中分配：支持将未分配的房源进行集中分配处理；\n11、支持管家电话管理功能，可添加、编辑、删除管家电话；\n12、支持房源精选功能，可对房源设置为精选房源；\n13、支持定向配租时间，限制到日；\n14、VR管理：房屋VR文件管理，支持文件的上传、删除",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 155,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "配租批次",
+      "Unnamed: 5": "集中配租",
+      "Unnamed: 6": "为管理端用户提供集中配租功能入口，支持对房源、人员进行新增、编辑、作废、审批、查看详情等操作；\n1、查询：支持按条件查询集中配租信息，查询条件包含：批次名称、人次类型、审批状态、批次状态等；\n2、新增：支持用户新增集中配租房源信息、人员信息；\n3、编辑：支持编辑集中配租房源信息、人员信息；\n4、作废：支持作废集中配租信息；\n5、审批：支持用户对发起的集中配租信息进行审批操作；\n6、详情：支持用户查看集中配租信息详情；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 156,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": "企业客户",
+      "Unnamed: 6": "为管理端用户提供企业集中配租入口，支持新增、编辑、作废、审批、查看详情等操作；\n1、查询：支持按条件查询企业集中配租信息，查询条件包含：批次名称、审批状态、批次状态等；\n2、新增：支持新增企业客户集中配租房源信息；\n3、编辑：支持编辑企业客户集中配租房源信息；\n4、作废：支持作废企业客户集中配租房源信息；\n5、审批：支持用户对发起的企业集中配置信息进行审核；\n6、详情：支持用户查看企业其中配租详情信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 157,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "申请信息",
+      "Unnamed: 3": "租户管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供租户管理服务，支持对租户信息的导出、查询、资格退出等操作；\n1、查询：为用户提供按条件查询租户信息功能，查询条件包含：租户姓名、学历、职业、是否配置、申请时间等；\n2、导出：支持按照模版导出租户信息；\n3、资格退出：支持对租户进行手动拉黑操作；\n4、租户详情信息：支持查看用户详情信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 158,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "预约看房",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端租户提交的预约看房信息，支持对预约信息进行查询、签收、确认看房操作；\n1、查询：为用户提供预约记录查询功能，条件包含：小区名称、预约人、手机号、预约时间等；\n2、签收：为管理端用户提供预约信息签收功能，管理端用户可根据实际时间对预约看房时间进行调整，同时告知前端用户预约进度；\n3、确认看房：为管理端用户提供一键处理看房记录；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 159,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "投诉记录",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端租户提交的投诉信息，支持对投诉信息进行查询、处置；\n1、查询：为用户提供投诉记录查询服务，查询条件包含：投诉类型、手机号、投诉时间等；\n2、处置：为管理端用户提供处置投诉建议功能；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 160,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "资格申诉",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端租户提交的资格申诉信息，支持对资格申诉进行查询、手动审核、导出等操作；\n1、查询：为管理端用户提供查询服务，查询条件包含：申请人、手机号、审核状态、申请时间等；\n2、导出：支持按照模版导出租户申诉记录；\n3、审核：支持对租户提交的资格申诉信息进行手动审核功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 161,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "承诺书",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端租户提交的承诺书信息，支持对承诺书查询、导出功能；\n1、为管理端用户提供查询服务，查询条件包含：姓名、身份账号、联系方式等；\n2、导出：支持按照模版导出租户承诺书功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 162,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "合同管理",
+      "Unnamed: 3": "合同管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端租户签署的合同信息，包括常态化合同和集中合同，支持对合同信息的查询、导出、审批等操作；\n1、查询：为管理端用户提供合同查询服务，查询条件包含：房间地址、合同状态、审批状态、押金状态、发起时间、签订时间、到期时间等；\n2、审批：针对续租合同，为管理端用户提供审批功能；\n3、详情：支持管理端用户查看合同详情信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 163,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "入住管理",
+      "Unnamed: 4": "常态入住",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端用户提交的入住申请信息，支持对入住申请进行查询、签收、作废、查看详情等操作；\n1、查询：为管理端用户提供查询服务，查询条件包含：房间地址、申请人、申请状态、申请时间等操作；\n2、签收：支持对提交的入住申请进行签收操作；\n3、作废：支持对提交的入住申请进行作废操作；\n4、详情：支持查看入住申请详情信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 164,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "企业入住",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为后台管理用户提供企业入住申请记录信息，支持查询企业入住详情信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 165,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "退租管理",
+      "Unnamed: 4": "常态退租",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端租户提交的退租申请信息，支持对退租申请信息进行查询、签收、退租、作废、查看详情等操作；\n1、查询：为用户提供退租申请查询服务，查询条件包含：房间地址、申请人、申请状态、申请时间等条件；\n2、签收：支持对退租申请进行签收操作；\n3、作废：支持对退租申请进行作废操作；\n4、退租：支持对退租申请进行退租操作，退租时提供确认房间配备状态及退费信息补充操作；\n5、详情：支持查看退租详情信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": null,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": null,
+      "Unnamed: 4": "企业退租",
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为后台管理用户提供企业退租记录信息，支持查询企业退租详情信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 167,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "退款管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "基于退租申请数据，对于已退租的数据进行退款室申请及审批，支持对退款信息的查询、新增、撤销申请、审批、退费、详情查看等操作；\n1、查询：为管理端用户提供退款申请查询服务，查询条件包含：批次号、发起时间、审批状态、审批时间等；\n2、新增：为管理端用户提供新增退费申请功能；\n3、撤销申请：支持对发起的退款审核进行撤回操作；\n4、审批：为管理端用户提供退费申请审批功能；\n5、退费：为用户提供退费功能，对于审核通过后的退费申请进行手动退费操作；\n6、详情：支持用户查询退费详情信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 168,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "合住人管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端租户提供的合住人申请信息，支持对合住人申请信息查询、审批等操作；\n1、查询：为管理端用户提供查询服务，查询条件包含申请人、合住人、申请状态等；\n2、审批：支持对合住人申请信息提供审核功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 169,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "调换房管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为管理端用户提供调换房功能入口，对于租户提出换房需求进行换房操作，支持对换房信息的查询、新增、编辑、删除、审核、详情查看操作；\n1、查询：为管理端用户提供查询服务，查询条件包含：申请人、房间地址、调换状态等；\n2、新增：支持新增调换房信息；\n3、编辑：支持编辑调换房信息；\n4、删除：支持删除调换房信息；\n5、审核：支持审核调换房信息；\n6、详情查询：支持查看调换房详情信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 170,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "租金账单",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端租户租金账单信息，支持对租金账单信息查询、催缴、导出、详情查看等操作；\n1、查询：为管理端用户提供查询服务，查询条件包含：小区名称、房间地址、账单类型、账单状态、账单开始时间、账单支付时间等\n2、导出：支持导出租金账单操作；\n3、详情：支持查看租金账单详情信息；\n4、催缴：支持用户对逾期未缴纳账单进行催缴功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": null,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "代购补贴",
+      "Unnamed: 3": "合同备案",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端租户提交的合同备案信息，支持对备案信息查询、审核、查看详情等操作；\n1、查询：支持用户按条件查询合同备案信息，查询条件包含：签订人、签订单位、申请状态等；\n2、审批：支持用户对租户提交的备案申请进行审批操作；\n3、详情：支持用户查看合同备案详情信息；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": null,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "代购补贴",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端租户提交的代购补贴申请信息，支持对代购补贴申请信息查询、审核、查看详情等操作；\n1、查询：支持用户按条件查询代购补贴申请信息，查询条件包含：申请人、申请状态等；\n2、审批：支持用户对租户提交的代购补贴申请信息进行审批操作；\n3、详情：支持用户查看代购补贴详情信息；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 173,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "服务管理",
+      "Unnamed: 3": "保洁订单",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端租户提交的保洁订单信息，支持对保洁订单进行查询、处理等操作；\n1、查询：为用户提供查询服务，查询条件包含：申请人、申请时间等；\n2、处理：支持对订单进行分配保洁单位操作；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 174,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "搬家订单",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端租户提交的搬家订单信息，支持对搬家订单进行查询、处理等操作；\n1、查询：为用户提供查询服务，查询条件包含：申请人、申请时间等；\n2、处理：支持对订单进行分配搬家单位操作；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 175,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "物业报修",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端租户提交的物业报修订单信息，支持对物业报修订单进行查询、处理等操作；\n1、查询：为用户提供查询服务，查询条件包含：申请人、申请时间等；\n2、处理：支持对订单进行分配物业单位操作；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 176,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "服务公司管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为管理端用户提供服务公司维护功能入口，支持对服务公司的查询、新增、编辑、删除等操作；\n1、查询：为用户提供查询服务，查询条件包含：单位名称等；\n2、新增：支持新增服务单位信息；\n3、编辑：支持编辑服务公司信息；\n4、删除：支持删除服务公司信息；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 177,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "开票管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示前端租户提交的开票申请信息，支持对开票申请信息进行查询、上传发票等操作；\n1、查询:为用户提供查询服务，查询条件包含：申请人、申请时间等；\n2、上传发票：支持管理端用户上传发票信息；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 178,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "监控列表",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示各小区监控设备信息，管理端用户可进行实时监控查看；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 179,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "报表管理",
+      "Unnamed: 3": "项目收款台账",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "默认统计当前月份项目收款台账信息，支持按月份进行筛选查询；支持导出项目收款台账功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 180,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "自定义报表",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为用户提供自定义字段，统计数据功能，支持导出操作；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 181,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "优惠券管理",
+      "Unnamed: 3": "优惠券管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "优惠券的管理，支持新增、编辑、删除、查询",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 182,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "领取记录",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示优惠券的领取记录信息，支持查询等操作；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 183,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "核销明细",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示优惠券的核销明细记录，支持查询等操作；",
+      "Unnamed: 7": 2
+    },
+    {
+      "港好住": 184,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "黑名单管理",
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "为管理端用户提供黑名单维护功能，支持对黑名单人员查询、新增、解除、导出等操作；\n1、查询：为用户提供查询服务，查询条件包含用户名、手机号等；\n2、新增：支持新增黑名单成员；\n3、解除：支持解除黑名单成员；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 185,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "用户管理",
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "展示登录港好住的所有用户信息，支持更新用户信息和加入黑名单操作；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 186,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "配置管理",
+      "Unnamed: 3": "消息通知",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "支持管理端用户面向前端用户发送消息通知功能，可满足对消息通知进行查询、新增、编辑、删除、发送等功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 187,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "合同模版",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "合同模板定义根据不同的项目配置签约合同所需要的基本信息，如：付款周期、合同签约期限、押金金额等",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 188,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "运营配置",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "金刚位、轮播图、腰封位、广告位配置",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 189,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "通知公告",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "支持管理端用户面向前端用户发布通知公告功能，可满足对通知公告进行查询、新增、编辑、删除、发布等功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 190,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "政策文件",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "支持管理端用户面向前端用户发布政策文件功能，可满足对政策文件进行查询、新增、编辑、删除、发布等功能；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 191,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "系统管理",
+      "Unnamed: 3": "用户管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "支持对管理端用户进行增删改查操作；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 192,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "账号管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "支持对管理端用户账号进行增删改查操作；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 193,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "角色管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "支持对管理端用户角色进行增删改查操作；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 194,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "权限管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "支持对管理端角色进行菜单权限配置、数据权限配置操作；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 195,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "字典管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "支持对管理端系统字典进行增删改查配置；",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 196,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "消息管理",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "支持后端管理系统消息渠道、消息队列配置",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 197,
+      "Unnamed: 1": null,
+      "Unnamed: 2": null,
+      "Unnamed: 3": "安全日志",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "记录后端管理系统平台登录、操作日志，可查、可追溯",
+      "Unnamed: 7": 1
+    },
+    {
+      "港好住": 198,
+      "Unnamed: 1": null,
+      "Unnamed: 2": "数据迁移",
+      "Unnamed: 3": "数据迁移",
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": "将现郑好住中港区的业务数据迁移到新系统中，包括但不限于房屋数据、合同数据、账单数据、用户数据等等",
+      "Unnamed: 7": null
+    },
+    {
+      "港好住": 199,
+      "Unnamed: 1": "小程序端",
+      "Unnamed: 2": "功能同H5页面",
+      "Unnamed: 3": null,
+      "Unnamed: 4": null,
+      "Unnamed: 5": null,
+      "Unnamed: 6": null,
+      "Unnamed: 7": null
+    }
+  ]
+}

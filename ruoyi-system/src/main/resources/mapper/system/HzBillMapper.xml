@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzBillMapper">
+
+    <!-- 账单VO结果映射 -->
+    <resultMap id="HzBillVOResult" type="com.ruoyi.system.domain.HzBillVO">
+        <id property="billId" column="bill_id"/>
+        <result property="billNo" column="bill_no"/>
+        <result property="contractId" column="contract_id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="tenantName" column="tenant_name"/>
+        <result property="houseId" column="house_id"/>
+        <result property="houseCode" column="house_code"/>
+        <result property="billType" column="bill_type"/>
+        <result property="billPeriod" column="bill_period"/>
+        <result property="billAmount" column="bill_amount"/>
+        <result property="paidAmount" column="paid_amount"/>
+        <result property="unpaidAmount" column="unpaid_amount"/>
+        <result property="billDate" column="bill_date"/>
+        <result property="dueDate" column="due_date"/>
+        <result property="lateFee" column="late_fee"/>
+        <result property="billStatus" column="bill_status"/>
+        <result property="payTime" column="pay_time"/>
+        <result property="payMethod" column="pay_method"/>
+        <result property="transactionNo" column="transaction_no"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="isOverdue" column="is_overdue"/>
+        <result property="overdueDays" column="overdue_days"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+        <!-- 扩展字段：合同编号 -->
+        <result property="contractNo" column="contract_no"/>
+        <!-- 扩展字段：项目名称、楼栋、单元、房源号 -->
+        <result property="projectName" column="project_name"/>
+        <result property="buildingName" column="building_name"/>
+        <result property="unitName" column="unit_name"/>
+        <result property="houseNo" column="house_no"/>
+    </resultMap>
+
+    <!-- 查询账单列表SQL -->
+    <sql id="selectBillVOSql">
+        SELECT
+            b.bill_id, b.bill_no, b.contract_id, b.tenant_id, b.tenant_name,
+            b.house_id, b.house_code, b.bill_type, b.bill_period, b.bill_amount,
+            b.paid_amount, b.unpaid_amount, b.bill_date, b.due_date, b.late_fee,
+            b.bill_status, b.pay_time, b.pay_method, b.transaction_no,
+            b.del_flag, b.is_overdue, b.overdue_days,
+            b.create_by, b.create_time, b.update_by, b.update_time, b.remark,
+            c.contract_no,
+            p.project_name,
+            bu.building_name,
+            u.unit_name,
+            h.house_no
+        FROM hz_bill b
+        LEFT JOIN hz_contract c ON b.contract_id = c.contract_id AND c.del_flag = '0'
+        LEFT JOIN hz_house h ON b.house_id = h.house_id AND h.del_flag = '0'
+        LEFT JOIN hz_project p ON h.project_id = p.project_id AND p.del_flag = '0'
+        LEFT JOIN hz_building bu ON h.building_id = bu.building_id AND bu.del_flag = '0'
+        LEFT JOIN hz_unit u ON h.unit_id = u.unit_id
+    </sql>
+
+    <!-- 查询账单列表 -->
+    <select id="selectBillVOList" parameterType="com.ruoyi.system.domain.HzBill" resultMap="HzBillVOResult">
+        <include refid="selectBillVOSql"/>
+        <where>
+            b.del_flag = '0'
+            <if test="bill.billNo != null and bill.billNo != ''">
+                AND b.bill_no LIKE CONCAT('%', #{bill.billNo}, '%')
+            </if>
+            <if test="bill.tenantId != null">
+                AND b.tenant_id = #{bill.tenantId}
+            </if>
+            <if test="bill.tenantName != null and bill.tenantName != ''">
+                AND b.tenant_name LIKE CONCAT('%', #{bill.tenantName}, '%')
+            </if>
+            <if test="bill.contractId != null">
+                AND b.contract_id = #{bill.contractId}
+            </if>
+            <if test="bill.houseId != null">
+                AND b.house_id = #{bill.houseId}
+            </if>
+            <if test="bill.billType != null and bill.billType != ''">
+                AND b.bill_type = #{bill.billType}
+            </if>
+            <if test="bill.billStatus != null and bill.billStatus != ''">
+                AND b.bill_status = #{bill.billStatus}
+            </if>
+            <if test="bill.isOverdue != null and bill.isOverdue != ''">
+                AND b.is_overdue = #{bill.isOverdue}
+            </if>
+            <!-- 账单日期范围查询 -->
+            <if test="bill.params.beginBillDate != null and bill.params.beginBillDate != ''">
+                AND DATE(b.bill_date) &gt;= #{bill.params.beginBillDate}
+            </if>
+            <if test="bill.params.endBillDate != null and bill.params.endBillDate != ''">
+                AND DATE(b.bill_date) &lt;= #{bill.params.endBillDate}
+            </if>
+            <!-- 应付日期范围查询 -->
+            <if test="bill.params.beginDueDate != null and bill.params.beginDueDate != ''">
+                AND DATE(b.due_date) &gt;= #{bill.params.beginDueDate}
+            </if>
+            <if test="bill.params.endDueDate != null and bill.params.endDueDate != ''">
+                AND DATE(b.due_date) &lt;= #{bill.params.endDueDate}
+            </if>
+        </where>
+        ORDER BY b.create_time DESC
+    </select>
+
+    <!-- 分页查询账单列表 (MyBatis-Plus自动分页) -->
+    <select id="selectBillVOPage" parameterType="com.ruoyi.system.domain.HzBill" resultMap="HzBillVOResult">
+        <include refid="selectBillVOSql"/>
+        <where>
+            b.del_flag = '0'
+            <if test="bill.billNo != null and bill.billNo != ''">
+                AND b.bill_no LIKE CONCAT('%', #{bill.billNo}, '%')
+            </if>
+            <if test="bill.tenantId != null">
+                AND b.tenant_id = #{bill.tenantId}
+            </if>
+            <if test="bill.tenantName != null and bill.tenantName != ''">
+                AND b.tenant_name LIKE CONCAT('%', #{bill.tenantName}, '%')
+            </if>
+            <if test="bill.contractId != null">
+                AND b.contract_id = #{bill.contractId}
+            </if>
+            <if test="bill.houseId != null">
+                AND b.house_id = #{bill.houseId}
+            </if>
+            <if test="bill.billType != null and bill.billType != ''">
+                AND b.bill_type = #{bill.billType}
+            </if>
+            <if test="bill.billStatus != null and bill.billStatus != ''">
+                AND b.bill_status = #{bill.billStatus}
+            </if>
+            <if test="bill.isOverdue != null and bill.isOverdue != ''">
+                AND b.is_overdue = #{bill.isOverdue}
+            </if>
+            <!-- 账单日期范围查询 -->
+            <if test="bill.params.beginBillDate != null and bill.params.beginBillDate != ''">
+                AND DATE(b.bill_date) &gt;= #{bill.params.beginBillDate}
+            </if>
+            <if test="bill.params.endBillDate != null and bill.params.endBillDate != ''">
+                AND DATE(b.bill_date) &lt;= #{bill.params.endBillDate}
+            </if>
+            <!-- 应付日期范围查询 -->
+            <if test="bill.params.beginDueDate != null and bill.params.beginDueDate != ''">
+                AND DATE(b.due_date) &gt;= #{bill.params.beginDueDate}
+            </if>
+            <if test="bill.params.endDueDate != null and bill.params.endDueDate != ''">
+                AND DATE(b.due_date) &lt;= #{bill.params.endDueDate}
+            </if>
+        </where>
+        ORDER BY b.create_time DESC
+    </select>
+
+    <!-- 查询账单详情 -->
+    <select id="selectBillVOById" parameterType="Long" resultMap="HzBillVOResult">
+        <include refid="selectBillVOSql"/>
+        WHERE b.bill_id = #{billId} AND b.del_flag = '0'
+    </select>
+
+    <!-- 根据用户ID查询账单列表（包含关联信息） -->
+    <select id="selectBillVOByUserId" resultMap="HzBillVOResult">
+        <include refid="selectBillVOSql"/>
+        <where>
+            b.del_flag = '0'
+            AND b.tenant_id = #{userId}
+            <if test="billType != null and billType != ''">
+                AND b.bill_type = #{billType}
+            </if>
+            <if test="billStatus != null and billStatus != ''">
+                AND b.bill_status = #{billStatus}
+            </if>
+        </where>
+        ORDER BY b.bill_date DESC
+    </select>
+
+</mapper>

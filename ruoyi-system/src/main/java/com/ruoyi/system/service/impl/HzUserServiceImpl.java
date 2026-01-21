@@ -1,0 +1,158 @@
+package com.ruoyi.system.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.system.domain.HzUser;
+import com.ruoyi.system.mapper.HzUserMapper;
+import com.ruoyi.system.service.IHzUserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.Date;
+import java.util.List;
+
+/**
+ * 用户信息Service业务层处理
+ *
+ * @author ruoyi
+ */
+@Service
+public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> implements IHzUserService {
+
+    @Autowired
+    private HzUserMapper hzUserMapper;
+
+    /**
+     * 查询用户列表
+     *
+     * @param hzUser 用户信息
+     * @return 用户集合
+     */
+    @Override
+    public List<HzUser> selectHzUserList(HzUser hzUser) {
+        return hzUserMapper.selectHzUserList(hzUser);
+    }
+
+    /**
+     * 查询用户详情
+     *
+     * @param userId 用户ID
+     * @return 用户信息
+     */
+    @Override
+    public HzUser selectHzUserById(Long userId) {
+        return hzUserMapper.selectById(userId);
+    }
+
+    /**
+     * 修改用户状态
+     *
+     * @param hzUser 用户信息
+     * @return 结果
+     */
+    @Override
+    public int updateHzUserStatus(HzUser hzUser) {
+        hzUser.setUpdateTime(DateUtils.getNowDate());
+        return hzUserMapper.updateById(hzUser);
+    }
+
+    /**
+     * 删除用户信息
+     *
+     * @param userId 用户ID
+     * @return 结果
+     */
+    @Override
+    public int deleteHzUserById(Long userId) {
+        // 逻辑删除
+        LambdaUpdateWrapper<HzUser> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(HzUser::getUserId, userId)
+                .set(HzUser::getDelFlag, "2");
+        return hzUserMapper.update(null, updateWrapper);
+    }
+
+    /**
+     * 批量删除用户信息
+     *
+     * @param userIds 用户ID数组
+     * @return 结果
+     */
+    @Override
+    public int deleteHzUserByIds(Long[] userIds) {
+        int count = 0;
+        for (Long userId : userIds) {
+            count += deleteHzUserById(userId);
+        }
+        return count;
+    }
+
+    /**
+     * 用户登录或注册
+     *
+     * @param loginType 登录类型
+     * @param phone 手机号
+     * @param openId OpenID
+     * @param nickname 昵称
+     * @return 用户信息
+     */
+    @Override
+    public HzUser loginOrRegister(String loginType, String phone, String openId, String nickname) {
+        // 根据手机号和openId查询用户
+        LambdaQueryWrapper<HzUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(HzUser::getPhone, phone);
+
+        // 根据登录类型查询对应字段
+        if ("wechat".equals(loginType)) {
+            wrapper.eq(HzUser::getWechatOpenid, openId);
+        } else if ("zhenghaoban".equals(loginType)) {
+            wrapper.eq(HzUser::getZhaohaoUserId, openId);
+        }
+
+        HzUser user = this.getOne(wrapper);
+
+        if (user == null) {
+            // 用户不存在，创建新用户
+            user = new HzUser();
+            user.setPhone(phone);
+            user.setLoginType(loginType);
+            user.setNickname(nickname != null ? nickname : "用户" + phone.substring(7));
+            user.setStatus("0"); // 正常状态
+            user.setIsInfoCompleted("0"); // 未完善信息
+            user.setDelFlag("0");
+            user.setCreateTime(new Date());
+
+            // 设置openId
+            if ("wechat".equals(loginType)) {
+                user.setWechatOpenid(openId);
+                user.setSourceType("1"); // 微信小程序
+            } else if ("zhenghaoban".equals(loginType)) {
+                user.setZhaohaoUserId(openId);
+                user.setSourceType("2"); // 郑好办
+            }
+
+            this.save(user);
+        } else {
+            // 更新最后登录时间
+            user.setLastLoginTime(new Date());
+            this.updateById(user);
+        }
+
+        return user;
+    }
+
+    /**
+     * 根据手机号查询用户
+     *
+     * @param phone 手机号
+     * @return 用户信息
+     */
+    @Override
+    public HzUser getUserByPhone(String phone) {
+        LambdaQueryWrapper<HzUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(HzUser::getPhone, phone);
+        return this.getOne(wrapper);
+    }
+
+}

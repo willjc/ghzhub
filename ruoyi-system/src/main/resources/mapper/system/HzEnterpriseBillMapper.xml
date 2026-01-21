@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzEnterpriseBillMapper">
+
+    <resultMap type="com.ruoyi.system.domain.HzEnterpriseBill" id="EnterpriseBillResult">
+        <result property="billId"           column="bill_id"           />
+        <result property="billNo"           column="bill_no"           />
+        <result property="batchId"          column="batch_id"          />
+        <result property="batchNo"          column="batch_no"          />
+        <result property="batchName"        column="batch_name"        />
+        <result property="enterpriseName"   column="enterprise_name"   />
+        <result property="contactPerson"    column="contact_person"    />
+        <result property="contactPhone"     column="contact_phone"     />
+        <result property="houseCount"       column="house_count"       />
+        <result property="totalAmount"      column="total_amount"      />
+        <result property="discountAmount"   column="discount_amount"   />
+        <result property="finalAmount"      column="final_amount"      />
+        <result property="checkInDate"      column="check_in_date"     />
+        <result property="checkOutDate"     column="check_out_date"    />
+        <result property="months"           column="months"            />
+        <result property="contractFile"     column="contract_file"     />
+        <result property="billStatus"       column="bill_status"       />
+        <result property="approveStatus"    column="approve_status"    />
+        <result property="approveBy"        column="approve_by"        />
+        <result property="approveTime"      column="approve_time"      />
+        <result property="payTime"          column="pay_time"          />
+        <result property="payMethod"        column="pay_method"        />
+        <result property="transactionNo"    column="transaction_no"    />
+        <result property="delFlag"          column="del_flag"          />
+        <result property="createBy"         column="create_by"         />
+        <result property="createTime"       column="create_time"       />
+        <result property="updateBy"         column="update_by"         />
+        <result property="updateTime"       column="update_time"       />
+        <result property="remark"           column="remark"            />
+    </resultMap>
+
+    <sql id="selectEnterpriseBillVo">
+        SELECT bill_id, bill_no, batch_id, batch_no, batch_name, enterprise_name,
+               contact_person, contact_phone, house_count, total_amount, discount_amount, final_amount,
+               check_in_date, check_out_date, months, contract_file,
+               bill_status, approve_status, approve_by, approve_time,
+               pay_time, pay_method, transaction_no,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM hz_qiyebill
+    </sql>
+
+    <select id="selectEnterpriseBillList" parameterType="com.ruoyi.system.domain.HzEnterpriseBill" resultMap="EnterpriseBillResult">
+        <include refid="selectEnterpriseBillVo"/>
+        <where>
+            del_flag = '0'
+            <if test="billNo != null and billNo != ''">
+                AND bill_no LIKE CONCAT('%', #{billNo}, '%')
+            </if>
+            <if test="batchId != null">
+                AND batch_id = #{batchId}
+            </if>
+            <if test="batchName != null and batchName != ''">
+                AND batch_name LIKE CONCAT('%', #{batchName}, '%')
+            </if>
+            <if test="enterpriseName != null and enterpriseName != ''">
+                AND enterprise_name LIKE CONCAT('%', #{enterpriseName}, '%')
+            </if>
+            <if test="contactPhone != null and contactPhone != ''">
+                AND contact_phone LIKE CONCAT('%', #{contactPhone}, '%')
+            </if>
+            <if test="billStatus != null and billStatus != ''">
+                AND bill_status = #{billStatus}
+            </if>
+            <if test="approveStatus != null and approveStatus != ''">
+                AND approve_status = #{approveStatus}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectEnterpriseBillById" parameterType="Long" resultMap="EnterpriseBillResult">
+        <include refid="selectEnterpriseBillVo"/>
+        WHERE bill_id = #{billId} AND del_flag = '0'
+    </select>
+
+    <select id="selectBillsByContactPhone" parameterType="String" resultMap="EnterpriseBillResult">
+        <include refid="selectEnterpriseBillVo"/>
+        WHERE contact_phone = #{contactPhone}
+          AND del_flag = '0'
+          AND bill_status IN ('1', '2')
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectBillByBatchId" parameterType="Long" resultMap="EnterpriseBillResult">
+        <include refid="selectEnterpriseBillVo"/>
+        WHERE batch_id = #{batchId} AND del_flag = '0'
+    </select>
+
+    <insert id="insertEnterpriseBill" parameterType="com.ruoyi.system.domain.HzEnterpriseBill" useGeneratedKeys="true" keyProperty="billId">
+        INSERT INTO hz_qiyebill (
+            bill_no, batch_id, batch_no, batch_name, enterprise_name,
+            contact_person, contact_phone, house_count, total_amount, discount_amount, final_amount,
+            check_in_date, check_out_date, months, contract_file,
+            bill_status, approve_status,
+            create_by, create_time, remark
+        ) VALUES (
+            #{billNo}, #{batchId}, #{batchNo}, #{batchName}, #{enterpriseName},
+            #{contactPerson}, #{contactPhone}, #{houseCount}, #{totalAmount}, #{discountAmount}, #{finalAmount},
+            #{checkInDate}, #{checkOutDate}, #{months}, #{contractFile},
+            #{billStatus}, #{approveStatus},
+            #{createBy}, #{createTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateEnterpriseBill" parameterType="com.ruoyi.system.domain.HzEnterpriseBill">
+        UPDATE hz_qiyebill
+        <set>
+            <if test="billNo != null and billNo != ''">bill_no = #{billNo},</if>
+            <if test="batchId != null">batch_id = #{batchId},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="batchName != null">batch_name = #{batchName},</if>
+            <if test="enterpriseName != null">enterprise_name = #{enterpriseName},</if>
+            <if test="contactPerson != null">contact_person = #{contactPerson},</if>
+            <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+            <if test="houseCount != null">house_count = #{houseCount},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="discountAmount != null">discount_amount = #{discountAmount},</if>
+            <if test="finalAmount != null">final_amount = #{finalAmount},</if>
+            <if test="checkInDate != null">check_in_date = #{checkInDate},</if>
+            <if test="checkOutDate != null">check_out_date = #{checkOutDate},</if>
+            <if test="months != null">months = #{months},</if>
+            <if test="contractFile != null">contract_file = #{contractFile},</if>
+            <if test="billStatus != null">bill_status = #{billStatus},</if>
+            <if test="approveStatus != null">approve_status = #{approveStatus},</if>
+            <if test="approveBy != null">approve_by = #{approveBy},</if>
+            <if test="approveTime != null">approve_time = #{approveTime},</if>
+            <if test="payTime != null">pay_time = #{payTime},</if>
+            <if test="payMethod != null">pay_method = #{payMethod},</if>
+            <if test="transactionNo != null">transaction_no = #{transactionNo},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = #{updateTime},
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE bill_id = #{billId}
+    </update>
+
+    <delete id="deleteEnterpriseBillById" parameterType="Long">
+        UPDATE hz_qiyebill SET del_flag = '2' WHERE bill_id = #{billId}
+    </delete>
+
+    <delete id="deleteEnterpriseBillByIds" parameterType="String">
+        UPDATE hz_qiyebill SET del_flag = '2' WHERE bill_id IN
+        <foreach item="billId" collection="array" open="(" separator="," close=")">
+            #{billId}
+        </foreach>
+    </delete>
+
+</mapper>

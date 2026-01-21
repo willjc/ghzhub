@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzUnitMapper">
+
+    <resultMap type="com.ruoyi.system.domain.HzUnit" id="HzUnitResult">
+        <id     property="unitId"          column="unit_id"         />
+        <result property="buildingId"      column="building_id"     />
+        <result property="buildingName"    column="building_name"   />
+        <result property="projectId"       column="project_id"      />
+        <result property="projectName"     column="project_name"    />
+        <result property="unitName"        column="unit_name"       />
+        <result property="unitCode"        column="unit_code"       />
+        <result property="totalHouses"     column="total_houses"    />
+        <result property="status"          column="status"          />
+        <result property="sortOrder"       column="sort_order"      />
+        <result property="delFlag"         column="del_flag"        />
+        <result property="createBy"        column="create_by"       />
+        <result property="createTime"      column="create_time"     />
+        <result property="updateBy"        column="update_by"       />
+        <result property="updateTime"      column="update_time"     />
+        <result property="remark"          column="remark"          />
+    </resultMap>
+
+    <sql id="selectUnitVo">
+        SELECT
+            u.unit_id, u.building_id, u.unit_name, u.unit_code,
+            IFNULL((SELECT COUNT(*) FROM hz_house h WHERE h.unit_id = u.unit_id AND h.del_flag = '0'), 0) as total_houses,
+            u.status, u.sort_order, u.del_flag,
+            u.create_by, u.create_time, u.update_by, u.update_time, u.remark,
+            b.building_name,
+            b.project_id,
+            p.project_name
+        FROM hz_unit u
+        LEFT JOIN hz_building b ON u.building_id = b.building_id
+        LEFT JOIN hz_project p ON b.project_id = p.project_id
+    </sql>
+
+    <select id="selectUnitAllocationList" parameterType="com.ruoyi.system.domain.HzUnit" resultMap="HzUnitResult">
+        <include refid="selectUnitVo"/>
+        <where>
+            u.del_flag = '0'
+            <if test="buildingId != null">
+                AND u.building_id = #{buildingId}
+            </if>
+            <if test="projectId != null">
+                AND b.project_id = #{projectId}
+            </if>
+            <if test="unitName != null and unitName != ''">
+                AND u.unit_name LIKE CONCAT('%', #{unitName}, '%')
+            </if>
+            <if test="unitCode != null and unitCode != ''">
+                AND u.unit_code LIKE CONCAT('%', #{unitCode}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND u.status = #{status}
+            </if>
+        </where>
+        ORDER BY u.sort_order ASC, u.create_time DESC
+    </select>
+
+    <select id="selectUnitAllocationPage" resultMap="HzUnitResult">
+        <include refid="selectUnitVo"/>
+        <where>
+            u.del_flag = '0'
+            <if test="unit.buildingId != null">
+                AND u.building_id = #{unit.buildingId}
+            </if>
+            <if test="unit.projectId != null">
+                AND b.project_id = #{unit.projectId}
+            </if>
+            <if test="unit.unitName != null and unit.unitName != ''">
+                AND u.unit_name LIKE CONCAT('%', #{unit.unitName}, '%')
+            </if>
+            <if test="unit.unitCode != null and unit.unitCode != ''">
+                AND u.unit_code LIKE CONCAT('%', #{unit.unitCode}, '%')
+            </if>
+            <if test="unit.status != null and unit.status != ''">
+                AND u.status = #{unit.status}
+            </if>
+        </where>
+        ORDER BY u.sort_order ASC, u.create_time DESC
+    </select>
+
+</mapper>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>港好住信息系统平台技术服务方案</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3, h4 {
+            color: #333;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .mermaid {
+            background-color: #ffffff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>港好住信息系统平台技术服务方案</h1>
+        <p>此HTML文件包含了完整的流程图预览。如果您只看到代码，请刷新页面或检查网络连接（需要加载Mermaid.js库）。</p>
+        
+        <h2>流程图示例</h2>
+        
+        <h3>1. 用户登录认证流程</h3>
+        <div class="mermaid">
+sequenceDiagram
+    participant User as 用户
+    participant H5 as 移动端H5
+    participant Auth as 认证服务
+    participant ZHB as 郑好办API
+    participant DB as 数据库
+    
+    User->>H5: 点击登录
+    H5->>Auth: 发起OAuth授权
+    Auth->>ZHB: 重定向到郑好办登录页
+    ZHB-->>User: 显示登录页面
+    User->>ZHB: 输入账号密码
+    ZHB->>Auth: 返回授权码
+    Auth->>ZHB: 用授权码换取AccessToken
+    ZHB-->>Auth: 返回AccessToken和用户信息
+    Auth->>DB: 查询/创建本地用户
+    DB-->>Auth: 返回用户信息
+    Auth-->>H5: 返回JWT Token
+    H5->>H5: 存储Token
+    H5-->>User: 跳转到首页
+        </div>
+        
+        <h3>2. 资格校验流程</h3>
+        <div class="mermaid">
+flowchart TD
+    A[开始资格校验] --> B[用户登录系统]
+    B --> C[触发资格校验]
+    C --> D[调用社保信息接口]
+    C --> E[调用婚姻信息接口]
+    C --> F[调用学历信息接口]
+    C --> G[调用住房信息接口]
+    C --> H[调用保租房信息接口]
+    
+    D --> I{社保是否符合}
+    E --> J{婚姻是否符合}
+    F --> K{学历是否符合}
+    G --> L{是否有住房}
+    H --> M{是否已租保租房}
+    
+    I -->|不符合| N[添加到不符列表]
+    J -->|不符合| N
+    K -->|不符合| N
+    L -->|有房| N
+    M -->|已租| N
+    
+    I -->|符合| O[该项通过]
+    J -->|符合| O
+    K -->|符合| O
+    L -->|无房| O
+    M -->|未租| O
+    
+    N --> P{是否有申诉}
+    O --> Q[资格校验通过]
+    
+    P -->|有申诉| R[提交申诉材料]
+    R --> S[管理员审核]
+    S --> T{审核结果}
+    T -->|通过| Q
+    T -->|驳回| U[显示驳回原因]
+    
+    P -->|无申诉| V[显示不符项]
+    Q --> W[用户可进行选房]
+        </div>
+        
+        <p style="color: #666; font-size: 0.9em; margin-top: 50px;">
+            <strong>提示：</strong>完整的技术方案请查看 Markdown 源文件。此HTML仅展示流程图渲染效果。
+        </p>
+    </div>
+    
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    </script>
+</body>
+</html>

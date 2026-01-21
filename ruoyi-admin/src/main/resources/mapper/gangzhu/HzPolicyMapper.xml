@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.gangzhu.policy.mapper.HzPolicyMapper">
+
+    <resultMap type="com.ruoyi.gangzhu.policy.domain.HzPolicy" id="HzPolicyResult">
+        <id     property="policyId"       column="policy_id"       />
+        <result property="policyTitle"    column="policy_title"    />
+        <result property="policyNo"       column="policy_no"       />
+        <result property="policyType"     column="policy_type"     />
+        <result property="policyContent"  column="policy_content"  />
+        <result property="policyFile"     column="policy_file"     />
+        <result property="publishDept"    column="publish_dept"    />
+        <result property="publishDate"    column="publish_date"    />
+        <result property="effectiveDate"  column="effective_date"  />
+        <result property="viewCount"      column="view_count"      />
+        <result property="status"         column="status"          />
+        <result property="createBy"       column="create_by"       />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateBy"       column="update_by"       />
+        <result property="updateTime"     column="update_time"     />
+        <result property="remark"         column="remark"          />
+        <result property="delFlag"        column="del_flag"        />
+    </resultMap>
+
+</mapper>

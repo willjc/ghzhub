@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzHouseTypeImageMapper">
+
+    <resultMap type="com.ruoyi.system.domain.HzHouseTypeImage" id="HzHouseTypeImageResult">
+        <id     property="imageId"       column="image_id"        />
+        <result property="houseTypeId"   column="house_type_id"   />
+        <result property="imageUrl"      column="image_url"       />
+        <result property="imageType"     column="image_type"      />
+        <result property="isCover"       column="is_cover"        />
+        <result property="sortOrder"     column="sort_order"      />
+        <result property="createBy"      column="create_by"       />
+        <result property="createTime"    column="create_time"     />
+        <result property="updateBy"      column="update_by"       />
+        <result property="updateTime"    column="update_time"     />
+        <result property="remark"        column="remark"          />
+        <result property="delFlag"       column="del_flag"        />
+    </resultMap>
+
+    <sql id="selectImageVo">
+        SELECT
+            image_id, house_type_id, image_url, image_type,
+            is_cover, sort_order,
+            create_by, create_time, update_by, update_time, remark, del_flag
+        FROM hz_house_type_image
+    </sql>
+
+    <select id="selectImageListByHouseTypeId" parameterType="Long" resultMap="HzHouseTypeImageResult">
+        <include refid="selectImageVo"/>
+        WHERE house_type_id = #{houseTypeId}
+          AND del_flag = '0'
+        ORDER BY sort_order ASC, create_time ASC
+    </select>
+
+</mapper>

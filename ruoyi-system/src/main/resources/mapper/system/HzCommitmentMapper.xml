@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzCommitmentMapper">
+
+    <!-- 承诺书VO结果映射 -->
+    <resultMap id="HzCommitmentVOResult" type="com.ruoyi.system.domain.HzCommitmentVO">
+        <id property="commitmentId" column="commitment_id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="projectId" column="project_id"/>
+        <result property="commitmentType" column="commitment_type"/>
+        <result property="commitmentContent" column="commitment_content"/>
+        <result property="signatureImage" column="signature_image"/>
+        <result property="signTime" column="sign_time"/>
+        <result property="ipAddress" column="ip_address"/>
+        <result property="deviceInfo" column="device_info"/>
+        <result property="status" column="status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+        <!-- 关联字段 -->
+        <result property="userNickname" column="user_nickname"/>
+        <result property="userAccount" column="user_account"/>
+        <result property="projectName" column="project_name"/>
+        <result property="projectCode" column="project_code"/>
+    </resultMap>
+
+    <!-- 查询承诺书VO列表 -->
+    <select id="selectCommitmentVOList" parameterType="HzCommitment" resultMap="HzCommitmentVOResult">
+        SELECT
+            c.commitment_id,
+            c.tenant_id,
+            c.project_id,
+            c.commitment_type,
+            c.commitment_content,
+            c.signature_image,
+            c.sign_time,
+            c.ip_address,
+            c.device_info,
+            c.status,
+            c.create_by,
+            c.create_time,
+            c.update_by,
+            c.update_time,
+            c.remark,
+            c.del_flag,
+            u.nickname as user_nickname,
+            u.phone as user_account,
+            p.project_name,
+            p.project_code
+        FROM hz_commitment c
+        LEFT JOIN hz_user u ON c.tenant_id = u.user_id
+        LEFT JOIN hz_project p ON c.project_id = p.project_id
+        WHERE c.del_flag = '0'
+        <if test="tenantId != null">
+            AND c.tenant_id = #{tenantId}
+        </if>
+        <if test="projectId != null">
+            AND c.project_id = #{projectId}
+        </if>
+        <if test="commitmentType != null and commitmentType != ''">
+            AND c.commitment_type = #{commitmentType}
+        </if>
+        <if test="status != null and status != ''">
+            AND c.status = #{status}
+        </if>
+        <if test="params.beginTime != null and params.beginTime != ''">
+            AND DATE_FORMAT(c.sign_time, '%Y-%m-%d') &gt;= DATE_FORMAT(#{params.beginTime}, '%Y-%m-%d')
+        </if>
+        <if test="params.endTime != null and params.endTime != ''">
+            AND DATE_FORMAT(c.sign_time, '%Y-%m-%d') &lt;= DATE_FORMAT(#{params.endTime}, '%Y-%m-%d')
+        </if>
+        ORDER BY c.sign_time DESC
+    </select>
+
+    <!-- 根据ID查询承诺书VO -->
+    <select id="selectCommitmentVOById" parameterType="Long" resultMap="HzCommitmentVOResult">
+        SELECT
+            c.commitment_id,
+            c.tenant_id,
+            c.project_id,
+            c.commitment_type,
+            c.commitment_content,
+            c.signature_image,
+            c.sign_time,
+            c.ip_address,
+            c.device_info,
+            c.status,
+            c.create_by,
+            c.create_time,
+            c.update_by,
+            c.update_time,
+            c.remark,
+            c.del_flag,
+            u.nickname as user_nickname,
+            u.phone as user_account,
+            p.project_name,
+            p.project_code
+        FROM hz_commitment c
+        LEFT JOIN hz_user u ON c.tenant_id = u.user_id
+        LEFT JOIN hz_project p ON c.project_id = p.project_id
+        WHERE c.commitment_id = #{commitmentId}
+    </select>
+
+</mapper>

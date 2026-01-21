@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzBatchAllocationMapper">
+
+    <resultMap type="com.ruoyi.system.domain.HzBatchAllocation" id="HzBatchAllocationResult">
+        <id     property="batchId"             column="batch_id"        />
+        <result property="batchNo"             column="batch_no"        />
+        <result property="batchName"           column="batch_name"      />
+        <result property="enterpriseId"        column="enterprise_id"   />
+        <result property="enterpriseName"      column="enterprise_name" />
+        <result property="contactPerson"       column="contact_person"  />
+        <result property="contactPhone"        column="contact_phone"   />
+        <result property="projectId"           column="project_id"      />
+        <result property="projectIds"          column="project_ids"     />
+        <result property="talentType"          column="talent_type"     />
+        <result property="selectionStartDate"  column="selection_start_date" />
+        <result property="selectionEndDate"    column="selection_end_date"   />
+        <result property="projectName"         column="project_name"    />
+        <result property="houseCount"          column="house_count"     />
+        <result property="allocatedCount"      column="allocated_count" />
+        <result property="applyTime"           column="apply_time"      />
+        <result property="approveStatus"       column="approve_status"  />
+        <result property="approveBy"           column="approve_by"      />
+        <result property="approveTime"         column="approve_time"    />
+        <result property="batchStatus"         column="batch_status"    />
+        <result property="delFlag"             column="del_flag"        />
+        <result property="createBy"            column="create_by"       />
+        <result property="createTime"          column="create_time"     />
+        <result property="updateBy"            column="update_by"       />
+        <result property="updateTime"          column="update_time"     />
+        <result property="remark"              column="remark"          />
+    </resultMap>
+
+    <sql id="selectBatchAllocationVo">
+        SELECT
+            b.batch_id, b.batch_no, b.batch_name, b.enterprise_id, b.enterprise_name,
+            b.contact_person, b.contact_phone, b.project_id, b.project_ids, b.talent_type,
+            b.selection_start_date, b.selection_end_date,
+            GROUP_CONCAT(DISTINCT p.project_name ORDER BY p.project_id SEPARATOR ', ') AS project_name,
+            b.house_count, b.allocated_count, b.apply_time,
+            b.approve_status, b.approve_by, b.approve_time, b.batch_status,
+            b.del_flag, b.create_by, b.create_time, b.update_by, b.update_time, b.remark
+        FROM hz_batch_allocation b
+        LEFT JOIN hz_project p ON FIND_IN_SET(p.project_id, b.project_ids)
+    </sql>
+
+    <select id="selectBatchAllocationList" parameterType="com.ruoyi.system.domain.HzBatchAllocation" resultMap="HzBatchAllocationResult">
+        <include refid="selectBatchAllocationVo"/>
+        <where>
+            b.del_flag = '0'
+            <if test="batchName != null and batchName != ''">
+                AND b.batch_name LIKE CONCAT('%', #{batchName}, '%')
+            </if>
+            <if test="projectId != null">
+                AND FIND_IN_SET(#{projectId}, b.project_ids)
+            </if>
+            <if test="talentType != null and talentType != ''">
+                AND b.talent_type = #{talentType}
+            </if>
+        </where>
+        GROUP BY b.batch_id
+        ORDER BY b.create_time DESC
+    </select>
+
+</mapper>

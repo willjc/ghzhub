@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VR看房</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core/index.min.css"/>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #viewer {
+            width: 100%;
+            height: 100%;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            z-index: 1000;
+        }
+
+        .error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .error-text {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .retry-btn {
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">加载中...</div>
+    <div id="error" class="error" style="display:none;">
+        <div class="error-text" id="error-message">加载失败</div>
+        <button class="retry-btn" onclick="location.reload()">重试</button>
+    </div>
+    <div id="viewer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core/index.min.js"></script>
+
+    <script>
+        // 从URL参数获取图片地址
+        function getUrlParam(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        const imageUrl = decodeURIComponent(getUrlParam('imageUrl') || '');
+
+        if (!imageUrl) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error-message').textContent = '缺少图片地址';
+        } else {
+            // 初始化Photo Sphere Viewer
+            try {
+                const viewer = new PhotoSphereViewer.Viewer({
+                    container: document.querySelector('#viewer'),
+                    panorama: imageUrl,
+                    loadingImg: '',
+                    navbar: [
+                        'zoom',
+                        'move',
+                        'fullscreen'
+                    ],
+                    defaultZoomLvl: 50,
+                    minFov: 30,
+                    maxFov: 90,
+                    lang: {
+                        zoom: '缩放',
+                        zoomOut: '缩小',
+                        zoomIn: '放大',
+                        move: '移动',
+                        fullscreen: '全屏'
+                    }
+                });
+
+                viewer.addEventListener('ready', () => {
+                    document.getElementById('loading').style.display = 'none';
+                    console.log('VR查看器加载完成');
+                });
+
+                viewer.addEventListener('panorama-error', (e) => {
+                    console.error('全景图加载失败:', e);
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('error-message').textContent = '全景图加载失败';
+                });
+            } catch (error) {
+                console.error('初始化VR查看器失败:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error-message').textContent = '初始化失败: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

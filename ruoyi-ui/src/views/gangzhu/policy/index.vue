@@ -1,0 +1,576 @@
+<template>
+  <div class="app-container">
+    <!-- 搜索区域 -->
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="88px">
+      <el-form-item label="政策标题" prop="policyTitle">
+        <el-input
+          v-model="queryParams.policyTitle"
+          placeholder="请输入政策标题"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="政策类型" prop="policyType">
+        <el-select v-model="queryParams.policyType" placeholder="请选择政策类型" clearable>
+          <el-option
+            v-for="dict in dict.type.policy_type"
+            :key="dict.value"
+            :label="dict.label"
+            :value="dict.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="发布部门" prop="publishDept">
+        <el-input
+          v-model="queryParams.publishDept"
+          placeholder="请输入发布部门"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="发布日期" prop="publishDate">
+        <el-date-picker
+          v-model="dateRange"
+          style="width: 240px"
+          value-format="yyyy-MM-dd"
+          type="daterange"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+        ></el-date-picker>
+      </el-form-item>
+      <el-form-item label="状态" prop="status">
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
+          <el-option
+            v-for="dict in dict.type.sys_normal_disable"
+            :key="dict.value"
+            :label="dict.label"
+            :value="dict.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+      </el-form-item>
+    </el-form>
+
+    <!-- 操作按钮 -->
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          icon="el-icon-plus"
+          size="mini"
+          @click="handleAdd"
+          v-hasPermi="['gangzhu:policy:add']"
+        >新增</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="success"
+          plain
+          icon="el-icon-edit"
+          size="mini"
+          :disabled="single"
+          @click="handleUpdate"
+          v-hasPermi="['gangzhu:policy:edit']"
+        >修改</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="danger"
+          plain
+          icon="el-icon-delete"
+          size="mini"
+          :disabled="multiple"
+          @click="handleDelete"
+          v-hasPermi="['gangzhu:policy:remove']"
+        >删除</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          plain
+          icon="el-icon-download"
+          size="mini"
+          @click="handleExport"
+          v-hasPermi="['gangzhu:policy:export']"
+        >导出</el-button>
+      </el-col>
+      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
+
+    <!-- 数据表格 -->
+    <el-table v-loading="loading" :data="policyList" @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="政策标题" prop="policyTitle" show-overflow-tooltip min-width="200" />
+      <el-table-column label="政策文号" prop="policyNo" width="160" />
+      <el-table-column label="政策类型" prop="policyType" width="120">
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.policy_type" :value="scope.row.policyType"/>
+        </template>
+      </el-table-column>
+      <el-table-column label="发布部门" prop="publishDept" width="140" show-overflow-tooltip />
+      <el-table-column label="发布日期" prop="publishDate" width="100" />
+      <el-table-column label="浏览次数" prop="viewCount" width="100" align="center" />
+      <el-table-column label="状态" prop="status" width="80" align="center">
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.sys_normal_disable" :value="scope.row.status"/>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" width="180" fixed="right" class-name="small-padding fixed-width">
+        <template slot-scope="scope">
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-view"
+            @click="handleDetail(scope.row)"
+            v-hasPermi="['gangzhu:policy:query']"
+          >详情</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-edit"
+            @click="handleUpdate(scope.row)"
+            v-hasPermi="['gangzhu:policy:edit']"
+          >修改</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-delete"
+            @click="handleDelete(scope.row)"
+            v-hasPermi="['gangzhu:policy:remove']"
+          >删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <!-- 分页 -->
+    <pagination
+      v-show="total>0"
+      :total="total"
+      :page.sync="queryParams.pageNum"
+      :limit.sync="queryParams.pageSize"
+      @pagination="getList"
+    />
+
+    <!-- 新增/修改对话框 -->
+    <el-dialog :title="title" :visible.sync="open" width="900px" append-to-body>
+      <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+        <el-row>
+          <el-col :span="12">
+            <el-form-item label="政策标题" prop="policyTitle">
+              <el-input v-model="form.policyTitle" placeholder="请输入政策标题" maxlength="200" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="政策文号" prop="policyNo">
+              <el-input v-model="form.policyNo" placeholder="请输入政策文号" maxlength="100" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="12">
+            <el-form-item label="政策类型" prop="policyType">
+              <el-select v-model="form.policyType" placeholder="请选择政策类型" style="width: 100%">
+                <el-option
+                  v-for="dict in dict.type.policy_type"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="发布部门" prop="publishDept">
+              <el-input v-model="form.publishDept" placeholder="请输入发布部门" maxlength="100" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="24">
+            <el-form-item label="封面图片" prop="coverImage">
+              <image-upload v-model="form.coverImage" :limit="1"/>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="12">
+            <el-form-item label="发布日期" prop="publishDate">
+              <el-date-picker
+                v-model="form.publishDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="选择发布日期"
+                style="width: 100%"
+              ></el-date-picker>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="生效日期" prop="effectiveDate">
+              <el-date-picker
+                v-model="form.effectiveDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="选择生效日期"
+                style="width: 100%"
+              ></el-date-picker>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="12">
+            <el-form-item label="状态" prop="status">
+              <el-radio-group v-model="form.status">
+                <el-radio
+                  v-for="dict in dict.type.sys_normal_disable"
+                  :key="dict.value"
+                  :label="dict.value"
+                >{{dict.label}}</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="24">
+            <el-form-item label="政策内容" prop="policyContent">
+              <editor v-model="form.policyContent" :min-height="300"/>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="24">
+            <el-form-item label="附件上传" prop="policyFile">
+              <file-upload
+                v-model="form.policyFile"
+                :file-type="['pdf', 'doc', 'docx', 'xls', 'xlsx']"
+                :file-size="50"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="24">
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" maxlength="500" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="cancel">取 消</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- 详情对话框 -->
+    <el-dialog title="政策详情" :visible.sync="detailOpen" width="900px" append-to-body>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="政策标题" :span="2">{{ detailData.policyTitle }}</el-descriptions-item>
+        <el-descriptions-item label="封面图片" :span="2" v-if="detailData.coverImage">
+          <el-image
+            :src="getImageUrl(detailData.coverImage)"
+            :preview-src-list="[getImageUrl(detailData.coverImage)]"
+            style="width: 200px; height: 150px"
+            fit="cover"
+          ></el-image>
+        </el-descriptions-item>
+        <el-descriptions-item label="政策文号">{{ detailData.policyNo }}</el-descriptions-item>
+        <el-descriptions-item label="政策类型">
+          <dict-tag :options="dict.type.policy_type" :value="detailData.policyType"/>
+        </el-descriptions-item>
+        <el-descriptions-item label="发布部门">{{ detailData.publishDept }}</el-descriptions-item>
+        <el-descriptions-item label="发布日期">{{ detailData.publishDate }}</el-descriptions-item>
+        <el-descriptions-item label="生效日期">{{ detailData.effectiveDate }}</el-descriptions-item>
+        <el-descriptions-item label="浏览次数">{{ detailData.viewCount }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <dict-tag :options="dict.type.sys_normal_disable" :value="detailData.status"/>
+        </el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ detailData.createTime }}</el-descriptions-item>
+        <el-descriptions-item label="政策内容" :span="2">
+          <div class="policy-content" v-html="detailData.policyContent"></div>
+        </el-descriptions-item>
+        <el-descriptions-item label="附件列表" :span="2" v-if="detailData.policyFile">
+          <div class="attachment-list">
+            <div v-for="(file, index) in getAttachmentList(detailData.policyFile)" :key="index" class="attachment-item">
+              <i class="el-icon-document"></i>
+              <a :href="getFileUrl(file)" target="_blank" download>{{ getFileName(file) }}</a>
+            </div>
+          </div>
+        </el-descriptions-item>
+        <el-descriptions-item label="备注" :span="2">{{ detailData.remark }}</el-descriptions-item>
+      </el-descriptions>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="detailOpen = false">关 闭</el-button>
+      </div>
+    </el-dialog>
+  </div>
+</template>
+
+<script>
+import { listPolicy, getPolicy, addPolicy, updatePolicy, delPolicy } from "@/api/gangzhu/policy";
+import Editor from '@/components/Editor';
+import FileUpload from '@/components/FileUpload';
+
+export default {
+  name: "Policy",
+  dicts: ['policy_type', 'sys_normal_disable'],
+  components: {
+    Editor,
+    FileUpload
+  },
+  data() {
+    return {
+      // 遮罩层
+      loading: true,
+      // 选中数组
+      ids: [],
+      // 非单个禁用
+      single: true,
+      // 非多个禁用
+      multiple: true,
+      // 显示搜索条件
+      showSearch: true,
+      // 总条数
+      total: 0,
+      // 政策表格数据
+      policyList: [],
+      // 弹出层标题
+      title: "",
+      // 是否显示弹出层
+      open: false,
+      // 是否显示详情弹出层
+      detailOpen: false,
+      // 详情数据
+      detailData: {},
+      // 日期范围
+      dateRange: [],
+      // 查询参数
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10,
+        policyTitle: null,
+        policyType: null,
+        publishDept: null,
+        publishDate: null,
+        status: null
+      },
+      // 表单参数
+      form: {},
+      // 表单校验
+      rules: {
+        policyTitle: [
+          { required: true, message: "政策标题不能为空", trigger: "blur" }
+        ],
+        policyNo: [
+          { required: true, message: "政策文号不能为空", trigger: "blur" }
+        ],
+        policyType: [
+          { required: true, message: "政策类型不能为空", trigger: "change" }
+        ],
+        publishDept: [
+          { required: true, message: "发布部门不能为空", trigger: "blur" }
+        ],
+        publishDate: [
+          { required: true, message: "发布日期不能为空", trigger: "change" }
+        ],
+        policyContent: [
+          { required: true, message: "政策内容不能为空", trigger: "blur" }
+        ],
+        status: [
+          { required: true, message: "状态不能为空", trigger: "change" }
+        ]
+      }
+    };
+  },
+  created() {
+    this.getList();
+  },
+  methods: {
+    /** 查询政策列表 */
+    getList() {
+      this.loading = true;
+      listPolicy(this.addDateRange(this.queryParams, this.dateRange)).then(response => {
+        this.policyList = response.rows;
+        this.total = response.total;
+        this.loading = false;
+      });
+    },
+    // 取消按钮
+    cancel() {
+      this.open = false;
+      this.reset();
+    },
+    // 表单重置
+    reset() {
+      this.form = {
+        policyId: null,
+        policyTitle: null,
+        coverImage: null,
+        policyNo: null,
+        policyType: null,
+        publishDept: null,
+        publishDate: null,
+        effectiveDate: null,
+        policyContent: null,
+        policyFile: null,
+        viewCount: 0,
+        status: "0",
+        remark: null
+      };
+      this.resetForm("form");
+    },
+    /** 搜索按钮操作 */
+    handleQuery() {
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    /** 重置按钮操作 */
+    resetQuery() {
+      this.dateRange = [];
+      this.resetForm("queryForm");
+      this.handleQuery();
+    },
+    // 多选框选中数据
+    handleSelectionChange(selection) {
+      this.ids = selection.map(item => item.policyId);
+      this.single = selection.length !== 1;
+      this.multiple = !selection.length;
+    },
+    /** 新增按钮操作 */
+    handleAdd() {
+      this.reset();
+      this.open = true;
+      this.title = "添加政策";
+    },
+    /** 修改按钮操作 */
+    handleUpdate(row) {
+      this.reset();
+      const policyId = row.policyId || this.ids[0];
+      getPolicy(policyId).then(response => {
+        this.form = response.data;
+        this.open = true;
+        this.title = "修改政策";
+      });
+    },
+    /** 详情按钮操作 */
+    handleDetail(row) {
+      const policyId = row.policyId;
+      getPolicy(policyId).then(response => {
+        this.detailData = response.data;
+        this.detailOpen = true;
+      });
+    },
+    /** 提交按钮 */
+    submitForm() {
+      this.$refs["form"].validate(valid => {
+        if (valid) {
+          if (this.form.policyId != null) {
+            updatePolicy(this.form).then(response => {
+              this.$modal.msgSuccess("修改成功");
+              this.open = false;
+              this.getList();
+            });
+          } else {
+            addPolicy(this.form).then(response => {
+              this.$modal.msgSuccess("新增成功");
+              this.open = false;
+              this.getList();
+            });
+          }
+        }
+      });
+    },
+    /** 删除按钮操作 */
+    handleDelete(row) {
+      const ids = row.policyId || this.ids;
+      this.$modal.confirm('是否确认删除政策编号为"' + ids + '"的数据项？').then(function() {
+        return delPolicy(ids);
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("删除成功");
+      }).catch(() => {});
+    },
+    /** 导出按钮操作 */
+    handleExport() {
+      this.download('gangzhu/policy/export', {
+        ...this.queryParams
+      }, `policy_${new Date().getTime()}.xlsx`)
+    },
+    /** 获取附件列表 */
+    getAttachmentList(attachments) {
+      if (!attachments) return [];
+      return attachments.split(',').filter(item => item);
+    },
+    /** 获取文件URL */
+    getFileUrl(file) {
+      if (!file) return '';
+      // 如果是完整URL，直接返回
+      if (file.startsWith('http://') || file.startsWith('https://')) {
+        return file;
+      }
+      // 否则拼接baseUrl
+      const baseUrl = process.env.VUE_APP_BASE_API;
+      return baseUrl + (file.startsWith('/') ? file : '/' + file);
+    },
+    /** 获取文件名 */
+    getFileName(file) {
+      if (!file) return '';
+      // 从路径中提取文件名
+      const parts = file.split('/');
+      return parts[parts.length - 1];
+    },
+    /** 获取图片URL */
+    getImageUrl(imagePath) {
+      return this.getFileUrl(imagePath);
+    }
+  }
+};
+</script>
+
+<style scoped>
+.policy-content {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+}
+
+.policy-content >>> img {
+  max-width: 100%;
+  height: auto;
+}
+
+.attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.attachment-item i {
+  color: #409eff;
+  font-size: 16px;
+}
+
+.attachment-item a {
+  color: #409eff;
+  text-decoration: none;
+}
+
+.attachment-item a:hover {
+  text-decoration: underline;
+}
+</style>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>港好住系统架构图</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        #diagram {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>港好住信息系统平台 - 系统架构图</h1>
+    <div id="diagram">
+        <div class="mermaid">
+graph TB
+    subgraph A["用户终端层"]
+        A1[微信小程序]
+        A2[H5网页]
+    end
+
+    subgraph B["统一访问入口 / 安全控制"]
+        B1[身份认证]
+        B2[权限校验]
+        B3[安全防护]
+    end
+
+    subgraph C["前端表现层"]
+        C1[用户端界面]
+        C2[管理端界面]
+    end
+
+    subgraph D["业务服务层"]
+        D1[用户与权限服务]
+        D2[项目与房源管理服务]
+        D3[租赁业务管理服务]
+        D4[合同与电子签名服务]
+        D5[财务与账单管理服务]
+        D6[服务工单管理服务]
+        D7[统计分析与报表服务]
+    end
+
+    subgraph E["数据层"]
+        E1[业务数据库]
+        E2[房源数据]
+        E3[合同数据]
+        E4[账单数据]
+        E5[用户数据]
+        E6[配置与日志数据库]
+    end
+
+    subgraph F["对外接口与基础支撑层"]
+        F1[郑好办用户认证系统]
+        F2[政务数据共享接口]
+        F3[港区支付平台]
+        F4[电子签名平台]
+        F5[消息与短信服务]
+    end
+
+    A1 --> B
+    A2 --> B
+    B --> C
+    C --> D
+    D --> E
+    E1 --> E2
+    E1 --> E3
+    E1 --> E4
+    E1 --> E5
+    D --> F
+
+    style A fill:#e1f5ff,stroke:#333,stroke-width:2px
+    style B fill:#fff4e6,stroke:#333,stroke-width:2px
+    style C fill:#f3e5f5,stroke:#333,stroke-width:2px
+    style D fill:#e8f5e9,stroke:#333,stroke-width:2px
+    style E fill:#fff3e0,stroke:#333,stroke-width:2px
+    style F fill:#fce4ec,stroke:#333,stroke-width:2px
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    </script>
+</body>
+</html>

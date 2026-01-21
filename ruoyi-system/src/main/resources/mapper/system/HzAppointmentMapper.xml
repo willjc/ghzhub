@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzAppointmentMapper">
+
+    <!-- 预约VO结果映射 -->
+    <resultMap id="HzAppointmentVOResult" type="com.ruoyi.system.domain.HzAppointmentVO">
+        <id property="appointmentId" column="appointment_id"/>
+        <result property="appointmentNo" column="appointment_no"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="houseId" column="house_id"/>
+        <result property="projectId" column="project_id"/>
+        <result property="appointmentDate" column="appointment_date"/>
+        <result property="timeSlot" column="time_slot"/>
+        <result property="visitorName" column="visitor_name"/>
+        <result property="visitorPhone" column="visitor_phone"/>
+        <result property="idCard" column="id_card"/>
+        <result property="appointmentTime" column="appointment_time"/>
+        <result property="appointmentSource" column="appointment_source"/>
+        <result property="visitorCount" column="visitor_count"/>
+        <result property="appointmentStatus" column="appointment_status"/>
+        <result property="cancelReason" column="cancel_reason"/>
+        <result property="confirmBy" column="confirm_by"/>
+        <result property="confirmTime" column="confirm_time"/>
+        <result property="cancelTime" column="cancel_time"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+        <!-- 扩展字段 -->
+        <result property="userName" column="user_name"/>
+        <result property="houseCode" column="house_code"/>
+        <result property="houseName" column="house_no"/>
+        <result property="projectName" column="project_name"/>
+        <result property="projectAddress" column="project_address"/>
+    </resultMap>
+
+    <!-- 查询预约列表SQL -->
+    <sql id="selectAppointmentVOSql">
+        SELECT
+            a.appointment_id, a.appointment_no, a.tenant_id, a.house_id, a.project_id,
+            a.appointment_date, a.time_slot, a.visitor_name, a.visitor_phone, a.id_card,
+            a.appointment_time, a.appointment_source, a.visitor_count, a.appointment_status,
+            a.cancel_reason, a.confirm_by, a.confirm_time, a.cancel_time,
+            a.del_flag, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+            u.nickname as user_name,
+            h.house_code, h.house_no,
+            p.project_name, p.address as project_address
+        FROM hz_appointment a
+        LEFT JOIN hz_user u ON a.tenant_id = u.user_id AND u.del_flag = '0'
+        LEFT JOIN hz_house h ON a.house_id = h.house_id AND h.del_flag = '0'
+        LEFT JOIN hz_project p ON a.project_id = p.project_id AND p.del_flag = '0'
+    </sql>
+
+    <!-- 查询预约列表 -->
+    <select id="selectAppointmentVOList" parameterType="com.ruoyi.system.domain.HzAppointment" resultMap="HzAppointmentVOResult">
+        <include refid="selectAppointmentVOSql"/>
+        <where>
+            a.del_flag = '0'
+            <if test="appointment.appointmentNo != null and appointment.appointmentNo != ''">
+                AND a.appointment_no LIKE CONCAT('%', #{appointment.appointmentNo}, '%')
+            </if>
+            <if test="appointment.tenantId != null">
+                AND a.tenant_id = #{appointment.tenantId}
+            </if>
+            <if test="appointment.houseId != null">
+                AND a.house_id = #{appointment.houseId}
+            </if>
+            <if test="appointment.projectId != null">
+                AND a.project_id = #{appointment.projectId}
+            </if>
+            <if test="appointment.visitorName != null and appointment.visitorName != ''">
+                AND a.visitor_name LIKE CONCAT('%', #{appointment.visitorName}, '%')
+            </if>
+            <if test="appointment.visitorPhone != null and appointment.visitorPhone != ''">
+                AND a.visitor_phone LIKE CONCAT('%', #{appointment.visitorPhone}, '%')
+            </if>
+            <if test="appointment.appointmentStatus != null and appointment.appointmentStatus != ''">
+                AND a.appointment_status = #{appointment.appointmentStatus}
+            </if>
+            <if test="appointment.appointmentSource != null and appointment.appointmentSource != ''">
+                AND a.appointment_source = #{appointment.appointmentSource}
+            </if>
+            <!-- 预约日期范围查询 -->
+            <if test="appointment.params.beginAppointmentDate != null and appointment.params.beginAppointmentDate != ''">
+                AND DATE(a.appointment_date) &gt;= #{appointment.params.beginAppointmentDate}
+            </if>
+            <if test="appointment.params.endAppointmentDate != null and appointment.params.endAppointmentDate != ''">
+                AND DATE(a.appointment_date) &lt;= #{appointment.params.endAppointmentDate}
+            </if>
+        </where>
+        ORDER BY a.create_time DESC
+    </select>
+
+    <!-- 查询预约详情 -->
+    <select id="selectAppointmentVOById" parameterType="Long" resultMap="HzAppointmentVOResult">
+        <include refid="selectAppointmentVOSql"/>
+        WHERE a.appointment_id = #{appointmentId} AND a.del_flag = '0'
+    </select>
+
+    <!-- 根据用户ID查询预约列表（H5端使用） -->
+    <select id="selectAppointmentListByUserId" parameterType="Long" resultType="com.ruoyi.system.domain.HzAppointment">
+        SELECT
+            a.appointment_id, a.appointment_no, a.tenant_id, a.house_id, a.project_id,
+            a.appointment_date, a.time_slot, a.visitor_name, a.visitor_phone, a.id_card,
+            a.appointment_time, a.appointment_source, a.visitor_count, a.appointment_status,
+            a.cancel_reason, a.confirm_by, a.confirm_time, a.cancel_time,
+            a.del_flag, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+            h.house_no,
+            p.project_name
+        FROM hz_appointment a
+        LEFT JOIN hz_house h ON a.house_id = h.house_id AND h.del_flag = '0'
+        LEFT JOIN hz_project p ON a.project_id = p.project_id AND p.del_flag = '0'
+        WHERE a.del_flag = '0'
+        AND a.tenant_id = #{userId}
+        ORDER BY a.create_time DESC
+    </select>
+
+</mapper>

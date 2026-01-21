@@ -1,0 +1,226 @@
+{
+	"pages": [
+		{
+			"path": "pages/login/index",
+			"style": {
+				"navigationBarTitleText": "登录",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "首页"
+			}
+		},
+		{
+			"path": "pages/affairs/index",
+			"style": {
+				"navigationBarTitleText": "办事"
+			}
+		},
+		{
+			"path": "pages/service/index",
+			"style": {
+				"navigationBarTitleText": "服务"
+			}
+		},
+		{
+			"path": "pages/my/index",
+			"style": {
+				"navigationBarTitleText": "我的"
+			}
+		},
+		{
+			"path": "pages/talent/index",
+			"style": {
+				"navigationBarTitleText": "人才公寓"
+			}
+		},
+		{
+			"path": "pages/coupon/index",
+			"style": {
+				"navigationBarTitleText": "优惠券"
+			}
+		},
+		{
+			"path": "pages/house/all",
+			"style": {
+				"navigationBarTitleText": "所有房源"
+			}
+		},
+		{
+			"path": "pages/rental/index",
+			"style": {
+				"navigationBarTitleText": "保租房"
+			}
+		},
+		{
+			"path": "pages/market/index",
+			"style": {
+				"navigationBarTitleText": "市场租赁"
+			}
+		},
+		{
+			"path": "pages/upload/index",
+			"style": {
+				"navigationBarTitleText": "材料上传"
+			}
+		},
+		{
+			"path": "pages/message/index",
+			"style": {
+				"navigationBarTitleText": "我的消息"
+			}
+		},
+		{
+			"path": "pages/policy/index",
+			"style": {
+				"navigationBarTitleText": "政策文件"
+			}
+		},
+		{
+			"path": "pages/policy/detail",
+			"style": {
+				"navigationBarTitleText": "政策详情"
+			}
+		},
+		{
+			"path": "pages/home/index",
+			"style": {
+				"navigationBarTitleText": "人才家园"
+			}
+		},
+		{
+			"path": "pages/home/detail",
+			"style": {
+				"navigationBarTitleText": "活动详情"
+			}
+		},
+		{
+			"path": "pages/project/detail",
+			"style": {
+				"navigationBarTitleText": "项目详情"
+			}
+		},
+		{
+			"path": "pages/room/select",
+			"style": {
+				"navigationBarTitleText": "选择房源"
+			}
+		},
+		{
+			"path": "pages/room/detail",
+			"style": {
+				"navigationBarTitleText": "房源详情"
+			}
+		},
+		{
+			"path": "pages/room/images",
+			"style": {
+				"navigationBarTitleText": "房源图片"
+			}
+		},
+		{
+			"path": "pages/room/vr",
+			"style": {
+				"navigationBarTitleText": "VR看房"
+			}
+		},
+		{
+			"path": "pages/room/reserve",
+			"style": {
+				"navigationBarTitleText": "预约看房"
+			}
+		},
+		{
+			"path": "pages/room/deposit",
+			"style": {
+				"navigationBarTitleText": "押金缴纳"
+			}
+		},
+		{
+			"path": "pages/room/success",
+			"style": {
+				"navigationBarTitleText": "支付成功"
+			}
+		},
+		{
+			"path": "pages/commitment/sign",
+			"style": {
+				"navigationBarTitleText": "承诺书签署"
+			}
+		},
+		{
+			"path": "pages/contract/sign",
+			"style": {
+				"navigationBarTitleText": "合同签订"
+			}
+		},
+		{
+			"path": "pages/signature/index",
+			"style": {
+				"navigationBarTitleText": "签名",
+				"navigationStyle": "custom"
+			}
+		},
+		{ "path": "pages/affairs/appeal", "style": { "navigationBarTitleText": "资格申诉" } },
+		{ "path": "pages/affairs/appeal-submit", "style": { "navigationBarTitleText": "资格申诉" } },
+		{ "path": "pages/affairs/appeal-record", "style": { "navigationBarTitleText": "申诉详情" } },
+		{ "path": "pages/affairs/checkin", "style": { "navigationBarTitleText": "入住办理" } },
+		{ "path": "pages/affairs/checkin-process", "style": { "navigationBarTitleText": "办理入住" } },
+		{ "path": "pages/affairs/checkin-edit", "style": { "navigationBarTitleText": "修改申请" } },
+		{ "path": "pages/affairs/checkin-confirm", "style": { "navigationBarTitleText": "入住确认" } },
+		{ "path": "pages/affairs/checkin-detail", "style": { "navigationBarTitleText": "入住详情" } },
+		{ "path": "pages/affairs/checkout", "style": { "navigationBarTitleText": "退租办理" } },
+		{ "path": "pages/affairs/checkout-process", "style": { "navigationBarTitleText": "退租办理" } },
+		{ "path": "pages/affairs/checkout-edit", "style": { "navigationBarTitleText": "修改申请" } },
+		{ "path": "pages/affairs/checkout-confirm", "style": { "navigationBarTitleText": "退租确认" } },
+		{ "path": "pages/affairs/checkout-detail", "style": { "navigationBarTitleText": "退租详情" } },
+		{ "path": "pages/affairs/renew", "style": { "navigationBarTitleText": "续租" } },
+		{ "path": "pages/affairs/bill", "style": { "navigationBarTitleText": "账单缴费" } },
+		{ "path": "pages/affairs/contract", "style": { "navigationBarTitleText": "我的合同" } },
+		{ "path": "pages/affairs/invoice", "style": { "navigationBarTitleText": "开票服务" } },
+		{ "path": "pages/affairs/invoice-apply", "style": { "navigationBarTitleText": "开票服务" } },
+		{ "path": "pages/affairs/invoice-form", "style": { "navigationBarTitleText": "开票服务" } }
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "uni-app",
+		"navigationBarBackgroundColor": "#ffffff",
+		"backgroundColor": "#F8F8F8"
+	},
+	"tabBar": {
+		"color": "#999999",
+		"selectedColor": "#4A90E2",
+		"backgroundColor": "#ffffff",
+		"borderStyle": "black",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "首页",
+				"iconPath": "/static/首页@2x.png",
+				"selectedIconPath": "/static/首页-选中@2x.png"
+			},
+			{
+				"pagePath": "pages/affairs/index",
+				"text": "办事",
+				"iconPath": "/static/办事@2x.png",
+				"selectedIconPath": "/static/办事-选中@2x.png"
+			},
+			{
+				"pagePath": "pages/service/index",
+				"text": "服务",
+				"iconPath": "/static/服务@2x.png",
+				"selectedIconPath": "/static/服务-选中@2x.png"
+			},
+			{
+				"pagePath": "pages/my/index",
+				"text": "我的",
+				"iconPath": "/static/我的@2x.png",
+				"selectedIconPath": "/static/我的-选中@2x.png"
+			}
+		]
+	},
+	"uniIdRouter": {}
+}

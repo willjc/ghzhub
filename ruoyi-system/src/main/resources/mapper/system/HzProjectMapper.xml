@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzProjectMapper">
+
+    <resultMap type="com.ruoyi.system.domain.HzProject" id="HzProjectResult">
+        <id     property="projectId"       column="project_id"      />
+        <result property="projectName"     column="project_name"    />
+        <result property="projectCode"     column="project_code"    />
+        <result property="projectType"     column="project_type"    />
+        <result property="address"         column="address"         />
+        <result property="longitude"       column="longitude"       />
+        <result property="latitude"        column="latitude"        />
+        <result property="totalBuildings"  column="total_buildings" />
+        <result property="totalHouses"     column="total_houses"    />
+        <result property="availableHouses" column="available_houses"/>
+        <result property="projectIntro"    column="project_intro"   />
+        <result property="coverImage"      column="cover_image"     />
+        <result property="price"           column="price"           />
+        <result property="facilities"      column="facilities"      />
+        <result property="transportation"  column="transportation"  />
+        <result property="managerId"       column="manager_id"      />
+        <result property="managerName"     column="manager_name"    />
+        <result property="managerPhone"    column="manager_phone"   />
+        <result property="status"          column="status"          />
+        <result property="sortOrder"       column="sort_order"      />
+        <result property="createBy"        column="create_by"       />
+        <result property="createTime"      column="create_time"     />
+        <result property="updateBy"        column="update_by"       />
+        <result property="updateTime"      column="update_time"     />
+        <result property="remark"          column="remark"          />
+        <result property="delFlag"         column="del_flag"        />
+    </resultMap>
+
+    <sql id="selectProjectVo">
+        SELECT
+            p.project_id, p.project_name, p.project_code, p.project_type,
+            p.address, p.longitude, p.latitude,
+            IFNULL((SELECT COUNT(*) FROM hz_building b WHERE b.project_id = p.project_id AND b.del_flag = '0'), 0) as total_buildings,
+            IFNULL((SELECT COUNT(*) FROM hz_house h WHERE h.project_id = p.project_id AND h.del_flag = '0'), 0) as total_houses,
+            IFNULL((SELECT COUNT(*) FROM hz_house h WHERE h.project_id = p.project_id AND h.del_flag = '0' AND h.status = '0'), 0) as available_houses,
+            p.project_intro, p.cover_image, p.price, p.facilities, p.transportation,
+            p.manager_id, p.manager_name, p.manager_phone,
+            p.status, p.sort_order,
+            p.create_by, p.create_time, p.update_by, p.update_time, p.remark, p.del_flag
+        FROM hz_project p
+    </sql>
+
+    <select id="selectProjectAllocationList" parameterType="com.ruoyi.system.domain.HzProject" resultMap="HzProjectResult">
+        <include refid="selectProjectVo"/>
+        <where>
+            p.del_flag = '0'
+            <if test="projectName != null and projectName != ''">
+                AND p.project_name LIKE CONCAT('%', #{projectName}, '%')
+            </if>
+            <if test="projectType != null and projectType != ''">
+                AND p.project_type = #{projectType}
+            </if>
+            <if test="status != null and status != ''">
+                AND p.status = #{status}
+            </if>
+        </where>
+        ORDER BY p.sort_order ASC, p.create_time DESC
+    </select>
+
+</mapper>

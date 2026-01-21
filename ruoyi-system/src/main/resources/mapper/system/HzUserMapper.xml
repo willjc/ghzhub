@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzUserMapper">
+
+    <resultMap type="com.ruoyi.system.domain.HzUser" id="HzUserResult">
+        <id     property="userId"           column="user_id"          />
+        <result property="phone"            column="phone"            />
+        <result property="contactPhone"     column="contact_phone"    />
+        <result property="sourceType"       column="source_type"      />
+        <result property="wechatOpenid"     column="wechat_openid"    />
+        <result property="wechatUnionid"    column="wechat_unionid"   />
+        <result property="zhaohaoUserId"    column="zhaohao_user_id"  />
+        <result property="nickname"         column="nickname"         />
+        <result property="avatar"           column="avatar"           />
+        <result property="realName"         column="real_name"        />
+        <result property="gender"           column="gender"           />
+        <result property="idCard"           column="id_card"          />
+        <result property="education"        column="education"        />
+        <result property="identityType"     column="identity_type"    />
+        <result property="workUnit"         column="work_unit"        />
+        <result property="unitContact"      column="unit_contact"     />
+        <result property="spouseName"       column="spouse_name"      />
+        <result property="status"           column="status"           />
+        <result property="lastLoginTime"    column="last_login_time"  />
+        <result property="lastLoginIp"      column="last_login_ip"    />
+        <result property="delFlag"          column="del_flag"         />
+        <result property="createBy"         column="create_by"        />
+        <result property="createTime"       column="create_time"      />
+        <result property="updateBy"         column="update_by"        />
+        <result property="updateTime"       column="update_time"      />
+        <result property="remark"           column="remark"           />
+    </resultMap>
+
+    <sql id="selectHzUserVo">
+        SELECT user_id, phone, contact_phone, source_type, wechat_openid, wechat_unionid, zhaohao_user_id,
+               nickname, avatar, real_name, gender, id_card, education, identity_type,
+               work_unit, unit_contact, spouse_name, status,
+               last_login_time, last_login_ip, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM hz_user
+    </sql>
+
+    <select id="selectHzUserList" parameterType="com.ruoyi.system.domain.HzUser" resultMap="HzUserResult">
+        <include refid="selectHzUserVo"/>
+        <where>
+            del_flag = '0'
+            <if test="phone != null and phone != ''">
+                AND phone LIKE CONCAT('%', #{phone}, '%')
+            </if>
+            <if test="realName != null and realName != ''">
+                AND real_name LIKE CONCAT('%', #{realName}, '%')
+            </if>
+            <if test="nickname != null and nickname != ''">
+                AND nickname LIKE CONCAT('%', #{nickname}, '%')
+            </if>
+            <if test="sourceType != null and sourceType != ''">
+                AND source_type = #{sourceType}
+            </if>
+            <if test="gender != null and gender != ''">
+                AND gender = #{gender}
+            </if>
+            <if test="education != null and education != ''">
+                AND education = #{education}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                AND DATE_FORMAT(create_time, '%Y-%m-%d') &gt;= DATE_FORMAT(#{params.beginTime}, '%Y-%m-%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                AND DATE_FORMAT(create_time, '%Y-%m-%d') &lt;= DATE_FORMAT(#{params.endTime}, '%Y-%m-%d')
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

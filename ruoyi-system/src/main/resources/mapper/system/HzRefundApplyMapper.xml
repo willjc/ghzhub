@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzRefundApplyMapper">
+
+    <!-- 根据退款编号前缀统计数量 -->
+    <select id="countByApplyNo" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM hz_refund_apply
+        WHERE apply_no LIKE CONCAT(#{applyNoPrefix}, '%')
+        AND del_flag = '0'
+    </select>
+</mapper>

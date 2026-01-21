@@ -1,0 +1,272 @@
+<template>
+	<view class="page">
+		<scroll-view class="scroll-content" scroll-y>
+			<!-- 状态区域 - 在卡片外 -->
+			<view class="status-header">
+				<image class="status-icon" src="/static/已开票@2x(1).png" mode="aspectFit"></image>
+				<text class="status-text">已开票</text>
+			</view>
+			
+			<!-- 金额 -->
+			<view class="amount-row">
+				<text class="amount-label">发票金额：</text>
+				<text class="amount-value">¥{{ invoiceData.amount }}</text>
+			</view>
+			
+			<!-- 发票卡片 -->
+			<view class="invoice-card">
+				<!-- 详情信息 -->
+				<view class="info-list">
+					<view class="info-row">
+						<text class="info-label">发票类型</text>
+						<text class="info-value">{{ invoiceData.invoiceType }}</text>
+					</view>
+					<view class="info-row">
+						<text class="info-label">发票内容</text>
+						<text class="info-value">{{ invoiceData.invoiceContent }}</text>
+					</view>
+					<view class="info-row">
+						<text class="info-label">抬头类型</text>
+						<text class="info-value">{{ invoiceData.headType }}</text>
+					</view>
+					<view class="info-row">
+						<text class="info-label">姓名</text>
+						<text class="info-value">{{ invoiceData.name }}</text>
+					</view>
+					<view class="info-row">
+						<text class="info-label">手机号码</text>
+						<text class="info-value">{{ invoiceData.phone }}</text>
+					</view>
+					<view class="info-row">
+						<text class="info-label">邮箱地址</text>
+						<text class="info-value">{{ invoiceData.email }}</text>
+					</view>
+					<view class="info-row">
+						<text class="info-label">开票金额</text>
+						<text class="info-value">¥{{ invoiceData.amount }}</text>
+					</view>
+					<view class="info-row">
+						<text class="info-label">申请时间</text>
+						<text class="info-value">{{ invoiceData.applyTime }}</text>
+					</view>
+				</view>
+			</view>
+			
+			<!-- 按钮区域 -->
+			<view class="button-group">
+				<view class="btn btn-preview" @click="handlePreview">
+					<text class="btn-text-blue">预览</text>
+				</view>
+				<view class="btn btn-download" @click="handleDownload">
+					<text class="btn-text-white">下载</text>
+				</view>
+			</view>
+		</scroll-view>
+	</view>
+</template>
+
+<script>
+	export default {
+		data() {
+			return {
+				invoiceData: {
+					amount: '99.00',
+					invoiceType: '电子普通发票',
+					invoiceContent: '商品明细',
+					headType: '个人',
+					name: '张三三',
+					phone: '189****3765',
+					email: '123476897@126.com',
+					applyTime: '2019-02-16 22:22:22'
+				}
+			}
+		},
+		onLoad(options) {
+			// 接收传递的数据
+			if (options.name) {
+				this.invoiceData.name = options.name
+			}
+			if (options.phone) {
+				this.invoiceData.phone = options.phone
+			}
+			if (options.email) {
+				this.invoiceData.email = options.email
+			}
+			if (options.headType) {
+				this.invoiceData.headType = options.headType === 'personal' ? '个人' : '企业'
+			}
+			if (options.amount) {
+				this.invoiceData.amount = options.amount
+			}
+			if (options.applyTime) {
+				this.invoiceData.applyTime = options.applyTime
+			}
+		},
+		methods: {
+			// 预览发票
+			handlePreview() {
+				uni.showToast({
+					title: '预览发票',
+					icon: 'none'
+				})
+				// TODO: 实现发票预览功能
+			},
+			
+			// 下载发票
+			handleDownload() {
+				uni.showToast({
+					title: '下载发票',
+					icon: 'none'
+				})
+				// TODO: 实现发票下载功能
+			}
+		}
+	}
+</script>
+
+<style scoped>
+	.page {
+		width: 100%;
+		min-height: 95vh;
+		background-color: #f5f6fc;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.scroll-content {
+		flex: 1;
+		padding: 0rpx 24rpx;
+		box-sizing: border-box;
+	}
+
+	/* 状态区域 - 在卡片外 */
+	.status-header {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 24rpx;
+		margin-top: 54rpx;
+	}
+
+	.status-icon {
+		width: 30rpx;
+		height: 30rpx;
+		margin-right: 12rpx;
+	}
+
+	.status-text {
+		color: #1976f8;
+		font-size: 34rpx;
+		font-weight: 600;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+		line-height: 30rpx;
+	}
+
+	/* 金额 */
+	.amount-row {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 24rpx;
+	}
+
+	.amount-label {
+		color: #323232;
+		font-size: 26rpx;
+		font-weight: normal;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+		line-height: 30rpx;
+	}
+
+	.amount-value {
+		color: #323232;
+		font-size: 26rpx;
+		font-weight: normal;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+		line-height: 30rpx;
+	}
+
+	/* 发票卡片 */
+	.invoice-card {
+		border-radius: 20rpx;
+		background: #ffffff url('/static/发票bg@2x.png') no-repeat top center;
+		background-size: 100% auto;
+		overflow: hidden;
+		padding: 47rpx 36rpx 36rpx;
+		box-sizing: border-box;
+	}
+
+	/* 信息列表 */
+	.info-list {
+		padding: 0;
+	}
+
+	.info-row {
+		display: flex;
+		align-items: center;
+		margin-bottom: 28rpx;
+	}
+
+	.info-row:last-child {
+		margin-bottom: 0;
+	}
+
+	.info-label {
+		width: 156rpx;
+		color: #666666;
+		font-size: 28rpx;
+		font-weight: normal;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+		line-height: 40rpx;
+	}
+
+	.info-value {
+		color: #333333;
+		font-size: 26rpx;
+		font-weight: normal;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+		line-height: 37rpx;
+	}
+
+	/* 按钮区域 */
+	.button-group {
+		display: flex;
+		justify-content: center;
+		gap: 24rpx;
+		margin-top: 48rpx;
+		padding-bottom: 48rpx;
+	}
+
+	.btn {
+		width: 200rpx;
+		height: 80rpx;
+		border-radius: 20rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.btn-preview {
+		border: 2rpx solid #1976f8;
+		background: #ffffff;
+	}
+
+	.btn-download {
+		background: linear-gradient(270deg, #4fc7ff 0%, #0f73ff 100%);
+	}
+
+	.btn-text-blue {
+		color: #1976f8;
+		font-size: 28rpx;
+		font-weight: normal;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+	}
+
+	.btn-text-white {
+		color: #ffffff;
+		font-size: 28rpx;
+		font-weight: normal;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+	}
+</style>
+

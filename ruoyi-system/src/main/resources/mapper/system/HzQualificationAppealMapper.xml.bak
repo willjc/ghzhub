@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzQualificationAppealMapper">
+
+    <resultMap type="com.ruoyi.system.domain.HzQualificationAppealVO" id="HzQualificationAppealVOResult">
+        <id     property="appealId"           column="appeal_id"          />
+        <result property="qualificationId"    column="qualification_id"   />
+        <result property="tenantId"           column="tenant_id"          />
+        <result property="appealReason"       column="appeal_reason"      />
+        <result property="appealAttachments"  column="appeal_attachments" />
+        <result property="appealTime"         column="appeal_time"        />
+        <result property="handleResult"       column="handle_result"      />
+        <result property="handleOpinion"      column="handleOpinion"   />
+        <result property="handleBy"           column="handle_by"          />
+        <result property="handleTime"         column="handle_time"        />
+        <result property="status"             column="status"             />
+        <result property="createBy"           column="create_by"          />
+        <result property="createTime"         column="create_time"        />
+        <result property="updateBy"           column="update_by"          />
+        <result property="updateTime"         column="update_time"        />
+        <result property="remark"             column="remark"             />
+        <result property="delFlag"            column="del_flag"           />
+        <!-- 用户信息 -->
+        <result property="nickname"           column="nickname"           />
+        <result property="realName"           column="real_name"          />
+        <result property="phone"              column="phone"              />
+        <result property="currentEducation"   column="current_education"  />
+        <result property="newEducation"       column="new_education"      />
+    </resultMap>
+
+    <select id="selectAppealVOPage" resultMap="HzQualificationAppealVOResult">
+        SELECT
+            a.appeal_id,
+            a.qualification_id,
+            a.tenant_id,
+            a.appeal_reason,
+            a.appeal_attachments,
+            a.appeal_time,
+            a.handle_result,
+            a.handle_opinion,
+            a.handle_by,
+            a.handle_time,
+            a.status,
+            a.create_by,
+            a.create_time,
+            a.update_by,
+            a.update_time,
+            a.remark,
+            a.del_flag,
+            u.nickname,
+            u.real_name,
+            u.phone,
+            COALESCE(u.education, '无') as current_education,
+            a.appeal_reason as new_education
+        FROM hz_qualification_appeal a
+        LEFT JOIN hz_user u ON a.tenant_id = u.user_id
+        ${ew.customSqlSegment}
+    </select>
+
+</mapper>
