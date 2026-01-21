@@ -58,6 +58,7 @@ public class HzEnterpriseBillAppController extends BaseController {
 
     /**
      * 获取已支付的账单列表（用于入住办理）
+     * 返回所有已支付账单，前端根据 personnelFile 判断是否已上传人员名单
      */
     @GetMapping("/paidBills")
     public AjaxResult getPaidBills(@RequestParam String phone) {
@@ -65,10 +66,10 @@ public class HzEnterpriseBillAppController extends BaseController {
             return error("联系方式不能为空");
         }
         List<HzEnterpriseBill> allBills = enterpriseBillService.selectBillsByContactPhone(phone);
-        // 过滤出已支付状态且未上传人员名单的账单
+        // 过滤出已支付状态的账单（不管是否已上传人员名单）
         List<HzEnterpriseBill> paidBills = new ArrayList<>();
         for (HzEnterpriseBill bill : allBills) {
-            if ("2".equals(bill.getBillStatus()) && StringUtils.isEmpty(bill.getPersonnelFile())) {
+            if ("2".equals(bill.getBillStatus())) {
                 paidBills.add(bill);
             }
         }

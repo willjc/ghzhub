@@ -81,6 +81,10 @@
 					<text class="house-value">{{ item.batchName || item.community }}</text>
 				</view>
 				<view class="house-row">
+					<text class="house-label">公司名</text>
+					<text class="house-value">{{ item.enterpriseName || '-' }}</text>
+				</view>
+				<view class="house-row">
 					<text class="house-label">项目</text>
 					<text class="house-value">{{ item.projectNames || '-' }}</text>
 				</view>
@@ -122,6 +126,10 @@
 					<text class="detail-value">{{ currentCheckinItem.batchName || '-' }}</text>
 				</view>
 				<view class="detail-row">
+					<text class="detail-label">公司名</text>
+					<text class="detail-value">{{ currentCheckinItem.enterpriseName || '-' }}</text>
+				</view>
+				<view class="detail-row">
 					<text class="detail-label">项目</text>
 					<text class="detail-value">{{ currentCheckinItem.projectNames || '-' }}</text>
 				</view>
@@ -152,29 +160,40 @@
 				<view class="card-header">
 					<view class="card-indicator"></view>
 					<text class="card-title">人员名单</text>
-					<view class="template-download" @click="handleDownloadTemplate">
+					<view class="template-download" @click="handleDownloadTemplate" v-if="!currentCheckinItem.personnelFile">
 						<image class="template-icon" src="/static/模版@2x.png" mode="aspectFit"></image>
 						<text class="template-text">模版下载</text>
 					</view>
 				</view>
-				
-				<!-- 上传区域 -->
-				<view class="upload-area" @click="handleChooseFile">
-					<image class="upload-icon" src="/static/上传文件@2x.png" mode="aspectFit"></image>
-					<text class="upload-text">点击上传文件</text>
-				</view>
-				
-				<!-- 已上传文件列表 -->
-				<view class="file-list" v-if="uploadedFiles.length > 0">
-					<view class="file-item" v-for="(file, index) in uploadedFiles" :key="index">
-						<text class="file-name">{{ file.name }}</text>
-						<text class="file-size">{{ file.size }}</text>
-						<text class="file-delete" @click="handleDeleteFile(index)">删除</text>
+
+				<!-- 已上传文件显示 -->
+				<view v-if="currentCheckinItem.personnelFile" class="uploaded-file-info">
+					<view class="file-item-display">
+						<image class="file-icon" src="/static/文件@2x.png" mode="aspectFit"></image>
+						<text class="file-name-display">{{ getFileName(currentCheckinItem.personnelFile) }}</text>
+						<text class="file-view-btn" @click="handleViewFile(currentCheckinItem.personnelFile)">查看</text>
 					</view>
 				</view>
-				
-				<!-- 支持格式提示 -->
-				<text class="support-tip">支持扩展名：rar.zip.doc.docx.pdf.jpg...</text>
+
+				<!-- 上传区域（仅在未上传时显示） -->
+				<template v-else>
+					<view class="upload-area" @click="handleChooseFile">
+						<image class="upload-icon" src="/static/上传文件@2x.png" mode="aspectFit"></image>
+						<text class="upload-text">点击上传文件</text>
+					</view>
+
+					<!-- 已上传文件列表 -->
+					<view class="file-list" v-if="uploadedFiles.length > 0">
+						<view class="file-item" v-for="(file, index) in uploadedFiles" :key="index">
+							<text class="file-name">{{ file.name }}</text>
+							<text class="file-size">{{ file.size }}</text>
+							<text class="file-delete" @click="handleDeleteFile(index)">删除</text>
+						</view>
+					</view>
+
+					<!-- 支持格式提示 -->
+					<text class="support-tip">支持扩展名：rar.zip.doc.docx.pdf.jpg...</text>
+				</template>
 			</view>
 		</scroll-view>
 		
@@ -183,7 +202,7 @@
 			<view class="btn-back" @click="handleBack">
 				<text class="btn-back-text">返回</text>
 			</view>
-			<view class="btn-save" @click="handleSaveCheckin">
+			<view class="btn-save" @click="handleSaveCheckin" v-if="!currentCheckinItem.personnelFile">
 				<text class="btn-save-text">保存</text>
 			</view>
 		</view>
@@ -368,20 +387,33 @@ export default {
 				const res = await get('/h5/app/enterpriseBill/paidBills', {
 					phone: this.userInfo.phone
 				})
+				const bills = res.data || []
+
+				// 为每个账单获取详细信息（项目名称、房间号）
+				const detailPromises = bills.map(bill =>
+					get(`/h5/app/enterpriseBill/checkinInfo/${bill.billId}`)
+				)
+
+				const detailResults = await Promise.all(detailPromises)
+
 				// 转换为入住办理列表格式
-				this.checkinList = (res.data || []).map(bill => ({
-					id: bill.billId,
-					billId: bill.billId,
-					billNo: bill.billNo,
-					batchName: bill.batchName,
-					projectNames: '', // 列表页暂不显示项目名称
-					houseNos: '', // 列表页暂不显示房间号
-					community: bill.batchName || '未命名小区',
-					rentPeriod: `${bill.checkInDate} 至 ${bill.checkOutDate}`,
-					rent: `¥${bill.finalAmount}`,
-					deposit: '已支付',
-					status: bill.personnelFile ? 'done' : 'pending'
-				}))
+				this.checkinList = bills.map((bill, index) => {
+					const detailInfo = detailResults[index]?.data || {}
+					return {
+						id: bill.billId,
+						billId: bill.billId,
+						billNo: bill.billNo,
+						batchName: detailInfo.batchName || bill.batchName,
+						enterpriseName: bill.enterpriseName || '-',
+						projectNames: detailInfo.projectNames || '-',
+						houseNos: detailInfo.houseNos || '-',
+						community: bill.batchName || '未命名小区',
+						rentPeriod: `${bill.checkInDate} 至 ${bill.checkOutDate}`,
+						rent: `¥${bill.finalAmount}`,
+						deposit: '已支付',
+						status: bill.personnelFile ? 'done' : 'pending'
+					}
+				})
 			} catch (err) {
 				console.error('加载已支付账单失败:', err)
 				this.checkinList = []
@@ -392,14 +424,6 @@ export default {
 
 		// 入住办理
 		async handleCheckin(item) {
-			if (item.status === 'done') {
-				uni.showToast({
-					title: '已办理入住',
-					icon: 'none'
-				})
-				return
-			}
-
 			// 获取入住办理详情
 			uni.showLoading({
 				title: '加载中...'
@@ -418,13 +442,15 @@ export default {
 					billId: item.billId,
 					billNo: item.billNo,
 					batchName: res.data.batchName || bill.batchName,
+					enterpriseName: bill.enterpriseName || item.enterpriseName || '-',
 					projectNames: res.data.projectNames || '',
 					houseNos: res.data.houseNos || '',
 					community: bill.batchName || item.community,
 					rentPeriod: `${bill.checkInDate} 至 ${bill.checkOutDate}`,
 					rent: `¥${bill.finalAmount}`,
 					deposit: '已支付',
-					houseCount: res.data.houseCount || 0
+					houseCount: res.data.houseCount || 0,
+					personnelFile: bill.personnelFile || null  // 人员名单文件路径
 				}
 
 				this.showCheckinDetail = true
@@ -606,6 +632,37 @@ export default {
 					icon: 'none'
 				})
 			}
+		},
+
+		// 获取文件名（从路径中提取）
+		getFileName(filePath) {
+			if (!filePath) return ''
+			// 从路径中提取文件名
+			const parts = filePath.split('/')
+			return parts[parts.length - 1] || filePath
+		},
+
+		// 查看已上传的文件
+		handleViewFile(filePath) {
+			if (!filePath) return
+			const url = BASE_URL + filePath
+			// 在新窗口中打开文件
+			// #ifdef H5
+			window.open(url, '_blank')
+			// #endif
+			// #ifndef H5
+			uni.downloadFile({
+				url: url,
+				success: (res) => {
+					if (res.statusCode === 200) {
+						uni.openDocument({
+							filePath: res.tempFilePath,
+							showMenu: true
+						})
+					}
+				}
+			})
+			// #endif
 		}
 	}
 }
@@ -916,6 +973,9 @@ export default {
 		font-size: 26rpx;
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
+		flex-shrink: 0;
+		white-space: nowrap;
+		min-width: 100rpx;
 	}
 
 	.house-value {
@@ -923,6 +983,9 @@ export default {
 		font-size: 26rpx;
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
+		flex: 1;
+		text-align: right;
+		word-break: break-all;
 	}
 
 	.house-btn-wrap {
@@ -962,6 +1025,9 @@ export default {
 		font-size: 28rpx;
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
+		flex-shrink: 0;
+		white-space: nowrap;
+		min-width: 100rpx;
 	}
 
 	.detail-value {
@@ -969,6 +1035,9 @@ export default {
 		font-size: 26rpx;
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
+		flex: 1;
+		text-align: right;
+		word-break: break-all;
 	}
 
 	/* 模版下载 */
@@ -1064,6 +1133,44 @@ export default {
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
 		margin: 0 40rpx 20rpx;
+	}
+
+	/* 已上传文件信息 */
+	.uploaded-file-info {
+		margin: 0 40rpx;
+	}
+
+	.file-item-display {
+		display: flex;
+		align-items: center;
+		padding: 20rpx;
+		background: #f5f7fa;
+		border-radius: 12rpx;
+	}
+
+	.file-icon {
+		width: 40rpx;
+		height: 40rpx;
+		margin-right: 16rpx;
+	}
+
+	.file-name-display {
+		flex: 1;
+		color: #333333;
+		font-size: 26rpx;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.file-view-btn {
+		color: #1281ff;
+		font-size: 26rpx;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+		padding: 8rpx 20rpx;
+		border-radius: 8rpx;
+		background: rgba(18, 129, 255, 0.1);
 	}
 
 	/* 底部双按钮 */
