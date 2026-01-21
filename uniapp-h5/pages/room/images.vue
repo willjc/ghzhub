@@ -16,7 +16,8 @@
 </template>
 
 <script>
-	import config from '@/config/index'
+	import { getHouseImages } from '@/api/house'
+import config from '@/config/index'
 
 	export default {
 		data() {
@@ -52,19 +53,10 @@
 
 				this.loading = true
 				try {
-					// uni.request直接返回响应对象
-					const response = await uni.request({
-						url: 'http://localhost:8090/h5/app/house/' + this.roomId + '/images',
-						method: 'GET',
-						header: {
-							'Content-Type': 'application/json'
-						}
-					})
+					const response = await getHouseImages(this.roomId)
 
-					console.log('API响应:', response)
-
-					if (response.statusCode === 200 && response.data.code === 200) {
-						this.imageCategories = response.data.data || []
+					if (response.code === 200) {
+						this.imageCategories = response.data || []
 
 						if (this.imageCategories.length === 0) {
 							uni.showToast({
@@ -72,16 +64,9 @@
 								icon: 'none'
 							})
 						}
-					} else {
-						throw new Error(response.data?.msg || '加载失败')
 					}
 				} catch (error) {
 					console.error('获取房源图片失败:', error)
-					uni.showToast({
-						title: '加载图片失败: ' + (error.errMsg || error.message || '未知错误'),
-						icon: 'none',
-						duration: 3000
-					})
 				} finally {
 					this.loading = false
 				}

@@ -117,7 +117,7 @@
 </template>
 
 <script>
-import { getHouseDetail } from '@/api/house'
+import { getHouseDetail, getHouseVR, getHouseImages } from '@/api/house'
 import config from '@/config/index'
 
 	export default {
@@ -212,16 +212,10 @@ import config from '@/config/index'
 			},
 			async loadVRList() {
 				try {
-					const response = await uni.request({
-						url: 'http://localhost:8090/h5/app/house/' + this.roomId + '/vr',
-						method: 'GET',
-						header: {
-							'Content-Type': 'application/json'
-						}
-					})
+					const response = await getHouseVR(this.roomId)
 
-					if (response.statusCode === 200 && response.data.code === 200) {
-						this.vrList = response.data.data || []
+					if (response.code === 200) {
+						this.vrList = response.data || []
 						this.hasVR = this.vrList.length > 0
 
 						// 将VR图片URL存储到imageData.vr
@@ -239,16 +233,10 @@ import config from '@/config/index'
 			},
 			async loadImages() {
 				try {
-					const response = await uni.request({
-						url: 'http://localhost:8090/h5/app/house/' + this.roomId + '/images',
-						method: 'GET',
-						header: {
-							'Content-Type': 'application/json'
-						}
-					})
+					const response = await getHouseImages(this.roomId)
 
-					if (response.statusCode === 200 && response.data.code === 200) {
-						const categories = response.data.data || []
+					if (response.code === 200) {
+						const categories = response.data || []
 
 						// 将API返回的分类数据存储到imageData
 						categories.forEach(category => {

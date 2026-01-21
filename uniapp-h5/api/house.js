@@ -27,3 +27,21 @@ export function getHouseList(params) {
 export function getHouseDetail(houseId) {
   return get(`/h5/app/house/${houseId}`)
 }
+
+/**
+ * 获取房源VR列表
+ * @param {Number} roomId 房源ID
+ * @returns {Promise}
+ */
+export function getHouseVR(roomId) {
+  return get(`/h5/app/house/${roomId}/vr`)
+}
+
+/**
+ * 获取房源图片（按分类返回）
+ * @param {Number} roomId 房源ID
+ * @returns {Promise}
+ */
+export function getHouseImages(roomId) {
+  return get(`/h5/app/house/${roomId}/images`)
+}
