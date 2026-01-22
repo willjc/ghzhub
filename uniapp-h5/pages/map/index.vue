@@ -12,19 +12,19 @@
 			</view>
 			<view
 				class="tab-item"
-				:class="{ active: isTypeSelected('3') }"
-				@click="switchTab('3')"
-			>
-				<text class="tab-text" :class="{ active: isTypeSelected('3') }">市场租赁（{{ typeCounts[3] || 0 }}）</text>
-				<view class="tab-line" v-if="isTypeSelected('3')"></view>
-			</view>
-			<view
-				class="tab-item"
 				:class="{ active: isTypeSelected('1') }"
 				@click="switchTab('1')"
 			>
 				<text class="tab-text" :class="{ active: isTypeSelected('1') }">人才公寓（{{ typeCounts[1] || 0 }}）</text>
 				<view class="tab-line" v-if="isTypeSelected('1')"></view>
+			</view>
+			<view
+				class="tab-item"
+				:class="{ active: isTypeSelected('3') }"
+				@click="switchTab('3')"
+			>
+				<text class="tab-text" :class="{ active: isTypeSelected('3') }">市场租赁（{{ typeCounts[3] || 0 }}）</text>
+				<view class="tab-line" v-if="isTypeSelected('3')"></view>
 			</view>
 		</view>
 
@@ -52,9 +52,9 @@ const AMAP_SECURITY_CODE = 'aa6ec22a6a1fac3ebae4e25ef51cbe73'
 
 // 类型配置
 const TYPE_CONFIG = {
-	'1': { name: '人才公寓', color: '#00C853' },  // 绿色
-	'2': { name: '保租房', color: '#4A90E2' },      // 蓝色
-	'3': { name: '市场租赁', color: '#FF9500' }     // 橙色
+	'1': { name: '人才公寓', color: '#002FA7' },  // 克莱因蓝
+	'2': { name: '保租房', color: '#E53935' },      // 红色
+	'3': { name: '市场租赁', color: '#4CAF50' }     // 绿色
 }
 
 export default {
