@@ -4,27 +4,27 @@
 		<view class="tab-bar">
 			<view
 				class="tab-item"
-				:class="{ active: currentType === '2' }"
+				:class="{ active: isTypeSelected('2') }"
 				@click="switchTab('2')"
 			>
-				<text class="tab-text" :class="{ active: currentType === '2' }">保租房</text>
-				<view class="tab-line" v-if="currentType === '2'"></view>
+				<text class="tab-text" :class="{ active: isTypeSelected('2') }">保租房（{{ typeCounts[2] || 0 }}）</text>
+				<view class="tab-line" v-if="isTypeSelected('2')"></view>
 			</view>
 			<view
 				class="tab-item"
-				:class="{ active: currentType === '3' }"
+				:class="{ active: isTypeSelected('3') }"
 				@click="switchTab('3')"
 			>
-				<text class="tab-text" :class="{ active: currentType === '3' }">市场租赁</text>
-				<view class="tab-line" v-if="currentType === '3'"></view>
+				<text class="tab-text" :class="{ active: isTypeSelected('3') }">市场租赁（{{ typeCounts[3] || 0 }}）</text>
+				<view class="tab-line" v-if="isTypeSelected('3')"></view>
 			</view>
 			<view
 				class="tab-item"
-				:class="{ active: currentType === '1' }"
+				:class="{ active: isTypeSelected('1') }"
 				@click="switchTab('1')"
 			>
-				<text class="tab-text" :class="{ active: currentType === '1' }">人才公寓</text>
-				<view class="tab-line" v-if="currentType === '1'"></view>
+				<text class="tab-text" :class="{ active: isTypeSelected('1') }">人才公寓（{{ typeCounts[1] || 0 }}）</text>
+				<view class="tab-line" v-if="isTypeSelected('1')"></view>
 			</view>
 		</view>
 
@@ -50,13 +50,22 @@ import { getProjectListByType } from '@/api/project.js'
 const AMAP_KEY = '2b05ba24adfcbb78c8ccec1cf6e5afc3'
 const AMAP_SECURITY_CODE = 'aa6ec22a6a1fac3ebae4e25ef51cbe73'
 
+// 类型配置
+const TYPE_CONFIG = {
+	'1': { name: '人才公寓', color: '#00C853' },  // 绿色
+	'2': { name: '保租房', color: '#4A90E2' },      // 蓝色
+	'3': { name: '市场租赁', color: '#FF9500' }     // 橙色
+}
+
 export default {
 	data() {
 		return {
-			currentType: '2', // 默认保租房（2:保租房 1:人才公寓 3:市场租赁）
+			selectedTypes: ['1', '2', '3'], // 默认全选（1:人才公寓 2:保租房 3:市场租赁）
+			typeCounts: { '1': 0, '2': 0, '3': 0 }, // 各类型项目数量
 			map: null,
 			markers: [],
-			infoWindows: [], // 存储信息窗体 DOM 元素
+			infoWindow: null,
+			allProjects: [], // 所有项目数据
 			loading: true,
 			isEmpty: false,
 			sdkLoaded: false
@@ -78,16 +87,21 @@ export default {
 	},
 
 	onUnload() {
-		// 页面卸载时销毁地图
 		this.destroyMap()
 	},
 
 	methods: {
 		/**
+		 * 判断类型是否选中
+		 */
+		isTypeSelected(type) {
+			return this.selectedTypes.includes(type)
+		},
+
+		/**
 		 * 动态加载高德地图 SDK
 		 */
 		loadAMapSDK() {
-			// 如果已经加载过，直接初始化
 			if (typeof AMap !== 'undefined') {
 				console.log('高德地图 SDK 已存在')
 				this.sdkLoaded = true
@@ -97,12 +111,10 @@ export default {
 				return
 			}
 
-			// 设置安全密钥
 			window._AMapSecurityConfig = {
 				securityJsCode: AMAP_SECURITY_CODE
 			}
 
-			// 创建 script 标签动态加载
 			const script = document.createElement('script')
 			script.type = 'text/javascript'
 			script.src = `https://webapi.amap.com/maps?v=2.0&key=${AMAP_KEY}`
@@ -130,7 +142,6 @@ export default {
 		 * 初始化地图
 		 */
 		initMap() {
-			// 初始化地图，默认中心点（郑州航空港区）
 			this.map = new AMap.Map('map-container', {
 				zoom: 13,
 				center: [113.84, 34.56],
@@ -139,239 +150,187 @@ export default {
 
 			console.log('地图初始化完成')
 
-			// 加载默认保租房数据
-			this.loadProjects()
+			// 加载所有类型的数据
+			this.loadAllProjects()
 		},
 
 		/**
-		 * 加载项目数据
+		 * 加载所有类型的项目数据
 		 */
-		async loadProjects() {
+		async loadAllProjects() {
 			this.loading = true
 			this.isEmpty = false
 
 			try {
-				const res = await getProjectListByType(this.currentType)
-				if (res.code === 200 && res.data) {
-					const projects = res.data
-					if (projects && projects.length > 0) {
-						// 检查有多少项目有经纬度
-						const validProjects = projects.filter(p =>
-							p.longitude && p.latitude &&
-							!isNaN(parseFloat(p.longitude)) &&
-							!isNaN(parseFloat(p.latitude))
-						)
+				// 并行加载三种类型的数据
+				const [type1, type2, type3] = await Promise.all([
+					this.loadTypeData('1'),
+					this.loadTypeData('2'),
+					this.loadTypeData('3')
+				])
 
-						// 如果有效项目少于3个，补充测试数据
-						if (validProjects.length < 3) {
-							console.log('有效项目不足3个，使用测试数据')
-							this.useTestData(projects)
-						} else {
-							this.addMarkers(projects)
-						}
-						this.isEmpty = false
-					} else {
-						// 没有数据时使用测试数据
-						this.useTestData()
-					}
-				} else {
-					// 使用测试数据
-					this.useTestData()
+				// 合并所有数据
+				this.allProjects = [
+					...this.processTypeData(type1, '1'),
+					...this.processTypeData(type2, '2'),
+					...this.processTypeData(type3, '3')
+				]
+
+				// 更新统计
+				this.typeCounts = {
+					'1': this.processTypeData(type1, '1').length,
+					'2': this.processTypeData(type2, '2').length,
+					'3': this.processTypeData(type3, '3').length
 				}
+
+				// 显示选中的类型
+				this.updateMarkers()
+
+				console.log('所有项目加载完成:', this.typeCounts)
 			} catch (error) {
-				console.error('加载项目数据失败:', error)
-				// 加载失败时使用测试数据
-				this.useTestData()
-			} finally {
+				console.error('加载数据失败:', error)
 				this.loading = false
 			}
 		},
 
 		/**
-		 * 使用测试数据（用于演示）
-		 * @param {Array} existingProjects 现有的真实项目数据
+		 * 加载单个类型的数据
 		 */
-		useTestData(existingProjects = []) {
-			// 测试项目数据（郑州航空港区附近）
-			const testProjects = [
-				{
-					projectId: 1,
-					projectName: '航南新城专家公寓',
-					longitude: 113.84,
-					latitude: 34.56,
-					address: '航空港区新港大道与遵大路交叉口',
-					price: 2000,
-					availableHouses: 15,
-					projectType: this.currentType
-				},
-				{
-					projectId: 2,
-					projectName: '港区人才公寓',
-					longitude: 113.86,
-					latitude: 34.58,
-					address: '航空港区郑港六路',
-					price: 1800,
-					availableHouses: 8,
-					projectType: this.currentType
-				},
-				{
-					projectId: 3,
-					projectName: '锦绣桂园',
-					longitude: 113.82,
-					latitude: 34.54,
-					address: '航空港区航天路',
-					price: 2200,
-					availableHouses: 12,
-					projectType: this.currentType
-				},
-				{
-					projectId: 4,
-					projectName: '万科美景',
-					longitude: 113.88,
-					latitude: 34.57,
-					address: '航空港区巡航路',
-					price: 2500,
-					availableHouses: 5,
-					projectType: this.currentType
-				},
-				{
-					projectId: 5,
-					projectName: '绿地香榭',
-					longitude: 113.85,
-					latitude: 34.52,
-					address: '航空港区雍州路',
-					price: 1900,
-					availableHouses: 20,
-					projectType: this.currentType
-				},
-				{
-					projectId: 6,
-					projectName: '保利文化广场',
-					longitude:  113.87,
-					latitude: 34.53,
-					address: '航空港区郑港四街',
-					price: 2100,
-					availableHouses: 10,
-					projectType: this.currentType
-				}
-			]
-
-			// 合并真实数据和测试数据（真实数据优先）
-			const allProjects = [...existingProjects, ...testProjects]
-
-			this.addMarkers(allProjects)
-			this.isEmpty = false
-			console.log('使用测试数据，共', allProjects.length, '个项目（包含', existingProjects.length, '个真实项目）')
+		async loadTypeData(type) {
+			try {
+				const res = await getProjectListByType(type)
+				return res.code === 200 ? (res.data || []) : []
+			} catch {
+				return []
+			}
 		},
 
 		/**
-		 * 添加标记点到地图
+		 * 处理类型数据（补充测试数据）
 		 */
-		addMarkers(projects) {
+		processTypeData(projects, type) {
+			const validProjects = projects.filter(p =>
+				p.longitude && p.latitude &&
+				!isNaN(parseFloat(p.longitude)) &&
+				!isNaN(parseFloat(p.latitude))
+			)
+
+			// 如果有效项目不足3个，补充测试数据
+			if (validProjects.length < 3) {
+				const testData = this.getTestData(type)
+				return [...validProjects, ...testData]
+			}
+
+			return validProjects
+		},
+
+		/**
+		 * 获取测试数据
+		 */
+		getTestData(type) {
+				const testDatas = {
+					'1': [ // 人才公寓
+						{ projectId: 101, projectName: '航南人才公寓', longitude: 113.83, latitude: 34.55, address: '航空港区航南大道', price: 1500, availableHouses: 10, projectType: '1' },
+						{ projectId: 102, projectName: '青年人才家园', longitude: 113.85, latitude: 34.57, address: '航空港区郑港六路', price: 1600, availableHouses: 8, projectType: '1' },
+						{ projectId: 103, projectName: '英才公寓', longitude: 113.87, latitude: 34.54, address: '航空港区巡航路', price: 1700, availableHouses: 12, projectType: '1' },
+						{ projectId: 104, projectName: '博士公寓', longitude: 113.81, latitude: 34.56, address: '航空港区航天路', price: 1800, availableHouses: 5, projectType: '1' },
+						{ projectId: 105, projectName: '精英家园', longitude: 113.89, latitude: 34.52, address: '航空港区雍州路', price: 1900, availableHouses: 15, projectType: '1' },
+						{ projectId: 106, projectName: '智汇公寓', longitude: 113.83, latitude: 34.59, address: '航空港区郑港四街', price: 2000, availableHouses: 6, projectType: '1' }
+					],
+					'2': [ // 保租房
+						{ projectId: 201, projectName: '航南新城专家公寓', longitude: 113.84, latitude: 34.56, address: '航空港区新港大道与遵大路交叉口', price: 2000, availableHouses: 15, projectType: '2' },
+						{ projectId: 202, projectName: '港区和顺家园', longitude: 113.86, latitude: 34.58, address: '航空港区郑港六路', price: 1800, availableHouses: 8, projectType: '2' },
+						{ projectId: 203, projectName: '锦绣桂园', longitude: 113.82, latitude: 34.54, address: '航空港区航天路', price: 2200, availableHouses: 12, projectType: '2' },
+						{ projectId: 204, projectName: '万科美景', longitude: 113.88, latitude: 34.57, address: '航空港区巡航路', price: 2500, availableHouses: 5, projectType: '2' },
+						{ projectId: 205, projectName: '绿地香榭', longitude: 113.85, latitude: 34.52, address: '航空港区雍州路', price: 1900, availableHouses: 20, projectType: '2' },
+						{ projectId: 206, projectName: '保利文化广场', longitude: 113.87, latitude: 34.53, address: '航空港区郑港四街', price: 2100, availableHouses: 10, projectType: '2' }
+					],
+					'3': [ // 市场租赁
+						{ projectId: 301, projectName: '龙湖冠寓', longitude: 113.86, latitude: 34.55, address: '航空港区郑港二街', price: 2300, availableHouses: 18, projectType: '3' },
+						{ projectId: 302, projectName: '万科泊寓', longitude: 113.83, latitude: 34.57, address: '航空港区郑港八路', price: 2400, availableHouses: 12, projectType: '3' },
+						{ projectId: 303, projectName: '旭辉领寓', longitude: 113.88, latitude: 34.53, address: '航空港区巡航路', price: 2200, availableHouses: 9, projectType: '3' },
+						{ projectId: 304, projectName: '魔方公寓', longitude: 113.81, latitude: 34.58, address: '航空港区航天路', price: 2500, availableHouses: 7, projectType: '3' },
+						{ projectId: 305, projectName: '冠寓', longitude: 113.85, latitude: 34.51, address: '航空港区雍州路', price: 2600, availableHouses: 14, projectType: '3' },
+						{ projectId: 306, projectName: '乐乎公寓', longitude: 113.89, latitude: 34.55, address: '航空港区郑港四街', price: 2100, availableHouses: 11, projectType: '3' }
+					]
+				}
+
+				return testDatas[type] || []
+			},
+
+		/**
+		 * 更新地图标记
+		 */
+		updateMarkers() {
 			// #ifdef H5
-			if (!this.map) return
+				if (!this.map) return
 
-			console.log('addMarkers 收到项目数量:', projects.length)
+				this.clearMarkers()
 
-			// 清除旧标记和信息窗体
-			this.clearMarkers()
+				// 筛选出选中类型的项目
+				const selectedProjects = this.allProjects.filter(p =>
+					this.selectedTypes.includes(p.projectType)
+				)
 
-			this.markers = []
-			this.infoWindows = []
-			const validProjects = [] // 存储有效项目
+				console.log('选中的类型:', this.selectedTypes, '项目数量:', selectedProjects.length)
 
-			// 先筛选出有经纬度的项目
-			projects.forEach((project, index) => {
-				if (project.longitude && project.latitude) {
+				if (selectedProjects.length === 0) {
+					this.isEmpty = true
+					this.loading = false
+					return
+				}
+
+				this.isEmpty = false
+
+				// 添加标记
+				selectedProjects.forEach(project => {
 					const lng = parseFloat(project.longitude)
 					const lat = parseFloat(project.latitude)
 
 					if (!isNaN(lng) && !isNaN(lat)) {
-						// 创建标记
+						const color = TYPE_CONFIG[project.projectType]?.color || '#4A90E2'
+						const icon = this.createIcon(color)
+
 						const marker = new AMap.Marker({
 							position: [lng, lat],
-							title: project.projectName || '项目',
-							raiseOnDrag: false
+							icon: icon,
+							title: project.projectName || '项目'
 						})
 
-						// 点击标记显示信息窗体
 						marker.on('click', () => {
-							this.showInfoWindow(project)
+							this.showInfoWindow(project, marker)
 						})
 
 						this.markers.push(marker)
-						validProjects.push(project)
 					}
+				})
+
+				// 添加到地图
+				if (this.markers.length > 0) {
+					this.map.add(this.markers)
+					this.map.setFitView()
 				}
-			})
 
-			console.log('有效标记数量:', this.markers.length)
-
-			// 添加标记到地图
-			if (this.markers.length > 0) {
-				this.map.add(this.markers)
-				// 自动调整视野以包含所有标记
-				this.map.setFitView()
-
-				// 默认打开所有项目的信息窗体
-				setTimeout(() => {
-					validProjects.forEach(project => {
-						this.showCustomLabel(project)
-					})
-				}, 500)
-			}
+				this.loading = false
 			// #endif
 		},
 
 		/**
-		 * 显示自定义标签（支持多个同时显示）
+		 * 创建图标
 		 */
-		showCustomLabel(project) {
-			// #ifdef H5
-			if (!this.map) return
-
-			const lng = parseFloat(project.longitude)
-			const lat = parseFloat(project.latitude)
-
-			if (isNaN(lng) || isNaN(lat)) return
-
-			// 创建标签内容 - 使用绝对定位的 div
-			const labelDiv = document.createElement('div')
-			labelDiv.className = 'map-custom-label'
-			labelDiv.style.cssText = `
-				padding: 8px 12px;
-				min-width: 120px;
-				background: white;
-				border-radius: 8px;
-				box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-				font-size: 12px;
-				white-space: nowrap;
-				position: absolute;
-				z-index: 999;
-				pointer-events: none;
-			`
-			labelDiv.innerHTML = `
-				<div style="font-weight: bold; color: #1a1a1a; margin-bottom: 4px; font-size: 13px;">
-					${project.projectName || '项目'}
-				</div>
-				<div style="color: #e5252b; font-weight: 500;">
-					${project.price ? '¥' + project.price + '元/月起' : '价格面议'}
-				</div>
-				<div style="position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid white;"></div>
-			`
-
-			// 添加到地图容器
-			const mapContainer = document.getElementById('map-container')
-			if (mapContainer) {
-				// 将经纬度转换为像素位置
-				const pixel = this.map.lngLatToContainer([lng, lat])
-				labelDiv.style.left = (pixel.x - 60) + 'px'
-				labelDiv.style.top = (pixel.y - 60) + 'px'
-
-				mapContainer.appendChild(labelDiv)
-				this.infoWindows.push({ element: labelDiv, lng, lat })
-			}
-			// #endif
+		createIcon(color) {
+			return new AMap.Icon({
+				size: new AMap.Size(32, 40),
+				image: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`
+					<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
+						<path d="M16 0C7.16 0 0 7.16 0 16c0 8.84 16 24 16 24s16-15.16 16-24C32 7.16 24.84 0 16 0z" fill="${color}"/>
+						<path d="M16 8c-4.42 0-8 3.58-8 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8z" fill="white"/>
+						<circle cx="16" cy="16" r="3" fill="${color}"/>
+					</svg>
+				`),
+				imageSize: new AMap.Size(32, 40),
+				imageOffset: new AMap.Pixel(0, 0)
+			})
 		},
 
 		/**
@@ -379,42 +338,73 @@ export default {
 		 */
 		clearMarkers() {
 			// #ifdef H5
-			if (this.map) {
-				// 清除标记
-				if (this.markers.length > 0) {
-					this.map.remove(this.markers)
-					this.markers = []
+				if (this.map) {
+					if (this.markers.length > 0) {
+						this.map.remove(this.markers)
+						this.markers = []
+					}
+					if (this.infoWindow) {
+						this.infoWindow.close()
+						this.infoWindow = null
+					}
 				}
-				// 移除所有自定义信息窗体 DOM
-				if (this.infoWindows.length > 0) {
-					this.infoWindows.forEach(item => {
-						if (item.element && item.element.parentNode) {
-							item.element.parentNode.removeChild(item.element)
-						}
-					})
-					this.infoWindows = []
-				}
-			}
 			// #endif
 		},
 
 		/**
-		 * 显示信息窗体（点击标记时调用）
+		 * 显示信息窗体
 		 */
-		showInfoWindow(project) {
+		showInfoWindow(project, marker) {
 			// #ifdef H5
-			// 点击标记时可以添加高亮效果或其他交互
-			console.log('点击了项目:', project.projectName)
+				if (!this.map || !marker) return
+
+				const content = `
+					<div style="padding: 12px; min-width: 150px; font-size: 13px;">
+						<div style="font-weight: bold; color: #1a1a1a; margin-bottom: 8px; font-size: 14px;">
+							${project.projectName || '项目'}
+						</div>
+						<div style="color: #666; margin-bottom: 4px; font-size: 12px;">
+							${project.address || '暂无地址'}
+						</div>
+						<div style="color: #e5252b; font-weight: 500; font-size: 14px;">
+							${project.price ? '¥' + project.price + '元/月起' : '价格面议'}
+						</div>
+						<div style="color: #999; font-size: 12px; margin-top: 4px;">
+							可用房源: ${project.availableHouses || 0}套
+						</div>
+					</div>
+				`
+
+				if (this.infoWindow) {
+					this.infoWindow.close()
+				}
+
+				this.infoWindow = new AMap.InfoWindow({
+					content: content,
+					offset: new AMap.Pixel(0, -35)
+				})
+
+				this.infoWindow.open(this.map, marker.getPosition())
 			// #endif
 		},
 
 		/**
-		 * 切换标签
+		 * 切换标签选中状态
 		 */
 		switchTab(type) {
-			if (this.currentType === type) return
-			this.currentType = type
-			this.loadProjects()
+			const index = this.selectedTypes.indexOf(type)
+			if (index > -1) {
+				// 已选中，取消选中
+				this.selectedTypes.splice(index, 1)
+			} else {
+				// 未选中，添加选中
+				this.selectedTypes.push(type)
+			}
+
+			console.log('当前选中:', this.selectedTypes)
+
+			// 更新地图显示
+			this.updateMarkers()
 		},
 
 		/**
@@ -422,10 +412,10 @@ export default {
 		 */
 		destroyMap() {
 			// #ifdef H5
-			if (this.map) {
-				this.map.destroy()
-				this.map = null
-			}
+				if (this.map) {
+					this.map.destroy()
+					this.map = null
+				}
 			// #endif
 		}
 	}
@@ -463,8 +453,8 @@ export default {
 }
 
 .tab-text {
-	font-size: 28rpx;
-	color: #666666;
+	font-size: 26rpx;
+	color: #999999;
 	transition: color 0.3s;
 }
 
