@@ -1,7 +1,6 @@
 package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -45,7 +44,7 @@ public class HzInvoiceApplyServiceImpl extends ServiceImpl<HzInvoiceApplyMapper,
     public HzInvoiceApply selectInvoiceApplyByBillId(Long billId)
     {
         LambdaQueryWrapper<HzInvoiceApply> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(HzInvoiceApply::getBillId, billId)
+        wrapper.like(HzInvoiceApply::getBillIds, String.valueOf(billId))
                .eq(HzInvoiceApply::getDelFlag, "0")
                .orderByDesc(HzInvoiceApply::getCreateTime)
                .last("LIMIT 1");

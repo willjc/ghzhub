@@ -24,10 +24,15 @@ export function getCheckinInfo(userId) {
 /**
  * 获取可开票账单列表（已支付且未开票）
  * @param {Number} userId 用户ID
+ * @param {Number} contractId 合同ID（可选，用于过滤指定房源的账单）
  * @returns {Promise}
  */
-export function getAvailableBills(userId) {
-  return request.get('/h5/app/invoice/availableBills', { userId })
+export function getAvailableBills(userId, contractId) {
+  const params = { userId }
+  if (contractId) {
+    params.contractId = contractId
+  }
+  return request.get('/h5/app/invoice/availableBills', params)
 }
 
 /**

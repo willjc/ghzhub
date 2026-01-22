@@ -77,7 +77,7 @@
 					amount: '0.00',
 					invoiceType: '电子普通发票',
 					invoiceContent: '商品明细',
-					headType: '个���',
+					headType: '个人',
 					name: '',
 					phone: '',
 					email: '',

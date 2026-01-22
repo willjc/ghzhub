@@ -80,76 +80,91 @@ public class HzInvoiceController extends BaseController
     }
 
     /**
-     * 获取入住信息（通过账单反查房源/项目信息）
+     * 获取入住房源列表（用户可开票的房源）
      */
     @GetMapping("/checkinInfo")
     public AjaxResult getCheckinInfo(@RequestParam Long userId)
     {
-        // 直接查询用户的可开票账单（已支付且未开票）
-        LambdaQueryWrapper<HzBill> billWrapper = new LambdaQueryWrapper<>();
-        billWrapper.eq(HzBill::getTenantId, userId)
-                .eq(HzBill::getBillStatus, "1") // 1=已支付
-                .and(w -> w.eq(HzBill::getInvoiceStatus, "0").or().isNull(HzBill::getInvoiceStatus)) // 0=未开票 或 null
-                .eq(HzBill::getDelFlag, "0")
-                .orderByDesc(HzBill::getBillPeriod)
-                .last("LIMIT 1");
-        HzBill bill = billMapper.selectOne(billWrapper);
-
-        if (bill == null)
-        {
-            // 没有可开票账单，返回空数据但不报错
-            Map<String, Object> result = new HashMap<>();
-            result.put("community", "");
-            result.put("room", "");
-            result.put("deposit", "0元");
-            result.put("hasBill", false);
-            return success(result);
-        }
-
-        // 通过账单的合同ID获取房源和项目信息
-        HzContract contract = contractMapper.selectById(bill.getContractId());
-        if (contract == null)
-        {
-            return error("未找到关联的合同信息");
-        }
-
-        HzHouse house = houseMapper.selectById(contract.getHouseId());
-        if (house == null)
-        {
-            return error("未找到房源信息");
-        }
-
-        HzProject project = projectMapper.selectById(house.getProjectId());
-        if (project == null)
-        {
-            return error("未找到项目信息");
-        }
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("community", project.getProjectName());
-        result.put("room", house.getHouseNo());
-        result.put("deposit", house.getDeposit() != null ? house.getDeposit().toString() + "元" : "0元");
-        result.put("houseId", house.getHouseId());
-        result.put("projectId", project.getProjectId());
-        result.put("contractId", contract.getContractId());
-        result.put("hasBill", true);
-
-        return success(result);
-    }
-
-    /**
-     * 获取可开票账单列表（已支付且未开票）
-     */
-    @GetMapping("/availableBills")
-    public AjaxResult getAvailableBills(@RequestParam Long userId)
-    {
-        // 直接查询用户的可开票账单，不依赖合同状态
+        // 查询用户所有可开票账单（已支付且未开票）
         LambdaQueryWrapper<HzBill> billWrapper = new LambdaQueryWrapper<>();
         billWrapper.eq(HzBill::getTenantId, userId)
                 .eq(HzBill::getBillStatus, "1") // 1=已支付
                 .and(w -> w.eq(HzBill::getInvoiceStatus, "0").or().isNull(HzBill::getInvoiceStatus)) // 0=未开票 或 null
                 .eq(HzBill::getDelFlag, "0")
                 .orderByDesc(HzBill::getBillPeriod);
+        List<HzBill> bills = billMapper.selectList(billWrapper);
+
+        if (bills == null || bills.isEmpty())
+        {
+            // 没有可开票账单，返回空列表
+            return success(new java.util.ArrayList<>());
+        }
+
+        // 通过账单的合同ID获取房源信息，去重（同一房源只返回一次）
+        Map<Long, Map<String, Object>> houseMap = new java.util.LinkedHashMap<>();
+        for (HzBill bill : bills)
+        {
+            Long contractId = bill.getContractId();
+            if (contractId == null || houseMap.containsKey(contractId))
+            {
+                continue;
+            }
+
+            HzContract contract = contractMapper.selectById(contractId);
+            if (contract == null)
+            {
+                continue;
+            }
+
+            HzHouse house = houseMapper.selectById(contract.getHouseId());
+            if (house == null)
+            {
+                continue;
+            }
+
+            HzProject project = projectMapper.selectById(house.getProjectId());
+            if (project == null)
+            {
+                continue;
+            }
+
+            Map<String, Object> houseInfo = new HashMap<>();
+            houseInfo.put("community", project.getProjectName());
+            houseInfo.put("room", house.getHouseNo());
+            houseInfo.put("deposit", house.getDeposit() != null ? house.getDeposit().toString() : "0");
+            houseInfo.put("houseId", house.getHouseId());
+            houseInfo.put("projectId", project.getProjectId());
+            houseInfo.put("contractId", contractId);
+            houseInfo.put("hasBill", true);
+
+            houseMap.put(contractId, houseInfo);
+        }
+
+        return success(new java.util.ArrayList<>(houseMap.values()));
+    }
+
+    /**
+     * 获取可开票账单列表（已支付且未开票）
+     * @param userId 用户ID
+     * @param contractId 合同ID（可选，用于过滤指定房源的账单）
+     */
+    @GetMapping("/availableBills")
+    public AjaxResult getAvailableBills(@RequestParam Long userId, @RequestParam(required = false) Long contractId)
+    {
+        // 查询用户的可开票账单
+        LambdaQueryWrapper<HzBill> billWrapper = new LambdaQueryWrapper<>();
+        billWrapper.eq(HzBill::getTenantId, userId)
+                .eq(HzBill::getBillStatus, "1") // 1=已支付
+                .and(w -> w.eq(HzBill::getInvoiceStatus, "0").or().isNull(HzBill::getInvoiceStatus)) // 0=未开票 或 null
+                .eq(HzBill::getDelFlag, "0");
+
+        // 如果提供了合同ID，则过滤指定房源的账单
+        if (contractId != null)
+        {
+            billWrapper.eq(HzBill::getContractId, contractId);
+        }
+
+        billWrapper.orderByDesc(HzBill::getBillPeriod);
         List<HzBill> bills = billMapper.selectList(billWrapper);
 
         return success(bills);

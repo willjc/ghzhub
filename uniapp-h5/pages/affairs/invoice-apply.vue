@@ -7,25 +7,43 @@
 					<view class="section-indicator"></view>
 					<text class="section-title">入住信息</text>
 				</view>
-				
-				<view class="card">
-					<view class="info-row">
-						<text class="info-label">小区</text>
-						<text class="info-value">{{ checkinInfo.community }}</text>
-					</view>
-					
-					<view class="info-row">
-						<text class="info-label">房间</text>
-						<text class="info-value">{{ checkinInfo.room }}</text>
-					</view>
-					
-					<view class="info-row">
-						<text class="info-label">押金</text>
-						<text class="info-value">{{ checkinInfo.deposit }}</text>
+
+				<!-- 房源列表 -->
+				<view class="house-list">
+					<view
+						class="house-card"
+						v-for="(house, index) in houseList"
+						:key="index"
+						:class="{ 'house-card-selected': selectedHouseIndex === index }"
+						@click="selectHouse(index)"
+					>
+						<view class="house-header">
+							<text class="house-community">{{ house.community }}</text>
+							<image
+								class="house-radio"
+								:src="selectedHouseIndex === index ? '/static/fangyaun/选中@2x.png' : '/static/fangyaun/未选中@2x.png'"
+								mode="aspectFit"
+							></image>
+						</view>
+						<view class="house-info">
+							<view class="info-item">
+								<text class="info-label">房间</text>
+								<text class="info-value">{{ house.room }}</text>
+							</view>
+							<view class="info-item">
+								<text class="info-label">押金</text>
+								<text class="info-value">{{ house.deposit }}元</text>
+							</view>
+						</view>
 					</view>
 				</view>
+
+				<!-- 空状态 -->
+				<view class="empty-house" v-if="houseList.length === 0">
+					<text class="empty-text">暂无入住信息</text>
+				</view>
 			</view>
-			
+
 			<!-- 租期信息 -->
 			<view class="section">
 				<view class="section-header">
@@ -79,15 +97,11 @@
 			return {
 				housingType: '',
 				userId: null,
-				selectedIndex: -1,
+				selectedHouseIndex: -1, // 选中的房源索引
+				selectedIndex: -1, // 选中的账单索引
 
-				checkinInfo: {
-					community: '',
-					room: '',
-					deposit: ''
-				},
-
-				billList: []
+				houseList: [], // 房源列表
+				billList: [] // 账单列表
 			}
 		},
 		onLoad(options) {
@@ -113,6 +127,14 @@
 			this.loadData()
 		},
 		methods: {
+			// 选择房源
+			selectHouse(index) {
+				if (this.selectedHouseIndex === index) return // 已选中则不重复加载
+				this.selectedHouseIndex = index
+				this.selectedIndex = -1 // 清空账单选择
+				this.loadBills() // 加载该房源的账单
+			},
+
 			// 选择账单
 			selectBill(index) {
 				this.selectedIndex = index
@@ -120,6 +142,13 @@
 
 			// 确定
 			handleConfirm() {
+				if (this.selectedHouseIndex === -1) {
+					uni.showToast({
+						title: '请选择房源',
+						icon: 'none'
+					})
+					return
+				}
 				if (this.selectedIndex === -1 || this.billList.length === 0) {
 					uni.showToast({
 						title: '请选择要开票的账单',
@@ -134,23 +163,53 @@
 				})
 			},
 
-			// 加载数据
+			// 加载房源列表
 			async loadData() {
 				try {
-					// 并行获取入住信息和可开票账单
-					const [checkinRes, billsRes] = await Promise.all([
-						getCheckinInfo(this.userId),
-						getAvailableBills(this.userId)
-					])
+					const checkinRes = await getCheckinInfo(this.userId)
 
-					// 处理入住信息
+					// 处理房源列表
 					if (checkinRes.code === 200 && checkinRes.data) {
-						this.checkinInfo = {
-							community: checkinRes.data.community || '',
-							room: checkinRes.data.room || '',
-							deposit: checkinRes.data.deposit || '0元'
+						this.houseList = checkinRes.data.map(item => ({
+							community: item.community || '',
+							room: item.room || '',
+							deposit: item.deposit || '0',
+							houseId: item.houseId,
+							projectId: item.projectId,
+							contractId: item.contractId
+						}))
+
+						// 如果只有一个房源，自动选中
+						if (this.houseList.length === 1) {
+							this.selectHouse(0)
 						}
 					}
+
+					// 如果没有房源，显示提示
+					if (this.houseList.length === 0) {
+						uni.showToast({
+							title: '暂无可开票的房源',
+							icon: 'none'
+						})
+					}
+				} catch (e) {
+					console.error('加载房源列表失败:', e)
+					uni.showToast({
+						title: '加载失败，请重试',
+						icon: 'none'
+					})
+				}
+			},
+
+			// 加载指定房源的账单
+			async loadBills() {
+				if (this.selectedHouseIndex === -1) return
+
+				const selectedHouse = this.houseList[this.selectedHouseIndex]
+				const contractId = selectedHouse.contractId
+
+				try {
+					const billsRes = await getAvailableBills(this.userId, contractId)
 
 					// 处理账单列表
 					if (billsRes.code === 200 && billsRes.data) {
@@ -162,19 +221,21 @@
 							amount: `${item.billAmount || 0}元`,
 							dateRange: item.billPeriod || ''
 						}))
+					} else {
+						this.billList = []
 					}
 
-					// 如果没有可开票账单，显示提示
+					// 如果该房源没有可开票账单，显示提示
 					if (this.billList.length === 0) {
 						uni.showToast({
-							title: '暂无可开票的账单',
+							title: '该房源暂无可开票账单',
 							icon: 'none'
 						})
 					}
 				} catch (e) {
-					console.error('加载数据失败:', e)
+					console.error('加载账单失败:', e)
 					uni.showToast({
-						title: '加载失败，请重试',
+						title: '加载账单失败，请重试',
 						icon: 'none'
 					})
 				}
@@ -233,31 +294,83 @@
 		box-sizing: border-box;
 	}
 
-	/* 信息行 */
-	.info-row {
+	/* 房源列表 */
+	.house-list {
 		display: flex;
-		align-items: center;
-		margin-bottom: 20rpx;
+		flex-direction: column;
+		gap: 20rpx;
+		margin-bottom: 24rpx;
 	}
 
-	.info-row:last-child {
-		margin-bottom: 0;
+	.house-card {
+		width: 702rpx;
+		border-radius: 20rpx;
+		background: #ffffff;
+		padding: 28rpx 32rpx;
+		box-sizing: border-box;
+		border: 2rpx solid transparent;
+		transition: all 0.3s;
+	}
+
+	.house-card-selected {
+		border-color: #0f73ff;
+		background: rgba(15, 115, 255, 0.03);
+	}
+
+	.house-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 16rpx;
+	}
+
+	.house-community {
+		color: #1a1a1a;
+		font-size: 30rpx;
+		font-weight: 600;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+	}
+
+	.house-radio {
+		width: 36rpx;
+		height: 36rpx;
+		flex-shrink: 0;
+	}
+
+	.house-info {
+		display: flex;
+		flex-direction: column;
+		gap: 8rpx;
+	}
+
+	.info-item {
+		display: flex;
+		align-items: center;
 	}
 
 	.info-label {
 		width: 110rpx;
-		color: #333333;
-		font-size: 28rpx;
+		color: #666666;
+		font-size: 26rpx;
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
 	}
 
 	.info-value {
-		flex: 1;
-		color: #1a1a1a;
+		color: #333333;
 		font-size: 26rpx;
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
+	}
+
+	.empty-house {
+		padding: 60rpx 0;
+		text-align: center;
+	}
+
+	.empty-text {
+		color: #999999;
+		font-size: 28rpx;
 	}
 
 	/* 账单列表 */

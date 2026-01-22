@@ -36,12 +36,12 @@
 				
 				<!-- 个人名称 -->
 				<view class="form-row">
-					<text class="form-label">个人名称</text>
+					<text class="form-label">名称</text>
 					<input 
 						class="form-input" 
 						type="text" 
 						v-model="formData.name" 
-						placeholder="请输入您的姓名"
+						placeholder="请输入名称"
 						placeholder-class="placeholder"
 					/>
 				</view>

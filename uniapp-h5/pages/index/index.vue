@@ -532,6 +532,11 @@
 					uni.navigateTo({
 						url: '/pages/policy/index'
 					})
+				} else if (item.key === 'map') {
+					// 地图找房跳转
+					uni.navigateTo({
+						url: '/pages/map/index'
+					})
 				} else {
 					console.log('点击图标:', item.name)
 				}

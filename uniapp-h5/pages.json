@@ -86,6 +86,13 @@
 			}
 		},
 		{
+			"path": "pages/map/index",
+			"style": {
+				"navigationBarTitleText": "地图找房",
+				"navigationBarBackgroundColor": "#ffffff"
+			}
+		},
+		{
 			"path": "pages/upload/index",
 			"style": {
 				"navigationBarTitleText": "材料上传"
