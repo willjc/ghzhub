@@ -54,9 +54,7 @@
 			
 			<!-- 按钮区域 -->
 			<view class="button-group">
-				<view class="btn btn-preview" @click="handlePreview">
-					<text class="btn-text-blue">预览</text>
-				</view>
+				
 				<view class="btn btn-download" @click="handleDownload">
 					<text class="btn-text-white">下载</text>
 				</view>
@@ -184,6 +182,26 @@
 
 				// 拼接完整的文件URL
 				const fileUrl = config.baseUrl + this.invoiceFile
+
+				// #ifdef H5
+				// H5端：使用浏览器原生下载
+				const link = document.createElement('a')
+				link.href = fileUrl
+				link.target = '_blank'
+				// 提取文件名
+				const fileName = this.getFileName(this.invoiceFile)
+				link.download = fileName
+				document.body.appendChild(link)
+				link.click()
+				document.body.removeChild(link)
+				uni.showToast({
+					title: '下载中...',
+					icon: 'success'
+				})
+				// #endif
+
+				// #ifndef H5
+				// 非H5端：使用uni.downloadFile + uni.saveFile
 				uni.downloadFile({
 					url: fileUrl,
 					success: (res) => {
@@ -211,6 +229,13 @@
 						})
 					}
 				})
+				// #endif
+			},
+			// 获取文件名
+			getFileName(path) {
+				if (!path) return ''
+				const parts = path.split('/')
+				return parts[parts.length - 1]
 			}
 		}
 	}

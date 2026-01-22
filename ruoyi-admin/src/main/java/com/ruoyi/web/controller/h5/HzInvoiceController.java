@@ -7,6 +7,7 @@ import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzHouse;
+import com.ruoyi.system.domain.HzInvoice;
 import com.ruoyi.system.domain.HzInvoiceApply;
 import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.domain.HzUser;
@@ -277,6 +278,16 @@ public class HzInvoiceController extends BaseController
                 {
                     // 忽略解析错误
                 }
+            }
+        }
+
+        // 如果已开票，通过apply_id反向查询发票信息
+        if ("2".equals(invoiceApply.getApplyStatus()))
+        {
+            HzInvoice invoice = invoiceService.selectInvoiceByApplyId(applyId);
+            if (invoice != null)
+            {
+                result.put("invoice", invoice);
             }
         }
 

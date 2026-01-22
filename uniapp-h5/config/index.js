@@ -28,9 +28,9 @@ const production = {
 
 // 测试环境配置（本地开发，后端8090端口）
 const test = {
-  baseUrl: 'http://localhost:8090',
-  uploadUrl: 'http://localhost:8090',
-  staticUrl: 'http://localhost:8090',
+  baseUrl: 'http://192.168.31.146:8090',
+  uploadUrl: 'http://192.168.31.146:8090',
+  staticUrl: 'http://192.168.31.146:8090',
   timeout: 30000,
 }
 
