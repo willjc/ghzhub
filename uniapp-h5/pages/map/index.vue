@@ -206,57 +206,15 @@ export default {
 		},
 
 		/**
-		 * 处理类型数据（补充测试数据）
+		 * 处理类型数据（过滤有效坐标的项目）
 		 */
 		processTypeData(projects, type) {
-			const validProjects = projects.filter(p =>
+			return projects.filter(p =>
 				p.longitude && p.latitude &&
 				!isNaN(parseFloat(p.longitude)) &&
 				!isNaN(parseFloat(p.latitude))
 			)
-
-			// 如果有效项目不足3个，补充测试数据
-			if (validProjects.length < 3) {
-				const testData = this.getTestData(type)
-				return [...validProjects, ...testData]
-			}
-
-			return validProjects
 		},
-
-		/**
-		 * 获取测试数据
-		 */
-		getTestData(type) {
-				const testDatas = {
-					'1': [ // 人才公寓
-						{ projectId: 101, projectName: '航南人才公寓', longitude: 113.83, latitude: 34.55, address: '航空港区航南大道', price: 1500, availableHouses: 10, projectType: '1' },
-						{ projectId: 102, projectName: '青年人才家园', longitude: 113.85, latitude: 34.57, address: '航空港区郑港六路', price: 1600, availableHouses: 8, projectType: '1' },
-						{ projectId: 103, projectName: '英才公寓', longitude: 113.87, latitude: 34.54, address: '航空港区巡航路', price: 1700, availableHouses: 12, projectType: '1' },
-						{ projectId: 104, projectName: '博士公寓', longitude: 113.81, latitude: 34.56, address: '航空港区航天路', price: 1800, availableHouses: 5, projectType: '1' },
-						{ projectId: 105, projectName: '精英家园', longitude: 113.89, latitude: 34.52, address: '航空港区雍州路', price: 1900, availableHouses: 15, projectType: '1' },
-						{ projectId: 106, projectName: '智汇公寓', longitude: 113.83, latitude: 34.59, address: '航空港区郑港四街', price: 2000, availableHouses: 6, projectType: '1' }
-					],
-					'2': [ // 保租房
-						{ projectId: 201, projectName: '航南新城专家公寓', longitude: 113.84, latitude: 34.56, address: '航空港区新港大道与遵大路交叉口', price: 2000, availableHouses: 15, projectType: '2' },
-						{ projectId: 202, projectName: '港区和顺家园', longitude: 113.86, latitude: 34.58, address: '航空港区郑港六路', price: 1800, availableHouses: 8, projectType: '2' },
-						{ projectId: 203, projectName: '锦绣桂园', longitude: 113.82, latitude: 34.54, address: '航空港区航天路', price: 2200, availableHouses: 12, projectType: '2' },
-						{ projectId: 204, projectName: '万科美景', longitude: 113.88, latitude: 34.57, address: '航空港区巡航路', price: 2500, availableHouses: 5, projectType: '2' },
-						{ projectId: 205, projectName: '绿地香榭', longitude: 113.85, latitude: 34.52, address: '航空港区雍州路', price: 1900, availableHouses: 20, projectType: '2' },
-						{ projectId: 206, projectName: '保利文化广场', longitude: 113.87, latitude: 34.53, address: '航空港区郑港四街', price: 2100, availableHouses: 10, projectType: '2' }
-					],
-					'3': [ // 市场租赁
-						{ projectId: 301, projectName: '龙湖冠寓', longitude: 113.86, latitude: 34.55, address: '航空港区郑港二街', price: 2300, availableHouses: 18, projectType: '3' },
-						{ projectId: 302, projectName: '万科泊寓', longitude: 113.83, latitude: 34.57, address: '航空港区郑港八路', price: 2400, availableHouses: 12, projectType: '3' },
-						{ projectId: 303, projectName: '旭辉领寓', longitude: 113.88, latitude: 34.53, address: '航空港区巡航路', price: 2200, availableHouses: 9, projectType: '3' },
-						{ projectId: 304, projectName: '魔方公寓', longitude: 113.81, latitude: 34.58, address: '航空港区航天路', price: 2500, availableHouses: 7, projectType: '3' },
-						{ projectId: 305, projectName: '冠寓', longitude: 113.85, latitude: 34.51, address: '航空港区雍州路', price: 2600, availableHouses: 14, projectType: '3' },
-						{ projectId: 306, projectName: '乐乎公寓', longitude: 113.89, latitude: 34.55, address: '航空港区郑港四街', price: 2100, availableHouses: 11, projectType: '3' }
-					]
-				}
-
-				return testDatas[type] || []
-			},
 
 		/**
 		 * 更新地图标记
@@ -359,18 +317,23 @@ export default {
 				if (!this.map || !marker) return
 
 				const content = `
-					<div style="padding: 12px; min-width: 150px; font-size: 13px;">
-						<div style="font-weight: bold; color: #1a1a1a; margin-bottom: 8px; font-size: 14px;">
+					<div style="padding: 12px; min-width: 180px; font-size: 13px;">
+						<div style="font-weight: bold; color: #1a1a1a; margin-bottom: 8px; font-size: 15px;">
 							${project.projectName || '项目'}
 						</div>
-						<div style="color: #666; margin-bottom: 4px; font-size: 12px;">
-							${project.address || '暂无地址'}
+						<div style="color: #666; margin-bottom: 6px; font-size: 12px;">
+							📍 ${project.address || '暂无地址'}
 						</div>
-						<div style="color: #e5252b; font-weight: 500; font-size: 14px;">
+						<div style="color: #e5252b; font-weight: 500; font-size: 15px; margin-bottom: 4px;">
 							${project.price ? '¥' + project.price + '元/月起' : '价格面议'}
 						</div>
-						<div style="color: #999; font-size: 12px; margin-top: 4px;">
+						<div style="color: #999; font-size: 12px; margin-bottom: 10px;">
 							可用房源: ${project.availableHouses || 0}套
+						</div>
+						<div class="detail-btn"
+							 data-project-id="${project.projectId}"
+							 style="background: #4A90E2; color: white; padding: 8px 16px; border-radius: 4px; text-align: center; cursor: pointer; font-size: 13px;">
+							查看详情 →
 						</div>
 					</div>
 				`
@@ -385,6 +348,18 @@ export default {
 				})
 
 				this.infoWindow.open(this.map, marker.getPosition())
+
+				// 绑定按钮点击事件（需要在窗体打开后绑定）
+				setTimeout(() => {
+					const btn = document.querySelector('.detail-btn')
+					if (btn) {
+						btn.onclick = () => {
+							uni.navigateTo({
+								url: '/pages/project/detail?id=' + project.projectId
+							})
+						}
+					}
+				}, 100)
 			// #endif
 		},
 
