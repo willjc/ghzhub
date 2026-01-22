@@ -20,6 +20,14 @@ export function getNoticeList() {
 }
 
 /**
+ * 获取最新通知内容（标题为"最新通知"的公告）
+ * @returns {Promise}
+ */
+export function getLatestNotice() {
+  return get('/h5/config/latestNotice')
+}
+
+/**
  * 获取功能图标列表
  * @returns {Promise}
  */

@@ -128,10 +128,12 @@
 				<view class="notice-section"></view>
 				<view class="notice-content">
 					<image class="notice-icon" src="/static/通知@2x.png"></image>
-					<scroll-view class="notice-text-scroll" scroll-x>
-						<text class="notice-label">最新通知：</text>
-						<text class="notice-text">这是一条最新消息通知，滚动展示...</text>
-					</scroll-view>
+					<text class="notice-label">最新通知：</text>
+					<view class="notice-scroll-container">
+						<view class="notice-scroll-content">
+							<text class="notice-text">{{ noticeText || '暂无通知' }}</text>
+						</view>
+					</view>
 				</view>
 			</view>
 
@@ -207,13 +209,14 @@
 
 <script>
 	import { getProjectListByType } from '@/api/project'
-	import { getBannerList } from '@/api/config'
+	import { getBannerList, getLatestNotice } from '@/api/config'
 	import { updateUserInfo } from '@/api/auth'
 	import { BASE_URL } from '@/utils/request'
 
 	export default {
 		data() {
 			return {
+				noticeText: '', // 最新通知内容
 				showModal: false, // 弹窗显示状态
 				formData: { // 弹窗表单数据
 					identity: '',
@@ -284,6 +287,9 @@
 
 			// 加载轮播图
 			this.loadBanners()
+
+			// 加载最新通知
+			this.loadLatestNotice()
 
 		},
 		methods: {
@@ -589,6 +595,35 @@
 						{ image: '/static/banner@2x.png' }
 					]
 				}
+			},
+
+			/**
+			 * 加载最新通知
+			 */
+			async loadLatestNotice() {
+				try {
+					const response = await getLatestNotice()
+					if (response.code === 200 && response.msg) {
+						// 去除 HTML 标签，只保留纯文本
+						this.noticeText = this.stripHtmlTags(response.msg)
+					}
+				} catch (error) {
+					console.error('加载最新通知失败:', error)
+					this.noticeText = '暂无通知'
+				}
+			},
+
+			/**
+			 * 去除 HTML 标签
+			 * @param {String} html 包含 HTML 标签的字符串
+			 * @returns {String} 纯文本
+			 */
+			stripHtmlTags(html) {
+				if (!html) return ''
+				// 创建临时 DOM 元素提取纯文本
+				const temp = document.createElement('div')
+				temp.innerHTML = html
+				return temp.textContent || temp.innerText || ''
 			}
 		}
 	}
@@ -815,13 +850,7 @@
 		width: 44rpx;
 		height: 44rpx;
 		margin-right: 16rpx;
-	}
-
-	.notice-text-scroll {
-		flex: 1;
-		white-space: nowrap;
-		display: flex;
-		align-items: center;
+		flex-shrink: 0;
 	}
 
 	.notice-label {
@@ -833,7 +862,32 @@
 		text-align: left;
 		line-height: 40rpx;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
+		flex-shrink: 0;
+	}
+
+	/* 滚动容器 */
+	.notice-scroll-container {
+		flex: 1;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+
+	/* 滚动内容 */
+	.notice-scroll-content {
 		display: inline-block;
+		white-space: nowrap;
+		padding-left: 100%;
+		animation: scroll-left 20s linear infinite;
+	}
+
+	/* 从右到左滚动动画 */
+	@keyframes scroll-left {
+		0% {
+		transform: translateX(0);
+	}
+		100% {
+		transform: translateX(-100%);
+	}
 	}
 
 	.notice-text {

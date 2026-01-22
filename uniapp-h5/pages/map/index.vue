@@ -240,6 +240,9 @@ export default {
 
 				this.isEmpty = false
 
+				// 存储项目和标记的配对
+				const projectMarkerPairs = []
+
 				// 添加标记
 				selectedProjects.forEach(project => {
 					const lng = parseFloat(project.longitude)
@@ -260,6 +263,7 @@ export default {
 						})
 
 						this.markers.push(marker)
+						projectMarkerPairs.push({ project, marker })
 					}
 				})
 
@@ -267,6 +271,14 @@ export default {
 				if (this.markers.length > 0) {
 					this.map.add(this.markers)
 					this.map.setFitView()
+
+					// 默认打开第一个项目的信息窗体
+					setTimeout(() => {
+						if (projectMarkerPairs.length > 0) {
+							const first = projectMarkerPairs[0]
+							this.showInfoWindow(first.project, first.marker)
+						}
+					}, 500)
 				}
 
 				this.loading = false
