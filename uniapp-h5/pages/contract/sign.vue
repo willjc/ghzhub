@@ -115,6 +115,7 @@
 // #ifdef H5
 import SmoothSignature from 'smooth-signature'
 // #endif
+import { generateContract, signContract, renewContract } from '@/api/contract'
 
 export default {
 	data() {
@@ -186,29 +187,18 @@ export default {
 			try {
 				uni.showLoading({ title: '生成合同中...' })
 
-				// 获取 token
-				const token = uni.getStorageSync('token') || ''
-
-				const response = await uni.request({
-					url: 'http://localhost:8090/h5/app/contract/generate',
-					method: 'POST',
-					header: {
-						'Content-Type': 'application/json',
-						'Authorization': token ? `Bearer ${token}` : ''
-					},
-					data: {
-						houseId: this.roomId,
-						rentMonths: this.selectedMonths,
-						startDate: this.startDate
-					}
+				const response = await generateContract({
+					houseId: this.roomId,
+					rentMonths: this.selectedMonths,
+					startDate: this.startDate
 				})
 
 				uni.hideLoading()
 
-				if (response.statusCode === 200 && response.data.code === 200) {
-					this.contractData = response.data.data
+				if (response.code === 200) {
+					this.contractData = response.data
 				} else {
-					throw new Error(response.data?.msg || '生成合同失败')
+					throw new Error(response.msg || '生成合同失败')
 				}
 			} catch (error) {
 				uni.hideLoading()
@@ -357,14 +347,6 @@ export default {
 			try {
 				uni.showLoading({ title: '提交中...' })
 
-				// 获取 token
-				const token = uni.getStorageSync('token') || ''
-
-				// 根据是否续租调用不同接口
-				const url = this.isRenew
-					? 'http://localhost:8090/h5/app/contract/renew'
-					: 'http://localhost:8090/h5/app/contract/sign'
-
 				const requestData = {
 					houseId: this.roomId,
 					projectId: this.projectId,
@@ -381,19 +363,14 @@ export default {
 					requestData.oldContractId = this.oldContractId
 				}
 
-				const response = await uni.request({
-					url: url,
-					method: 'POST',
-					header: {
-						'Content-Type': 'application/json',
-						'Authorization': token ? `Bearer ${token}` : ''
-					},
-					data: requestData
-				})
+				// 根据是否续租调用不同接口
+				const response = this.isRenew
+					? await renewContract(requestData)
+					: await signContract(requestData)
 
 				uni.hideLoading()
 
-				if (response.statusCode === 200 && response.data.code === 200) {
+				if (response.code === 200) {
 					uni.showToast({
 						title: this.isRenew ? '续租成功' : '签署成功',
 						icon: 'success'
@@ -407,12 +384,12 @@ export default {
 						} else {
 							// 新租,跳转到押金缴纳页面
 							uni.redirectTo({
-								url: `/pages/room/deposit?roomId=${this.roomId}&contractId=${response.data.data.contractId}`
+								url: `/pages/room/deposit?roomId=${this.roomId}&contractId=${response.data.contractId}`
 							})
 						}
 					}, 1500)
 				} else {
-					throw new Error(response.data?.msg || '提交失败')
+					throw new Error(response.msg || '提交失败')
 				}
 			} catch (error) {
 				uni.hideLoading()

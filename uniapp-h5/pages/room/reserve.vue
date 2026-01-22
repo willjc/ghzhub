@@ -76,7 +76,7 @@
 </template>
 
 <script>
-	import { post } from '@/utils/request'
+	import { get, post } from '@/utils/request'
 
 	export default {
 		data() {
@@ -139,46 +139,21 @@
 					uni.showLoading({ title: '提交中...' })
 
 					// 调用API提交预约
-					// const response = await uni.request({
-					// 	url: 'http://localhost:8090/h5/app/house/' + this.roomId + '/appointment',
-					// 	method: 'POST',
-					// 	header: {
-					// 		'Content-Type': 'application/json'
-					// 	},
-					// 	data: {
-					// 		visitorName: this.formData.contactName,
-					// 		visitorPhone: this.formData.contactPhone,
-					// 		appointmentDate: this.formData.visitDate,
-					// 		appointmentTime: '10:00'  // 默认上午10点
-					// 	}
-					// })
 					const response = await post(`/h5/app/house/${this.roomId}/appointment`, {
-  											visitorName: this.formData.contactName,
-  											visitorPhone: this.formData.contactPhone,
-  											appointmentDate: this.formData.visitDate,
-  											appointmentTime: '10:00'
-											})
+						visitorName: this.formData.contactName,
+						visitorPhone: this.formData.contactPhone,
+						appointmentDate: this.formData.visitDate,
+						appointmentTime: '10:00'  // 默认上午10点
+					})
 					uni.hideLoading()
 
-					// if (response.statusCode === 200 && response.data.code === 200) {
-					// 	uni.showToast({
-					// 		title: response.data.msg || '预约成功',
-					// 		icon: 'success'
-					// 	})
-
-					// 	setTimeout(() => {
-					// 		uni.navigateBack()
-					// 	}, 1500)
-					// } else {
-					// 	throw new Error(response.data?.msg || '预约失败')
-					// }
 					uni.showToast({
-  						 	title: response.msg || '预约成功',
- 						  	icon: 'success'
-							})
-				setTimeout(() => {
-  					uni.navigateBack()
-				}, 1500)
+						title: response.msg || '预约成功',
+						icon: 'success'
+					})
+					setTimeout(() => {
+						uni.navigateBack()
+					}, 1500)
 
 				} catch (error) {
 					uni.hideLoading()
@@ -197,16 +172,10 @@
 				}
 
 				try {
-					const response = await uni.request({
-						url: 'http://localhost:8090/h5/app/house/' + this.roomId,
-						method: 'GET',
-						header: {
-							'Content-Type': 'application/json'
-						}
-					})
+					const response = await get(`/h5/app/house/${this.roomId}`)
 
-					if (response.statusCode === 200 && response.data.code === 200) {
-						const data = response.data.data
+					if (response.code === 200) {
+						const data = response.data
 
 						// 映射房源信息
 						this.roomInfo = {

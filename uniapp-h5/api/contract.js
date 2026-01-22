@@ -29,3 +29,12 @@ export function generateContract(data) {
 export function signContract(data) {
   return request.post('/h5/app/contract/sign', data)
 }
+
+/**
+ * 续租合同
+ * @param {Object} data 续租数据
+ * @returns {Promise}
+ */
+export function renewContract(data) {
+  return request.post('/h5/app/contract/renew', data)
+}

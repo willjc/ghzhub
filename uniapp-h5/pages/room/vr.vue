@@ -2,7 +2,7 @@
 	<view class="vr-container">
 		<web-view v-if="webViewUrl" :src="webViewUrl"></web-view>
 		<view v-else class="loading-view">
-			<text class="loading-text">加载中...</text>
+			<text class="loading-text"></text>
 		</view>
 	</view>
 </template>

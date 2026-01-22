@@ -94,6 +94,8 @@
 </template>
 
 <script>
+	import { get, post } from '@/utils/request'
+
 	export default {
 		data() {
 			return {
@@ -240,43 +242,14 @@
 				}
 			},
 			// 获取押金账单API
-			getDepositBill(contractId) {
-				return new Promise((resolve, reject) => {
-					uni.request({
-						url: `http://localhost:8090/h5/app/bill/deposit/${contractId}`,
-						method: 'GET',
-						header: {
-							'Content-Type': 'application/json'
-						},
-						success: (res) => {
-							resolve(res.data)
-						},
-						fail: (err) => {
-							reject(err)
-						}
-					})
-				})
+			async getDepositBill(contractId) {
+				return await get(`/h5/app/bill/deposit/${contractId}`)
 			},
 			// 支付账单API
-			payBill(billId, payAmount) {
-				return new Promise((resolve, reject) => {
-					uni.request({
-						url: 'http://localhost:8090/h5/app/bill/pay',
-						method: 'POST',
-						header: {
-							'Content-Type': 'application/json'
-						},
-						data: {
-							billId: billId,
-							payAmount: payAmount
-						},
-						success: (res) => {
-							resolve(res.data)
-						},
-						fail: (err) => {
-							reject(err)
-						}
-					})
+			async payBill(billId, payAmount) {
+				return await post('/h5/app/bill/pay', {
+					billId: billId,
+					payAmount: payAmount
 				})
 			}
 		}
