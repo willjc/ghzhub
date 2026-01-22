@@ -93,13 +93,16 @@
 </template>
 
 <script>
+	import { submitInvoiceApply } from '@/api/invoice'
+
 	export default {
 		data() {
 			return {
 				housingType: '',
 				billId: '',
+				userId: null,
 				headType: 'personal', // personal / company
-				
+
 				formData: {
 					name: '',
 					phone: '',
@@ -108,11 +111,35 @@
 			}
 		},
 		onLoad(options) {
+			// 获取用户信息
+			const userInfo = uni.getStorageSync('userInfo')
+			if (!userInfo || !userInfo.userId) {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				})
+				setTimeout(() => {
+					uni.navigateTo({
+						url: '/pages/login/index'
+					})
+				}, 1500)
+				return
+			}
+			this.userId = userInfo.userId
+
 			if (options.type) {
 				this.housingType = options.type
 			}
 			if (options.billId) {
 				this.billId = options.billId
+			} else {
+				uni.showToast({
+					title: '账单信息错误',
+					icon: 'none'
+				})
+				setTimeout(() => {
+					uni.navigateBack()
+				}, 1500)
 			}
 		},
 		methods: {
@@ -120,9 +147,19 @@
 			selectHeadType(type) {
 				this.headType = type
 			},
-			
+
+			// 验证手机号
+			validatePhone(phone) {
+				return /^1[3-9]\d{9}$/.test(phone)
+			},
+
+			// 验证邮箱
+			validateEmail(email) {
+				return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+			},
+
 			// 提交
-			handleSubmit() {
+			async handleSubmit() {
 				// 验证表单
 				if (!this.formData.name) {
 					uni.showToast({
@@ -138,6 +175,13 @@
 					})
 					return
 				}
+				if (!this.validatePhone(this.formData.phone)) {
+					uni.showToast({
+						title: '请输入正确的手机号码',
+						icon: 'none'
+					})
+					return
+				}
 				if (!this.formData.email) {
 					uni.showToast({
 						title: '请输入邮箱地址',
@@ -145,24 +189,62 @@
 					})
 					return
 				}
-				
+				if (!this.validateEmail(this.formData.email)) {
+					uni.showToast({
+						title: '请输入正确的邮箱地址',
+						icon: 'none'
+					})
+					return
+				}
+				if (!this.billId) {
+					uni.showToast({
+						title: '账单信息错误',
+						icon: 'none'
+					})
+					return
+				}
+
 				uni.showLoading({
 					title: '提交中...'
 				})
-				
-				// TODO: 调用提交开票API
-				setTimeout(() => {
-					uni.hideLoading()
-					uni.showToast({
-						title: '申请成功',
-						icon: 'success'
+
+				try {
+					const res = await submitInvoiceApply({
+						userId: this.userId,
+						billId: this.billId,
+						headType: this.headType,
+						name: this.formData.name,
+						phone: this.formData.phone,
+						email: this.formData.email,
+						taxNo: '' // 企业抬头时需要税号，暂时留空
 					})
-					setTimeout(() => {
-						uni.navigateBack({
-							delta: 2
+
+					uni.hideLoading()
+
+					if (res.code === 200) {
+						uni.showToast({
+							title: '申请成功',
+							icon: 'success'
 						})
-					}, 1500)
-				}, 1000)
+						setTimeout(() => {
+							uni.navigateBack({
+								delta: 2
+							})
+						}, 1500)
+					} else {
+						uni.showToast({
+							title: res.msg || '申请失败',
+							icon: 'none'
+						})
+					}
+				} catch (e) {
+					uni.hideLoading()
+					console.error('提交开票申请失败:', e)
+					uni.showToast({
+						title: '申请失败，请重试',
+						icon: 'none'
+					})
+				}
 			}
 		}
 	}

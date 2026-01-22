@@ -66,59 +66,151 @@
 </template>
 
 <script>
+	import { getInvoiceDetail } from '@/api/invoice'
+	import config from '@/config/index'
+
 	export default {
 		data() {
 			return {
+				userId: null,
+				applyId: null,
+				invoiceFile: '', // 发票文件路径
 				invoiceData: {
-					amount: '99.00',
+					amount: '0.00',
 					invoiceType: '电子普通发票',
 					invoiceContent: '商品明细',
-					headType: '个人',
-					name: '张三三',
-					phone: '189****3765',
-					email: '123476897@126.com',
-					applyTime: '2019-02-16 22:22:22'
+					headType: '个���',
+					name: '',
+					phone: '',
+					email: '',
+					applyTime: ''
 				}
 			}
 		},
 		onLoad(options) {
-			// 接收传递的数据
-			if (options.name) {
-				this.invoiceData.name = options.name
+			// 获取用户信息
+			const userInfo = uni.getStorageSync('userInfo')
+			if (userInfo && userInfo.userId) {
+				this.userId = userInfo.userId
 			}
-			if (options.phone) {
-				this.invoiceData.phone = options.phone
-			}
-			if (options.email) {
-				this.invoiceData.email = options.email
-			}
-			if (options.headType) {
-				this.invoiceData.headType = options.headType === 'personal' ? '个人' : '企业'
-			}
-			if (options.amount) {
-				this.invoiceData.amount = options.amount
-			}
-			if (options.applyTime) {
-				this.invoiceData.applyTime = options.applyTime
+
+			if (options.applyId) {
+				this.applyId = options.applyId
+				this.loadData()
 			}
 		},
 		methods: {
+			async loadData() {
+				if (!this.applyId) return
+
+				try {
+					const res = await getInvoiceDetail(this.applyId, this.userId)
+					if (res.code === 200 && res.data) {
+						const data = res.data
+						this.invoiceData = {
+							amount: data.invoiceAmount || '0.00',
+							invoiceType: data.invoiceType === '1' ? '电子普通发票' : '增值税专用发票',
+							invoiceContent: data.invoiceContent || '商品明细',
+							headType: '个人',
+							name: data.receiverName || data.invoiceTitle || '',
+							phone: data.receiverPhone || '',
+							email: data.receiverEmail || '',
+							applyTime: this.formatDateTime(data.createTime)
+						}
+
+						// 获取发票文件
+						if (res.data.invoice && res.data.invoice.invoiceFile) {
+							this.invoiceFile = res.data.invoice.invoiceFile
+						}
+					}
+				} catch (e) {
+					console.error('加载发票详情失败:', e)
+				}
+			},
+
+			formatDateTime(dateStr) {
+				if (!dateStr) return ''
+				const date = new Date(dateStr)
+				const year = date.getFullYear()
+				const month = String(date.getMonth() + 1).padStart(2, '0')
+				const day = String(date.getDate()).padStart(2, '0')
+				const hours = String(date.getHours()).padStart(2, '0')
+				const minutes = String(date.getMinutes()).padStart(2, '0')
+				const seconds = String(date.getSeconds()).padStart(2, '0')
+				return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+			},
+
 			// 预览发票
 			handlePreview() {
-				uni.showToast({
-					title: '预览发票',
-					icon: 'none'
+				if (!this.invoiceFile) {
+					uni.showToast({
+						title: '暂无发票文件',
+						icon: 'none'
+					})
+					return
+				}
+
+				// 拼接完整的文件URL
+				const fileUrl = config.baseUrl + this.invoiceFile
+				uni.downloadFile({
+					url: fileUrl,
+					success: (res) => {
+						if (res.statusCode === 200) {
+							const filePath = res.tempFilePath
+							uni.openDocument({
+								filePath: filePath,
+								showMenu: true
+							})
+						}
+					},
+					fail: () => {
+						uni.showToast({
+							title: '预览失败',
+							icon: 'none'
+						})
+					}
 				})
-				// TODO: 实现发票预览功能
 			},
-			
+
 			// 下载发票
 			handleDownload() {
-				uni.showToast({
-					title: '下载发票',
-					icon: 'none'
+				if (!this.invoiceFile) {
+					uni.showToast({
+						title: '暂无发票文件',
+						icon: 'none'
+					})
+					return
+				}
+
+				// 拼接完整的文件URL
+				const fileUrl = config.baseUrl + this.invoiceFile
+				uni.downloadFile({
+					url: fileUrl,
+					success: (res) => {
+						if (res.statusCode === 200) {
+							uni.showToast({
+								title: '下载成功',
+								icon: 'success'
+							})
+							// 保存到本地
+							uni.saveFile({
+								tempFilePath: res.tempFilePath,
+								success: () => {
+									uni.showToast({
+										title: '已保存到本地',
+										icon: 'success'
+									})
+								}
+							})
+						}
+					},
+					fail: () => {
+						uni.showToast({
+							title: '下载失败',
+							icon: 'none'
+						})
+					}
 				})
-				// TODO: 实现发票下载功能
 			}
 		}
 	}

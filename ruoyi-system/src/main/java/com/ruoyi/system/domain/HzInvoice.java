@@ -38,10 +38,6 @@ public class HzInvoice extends BaseEntity
     @TableField("tenant_id")
     private Long tenantId;
 
-    /** 账单ID */
-    @TableField("bill_id")
-    private Long billId;
-
     /** 发票类型(1:增值税普通发票 2:增值税专用发票) */
     @TableField("invoice_type")
     private String invoiceType;
@@ -62,12 +58,8 @@ public class HzInvoice extends BaseEntity
     @TableField("invoice_date")
     private String invoiceDate;
 
-    /** 开票人 */
-    @TableField("invoicer")
-    private String invoicer;
-
     /** 发票文件路径 */
-    @TableField("invoice_file")
+    @TableField("invoice_pdf")
     private String invoiceFile;
 
     /** 发票状态(0:已开具 1:已作废 2:已红冲) */
@@ -128,16 +120,6 @@ public class HzInvoice extends BaseEntity
         this.tenantId = tenantId;
     }
 
-    public Long getBillId()
-    {
-        return billId;
-    }
-
-    public void setBillId(Long billId)
-    {
-        this.billId = billId;
-    }
-
     public String getInvoiceType()
     {
         return invoiceType;
@@ -188,16 +170,6 @@ public class HzInvoice extends BaseEntity
         this.invoiceDate = invoiceDate;
     }
 
-    public String getInvoicer()
-    {
-        return invoicer;
-    }
-
-    public void setInvoicer(String invoicer)
-    {
-        this.invoicer = invoicer;
-    }
-
     public String getInvoiceFile()
     {
         return invoiceFile;
@@ -237,13 +209,11 @@ public class HzInvoice extends BaseEntity
                 ", invoiceNo='" + invoiceNo + '\'' +
                 ", applyId=" + applyId +
                 ", tenantId=" + tenantId +
-                ", billId=" + billId +
                 ", invoiceType='" + invoiceType + '\'' +
                 ", invoiceTitle='" + invoiceTitle + '\'' +
                 ", taxNo='" + taxNo + '\'' +
                 ", invoiceAmount=" + invoiceAmount +
                 ", invoiceDate='" + invoiceDate + '\'' +
-                ", invoicer='" + invoicer + '\'' +
                 ", invoiceFile='" + invoiceFile + '\'' +
                 ", invoiceStatus='" + invoiceStatus + '\'' +
                 ", delFlag='" + delFlag + '\'' +

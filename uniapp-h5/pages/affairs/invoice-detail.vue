@@ -56,52 +56,70 @@
 </template>
 
 <script>
+	import { getInvoiceDetail } from '@/api/invoice'
+
 	export default {
 		data() {
 			return {
+				userId: null,
+				applyId: null,
 				status: 'pending', // pending: 开票中, completed: 已开票
 				invoiceData: {
-					amount: '99.00',
+					amount: '0.00',
 					invoiceType: '电子普通发票',
 					invoiceContent: '商品明细',
 					headType: '个人',
-					name: '张三三',
-					phone: '189****3765',
-					email: '123476897@126.com',
-					applyTime: '2019-02-16 22:22:22'
+					name: '',
+					phone: '',
+					email: '',
+					applyTime: ''
 				}
 			}
 		},
 		computed: {
 			statusText() {
-				return this.status === 'pending' ? '开票中' : '已开票'
+				return '开票中'
 			}
 		},
 		onLoad(options) {
-			if (options.status) {
-				this.status = options.status
+			// 获取用户信息
+			const userInfo = uni.getStorageSync('userInfo')
+			if (userInfo && userInfo.userId) {
+				this.userId = userInfo.userId
 			}
-			// 接收传递的数据
-			if (options.name) {
-				this.invoiceData.name = options.name
+
+			if (options.applyId) {
+				this.applyId = options.applyId
+				this.loadData()
 			}
-			if (options.phone) {
-				this.invoiceData.phone = options.phone
-			}
-			if (options.email) {
-				this.invoiceData.email = options.email
-			}
-			if (options.headType) {
-				this.invoiceData.headType = options.headType === 'personal' ? '个人' : '企业'
-			}
-			if (options.amount) {
-				this.invoiceData.amount = options.amount
-			}
-			// 设置申请时间为当前时间
-			this.invoiceData.applyTime = this.formatDate(new Date())
 		},
 		methods: {
-			formatDate(date) {
+			async loadData() {
+				if (!this.applyId) return
+
+				try {
+					const res = await getInvoiceDetail(this.applyId, this.userId)
+					if (res.code === 200 && res.data) {
+						const data = res.data
+						this.invoiceData = {
+							amount: data.invoiceAmount || '0.00',
+							invoiceType: data.invoiceType === '1' ? '电子普通发票' : '增值税专用发票',
+							invoiceContent: data.invoiceContent || '商品明细',
+							headType: '个人', // 暂时只有个人
+							name: data.receiverName || data.invoiceTitle || '',
+							phone: data.receiverPhone || '',
+							email: data.receiverEmail || '',
+							applyTime: this.formatDateTime(data.createTime)
+						}
+					}
+				} catch (e) {
+					console.error('加载发票详情失败:', e)
+				}
+			},
+
+			formatDateTime(dateStr) {
+				if (!dateStr) return ''
+				const date = new Date(dateStr)
 				const year = date.getFullYear()
 				const month = String(date.getMonth() + 1).padStart(2, '0')
 				const day = String(date.getDate()).padStart(2, '0')

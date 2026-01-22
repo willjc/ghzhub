@@ -70,7 +70,7 @@ public class HzInvoiceApplyServiceImpl extends ServiceImpl<HzInvoiceApplyMapper,
     public int insertInvoiceApply(HzInvoiceApply invoiceApply)
     {
         invoiceApply.setDelFlag("0");
-        invoiceApply.setApplyStatus("0"); // 默认待审核
+        invoiceApply.setApplyStatus("1"); // 默认开票中
         invoiceApply.setApplyNo(generateApplyNo());
         invoiceApply.setCreateTime(DateUtils.getNowDate());
         return this.save(invoiceApply) ? 1 : 0;

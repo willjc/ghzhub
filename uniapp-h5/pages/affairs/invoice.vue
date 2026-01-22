@@ -13,7 +13,7 @@
 						<text class="company-name">{{ item.companyName }}</text>
 						
 					</view>
-					<!-- 第二行：发票类型 | 订单详情 -->
+					<!-- 第二行：发票类型 | 发票详情 -->
 					<view class="card-row deV">
 						<text class="invoice-type">{{ item.invoiceType }}</text>
 						<text class="invoice-amount">¥{{ item.amount }}</text>
@@ -23,7 +23,7 @@
 					<view class="card-row">
 						<text class="invoice-status" :class="getStatusClass(item.status)">{{ item.statusText }}</text>
 						<view class="detail-btn" @click="handleDetail(item)">
-							<text class="detail-text">订单详情</text>
+							<text class="detail-text">发票详情</text>
 						</view>
 					</view>
 				</view>
@@ -46,57 +46,33 @@
 
 							
 <script>
+	import { getMyInvoiceList } from '@/api/invoice'
+
 	export default {
 		data() {
 			return {
 				housingType: '',
-				invoiceGroups: [
-					{
-						date: '2020/05/16',
-						list: [
-							{
-								id: 1,
-								companyName: '郑州地铁集团有限公司',
-								invoiceType: '增值税电子普通发票',
-								amount: '99.00',
-								status: 'pending',
-								statusText: '开票中'
-							},
-							{
-								id: 2,
-								companyName: '郑州地铁集团有限公司',
-								invoiceType: '增值税电子普通发票',
-								amount: '99.00',
-								status: 'done',
-								statusText: '已开票'
-							}
-						]
-					},
-					{
-						date: '2020/05/16',
-						list: [
-							{
-								id: 3,
-								companyName: '郑州地铁集团有限公司',
-								invoiceType: '增值税电子普通发票',
-								amount: '99.00',
-								status: 'pending',
-								statusText: '开票中'
-							},
-							{
-								id: 4,
-								companyName: '郑州地铁集团有限公司',
-								invoiceType: '增值税电子普通发票',
-								amount: '99.00',
-								status: 'done',
-								statusText: '已开票'
-							}
-						]
-					}
-				]
+				userId: null,
+				invoiceGroups: []
 			}
 		},
 		onLoad(options) {
+			// 获取用户信息
+			const userInfo = uni.getStorageSync('userInfo')
+			if (!userInfo || !userInfo.userId) {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				})
+				setTimeout(() => {
+					uni.navigateTo({
+						url: '/pages/login/index'
+					})
+				}, 1500)
+				return
+			}
+			this.userId = userInfo.userId
+
 			if (options.type) {
 				this.housingType = options.type
 			}
@@ -105,27 +81,83 @@
 		methods: {
 			// 获取状态样式类
 			getStatusClass(status) {
-				return status === 'pending' ? 'status-pending' : 'status-done'
+				return status === '1' ? 'status-pending' : 'status-done' // 1=开票中, 2=已开票
 			},
-			
-			// 查看订单详情
+
+			// 获取发票类型文本
+			getInvoiceTypeText(type) {
+				return type === '1' ? '增值税电子普通发票' : '增值税专用发票'
+			},
+
+			// 获取状态文本
+			getStatusText(status) {
+				return status === '1' ? '开票中' : '已开票'
+			},
+
+			// 格式化日期
+			formatDate(dateStr) {
+				if (!dateStr) return ''
+				const date = new Date(dateStr)
+				const year = date.getFullYear()
+				const month = String(date.getMonth() + 1).padStart(2, '0')
+				const day = String(date.getDate()).padStart(2, '0')
+				return `${year}/${month}/${day}`
+			},
+
+			// 查看发票详情
 			handleDetail(item) {
+				const pageUrl = item.applyStatus === '2'
+					? `/pages/affairs/invoice-completed?applyId=${item.applyId}`
+					: `/pages/affairs/invoice-detail?applyId=${item.applyId}`
 				uni.navigateTo({
-					url: `/pages/affairs/invoice-detail?id=${item.id}`
+					url: pageUrl
 				})
 			},
-			
+
 			// 申请开票
 			handleApply() {
 				uni.navigateTo({
 					url: `/pages/affairs/invoice-apply?type=${this.housingType}`
 				})
 			},
-			
+
 			// 加载发票列表
-			loadInvoiceList() {
-				// TODO: 调用API获取发票数据
-				console.log('加载发票列表，类型:', this.housingType)
+			async loadInvoiceList() {
+				try {
+					const res = await getMyInvoiceList(this.userId)
+					if (res.code === 200 && res.data) {
+						// 按日期分组
+						const groups = {}
+						res.data.forEach(item => {
+							const date = this.formatDate(item.createTime)
+							if (!groups[date]) {
+								groups[date] = []
+							}
+							groups[date].push({
+								id: item.applyId,
+								applyId: item.applyId,
+								companyName: item.invoiceTitle || '个人',
+								invoiceType: this.getInvoiceTypeText(item.invoiceType),
+								amount: item.invoiceAmount || '0.00',
+								status: item.applyStatus,
+								statusText: this.getStatusText(item.applyStatus),
+								applyStatus: item.applyStatus
+							})
+						})
+
+						// 转换为数组格式
+						this.invoiceGroups = Object.keys(groups).map(date => ({
+							date,
+							list: groups[date]
+						}))
+					}
+				} catch (e) {
+					console.error('加载发票列表失败:', e)
+					uni.showToast({
+						title: '加载失败，请重试',
+						icon: 'none'
+					})
+				}
 			}
 		}
 	}

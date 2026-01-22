@@ -83,6 +83,10 @@ public class HzBill extends BaseEntity {
     @TableField("bill_status")
     private String billStatus;
 
+    /** 开票状态(0:未开票 1:开票中 2:已开票) */
+    @TableField("invoice_status")
+    private String invoiceStatus;
+
     /** 支付时间 */
     @TableField("pay_time")
     private String payTime;
@@ -231,6 +235,14 @@ public class HzBill extends BaseEntity {
 
     public String getBillStatus() {
         return billStatus;
+    }
+
+    public String getInvoiceStatus() {
+        return invoiceStatus;
+    }
+
+    public void setInvoiceStatus(String invoiceStatus) {
+        this.invoiceStatus = invoiceStatus;
     }
 
     public void setPayTime(String payTime) {

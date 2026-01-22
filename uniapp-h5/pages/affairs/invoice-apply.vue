@@ -72,39 +72,41 @@
 </template>
 
 <script>
+	import { getCheckinInfo, getAvailableBills } from '@/api/invoice'
+
 	export default {
 		data() {
 			return {
 				housingType: '',
-				selectedIndex: 0,
-				
+				userId: null,
+				selectedIndex: -1,
+
 				checkinInfo: {
-					community: '美好人间',
-					room: '6号楼6单元606',
-					deposit: '2000元'
+					community: '',
+					room: '',
+					deposit: ''
 				},
-				
-				billList: [
-					{
-						id: 1,
-						period: '第1期房租',
-						status: 'paid',
-						statusText: '已支付',
-						amount: '2000元',
-						dateRange: '2025年10月20日至2025年11月30日'
-					},
-					{
-						id: 2,
-						period: '第1期房租',
-						status: 'paid',
-						statusText: '已支付',
-						amount: '2000元',
-						dateRange: '2025年10月20日至2025年11月30日'
-					}
-				]
+
+				billList: []
 			}
 		},
 		onLoad(options) {
+			// 获取用户信息
+			const userInfo = uni.getStorageSync('userInfo')
+			if (!userInfo || !userInfo.userId) {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				})
+				setTimeout(() => {
+					uni.navigateTo({
+						url: '/pages/login/index'
+					})
+				}, 1500)
+				return
+			}
+			this.userId = userInfo.userId
+
 			if (options.type) {
 				this.housingType = options.type
 			}
@@ -115,33 +117,67 @@
 			selectBill(index) {
 				this.selectedIndex = index
 			},
-			
+
 			// 确定
 			handleConfirm() {
-				if (this.selectedIndex === -1) {
+				if (this.selectedIndex === -1 || this.billList.length === 0) {
 					uni.showToast({
 						title: '请选择要开票的账单',
 						icon: 'none'
 					})
 					return
 				}
-				
+
 				const selectedBill = this.billList[this.selectedIndex]
-				uni.showLoading({
-					title: '提交中...'
-				})
-				
-				// 跳转到填写开票信息页面
-				uni.hideLoading()
 				uni.navigateTo({
 					url: `/pages/affairs/invoice-form?type=${this.housingType}&billId=${selectedBill.id}`
 				})
 			},
-			
+
 			// 加载数据
-			loadData() {
-				// TODO: 调用API获取数据
-				console.log('加载开票申请数据，类型:', this.housingType)
+			async loadData() {
+				try {
+					// 并行获取入住信息和可开票账单
+					const [checkinRes, billsRes] = await Promise.all([
+						getCheckinInfo(this.userId),
+						getAvailableBills(this.userId)
+					])
+
+					// 处理入住信息
+					if (checkinRes.code === 200 && checkinRes.data) {
+						this.checkinInfo = {
+							community: checkinRes.data.community || '',
+							room: checkinRes.data.room || '',
+							deposit: checkinRes.data.deposit || '0元'
+						}
+					}
+
+					// 处理账单列表
+					if (billsRes.code === 200 && billsRes.data) {
+						this.billList = billsRes.data.map(item => ({
+							id: item.billId,
+							period: item.billPeriod || '未知期数',
+							status: 'paid',
+							statusText: '已支付',
+							amount: `${item.billAmount || 0}元`,
+							dateRange: item.billPeriod || ''
+						}))
+					}
+
+					// 如果没有可开票账单，显示提示
+					if (this.billList.length === 0) {
+						uni.showToast({
+							title: '暂无可开票的账单',
+							icon: 'none'
+						})
+					}
+				} catch (e) {
+					console.error('加载数据失败:', e)
+					uni.showToast({
+						title: '加载失败，请重试',
+						icon: 'none'
+					})
+				}
 			}
 		}
 	}

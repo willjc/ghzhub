@@ -30,9 +30,13 @@ public class HzInvoiceApply extends BaseEntity
     @TableField("tenant_id")
     private Long tenantId;
 
-    /** 账单ID */
-    @TableField("bill_id")
-    private Long billId;
+    /** 租户名称 */
+    @TableField("tenant_name")
+    private String tenantName;
+
+    /** 账单ID列表（逗号分隔） */
+    @TableField("bill_ids")
+    private String billIds;
 
     /** 发票类型(1:增值税普通发票 2:增值税专用发票) */
     @TableField("invoice_type")
@@ -46,6 +50,14 @@ public class HzInvoiceApply extends BaseEntity
     @TableField("tax_no")
     private String taxNo;
 
+    /** 企业地址 */
+    @TableField("company_address")
+    private String companyAddress;
+
+    /** 企业电话 */
+    @TableField("company_phone")
+    private String companyPhone;
+
     /** 开户银行 */
     @TableField("bank_name")
     private String bankName;
@@ -54,14 +66,6 @@ public class HzInvoiceApply extends BaseEntity
     @TableField("bank_account")
     private String bankAccount;
 
-    /** 注册地址 */
-    @TableField("register_address")
-    private String registerAddress;
-
-    /** 注册电话 */
-    @TableField("register_phone")
-    private String registerPhone;
-
     /** 开票金额 */
     @TableField("invoice_amount")
     private BigDecimal invoiceAmount;
@@ -69,6 +73,10 @@ public class HzInvoiceApply extends BaseEntity
     /** 开票内容 */
     @TableField("invoice_content")
     private String invoiceContent;
+
+    /** 邮箱 */
+    @TableField("email")
+    private String email;
 
     /** 收件人 */
     @TableField("receiver_name")
@@ -82,25 +90,25 @@ public class HzInvoiceApply extends BaseEntity
     @TableField("receiver_address")
     private String receiverAddress;
 
-    /** 申请状态(0:待审核 1:已通过 2:已拒绝) */
+    /** 申请时间 */
+    @TableField("apply_time")
+    private String applyTime;
+
+    /** 申请状态(0:待审核 1:开票中 2:已开票) */
     @TableField("apply_status")
     private String applyStatus;
 
-    /** 审核人 */
-    @TableField("auditor")
-    private String auditor;
+    /** 审批人 */
+    @TableField("approve_by")
+    private String approveBy;
 
-    /** 审核时间 */
-    @TableField("audit_time")
-    private String auditTime;
+    /** 审批时间 */
+    @TableField("approve_time")
+    private String approveTime;
 
-    /** 审核意见 */
-    @TableField("audit_opinion")
-    private String auditOpinion;
-
-    /** 发票ID */
-    @TableField("invoice_id")
-    private Long invoiceId;
+    /** 拒绝原因 */
+    @TableField("reject_reason")
+    private String rejectReason;
 
     /** 删除标志(0:正常 2:删除) */
     @TableField("del_flag")
@@ -136,14 +144,24 @@ public class HzInvoiceApply extends BaseEntity
         this.tenantId = tenantId;
     }
 
-    public Long getBillId()
+    public String getTenantName()
     {
-        return billId;
+        return tenantName;
     }
 
-    public void setBillId(Long billId)
+    public void setTenantName(String tenantName)
     {
-        this.billId = billId;
+        this.tenantName = tenantName;
+    }
+
+    public String getBillIds()
+    {
+        return billIds;
+    }
+
+    public void setBillIds(String billIds)
+    {
+        this.billIds = billIds;
     }
 
     public String getInvoiceType()
@@ -176,6 +194,26 @@ public class HzInvoiceApply extends BaseEntity
         this.taxNo = taxNo;
     }
 
+    public String getCompanyAddress()
+    {
+        return companyAddress;
+    }
+
+    public void setCompanyAddress(String companyAddress)
+    {
+        this.companyAddress = companyAddress;
+    }
+
+    public String getCompanyPhone()
+    {
+        return companyPhone;
+    }
+
+    public void setCompanyPhone(String companyPhone)
+    {
+        this.companyPhone = companyPhone;
+    }
+
     public String getBankName()
     {
         return bankName;
@@ -196,26 +234,6 @@ public class HzInvoiceApply extends BaseEntity
         this.bankAccount = bankAccount;
     }
 
-    public String getRegisterAddress()
-    {
-        return registerAddress;
-    }
-
-    public void setRegisterAddress(String registerAddress)
-    {
-        this.registerAddress = registerAddress;
-    }
-
-    public String getRegisterPhone()
-    {
-        return registerPhone;
-    }
-
-    public void setRegisterPhone(String registerPhone)
-    {
-        this.registerPhone = registerPhone;
-    }
-
     public BigDecimal getInvoiceAmount()
     {
         return invoiceAmount;
@@ -234,6 +252,16 @@ public class HzInvoiceApply extends BaseEntity
     public void setInvoiceContent(String invoiceContent)
     {
         this.invoiceContent = invoiceContent;
+    }
+
+    public String getEmail()
+    {
+        return email;
+    }
+
+    public void setEmail(String email)
+    {
+        this.email = email;
     }
 
     public String getReceiverName()
@@ -266,6 +294,16 @@ public class HzInvoiceApply extends BaseEntity
         this.receiverAddress = receiverAddress;
     }
 
+    public String getApplyTime()
+    {
+        return applyTime;
+    }
+
+    public void setApplyTime(String applyTime)
+    {
+        this.applyTime = applyTime;
+    }
+
     public String getApplyStatus()
     {
         return applyStatus;
@@ -276,44 +314,34 @@ public class HzInvoiceApply extends BaseEntity
         this.applyStatus = applyStatus;
     }
 
-    public String getAuditor()
+    public String getApproveBy()
     {
-        return auditor;
+        return approveBy;
     }
 
-    public void setAuditor(String auditor)
+    public void setApproveBy(String approveBy)
     {
-        this.auditor = auditor;
+        this.approveBy = approveBy;
     }
 
-    public String getAuditTime()
+    public String getApproveTime()
     {
-        return auditTime;
+        return approveTime;
     }
 
-    public void setAuditTime(String auditTime)
+    public void setApproveTime(String approveTime)
     {
-        this.auditTime = auditTime;
+        this.approveTime = approveTime;
     }
 
-    public String getAuditOpinion()
+    public String getRejectReason()
     {
-        return auditOpinion;
+        return rejectReason;
     }
 
-    public void setAuditOpinion(String auditOpinion)
+    public void setRejectReason(String rejectReason)
     {
-        this.auditOpinion = auditOpinion;
-    }
-
-    public Long getInvoiceId()
-    {
-        return invoiceId;
-    }
-
-    public void setInvoiceId(Long invoiceId)
-    {
-        this.invoiceId = invoiceId;
+        this.rejectReason = rejectReason;
     }
 
     public String getDelFlag()
@@ -333,25 +361,13 @@ public class HzInvoiceApply extends BaseEntity
                 "applyId=" + applyId +
                 ", applyNo='" + applyNo + '\'' +
                 ", tenantId=" + tenantId +
-                ", billId=" + billId +
+                ", tenantName='" + tenantName + '\'' +
+                ", billIds='" + billIds + '\'' +
                 ", invoiceType='" + invoiceType + '\'' +
                 ", invoiceTitle='" + invoiceTitle + '\'' +
                 ", taxNo='" + taxNo + '\'' +
-                ", bankName='" + bankName + '\'' +
-                ", bankAccount='" + bankAccount + '\'' +
-                ", registerAddress='" + registerAddress + '\'' +
-                ", registerPhone='" + registerPhone + '\'' +
                 ", invoiceAmount=" + invoiceAmount +
-                ", invoiceContent='" + invoiceContent + '\'' +
-                ", receiverName='" + receiverName + '\'' +
-                ", receiverPhone='" + receiverPhone + '\'' +
-                ", receiverAddress='" + receiverAddress + '\'' +
                 ", applyStatus='" + applyStatus + '\'' +
-                ", auditor='" + auditor + '\'' +
-                ", auditTime='" + auditTime + '\'' +
-                ", auditOpinion='" + auditOpinion + '\'' +
-                ", invoiceId=" + invoiceId +
-                ", delFlag='" + delFlag + '\'' +
                 '}';
     }
 }
