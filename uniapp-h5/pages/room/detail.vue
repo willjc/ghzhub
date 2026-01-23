@@ -129,7 +129,7 @@ import config from '@/config/index'
 				imageTabs: [
 					{ key: 'vr', name: 'VR' },
 					{ key: 'main', name: '主图' },
-					{ key: 'outdoor', name: '户外图' },
+					{ key: 'outdoor', name: '户型图' },
 					{ key: 'indoor', name: '室内图' },
 					{ key: 'bathroom', name: '卫生间' }
 				],

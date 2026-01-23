@@ -172,9 +172,9 @@
 
 				<!-- 房源卡片列表 -->
 				<view class="listing-cards">
-					<view 
-						class="listing-card" 
-						v-for="(item, index) in listingData" 
+					<view
+						class="listing-card"
+						v-for="(item, index) in listingData"
 						:key="index"
 						@click="goToDetail(item)"
 					>
@@ -182,14 +182,19 @@
 						<view class="listing-info">
 							<view class="listing-header">
 								<text class="listing-title">{{ item.title }}</text>
-								
 							</view>
-							<view class="listing-status">
+
+							<!-- 房源：显示副标题（朝向+面积） -->
+							<text class="listing-subtitle" v-if="item.type === 'house'">{{ item.subtitle }}</text>
+
+							<!-- 项目：显示状态信息 -->
+							<view class="listing-status" v-if="item.type === 'project'">
 								<text class="status-text" :class="{ available: item.hasUnits }">有房源</text>
 								<text class="status-divider">|</text>
 								<text class="status-count">共{{ item.totalUnits }}套</text>
 								<text class="listing-distance">{{ item.distance }}</text>
 							</view>
+
 							<text class="listing-address">{{ item.address }}</text>
 							<view class="listing-tags">
 								<text class="tag" v-for="(tag, tagIndex) in item.tags" :key="tagIndex">{{ tag }}</text>
@@ -197,7 +202,7 @@
 							<view class="listing-price">
 								<text class="price-number">{{ item.price }}</text>
 								<text class="price-unit">元</text>
-								<text class="price-suffix">/月起</text>
+								<text class="price-suffix">{{ item.type === 'project' ? '/月起' : '/月' }}</text>
 							</view>
 						</view>
 					</view>
@@ -209,9 +214,11 @@
 
 <script>
 	import { getProjectListByType } from '@/api/project'
+	import { getHouseListByProjectType } from '@/api/house'
 	import { getBannerList, getLatestNotice } from '@/api/config'
 	import { updateUserInfo } from '@/api/auth'
 	import { BASE_URL } from '@/utils/request'
+	import config from '@/config/index'
 
 	export default {
 		data() {
@@ -447,10 +454,11 @@
 			transformProjectData(project) {
 				return {
 					projectId: project.projectId, // 项目ID（用于跳转详情）
+					type: 'project', // 标记为项目类型
 					title: project.projectName || '未命名项目', // 项目名称
 					hasUnits: (project.availableHouses || 0) > 0, // 是否有房源
 					totalUnits: project.totalHouses || 0, // 总套数
-					distance: '附近', // 距离（暂时固定值，后续可根据经纬度计算）
+					distance: '', // 距离（暂时固定值，后续可根据经纬度计算）
 					address: project.address || '地址未填写', // 地址
 					tags: this.parseFacilities(project.facilities), // 设施标签
 					price: parseFloat(project.price) || 0, // 起租价格（转换为数字）
@@ -471,6 +479,59 @@
 			},
 
 			/**
+			 * 加载房源列表
+			 */
+			async loadHouseList() {
+				// 获取当前选中分类对应的项目类型
+				const currentCategory = this.categoryTabs.find(item => item.key === this.activeCategory)
+				if (!currentCategory) {
+					return
+				}
+
+				this.loading = true
+
+				try {
+					const response = await getHouseListByProjectType(currentCategory.type, 10)
+
+					// 若依框架响应格式：{ code: 200, msg: 'success', data: [...] }
+					const houseList = response.data || []
+
+					// 转换数据格式
+					this.listingData = houseList.map(house => this.transformHouseData(house))
+
+					console.log(`加载${currentCategory.name}房源列表成功:`, this.listingData)
+				} catch (error) {
+					console.error('加载房源列表失败:', error)
+					uni.showToast({
+						title: '加载房源列表失败',
+						icon: 'none'
+					})
+					this.listingData = []
+				} finally {
+					this.loading = false
+				}
+			},
+
+			/**
+			 * 转换后端房源数据为前端展示格式
+			 * @param {Object} house 后端房源对象
+			 * @returns {Object} 前端展示对象
+			 */
+			transformHouseData(house) {
+				return {
+					houseId: house.houseId, // 房源ID（用于跳转详情）
+					projectId: house.projectId, // 项目ID（用于跳转详情）
+					type: 'house', // 标记为房源类型
+					title: house.title || '未命名房源', // 如"精装5号楼2单元5层505"
+					subtitle: house.subtitle || '', // 如"东南朝向 75平米"
+					address: house.projectName || '未知项目', // 项目名称
+					tags: (house.facilities || []).slice(0, 3), // 设施标签，最多3个
+					price: house.rentPrice || 0, // 租金
+					image: this.getImageUrl(house.mainImage) // 主图
+				}
+			},
+
+			/**
 			 * 获取图片完整URL
 			 * @param {String} imagePath 图片相对路径
 			 * @returns {String} 完整URL
@@ -486,7 +547,17 @@
 					return imagePath
 				}
 
-				// 直接返回相对路径，由manifest.json中的代理转发到后端
+				// 本地静态资源直接返回
+				if (imagePath.startsWith('/static/')) {
+					return imagePath
+				}
+
+				// /profile/ 开头的后端图片路径，需要拼接 staticUrl
+				if (imagePath.startsWith('/profile/')) {
+					return config.staticUrl + imagePath
+				}
+
+				// 直接返回相对路径
 				return imagePath
 			},
 
@@ -554,22 +625,43 @@
 			},
 			switchSubTab(key) {
 				this.activeSubTab = key
-				// 切换到项目标签时加载数据
+				// 切换标签时加载对应数据
 				if (key === 'project') {
 					this.loadProjectList()
+				} else if (key === 'listing') {
+					this.loadHouseList()
 				}
 			},
 			goToLatest() {
 				console.log('查看最新房源')
 			},
 			goToMore() {
-				console.log('查看更多')
+				// 根据当前子标签跳转到不同页面
+				if (this.activeSubTab === 'project') {
+					// 跳转到项目列表页
+					uni.navigateTo({
+						url: '/pages/project/all'
+					})
+				} else {
+					// 跳转到房源列表页
+					uni.navigateTo({
+						url: '/pages/house/all'
+					})
+				}
 			},
 			goToDetail(item) {
-				// 跳转到项目详情页面
-				uni.navigateTo({
-					url: `/pages/project/detail?id=${item.projectId}`
-				})
+				// 根据类型跳转到不同详情页
+				if (item.type === 'house') {
+					// 跳转到房源详情页
+					uni.navigateTo({
+						url: `/pages/room/detail?roomId=${item.houseId}&projectId=${item.projectId}`
+					})
+				} else {
+					// 跳转到项目详情页
+					uni.navigateTo({
+						url: `/pages/project/detail?id=${item.projectId}`
+					})
+				}
 			},
 
 			/**
@@ -1067,6 +1159,13 @@ margin-right: 24rpx;
 		flex: 1;
 	}
 
+	.listing-subtitle {
+		font-size: 24rpx;
+		color: #666;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+		margin-bottom: 4rpx;
+	}
+
 	.listing-distance {
 		width: 69rpx;
 		height: 40rpx;
@@ -1131,7 +1230,7 @@ margin-right: 24rpx;
 	}
 
 	.listing-address {
-		width: 360rpx;
+		width: 400rpx;
 		height: 40rpx;
 		opacity: 1;
 		color: #333333;

@@ -51,6 +51,102 @@ public class HzHouseAppController extends BaseController {
     private IHzAppointmentService appointmentService;
 
     /**
+     * 按项目类型获取房源列表（用于首页房源展示）
+     * @param projectType 项目类型（1:人才公寓 2:保租房 3:市场租赁）
+     * @param limit 限制返回数量，默认10条
+     */
+    @GetMapping("/listByProjectType/{projectType}")
+    public AjaxResult listByProjectType(
+            @PathVariable String projectType,
+            @RequestParam(required = false, defaultValue = "10") Integer limit) {
+
+        // 查询该类型下的所有项目ID
+        QueryWrapper<HzProject> projectWrapper = new QueryWrapper<>();
+        projectWrapper.eq("project_type", projectType)
+                .eq("status", "0")
+                .eq("del_flag", "0");
+        List<HzProject> projects = projectMapper.selectList(projectWrapper);
+
+        if (projects.isEmpty()) {
+            return AjaxResult.success(new ArrayList<>());
+        }
+
+        // 获取项目ID列表
+        List<Long> projectIds = projects.stream()
+                .map(HzProject::getProjectId)
+                .collect(Collectors.toList());
+
+        // 查询这些项目下的空置精选房源
+        QueryWrapper<HzHouse> houseWrapper = new QueryWrapper<>();
+        houseWrapper.in("project_id", projectIds)
+                .eq("house_status", "0")  // 0=空置可租
+                .eq("status", "0")
+                .eq("del_flag", "0")
+                .eq("is_featured", "1")  // 只查询精选房源
+                .orderByDesc("create_time")
+                .last("LIMIT " + limit);
+
+        List<HzHouse> houses = houseMapper.selectList(houseWrapper);
+
+        // 转换为前端需要的格式（关联查询项目、楼栋、单元、图片）
+        List<Map<String, Object>> result = houses.stream().map(house -> {
+            Map<String, Object> houseData = new HashMap<>();
+
+            // 获取关联信息
+            HzProject project = projectMapper.selectById(house.getProjectId());
+            HzBuilding building = buildingMapper.selectById(house.getBuildingId());
+            HzUnit unit = unitMapper.selectById(house.getUnitId());
+
+            // 构建标题：装修+楼栋+单元+楼层+房号
+            String decoration = house.getDecoration() != null ? house.getDecoration() : "";
+            String buildingName = building != null ? building.getBuildingName() : "";
+            String unitName = unit != null ? unit.getUnitName() : "";
+            String floor = house.getFloor() != null ? house.getFloor() + "层" : "";
+            String houseNo = house.getHouseNo() != null ? house.getHouseNo() : "";
+            String title = decoration + buildingName + unitName + floor + houseNo;
+
+            // 构建副标题：朝向+面积
+            String orientation = house.getOrientation() != null ? house.getOrientation() + "朝向" : "";
+            String area = house.getArea() != null && house.getArea().compareTo(java.math.BigDecimal.ZERO) > 0
+                    ? house.getArea() + "平米" : "";
+            String subtitle = orientation + (orientation.isEmpty() ? "" : " ") + area;
+
+            // 获取主图
+            QueryWrapper<com.ruoyi.system.domain.HzHouseImage> imageWrapper = new QueryWrapper<>();
+            imageWrapper.eq("house_id", house.getHouseId())
+                    .eq("image_type", "1")  // 1=主图
+                    .eq("del_flag", "0")
+                    .orderByAsc("sort_order");
+            List<com.ruoyi.system.domain.HzHouseImage> mainImages = houseImageMapper.selectList(imageWrapper);
+
+            // 取第一张主图
+            String mainImageUrl = "";
+            if (mainImages != null && !mainImages.isEmpty()) {
+                mainImageUrl = mainImages.get(0).getImageUrl();
+            }
+
+            // 设施标签
+            List<String> facilities = new ArrayList<>();
+            if (house.getFacilities() != null && !house.getFacilities().isEmpty()) {
+                facilities = Arrays.asList(house.getFacilities().split(","));
+            }
+
+            houseData.put("houseId", house.getHouseId());
+            houseData.put("projectId", house.getProjectId());  // 项目ID，用于跳转详情
+            houseData.put("title", title);
+            houseData.put("subtitle", subtitle);
+            houseData.put("projectName", project != null ? project.getProjectName() : "");
+            houseData.put("facilities", facilities);
+            houseData.put("rentPrice", house.getRentPrice());
+            houseData.put("mainImage", mainImageUrl);
+
+            return houseData;
+        }).collect(Collectors.toList());
+
+        return AjaxResult.success(result);
+    }
+
+    /**
      * 获取房源列表（按楼层分组）
      * 支持筛选: 楼栋、单元、户型、楼层范围、朝向
      */

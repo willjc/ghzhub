@@ -1,6 +1,14 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form-item label="租户姓名" prop="tenantName">
+        <el-input
+          v-model="queryParams.tenantName"
+          placeholder="请输入租户姓名"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="合同编号" prop="contractNo">
         <el-input
           v-model="queryParams.contractNo"
@@ -80,6 +88,7 @@
 
     <el-table v-loading="loading" :data="contractList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="租户姓名" align="center" prop="tenantName" width="100" show-overflow-tooltip />
       <el-table-column label="合同编号" align="center" prop="contractNo" width="180" show-overflow-tooltip />
       <el-table-column label="合同类型" align="center" prop="contractType" width="100">
         <template slot-scope="scope">
@@ -88,9 +97,11 @@
           <el-tag v-else-if="scope.row.contractType === '3'" type="warning">换房</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="合同期限" align="center" min-width="100">
+      <el-table-column label="合同期限" align="center" min-width="190">
         <template slot-scope="scope">
-          {{ scope.row.startDate }} 至 {{ scope.row.endDate }}
+          <span style="color: #409EFF;">{{ scope.row.startDate }}</span>
+          <span style="color: #909399; margin: 0 5px;">至</span>
+          <span style="color: #67C23A;">{{ scope.row.endDate }}</span>
         </template>
       </el-table-column>
       <el-table-column label="租期(月)" align="center" prop="rentMonths" width="100" />
@@ -114,7 +125,7 @@
           <el-tag v-else type="info">已解约</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="签署时间" align="center" prop="signTime" width="160" />
+      <el-table-column label="合同生效日期" align="center" prop="startDate" width="120" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="260">
         <template slot-scope="scope">
           <el-button
@@ -273,63 +284,196 @@
     </el-dialog>
 
     <!-- 合同详情对话框 -->
-    <el-dialog title="合同详情" :visible.sync="detailOpen" width="1200px" append-to-body>
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="合同编号">{{ detailForm.contractNo }}</el-descriptions-item>
-        <el-descriptions-item label="合同类型">
-          <el-tag v-if="detailForm.contractType === '1'" type="success">首次签约</el-tag>
-          <el-tag v-else-if="detailForm.contractType === '2'" type="primary">续租</el-tag>
-          <el-tag v-else-if="detailForm.contractType === '3'" type="warning">换房</el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="合同状态">
+    <el-dialog title="合同详情" :visible.sync="detailOpen" width="1000px" append-to-body>
+      <!-- 标题区域 -->
+      <div class="contract-detail-header">
+        <div class="contract-no">
+          <span class="label">合同编号：</span>
+          <span class="value">{{ detailForm.contractNo }}</span>
+        </div>
+        <div class="contract-status">
           <el-tag v-if="detailForm.contractStatus === '0'" type="info">草稿</el-tag>
           <el-tag v-else-if="detailForm.contractStatus === '1'" type="warning">待签署</el-tag>
           <el-tag v-else-if="detailForm.contractStatus === '2'" type="primary">已签署</el-tag>
           <el-tag v-else-if="detailForm.contractStatus === '3'" type="success">履行中</el-tag>
           <el-tag v-else-if="detailForm.contractStatus === '4'" type="danger">已到期</el-tag>
           <el-tag v-else type="info">已解约</el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="签署时间">{{ detailForm.signTime }}</el-descriptions-item>
+        </div>
+      </div>
 
-        <el-descriptions-item label="租户姓名">{{ detailForm.tenantName }}</el-descriptions-item>
-        <el-descriptions-item label="身份证号">{{ detailForm.tenantIdCard }}</el-descriptions-item>
-        <el-descriptions-item label="联系电话" :span="2">{{ detailForm.tenantPhone }}</el-descriptions-item>
-
-        <el-descriptions-item label="房源编号">{{ detailForm.houseCode }}</el-descriptions-item>
-        <el-descriptions-item label="房源地址" :span="2">{{ detailForm.houseAddress }}</el-descriptions-item>
-
-        <el-descriptions-item label="租金(元/月)">{{ detailForm.rentPrice }}</el-descriptions-item>
-        <el-descriptions-item label="押金(元)">{{ detailForm.deposit }}</el-descriptions-item>
-        <el-descriptions-item label="租期(月)">{{ detailForm.rentMonths }}</el-descriptions-item>
-        <el-descriptions-item label="支付周期">
-          <span v-if="detailForm.paymentCycle === '1'">月付</span>
-          <span v-else-if="detailForm.paymentCycle === '3'">季付</span>
-          <span v-else-if="detailForm.paymentCycle === '6'">半年付</span>
-          <span v-else-if="detailForm.paymentCycle === '12'">年付</span>
-        </el-descriptions-item>
-
-        <el-descriptions-item label="开始日期">{{ detailForm.startDate }}</el-descriptions-item>
-        <el-descriptions-item label="结束日期">{{ detailForm.endDate }}</el-descriptions-item>
-
-        <el-descriptions-item label="租户签名" :span="2">
-          <img v-if="detailForm.tenantSignature" :src="getImageUrl(detailForm.tenantSignature)" alt="租户签名" style="max-width: 300px; max-height: 150px; border: 1px solid #ddd; padding: 5px;" />
-          <span v-else style="color: #999;">暂无签名</span>
-        </el-descriptions-item>
-
-        <el-descriptions-item label="合同附件" :span="2">
-          <div v-if="detailForm.contractFile">
-            <el-tag type="info" size="small">{{ getFileName(detailForm.contractFile) }}</el-tag>
-            <el-button type="text" icon="el-icon-download" style="margin-left: 10px;" @click="downloadContract(detailForm.contractFile)">下载合同</el-button>
+      <!-- 租期卡片 -->
+      <div class="detail-section">
+        <div class="section-title">
+          <i class="el-icon-date"></i>
+          <span>租赁期限</span>
+        </div>
+        <div class="lease-period">
+          <div class="period-item">
+            <span class="period-label">合同生效日期</span>
+            <span class="period-value start">{{ detailForm.startDate }}</span>
           </div>
-          <span v-else style="color: #999;">暂无附件</span>
-        </el-descriptions-item>
+          <div class="period-arrow">→</div>
+          <div class="period-item">
+            <span class="period-label">合同结束日期</span>
+            <span class="period-value end">{{ detailForm.endDate }}</span>
+          </div>
+          <div class="period-item">
+            <span class="period-label">租期</span>
+            <span class="period-value months">{{ detailForm.rentMonths }}个月</span>
+          </div>
+        </div>
+      </div>
 
-        <el-descriptions-item label="合同内容" :span="2">
-          <div v-html="detailForm.contractContent" style="max-height: 400px; overflow-y: auto; padding: 10px; border: 1px solid #eee;"></div>
-        </el-descriptions-item>
+      <!-- 租户信息 -->
+      <div class="detail-section">
+        <div class="section-title">
+          <i class="el-icon-user"></i>
+          <span>租户信息</span>
+        </div>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">姓名</span>
+            <span class="info-value">{{ detailForm.tenantName }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">身份证号</span>
+            <span class="info-value">{{ detailForm.tenantIdCard }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">联系电话</span>
+            <span class="info-value">{{ detailForm.tenantPhone }}</span>
+          </div>
+        </div>
+      </div>
 
-        <el-descriptions-item label="备注" :span="2">{{ detailForm.remark || '无' }}</el-descriptions-item>
-      </el-descriptions>
+      <!-- 房源信息 -->
+      <div class="detail-section">
+        <div class="section-title">
+          <i class="el-icon-house"></i>
+          <span>房源信息</span>
+        </div>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">项目名称</span>
+            <span class="info-value">{{ detailForm.projectName || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">楼栋</span>
+            <span class="info-value">{{ detailForm.buildingName || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">单元</span>
+            <span class="info-value">{{ detailForm.unitName || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">房间号</span>
+            <span class="info-value">{{ detailForm.houseNo || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">楼层</span>
+            <span class="info-value">{{ detailForm.floor ? detailForm.floor + '层' : '-' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">朝向</span>
+            <span class="info-value">{{ detailForm.orientation || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">户型</span>
+            <span class="info-value">{{ detailForm.houseTypeName || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">面积</span>
+            <span class="info-value">{{ detailForm.area ? detailForm.area + '㎡' : '-' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">装修</span>
+            <span class="info-value">{{ detailForm.decoration || '-' }}</span>
+          </div>
+          <div class="info-item full">
+            <span class="info-label">房间设施</span>
+            <div class="info-value facilities">
+              <template v-if="detailForm.facilities">
+                <el-tag
+                  v-for="(facility, index) in detailForm.facilities.split(',')"
+                  :key="index"
+                  size="small"
+                  type="success"
+                  effect="plain">
+                  {{ facility }}
+                </el-tag>
+              </template>
+              <span v-else>-</span>
+            </div>
+          </div>
+          <div class="info-item full">
+            <span class="info-label">房源地址</span>
+            <span class="info-value">{{ detailForm.houseAddress || '-' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 租金信息 -->
+      <div class="detail-section">
+        <div class="section-title">
+          <i class="el-icon-money"></i>
+          <span>租金信息</span>
+        </div>
+        <div class="rent-info">
+          <div class="rent-item">
+            <span class="rent-label">月租金</span>
+            <span class="rent-value price">¥{{ detailForm.rentPrice }}</span>
+          </div>
+          <div class="rent-item">
+            <span class="rent-label">押金</span>
+            <span class="rent-value price">¥{{ detailForm.deposit }}</span>
+          </div>
+          <div class="rent-item">
+            <span class="rent-label">缴费周期</span>
+            <span class="rent-value">
+              <span v-if="detailForm.paymentCycle === '1'">月付</span>
+              <span v-else-if="detailForm.paymentCycle === '2'">季付</span>
+              <span v-else-if="detailForm.paymentCycle === '3'">半年付</span>
+              <span v-else-if="detailForm.paymentCycle === '4'">年付</span>
+            </span>
+          </div>
+          <div class="rent-item">
+            <span class="rent-label">支付日</span>
+            <span class="rent-value">每月{{ detailForm.paymentDay }}日</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 签名区域 -->
+      <div class="detail-section" v-if="detailForm.tenantSignature">
+        <div class="section-title">
+          <i class="el-icon-edit"></i>
+          <span>租户签名</span>
+        </div>
+        <div class="signature-area">
+          <img :src="getImageUrl(detailForm.tenantSignature)" alt="租户签名" class="signature-img" />
+        </div>
+      </div>
+
+      <!-- 合同附件 -->
+      <div class="detail-section" v-if="detailForm.contractFile">
+        <div class="section-title">
+          <i class="el-icon-document"></i>
+          <span>合同附件</span>
+        </div>
+        <div class="attachment-area">
+          <el-tag type="info" size="small">{{ getFileName(detailForm.contractFile) }}</el-tag>
+          <el-button type="primary" size="small" icon="el-icon-download" @click="downloadContract(detailForm.contractFile)">下载合同</el-button>
+        </div>
+      </div>
+
+      <!-- 合同内容 -->
+      <div class="detail-section" v-if="detailForm.contractContent">
+        <div class="section-title">
+          <i class="el-icon-document-copy"></i>
+          <span>合同内容</span>
+        </div>
+        <div class="contract-content" v-html="detailForm.contractContent"></div>
+      </div>
 
       <div slot="footer" class="dialog-footer">
         <el-button @click="detailOpen = false">关 闭</el-button>
@@ -403,6 +547,7 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
+        tenantName: null,
         contractNo: null,
         contractType: null,
         contractStatus: null,
@@ -619,3 +764,204 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* 合同详情页样式 */
+.contract-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid #EBEEF5;
+  margin-bottom: 20px;
+}
+
+.contract-detail-header .contract-no {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.contract-detail-header .contract-no .label {
+  color: #909399;
+  margin-right: 8px;
+}
+
+.contract-detail-header .contract-no .value {
+  color: #303133;
+  font-family: 'Courier New', monospace;
+}
+
+.detail-section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 500;
+  color: #303133;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #EBEEF5;
+}
+
+.section-title i {
+  margin-right: 6px;
+  color: #409EFF;
+}
+
+/* 租期显示 */
+.lease-period {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+  border-radius: 8px;
+}
+
+.period-item {
+  text-align: center;
+  flex: 1;
+}
+
+.period-label {
+  display: block;
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+
+.period-value {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.period-value.start {
+  color: #409EFF;
+}
+
+.period-value.end {
+  color: #67C23A;
+}
+
+.period-value.months {
+  color: #E6A23C;
+}
+
+.period-arrow {
+  font-size: 24px;
+  color: #DCDFE6;
+  margin: 0 16px;
+}
+
+/* 信息网格 */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background: #F5F7FA;
+  border-radius: 6px;
+}
+
+.info-item.full {
+  grid-column: 1 / -1;
+}
+
+.info-label {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 6px;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #303133;
+  font-weight: 500;
+}
+
+/* 房间设施标签 */
+.info-value.facilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* 租金信息 */
+.rent-info {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.rent-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #fff9f0 0%, #fff5e6 100%);
+  border-radius: 8px;
+  border: 1px solid #FFE4B5;
+}
+
+.rent-label {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+
+.rent-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.rent-value.price {
+  color: #F56C6C;
+  font-size: 20px;
+}
+
+/* 签名区域 */
+.signature-area {
+  padding: 20px;
+  background: #F5F7FA;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.signature-img {
+  max-width: 300px;
+  max-height: 150px;
+  border: 1px solid #DCDFE6;
+  border-radius: 4px;
+  padding: 10px;
+  background: #FFFFFF;
+}
+
+/* 附件区域 */
+.attachment-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 合同内容 */
+.contract-content {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 20px;
+  background: #F5F7FA;
+  border-radius: 8px;
+  border: 1px solid #EBEEF5;
+  line-height: 1.8;
+  font-size: 14px;
+}
+</style>

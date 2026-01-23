@@ -364,6 +364,7 @@
 
 	.info-value {
 		height: 37rpx;
+		width: 520rpx;
 		color: #1a1a1a;
 		font-size: 26rpx;
 		font-weight: normal;

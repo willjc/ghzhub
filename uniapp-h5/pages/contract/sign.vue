@@ -4,12 +4,15 @@
 		<view class="lease-card">
 			<view class="card-title">租期选择</view>
 
-			<!-- 签订日期显示（不可选择） -->
+			<!-- 合同生效日期选�� -->
 			<view class="date-row">
-				<text class="label">签订日期</text>
-				<view class="date-display">
-					<text class="date-text">{{ startDate }}</text>
-				</view>
+				<text class="label">合同生效日期</text>
+				<picker mode="date" :value="startDate" :start="minDate" @change="onStartDateChange">
+					<view class="date-picker">
+						<text class="date-text" :class="{ placeholder: !startDate }">{{ startDate || '请选择生效日期' }}</text>
+						<text class="arrow">›</text>
+					</view>
+				</picker>
 			</view>
 
 			<!-- 租期下拉选择 -->
@@ -125,7 +128,8 @@ export default {
 			isRenew: false,  // 是否续租
 			oldContractId: '',  // 原合同ID(续租时使用)
 			selectedMonths: '',  // 选中的租期（字符串，select的value）
-			startDate: '',  // 签订日期（将在onLoad中设置为今天）
+			startDate: '',  // 合同生效日期（用户选择）
+			minDate: '',    // 可选择的最早日期（今天）
 			agreed: false,
 			showSignature: false,
 			signatureData: '',
@@ -165,9 +169,10 @@ export default {
 			this.oldContractId = options.oldContractId || ''
 		}
 
-		// 设置入住日期为今天
+		// 设置可选择的最小日期为今天，但不自动选择
 		const today = new Date()
-		this.startDate = this.formatDate(today)
+		this.minDate = this.formatDate(today)
+		// startDate 由用户选择，保持空值
 	},
 	onReady() {
 		// 初始化签名板将在打开弹窗时进行
@@ -176,6 +181,17 @@ export default {
 		onMonthsChange() {
 			// select使用v-model，selectedMonths会自动更新
 			// 选择租期后自动加载合同（如果不为空）
+			if (this.selectedMonths) {
+				this.loadContract()
+			}
+		},
+
+		/**
+		 * 合同生效日期变更处理
+		 */
+		onStartDateChange(e) {
+			this.startDate = e.detail.value
+			// 如果已选择租期，重新加载合同
 			if (this.selectedMonths) {
 				this.loadContract()
 			}
@@ -447,11 +463,6 @@ export default {
 	color: #333333;
 }
 
-.date-display {
-	display: flex;
-	align-items: center;
-}
-
 .select-wrapper {
 	display: flex;
 	align-items: center;
@@ -476,7 +487,8 @@ export default {
 .date-picker {
 	display: flex;
 	align-items: center;
-	gap: 12rpx;
+	gap: 8rpx;
+	cursor: pointer;
 }
 
 .date-text {
@@ -484,9 +496,14 @@ export default {
 	color: #333333;
 }
 
-.arrow {
-	font-size: 40rpx;
+.date-text.placeholder {
 	color: #999999;
+}
+
+.arrow {
+	font-size: 36rpx;
+	color: #999999;
+	font-weight: 300;
 }
 
 .summary-box {

@@ -1027,13 +1027,141 @@ getImageUrl(url) {
 - **同步方法**: `uni.setStorageSync('key', value)`, `uni.getStorageSync('key')`
 - **异步方法**: `uni.setStorage({ key, data, success, fail })`
 
-#### 3. 图片路径处理
-- **静态图片**: `/static/xxx.png` (项目内)
-- **网络图片**: 需拼接后端 baseUrl
-  ```javascript
-  const BASE_URL = 'http://localhost:8080'
-  const imageUrl = BASE_URL + imagePath  // imagePath: /profile/upload/xxx.jpg
-  ```
+#### 3. 图片路径处理 (标准规范 - 必须遵守!)
+
+**🔴 核心原则：统一使用 `getImageUrl()` 方法处理所有图片路径**
+
+##### 标准 getImageUrl() 方法模板
+
+每个需要显示图片的页面组件都应该包含此方法：
+
+```javascript
+<script>
+import config from '@/config/index'
+
+export default {
+  methods: {
+    /**
+     * 获取图片完整URL
+     * @param {String} imagePath 图片相对路径
+     * @returns {String} 完整URL
+     */
+    getImageUrl(imagePath) {
+      // 1. 空值处理 - 返回默认图
+      if (!imagePath) {
+        return '/static/矩形 21@2x.png'  // 或其他默认图片
+      }
+
+      // 2. 外部链接直接返回
+      if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath
+      }
+
+      // 3. 本地静态资源直接返回
+      if (imagePath.startsWith('/static/')) {
+        return imagePath
+      }
+
+      // 4. 后端图片路径 (/profile/开头) - 拼接 staticUrl
+      if (imagePath.startsWith('/profile/')) {
+        return config.staticUrl + imagePath
+      }
+
+      // 5. 其他情况直接返回
+      return imagePath
+    }
+  }
+}
+</script>
+```
+
+##### 使用示例
+
+```javascript
+// 在数据转换中使用
+transformProjectData(project) {
+  return {
+    title: project.projectName,
+    image: this.getImageUrl(project.coverImage)  // ✅ 使用 getImageUrl
+  }
+}
+
+transformHouseData(house) {
+  return {
+    title: house.title,
+    image: this.getImageUrl(house.mainImage)  // ✅ 使用 getImageUrl
+  }
+}
+
+// 在模板中使用
+<template>
+  <image :src="getImageUrl(item.image)" mode="aspectFill" />
+</template>
+```
+
+##### 配置文件说明
+
+`config/index.js` 中的 staticUrl 配置：
+
+```javascript
+// 测试环境
+const test = {
+  staticUrl: 'http://192.168.31.146:8090',  // 图片服务器地址
+  // ...
+}
+
+// 生产环境
+const prod = {
+  staticUrl: 'http://ghzapi.dayushaiwang.com',
+  // ...
+}
+```
+
+##### 图片路径类型对照表
+
+| 路径类型 | 示例 | 处理方式 |
+| --- | --- | --- |
+| 空值 | `null`, `""`, `undefined` | 返回默认图 `/static/矩形 21@2x.png` |
+| 外部链接 | `https://example.com/image.jpg` | 直接返回 |
+| 本地静态 | `/static/矩形@2x.png` | 直接返回 |
+| 后端图片 | `/profile/upload/xxx.jpg` | 拼接 `staticUrl` |
+
+##### 常见错误 ❌
+
+```javascript
+// ❌ 错误1: 直接使用后端返回的路径
+image: house.mainImage  // 可能是 /profile/upload/xxx.jpg，无法直接访问
+
+// ❌ 错误2: 硬编码 baseUrl
+image: 'http://192.168.31.146:8090' + house.mainImage
+
+// ❌ 错误3: 使用错误的配置字段
+image: config.baseUrl + house.mainImage  // baseUrl 用于API，不是图片
+
+// ❌ 错误4: 只处理 http 开头，遗漏 /profile/ 路径
+getImageUrl(url) {
+  if (url.startsWith('http')) return url
+  return url  // /profile/xxx.jpg 无法访问
+}
+```
+
+##### 正确做法 ✅
+
+```javascript
+// ✅ 正确1: 始终使用 getImageUrl
+image: this.getImageUrl(house.mainImage)
+
+// ✅ 正确2: 使用 config.staticUrl
+getImageUrl(url) {
+  if (url.startsWith('/profile/')) {
+    return config.staticUrl + url  // staticUrl 专门用于图片资源
+  }
+  return url
+}
+
+// ✅ 正确3: 导入 config 模块
+import config from '@/config/index'
+```
 
 #### 4. 响应式单位
 - **rpx**: 响应式像素（750rpx = 屏幕宽度）

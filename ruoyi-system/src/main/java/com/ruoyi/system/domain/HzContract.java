@@ -131,6 +131,55 @@ public class HzContract extends BaseEntity {
     @TableField("del_flag")
     private String delFlag;
 
+    // ========== 以下字段来自房源表，不存储在合同表中 ==========
+    /** 项目名称（来自房源表） */
+    @TableField(exist = false)
+    private String projectName;
+
+    /** 楼栋ID（来自房源表） */
+    @TableField(exist = false)
+    private Long buildingId;
+
+    /** 楼栋名称（来自楼栋表） */
+    @TableField(exist = false)
+    private String buildingName;
+
+    /** 单元ID（来自房源表） */
+    @TableField(exist = false)
+    private Long unitId;
+
+    /** 单元名称（来自单元表） */
+    @TableField(exist = false)
+    private String unitName;
+
+    /** 房间号（来自房源表） */
+    @TableField(exist = false)
+    private String houseNo;
+
+    /** 楼层（来自房源表） */
+    @TableField(exist = false)
+    private Integer floor;
+
+    /** 户型名称（来自房源表） */
+    @TableField(exist = false)
+    private String houseTypeName;
+
+    /** 面积（来自房源表） */
+    @TableField(exist = false)
+    private java.math.BigDecimal area;
+
+    /** 朝向（来自房源表） */
+    @TableField(exist = false)
+    private String orientation;
+
+    /** 装修情况（来自房源表） */
+    @TableField(exist = false)
+    private String decoration;
+
+    /** 房间设施（来自房源表） */
+    @TableField(exist = false)
+    private String facilities;
+
     public void setContractId(Long contractId) {
         this.contractId = contractId;
     }
@@ -353,6 +402,102 @@ public class HzContract extends BaseEntity {
 
     public String getDelFlag() {
         return delFlag;
+    }
+
+    public String getProjectName() {
+        return projectName;
+    }
+
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
+
+    public Long getBuildingId() {
+        return buildingId;
+    }
+
+    public void setBuildingId(Long buildingId) {
+        this.buildingId = buildingId;
+    }
+
+    public String getBuildingName() {
+        return buildingName;
+    }
+
+    public void setBuildingName(String buildingName) {
+        this.buildingName = buildingName;
+    }
+
+    public Long getUnitId() {
+        return unitId;
+    }
+
+    public void setUnitId(Long unitId) {
+        this.unitId = unitId;
+    }
+
+    public String getUnitName() {
+        return unitName;
+    }
+
+    public void setUnitName(String unitName) {
+        this.unitName = unitName;
+    }
+
+    public String getHouseNo() {
+        return houseNo;
+    }
+
+    public void setHouseNo(String houseNo) {
+        this.houseNo = houseNo;
+    }
+
+    public Integer getFloor() {
+        return floor;
+    }
+
+    public void setFloor(Integer floor) {
+        this.floor = floor;
+    }
+
+    public String getHouseTypeName() {
+        return houseTypeName;
+    }
+
+    public void setHouseTypeName(String houseTypeName) {
+        this.houseTypeName = houseTypeName;
+    }
+
+    public java.math.BigDecimal getArea() {
+        return area;
+    }
+
+    public void setArea(java.math.BigDecimal area) {
+        this.area = area;
+    }
+
+    public String getOrientation() {
+        return orientation;
+    }
+
+    public void setOrientation(String orientation) {
+        this.orientation = orientation;
+    }
+
+    public String getDecoration() {
+        return decoration;
+    }
+
+    public void setDecoration(String decoration) {
+        this.decoration = decoration;
+    }
+
+    public String getFacilities() {
+        return facilities;
+    }
+
+    public void setFacilities(String facilities) {
+        this.facilities = facilities;
     }
 
     @Override

@@ -33,7 +33,29 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
 
     @Override
     public HzContract selectContractById(Long contractId) {
-        return this.getById(contractId);
+        // 先查询基本信息
+        HzContract contract = this.getById(contractId);
+        if (contract == null) {
+            return null;
+        }
+        // 联表查询房源详细信息
+        java.util.Map<String, Object> detailMap = baseMapper.selectContractDetailById(contractId);
+        if (detailMap != null && !detailMap.isEmpty()) {
+            // 填充房源详细信息
+            contract.setProjectName((String) detailMap.get("project_name"));
+            contract.setBuildingId((Long) detailMap.get("building_id"));
+            contract.setBuildingName((String) detailMap.get("building_name"));
+            contract.setUnitId((Long) detailMap.get("unit_id"));
+            contract.setUnitName((String) detailMap.get("unit_name"));
+            contract.setHouseNo((String) detailMap.get("house_no"));
+            contract.setFloor((Integer) detailMap.get("floor"));
+            contract.setHouseTypeName((String) detailMap.get("house_type_name"));
+            contract.setArea((java.math.BigDecimal) detailMap.get("area"));
+            contract.setOrientation((String) detailMap.get("orientation"));
+            contract.setDecoration((String) detailMap.get("decoration"));
+            contract.setFacilities((String) detailMap.get("facilities"));
+        }
+        return contract;
     }
 
     @Override
@@ -119,10 +141,11 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
                .eq(contract.getHouseId() != null, HzContract::getHouseId, contract.getHouseId())
                .eq(contract.getProjectId() != null, HzContract::getProjectId, contract.getProjectId())
                .like(StringUtils.isNotEmpty(contract.getContractNo()), HzContract::getContractNo, contract.getContractNo())
-               .eq(StringUtils.isNotEmpty(contract.getContractType()), HzContract::getContractType, contract.getContractType())
+               .like(StringUtils.isNotEmpty(contract.getContractType()), HzContract::getContractType, contract.getContractType())
                .eq(StringUtils.isNotEmpty(contract.getContractStatus()), HzContract::getContractStatus, contract.getContractStatus())
+               .like(StringUtils.isNotEmpty(contract.getTenantName()), HzContract::getTenantName, contract.getTenantName())
                .eq(HzContract::getDelFlag, "0")
-               .orderByDesc(HzContract::getCreateTime);
+               .orderByDesc(HzContract::getContractId);
         return this.page(page, wrapper);
     }
 
