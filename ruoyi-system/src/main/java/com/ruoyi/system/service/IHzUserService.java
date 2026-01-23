@@ -71,4 +71,17 @@ public interface IHzUserService extends IService<HzUser> {
      */
     HzUser getUserByPhone(String phone);
 
+    /**
+     * 郑好办用户登录或注册
+     *
+     * @param zid 郑好办用户ID
+     * @param phone 手机号
+     * @param displayName 昵称
+     * @param realName 真实姓名
+     * @param idCard 身份证号
+     * @param avatarUrl 头像URL
+     * @return 用户信息
+     */
+    HzUser loginOrRegisterByZhb(String zid, String phone, String displayName, String realName, String idCard, String avatarUrl);
+
 }

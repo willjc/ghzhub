@@ -143,7 +143,7 @@ public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> impleme
     }
 
     /**
-     * 根据手机号查询用户
+     * ��据手机号查询用户
      *
      * @param phone 手机号
      * @return 用户信息
@@ -153,6 +153,66 @@ public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> impleme
         LambdaQueryWrapper<HzUser> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzUser::getPhone, phone);
         return this.getOne(wrapper);
+    }
+
+    /**
+     * 郑好办用户登录或注册
+     *
+     * @param zid 郑好办用户ID
+     * @param phone 手机号
+     * @param displayName 昵称
+     * @param realName 真实姓名
+     * @param idCard 身份证号
+     * @param avatarUrl 头像URL
+     * @return 用户信息
+     */
+    @Override
+    public HzUser loginOrRegisterByZhb(String zid, String phone, String displayName, String realName, String idCard, String avatarUrl) {
+        // 根据郑好办用户ID查询用户
+        LambdaQueryWrapper<HzUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(HzUser::getZhaohaoUserId, zid);
+
+        HzUser user = this.getOne(wrapper);
+
+        if (user == null) {
+            // 用户不存在，创建新用户
+            user = new HzUser();
+            user.setPhone(phone);
+            user.setZhaohaoUserId(zid);
+            user.setNickname(displayName != null ? displayName : "郑好办用户");
+            user.setRealName(realName);
+            user.setIdCard(idCard);
+            user.setAvatar(avatarUrl);
+            user.setSourceType("2"); // 2=郑好办
+            user.setLoginType("zhenghaoban");
+            user.setStatus("0"); // 正常状态
+            // 获取到了身份证号，视为信息已完善
+            user.setIsInfoCompleted(com.ruoyi.common.utils.StringUtils.isNotEmpty(idCard) ? "1" : "0");
+            user.setDelFlag("0");
+            user.setCreateTime(new Date());
+            user.setLastLoginTime(new Date());
+
+            this.save(user);
+        } else {
+            // 老用户更新信息
+            user.setLastLoginTime(new Date());
+            // 如果之前没有身份证号，现在有了，更新一下
+            if (com.ruoyi.common.utils.StringUtils.isEmpty(user.getIdCard()) && com.ruoyi.common.utils.StringUtils.isNotEmpty(idCard)) {
+                user.setIdCard(idCard);
+                user.setRealName(realName);
+                user.setIsInfoCompleted("1");
+            }
+            // 更新昵称和头像
+            if (displayName != null) {
+                user.setNickname(displayName);
+            }
+            if (avatarUrl != null) {
+                user.setAvatar(avatarUrl);
+            }
+            this.updateById(user);
+        }
+
+        return user;
     }
 
 }

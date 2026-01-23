@@ -33,3 +33,12 @@ export function updateUserInfo(data) {
 export function logout() {
 	return request.post('/app/auth/logout')
 }
+
+/**
+ * 郑好办授权登录
+ * @param {Object} data - 登录数据
+ * @param {String} data.authCode - 郑好办授权码
+ */
+export function zhbLogin(data) {
+	return request.post('/app/auth/zhbLogin', data)
+}

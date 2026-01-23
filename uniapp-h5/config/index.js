@@ -16,6 +16,9 @@ const development = {
 
   // 其他配置
   timeout: 30000, // 请求超时时间（毫秒）
+
+  // 郑好办配置
+  zhbModuleId: '413780', // 郑好办应用ID（正式）
 }
 
 // 生产环境配置
@@ -24,6 +27,9 @@ const production = {
   uploadUrl: 'http://ghzapi.dayushaiwang.com',
   staticUrl: 'http://ghzapi.dayushaiwang.com',
   timeout: 30000,
+
+  // 郑好办配置
+  zhbModuleId: '413780', // 郑好办应用ID��正式）
 }
 
 // 测试环境配置（本地开发，后端8090端口）
@@ -32,6 +38,9 @@ const test = {
   uploadUrl: 'http://192.168.31.146:8090',
   staticUrl: 'http://192.168.31.146:8090',
   timeout: 30000,
+
+  // 郑好办配置
+  zhbModuleId: '413780', // 郑好办应用ID（正式）
 }
 
 // 根据环境变量选择配置

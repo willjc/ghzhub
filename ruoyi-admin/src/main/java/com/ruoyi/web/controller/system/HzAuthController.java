@@ -4,6 +4,7 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.system.domain.HzUser;
 import com.ruoyi.system.domain.HzUserMessage;
+import com.ruoyi.system.domain.ZhbUserInfo;
 import com.ruoyi.system.service.IHzUserService;
 import com.ruoyi.system.service.IHzUserMessageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,9 @@ public class HzAuthController extends BaseController {
 
     @Autowired
     private IHzUserMessageService userMessageService;
+
+    @Autowired
+    private IZhengHaobanService zhengHaobanService;
 
     /**
      * 用户登录（微信/郑好办）
@@ -69,6 +73,70 @@ public class HzAuthController extends BaseController {
             return success(data);
         } catch (Exception e) {
             logger.error("登录失败:", e);
+            return error("登录失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 郑好办授权登录
+     *
+     * @param params 参数，包含authCode授权码
+     * @return 登录结果
+     */
+    @PostMapping("/zhbLogin")
+    public AjaxResult zhbLogin(@RequestBody Map<String, String> params) {
+        String authCode = params.get("authCode");
+
+        // 参数验证
+        if (authCode == null || authCode.trim().isEmpty()) {
+            return error("授权码不能为空");
+        }
+
+        try {
+            // 1. 通过authCode获取郑好办用户信息
+            ZhbUserInfo zhbUserInfo = zhengHaobanService.loginByAuthCode(authCode);
+            if (zhbUserInfo == null) {
+                return error("获取郑好办用户信息失败，请重新授权");
+            }
+
+            // 2. 登录或注册用户
+            HzUser user = userService.loginOrRegisterByZhb(
+                    zhbUserInfo.getZid(),
+                    zhbUserInfo.getPhone(),
+                    zhbUserInfo.getDisplayName(),
+                    zhbUserInfo.getRealName(),
+                    zhbUserInfo.getIdCode(),
+                    zhbUserInfo.getAvatarUrl()
+            );
+
+            // 3. 发送登录消息
+            sendLoginMessage(user);
+
+            // 4. 生成简化Token
+            String token = "hz_token_" + user.getUserId() + "_" + System.currentTimeMillis();
+
+            // 5. 构造返回数据
+            Map<String, Object> data = new HashMap<>();
+            data.put("token", token);
+
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("userId", user.getUserId());
+            userInfo.put("phone", user.getPhone());
+            userInfo.put("nickname", user.getNickname());
+            userInfo.put("loginType", user.getLoginType());
+            userInfo.put("isInfoCompleted", user.getIsInfoCompleted());
+            if (user.getRealName() != null) {
+                userInfo.put("realName", user.getRealName());
+            }
+            if (user.getIdCard() != null) {
+                userInfo.put("hasIdCard", true);
+            }
+
+            data.put("userInfo", userInfo);
+
+            return success(data);
+        } catch (Exception e) {
+            logger.error("郑好办登录失败:", e);
             return error("登录失败: " + e.getMessage());
         }
     }

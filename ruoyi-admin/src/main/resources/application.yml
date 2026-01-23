@@ -159,3 +159,16 @@ xss:
   excludes: /system/notice
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*
+
+# 郑好办对接配置
+zhenghaoban:
+  # 网关配置
+  gateway:
+    url: https://zhenghaoban.zzsxzspj.zhengzhou.gov.cn:10019/open/api/do
+    app-id: ${ZHB_APP_ID:48c84098-de3f-4cc4-838b-76b22682d741}
+    iv-str: ${ZHB_IV_STR:n3A4N3/YA6P3SyhigYRWLw==}
+    key-str: ${ZHB_KEY_STR:gA+s5Zma5pO0mUP+1nUPXQ==}
+    secret-key: ${ZHB_SECRET_KEY:3874c82e}
+  # 应用配置
+  app:
+    module-id: ${ZHB_MODULE_ID:413780}

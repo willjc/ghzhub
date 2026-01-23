@@ -32,7 +32,8 @@
 </template>
 
 <script>
-	import { login } from '@/api/auth'
+	import { login, zhbLogin } from '@/api/auth'
+	import { userAuth, isInZhbApp } from '@/utils/alipay'
 
 	export default {
 		data() {
@@ -49,7 +50,8 @@
 				this.loading = true
 
 				try {
-					// 开发环境：使用测试账号1
+					// 开发环境：使用测试账号
+					// 生产环境：需要对接微信小程序登录
 					const testData = {
 						loginType: 'wechat',
 						phone: '13800138001',
@@ -93,19 +95,33 @@
 			 */
 			async handleZhenghabanLogin() {
 				if (this.loading) return
+
+				// 检查是否在郑好办WebView中
+				if (!isInZhbApp()) {
+					uni.showToast({
+						title: '请在郑好办APP中打开',
+						icon: 'none',
+						duration: 2000
+					})
+					return
+				}
+
 				this.loading = true
+				uni.showLoading({ title: '授权中...' })
 
 				try {
-					// 开发环境：使用测试账号2
-					const testData = {
-						loginType: 'zhenghaoban',
-						phone: '13800138002',
-						openId: 'zhb_test_001',
-						nickname: '郑好办测试用户'
-					}
+					// 调用郑好办授权JSAPI，获取authCode
+					const authCode = await userAuth({
+						moduleId: this.$config?.zhbModuleId || '1220', // 从配置读取moduleId
+						scope: 'userDetail' // 获取详细信息（含身份证号）
+					})
 
-					// 调用登录接口
-					const response = await login(testData)
+					uni.hideLoading()
+
+					// 用授权码调用后端登录接口
+					uni.showLoading({ title: '登录中...' })
+					const response = await zhbLogin({ authCode })
+					uni.hideLoading()
 
 					// 保存Token、用户ID和用户信息
 					uni.setStorageSync('token', response.data.token)
@@ -125,10 +141,21 @@
 					}, 1000)
 
 				} catch (error) {
+					uni.hideLoading()
 					console.error('郑好办登录失败:', error)
+
+					// 根据错误类型显示不同提示
+					let errorMsg = '登录失败'
+					if (error.message) {
+						errorMsg = error.message
+					} else if (error.errMsg) {
+						errorMsg = error.errMsg
+					}
+
 					uni.showToast({
-						title: error.message || '登录失败',
-						icon: 'none'
+						title: errorMsg,
+						icon: 'none',
+						duration: 2000
 					})
 				} finally {
 					this.loading = false
