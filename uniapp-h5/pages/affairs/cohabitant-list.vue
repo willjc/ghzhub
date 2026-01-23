@@ -74,12 +74,29 @@
 		data() {
 			return {
 				housingType: '',
-				tenantId: 1, // TODO: 从登录信息获取租户ID
+				tenantId: null, // 从登录信息获取租户ID
 				loading: false,
 				cohabitantList: []
 			}
 		},
 		onLoad(options) {
+			// 从本地存储获取登录用户信息
+			const userInfo = uni.getStorageSync('userInfo');
+			if (!userInfo || !userInfo.userId) {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				});
+				setTimeout(() => {
+					uni.navigateTo({
+						url: '/pages/login/index'
+					});
+				}, 1500);
+				return;
+			}
+
+			this.tenantId = userInfo.userId;
+
 			if (options.type) {
 				this.housingType = options.type
 			}

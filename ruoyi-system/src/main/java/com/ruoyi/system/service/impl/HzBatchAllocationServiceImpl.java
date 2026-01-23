@@ -9,10 +9,12 @@ import com.ruoyi.system.domain.HzBatchAllocation;
 import com.ruoyi.system.domain.HzBatchHouse;
 import com.ruoyi.system.domain.HzBatchTenant;
 import com.ruoyi.system.domain.HzHouse;
+import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.mapper.HzBatchAllocationMapper;
 import com.ruoyi.system.mapper.HzBatchHouseMapper;
 import com.ruoyi.system.mapper.HzBatchTenantMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
+import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.service.IHzBatchAllocationService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -47,6 +49,9 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
 
     @Autowired
     private HzHouseMapper houseMapper;
+
+    @Autowired
+    private HzProjectMapper projectMapper;
 
     @Override
     public List<HzBatchAllocation> selectBatchAllocationList(HzBatchAllocation batch) {
@@ -144,9 +149,28 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
         batch.setApproveTime(new Date());
         batch.setRemark(remark);
 
-        // 如果审批通过,批次状态改为进行中
+        // 如果审批通过,批次状态改为进行中，并将房源状态改为已预定
         if ("1".equals(approveStatus)) {
             batch.setBatchStatus("0");
+
+            // 查询该批次的所有房源
+            LambdaQueryWrapper<HzBatchHouse> houseWrapper = new LambdaQueryWrapper<>();
+            houseWrapper.eq(HzBatchHouse::getBatchId, batchId);
+            List<HzBatchHouse> batchHouses = batchHouseMapper.selectList(houseWrapper);
+
+            // 更新房源状态为已预定(1)
+            for (HzBatchHouse batchHouse : batchHouses) {
+                HzHouse house = new HzHouse();
+                house.setHouseId(batchHouse.getHouseId());
+                house.setHouseStatus("1"); // 已预定
+                houseMapper.updateById(house);
+            }
+
+            // 更新已分配数量 = 房源数量
+            HzBatchAllocation oldBatch = this.getById(batchId);
+            if (oldBatch != null) {
+                batch.setAllocatedCount(oldBatch.getHouseCount());
+            }
         }
 
         return this.updateById(batch) ? 1 : 0;
@@ -337,15 +361,16 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
         batch.setTalentType((String) batchInfo.get("talentType"));
         batch.setProjectIds((String) batchInfo.get("projectIds"));
         batch.setHouseCount(houseList.size());
-        batch.setAllocatedCount(0);
+        // 保存时房源和人员已一一匹配，所以已分配数量 = 房源数量
+        batch.setAllocatedCount(houseList.size());
         batch.setRemark((String) batchInfo.get("remark"));
 
-        // 处理选房日期
-        if (batchInfo.get("selectionStartDate") != null) {
-            batch.setSelectionStartDate(new Date((Long) batchInfo.get("selectionStartDate")));
+        // 处理入驻日期
+        if (batchInfo.get("entryStartDate") != null) {
+            batch.setEntryStartDate(new Date((Long) batchInfo.get("entryStartDate")));
         }
-        if (batchInfo.get("selectionEndDate") != null) {
-            batch.setSelectionEndDate(new Date((Long) batchInfo.get("selectionEndDate")));
+        if (batchInfo.get("entryEndDate") != null) {
+            batch.setEntryEndDate(new Date((Long) batchInfo.get("entryEndDate")));
         }
 
         batch.setDelFlag("0");
@@ -446,6 +471,13 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
                 map.put("houseTypeName", house.getHouseTypeName());
                 map.put("area", house.getArea());
                 map.put("rentPrice", house.getRentPrice());
+                // 获取项目名称
+                if (house.getProjectId() != null) {
+                    HzProject project = projectMapper.selectById(house.getProjectId());
+                    if (project != null) {
+                        map.put("projectName", project.getProjectName());
+                    }
+                }
             }
 
             // 获取关联的租户信息

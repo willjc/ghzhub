@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzHouseMapper">
+
+    <!-- 房源表基本字段 -->
+    <sql id="selectHouseVo">
+        SELECT h.house_id, h.project_id, h.building_id, h.unit_id, h.house_code, h.house_no, h.floor,
+               h.house_type_id, h.house_type_name, h.area, h.rent_price, h.deposit, h.orientation,
+               h.decoration, h.facilities, h.house_status, h.is_featured, h.view_count, h.status,
+               h.allocation_type, h.is_fresh_graduate, h.manager_phone,
+               h.create_by, h.create_time, h.update_by, h.update_time, h.remark, h.del_flag,
+               p.project_name
+        FROM hz_house h
+        LEFT JOIN hz_project p ON h.project_id = p.project_id
+    </sql>
+
+    <!-- 分页查询房源列表(带项目名称) -->
+    <select id="selectHouseListWithImages" resultType="com.ruoyi.system.domain.HzHouse">
+        <include refid="selectHouseVo"/>
+        <where>
+            h.del_flag = '0'
+            <if test="house.projectId != null">
+                AND h.project_id = #{house.projectId}
+            </if>
+            <if test="house.buildingId != null">
+                AND h.building_id = #{house.buildingId}
+            </if>
+            <if test="house.unitId != null">
+                AND h.unit_id = #{house.unitId}
+            </if>
+            <if test="house.houseCode != null and house.houseCode != ''">
+                AND h.house_code LIKE CONCAT('%', #{house.houseCode}, '%')
+            </if>
+            <if test="house.houseNo != null and house.houseNo != ''">
+                AND h.house_no LIKE CONCAT('%', #{house.houseNo}, '%')
+            </if>
+            <if test="house.houseTypeName != null and house.houseTypeName != ''">
+                AND h.house_type_name = #{house.houseTypeName}
+            </if>
+            <if test="house.houseStatus != null and house.houseStatus != ''">
+                AND h.house_status = #{house.houseStatus}
+            </if>
+            <if test="house.isFeatured != null and house.isFeatured != ''">
+                AND h.is_featured = #{house.isFeatured}
+            </if>
+            <if test="house.status != null and house.status != ''">
+                AND h.status = #{house.status}
+            </if>
+        </where>
+        ORDER BY h.create_time DESC
+    </select>
+
+</mapper>

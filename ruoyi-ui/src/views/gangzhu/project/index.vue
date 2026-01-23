@@ -353,71 +353,255 @@
     </el-dialog>
 
     <!-- 项目详情对话框 -->
-    <el-dialog title="项目详情" :visible.sync="detailDialogVisible" width="900px" append-to-body>
-      <div class="project-detail">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="项目名称">{{ detailData.projectName }}</el-descriptions-item>
-          <el-descriptions-item label="项目编码">{{ detailData.projectCode }}</el-descriptions-item>
-          <el-descriptions-item label="项目类型">
-            <el-tag v-if="detailData.projectType === '1'" type="success" size="small">人才公寓</el-tag>
-            <el-tag v-else-if="detailData.projectType === '2'" type="warning" size="small">保租房</el-tag>
-            <el-tag v-else-if="detailData.projectType === '3'" type="info" size="small">市场租赁</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="状态">
-            <el-tag v-if="detailData.status === '0'" type="success" size="small">正常</el-tag>
-            <el-tag v-else type="danger" size="small">停用</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="项目地址" :span="2">{{ detailData.address }}</el-descriptions-item>
-          <el-descriptions-item label="经度">{{ detailData.longitude }}</el-descriptions-item>
-          <el-descriptions-item label="纬度">{{ detailData.latitude }}</el-descriptions-item>
-          <el-descriptions-item label="总楼栋数">{{ detailData.totalBuildings || 0 }}</el-descriptions-item>
-          <el-descriptions-item label="总房源数">{{ detailData.totalHouses || 0 }}</el-descriptions-item>
-          <el-descriptions-item label="可用房源数">{{ detailData.availableHouses || 0 }}</el-descriptions-item>
-          <el-descriptions-item label="房源分布" :span="2">{{ detailData.distribution || '无' }}</el-descriptions-item>
-          <el-descriptions-item label="户型">{{ detailData.houseType || '无' }}</el-descriptions-item>
-          <el-descriptions-item label="面积范围">{{ detailData.area || '无' }}</el-descriptions-item>
-          <el-descriptions-item label="租金详情" :span="2" style="white-space: pre-wrap;">{{ detailData.rentDetail || '无' }}</el-descriptions-item>
-          <el-descriptions-item label="物业公司" :span="2">{{ detailData.propertyCompany || '无' }}</el-descriptions-item>
-          <el-descriptions-item label="物业费">{{ detailData.propertyFee || '无' }}</el-descriptions-item>
-          <el-descriptions-item label="电费">{{ detailData.electricFee || '无' }}</el-descriptions-item>
-          <el-descriptions-item label="水费">{{ detailData.waterFee || '无' }}</el-descriptions-item>
-          <el-descriptions-item label="燃气费">{{ detailData.gasFee || '无' }}</el-descriptions-item>
-          <el-descriptions-item label="显示顺序">{{ detailData.sortOrder || 0 }}</el-descriptions-item>
-          <el-descriptions-item label="负责人姓名">{{ detailData.managerName }}</el-descriptions-item>
-          <el-descriptions-item label="负责人电话">{{ detailData.managerPhone }}</el-descriptions-item>
-          <el-descriptions-item label="项目介绍" :span="2">{{ detailData.projectIntro || '无' }}</el-descriptions-item>
-          <el-descriptions-item label="项目主图" :span="2" v-if="detailData.coverImage">
+    <el-dialog title="项目详情" :visible.sync="detailDialogVisible" width="1100px" append-to-body class="project-detail-dialog">
+      <div class="project-detail" v-if="detailData.projectId">
+        <!-- 顶部基本信息卡片 -->
+        <div class="detail-header">
+          <div class="header-cover">
             <el-image
               :src="getImageUrl(detailData.coverImage)"
               :preview-src-list="[getImageUrl(detailData.coverImage)]"
-              style="width: 200px; height: 150px"
               fit="cover"
+              class="cover-image"
             >
               <div slot="error" class="image-error">
-                <i class="el-icon-picture-outline"></i>
+                <i class="el-icon-office-building"></i>
               </div>
             </el-image>
-          </el-descriptions-item>
-          <el-descriptions-item label="起租价格" :span="2" v-if="detailData.price !== null && detailData.price !== undefined">
-            <span style="color: #e5252b; font-size: 18px; font-weight: bold;">{{ detailData.price }}</span>
-            <span style="color: #666; margin-left: 5px;">元/月 起</span>
-          </el-descriptions-item>
-          <el-descriptions-item label="配套设施" :span="2">
-            <el-tag
-              v-for="(facility, index) in facilitiesArray"
-              :key="index"
-              size="small"
-              style="margin-right: 8px; margin-bottom: 8px"
-            >{{ facility }}</el-tag>
-            <span v-if="!facilitiesArray || facilitiesArray.length === 0">无</span>
-          </el-descriptions-item>
-          <el-descriptions-item label="交通信息" :span="2">{{ detailData.transportation || '无' }}</el-descriptions-item>
-          <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '无' }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间" :span="2">{{ detailData.createTime }}</el-descriptions-item>
-        </el-descriptions>
+          </div>
+          <div class="header-info">
+            <div class="info-top">
+              <h2 class="project-name">{{ detailData.projectName }}</h2>
+              <div class="tags">
+                <el-tag v-if="detailData.projectType === '1'" type="success" size="small">人才公寓</el-tag>
+                <el-tag v-else-if="detailData.projectType === '2'" type="warning" size="small">保租房</el-tag>
+                <el-tag v-else type="info" size="small">市场租赁</el-tag>
+                <el-tag v-if="detailData.status === '0'" type="success" size="small" plain>正常</el-tag>
+                <el-tag v-else type="danger" size="small" plain>停用</el-tag>
+              </div>
+            </div>
+            <div class="info-price" v-if="detailData.price">
+              <span class="price-value">{{ detailData.price }}</span>
+              <span class="price-unit">元/月 起</span>
+            </div>
+            <div class="info-address">
+              <i class="el-icon-location-outline"></i>
+              {{ detailData.address || '暂无地址' }}
+            </div>
+            <div class="info-stats">
+              <div class="stat-item">
+                <span class="stat-value">{{ detailData.totalBuildings || 0 }}</span>
+                <span class="stat-label">楼栋</span>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-item">
+                <span class="stat-value">{{ detailData.totalHouses || 0 }}</span>
+                <span class="stat-label">总房源</span>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-item">
+                <span class="stat-value available">{{ detailData.availableHouses || 0 }}</span>
+                <span class="stat-label">可租</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 信息卡片区域 -->
+        <el-row :gutter="20" class="detail-content">
+          <!-- 基本信息 -->
+          <el-col :span="12">
+            <div class="info-card">
+              <div class="card-title">
+                <i class="el-icon-info"></i>
+                <span>基本信息</span>
+              </div>
+              <div class="card-body">
+                <div class="info-row">
+                  <span class="label">项目编码</span>
+                  <span class="value">{{ detailData.projectCode || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">显示顺序</span>
+                  <span class="value">{{ detailData.sortOrder || 0 }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">房源分布</span>
+                  <span class="value">{{ detailData.distribution || '无' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">户型</span>
+                  <span class="value">{{ detailData.houseType || '无' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">面积范围</span>
+                  <span class="value">{{ detailData.area || '无' }}</span>
+                </div>
+              </div>
+            </div>
+          </el-col>
+
+          <!-- 联系信息 -->
+          <el-col :span="12">
+            <div class="info-card">
+              <div class="card-title">
+                <i class="el-icon-phone-outline"></i>
+                <span>联系信息</span>
+              </div>
+              <div class="card-body">
+                <div class="info-row">
+                  <span class="label">负责人</span>
+                  <span class="value">{{ detailData.managerName || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">联系电话</span>
+                  <span class="value highlight">{{ detailData.managerPhone || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">物业公司</span>
+                  <span class="value">{{ detailData.propertyCompany || '无' }}</span>
+                </div>
+              </div>
+            </div>
+          </el-col>
+
+          <!-- 租金信息 -->
+          <el-col :span="12" v-if="detailData.rentDetail || detailData.propertyFee || detailData.electricFee || detailData.waterFee || detailData.gasFee">
+            <div class="info-card">
+              <div class="card-title">
+                <i class="el-icon-coin"></i>
+                <span>费用信息</span>
+              </div>
+              <div class="card-body">
+                <div class="info-row" v-if="detailData.rentDetail">
+                  <span class="label">租金详情</span>
+                  <span class="value multiline">{{ detailData.rentDetail }}</span>
+                </div>
+                <div class="info-row" v-if="detailData.propertyFee">
+                  <span class="label">物业费</span>
+                  <span class="value">{{ detailData.propertyFee }}</span>
+                </div>
+                <div class="info-row" v-if="detailData.electricFee">
+                  <span class="label">电费</span>
+                  <span class="value">{{ detailData.electricFee }}</span>
+                </div>
+                <div class="info-row" v-if="detailData.waterFee">
+                  <span class="label">水费</span>
+                  <span class="value">{{ detailData.waterFee }}</span>
+                </div>
+                <div class="info-row" v-if="detailData.gasFee">
+                  <span class="label">燃气费</span>
+                  <span class="value">{{ detailData.gasFee }}</span>
+                </div>
+              </div>
+            </div>
+          </el-col>
+
+          <!-- 配套设施 -->
+          <el-col :span="12" v-if="facilitiesArray && facilitiesArray.length > 0">
+            <div class="info-card">
+              <div class="card-title">
+                <i class="el-icon-present"></i>
+                <span>配套设施</span>
+              </div>
+              <div class="card-body">
+                <div class="facilities-list">
+                  <el-tag
+                    v-for="(facility, index) in facilitiesArray"
+                    :key="index"
+                    type="info"
+                    size="small"
+                    effect="plain"
+                  >{{ facility }}</el-tag>
+                </div>
+              </div>
+            </div>
+          </el-col>
+
+          <!-- 交通信息 -->
+          <el-col :span="12" v-if="detailData.transportation">
+            <div class="info-card">
+              <div class="card-title">
+                <i class="el-icon-position"></i>
+                <span>交通信息</span>
+              </div>
+              <div class="card-body">
+                <div class="info-row">
+                  <span class="value multiline">{{ detailData.transportation }}</span>
+                </div>
+              </div>
+            </div>
+          </el-col>
+
+          <!-- 项目介绍 -->
+          <el-col :span="12" v-if="detailData.projectIntro">
+            <div class="info-card">
+              <div class="card-title">
+                <i class="el-icon-document"></i>
+                <span>项目介绍</span>
+              </div>
+              <div class="card-body">
+                <div class="info-row">
+                  <span class="value multiline">{{ detailData.projectIntro }}</span>
+                </div>
+              </div>
+            </div>
+          </el-col>
+
+          <!-- 坐标信息 -->
+          <el-col :span="12" v-if="detailData.longitude || detailData.latitude">
+            <div class="info-card">
+              <div class="card-title">
+                <i class="el-icon-map-location"></i>
+                <span>坐标信息</span>
+              </div>
+              <div class="card-body">
+                <div class="info-row">
+                  <span class="label">经度</span>
+                  <span class="value">{{ detailData.longitude || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">纬度</span>
+                  <span class="value">{{ detailData.latitude || '-' }}</span>
+                </div>
+              </div>
+            </div>
+          </el-col>
+
+          <!-- 备注 -->
+          <el-col :span="12" v-if="detailData.remark">
+            <div class="info-card">
+              <div class="card-title">
+                <i class="el-icon-notebook-2"></i>
+                <span>备注</span>
+              </div>
+              <div class="card-body">
+                <div class="info-row">
+                  <span class="value multiline">{{ detailData.remark }}</span>
+                </div>
+              </div>
+            </div>
+          </el-col>
+
+          <!-- 创建时间 -->
+          <el-col :span="12">
+            <div class="info-card">
+              <div class="card-title">
+                <i class="el-icon-time"></i>
+                <span>系统信息</span>
+              </div>
+              <div class="card-body">
+                <div class="info-row">
+                  <span class="label">创建时间</span>
+                  <span class="value">{{ detailData.createTime || '-' }}</span>
+                </div>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
       </div>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="detailDialogVisible = false">关 闭</el-button>
+        <el-button type="primary" @click="detailDialogVisible = false">关 闭</el-button>
       </div>
     </el-dialog>
   </div>
@@ -695,17 +879,206 @@ export default {
 
 <style scoped>
 .project-detail {
-  padding: 20px;
+  padding: 0;
 }
 
+/* 顶部头部区域 */
+.detail-header {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.header-cover {
+  flex-shrink: 0;
+  width: 240px;
+  height: 180px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+}
+
+.header-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.info-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.project-name {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.tags {
+  display: flex;
+  gap: 8px;
+}
+
+.info-price {
+  margin-top: 8px;
+}
+
+.price-value {
+  font-size: 32px;
+  font-weight: bold;
+  color: #e5252b;
+}
+
+.price-unit {
+  font-size: 14px;
+  color: #909399;
+  margin-left: 4px;
+}
+
+.info-address {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #606266;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.info-address i {
+  font-size: 16px;
+  color: #909399;
+}
+
+.info-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.stat-value.available {
+  color: #67c23a;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 2px;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 36px;
+  background-color: #dcdfe6;
+}
+
+/* 详情内容区 */
+.detail-content {
+  margin-top: 20px;
+}
+
+.info-card {
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: #f5f7fa;
+  border-bottom: 1px solid #ebeef5;
+  font-size: 14px;
+  font-weight: 500;
+  color: #606266;
+}
+
+.card-title i {
+  font-size: 16px;
+  color: #409eff;
+}
+
+.card-body {
+  padding: 12px 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed #ebeef5;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-row .label {
+  color: #909399;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.info-row .value {
+  color: #303133;
+  font-size: 14px;
+  text-align: right;
+}
+
+.info-row .value.highlight {
+  color: #409eff;
+  font-weight: 500;
+}
+
+.info-row .value.multiline {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+/* 配套设施列表 */
+.facilities-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 图片错误占位 */
 .image-error {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
   height: 100%;
-  background-color: #f5f7fa;
+  background: linear-gradient(135deg, #e8ecf1 0%, #d4d9e2 100%);
   color: #909399;
-  font-size: 30px;
+  font-size: 48px;
 }
 </style>

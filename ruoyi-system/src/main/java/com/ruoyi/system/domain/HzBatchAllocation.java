@@ -61,15 +61,15 @@ public class HzBatchAllocation extends BaseEntity {
     @TableField("talent_type")
     private String talentType;
 
-    /** 选房开始日期 */
+    /** 入驻开始日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @TableField("selection_start_date")
-    private Date selectionStartDate;
+    @TableField("entry_start_date")
+    private Date entryStartDate;
 
-    /** 选房结束日期 */
+    /** 入驻结束日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @TableField("selection_end_date")
-    private Date selectionEndDate;
+    @TableField("entry_end_date")
+    private Date entryEndDate;
 
     /** 项目名称(非数据库字段) */
     @TableField(exist = false)
@@ -189,20 +189,20 @@ public class HzBatchAllocation extends BaseEntity {
         this.talentType = talentType;
     }
 
-    public Date getSelectionStartDate() {
-        return selectionStartDate;
+    public Date getEntryStartDate() {
+        return entryStartDate;
     }
 
-    public void setSelectionStartDate(Date selectionStartDate) {
-        this.selectionStartDate = selectionStartDate;
+    public void setEntryStartDate(Date entryStartDate) {
+        this.entryStartDate = entryStartDate;
     }
 
-    public Date getSelectionEndDate() {
-        return selectionEndDate;
+    public Date getEntryEndDate() {
+        return entryEndDate;
     }
 
-    public void setSelectionEndDate(Date selectionEndDate) {
-        this.selectionEndDate = selectionEndDate;
+    public void setEntryEndDate(Date entryEndDate) {
+        this.entryEndDate = entryEndDate;
     }
 
     public String getProjectName() {
@@ -288,6 +288,8 @@ public class HzBatchAllocation extends BaseEntity {
                 .append("contactPerson", getContactPerson())
                 .append("contactPhone", getContactPhone())
                 .append("projectId", getProjectId())
+                .append("entryStartDate", getEntryStartDate())
+                .append("entryEndDate", getEntryEndDate())
                 .append("houseCount", getHouseCount())
                 .append("allocatedCount", getAllocatedCount())
                 .append("applyTime", getApplyTime())

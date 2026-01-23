@@ -15,8 +15,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="projectId"           column="project_id"      />
         <result property="projectIds"          column="project_ids"     />
         <result property="talentType"          column="talent_type"     />
-        <result property="selectionStartDate"  column="selection_start_date" />
-        <result property="selectionEndDate"    column="selection_end_date"   />
+        <result property="entryStartDate"  column="entry_start_date" />
+        <result property="entryEndDate"    column="entry_end_date"   />
         <result property="projectName"         column="project_name"    />
         <result property="houseCount"          column="house_count"     />
         <result property="allocatedCount"      column="allocated_count" />
@@ -37,7 +37,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         SELECT
             b.batch_id, b.batch_no, b.batch_name, b.enterprise_id, b.enterprise_name,
             b.contact_person, b.contact_phone, b.project_id, b.project_ids, b.talent_type,
-            b.selection_start_date, b.selection_end_date,
+            b.entry_start_date, b.entry_end_date,
             GROUP_CONCAT(DISTINCT p.project_name ORDER BY p.project_id SEPARATOR ', ') AS project_name,
             b.house_count, b.allocated_count, b.apply_time,
             b.approve_status, b.approve_by, b.approve_time, b.batch_status,

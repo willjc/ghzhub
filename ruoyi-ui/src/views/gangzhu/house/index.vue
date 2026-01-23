@@ -126,6 +126,7 @@
 
     <el-table v-loading="loading" :data="houseList" @selection-change="handleSelectionChange" style="width: 100%">
       <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="项目名称" align="center" prop="projectName" width="150" show-overflow-tooltip />
       <el-table-column label="房源编码" align="center" prop="houseCode" width="120" />
       <el-table-column label="房间号" align="center" prop="houseNo" width="100" />
       <el-table-column label="户型" align="center" prop="houseTypeName" width="120" />
@@ -309,6 +310,29 @@
         </el-row>
         <el-row>
           <el-col :span="12">
+            <el-form-item label="分配类型" prop="allocationType">
+              <el-select v-model="form.allocationType" placeholder="请选择分配类型" style="width: 100%">
+                <el-option label="常规分配" value="1" />
+                <el-option label="集中分配" value="2" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="应届生房源" prop="isFreshGraduate">
+              <el-radio-group v-model="form.isFreshGraduate">
+                <el-radio label="1">是</el-radio>
+                <el-radio label="0">否</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="12">
+            <el-form-item label="管家电话" prop="managerPhone">
+              <el-input v-model="form.managerPhone" placeholder="请输入管家电话" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="房源状态" prop="houseStatus">
               <el-select v-model="form.houseStatus" placeholder="请选择房源状态" style="width: 100%">
                 <el-option label="空置" value="0" />
@@ -440,6 +464,24 @@
               <div class="info-item">
                 <label>装修情况:</label>
                 <span>{{ detailData.house ? detailData.house.decoration : '-' }}</span>
+              </div>
+            </el-col>
+            <el-col :span="8">
+              <div class="info-item">
+                <label>分配类型:</label>
+                <span>{{ detailData.house && detailData.house.allocationType === '1' ? '常规分配' : detailData.house && detailData.house.allocationType === '2' ? '集中分配' : '-' }}</span>
+              </div>
+            </el-col>
+            <el-col :span="8">
+              <div class="info-item">
+                <label>应届生房源:</label>
+                <span>{{ detailData.house && detailData.house.isFreshGraduate === '1' ? '是' : '否' }}</span>
+              </div>
+            </el-col>
+            <el-col :span="8">
+              <div class="info-item">
+                <label>管家电话:</label>
+                <span>{{ detailData.house ? (detailData.house.managerPhone || '-') : '-' }}</span>
               </div>
             </el-col>
             <el-col :span="24">
@@ -907,17 +949,20 @@ export default {
         });
       }
     },
-    /** 房型选择变更 - 自动填充户型名称 */
+    /** 房型选择变更 - 自动填充户型名称和面积 */
     handleHouseTypeChange(houseTypeId) {
       if (houseTypeId) {
         const selectedHouseType = this.houseTypeList.find(item => item.houseTypeId === houseTypeId);
         if (selectedHouseType) {
           this.form.houseTypeName = selectedHouseType.houseTypeName;
           this.form.houseTypeDetail = selectedHouseType.remark; // remark字段存储了详细描述
+          // 自动填充面积（来自户型的典型面积）
+          this.form.area = selectedHouseType.typicalArea;
         }
       } else {
         this.form.houseTypeName = null;
         this.form.houseTypeDetail = null;
+        this.form.area = null;
       }
     },
     /** 查询条件-项目变更 - 加载对应楼栋 */
@@ -966,6 +1011,9 @@ export default {
         orientation: null,
         decoration: null,
         facilities: null,
+        allocationType: "1",     // 默认常规分配
+        isFreshGraduate: "0",    // 默认否
+        managerPhone: null,
         houseStatus: "0",
         isFeatured: "0",
         status: "0",

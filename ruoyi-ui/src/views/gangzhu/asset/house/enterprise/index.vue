@@ -67,10 +67,10 @@
       <el-table-column label="联系人" align="center" prop="contactPerson" width="100" />
       <el-table-column label="联系方式" align="center" prop="contactPhone" width="130" />
       <el-table-column label="所属项目" align="center" prop="projectName" min-width="140" show-overflow-tooltip />
-      <el-table-column label="选房日期" align="center" min-width="200">
+      <el-table-column label="入驻日期" align="center" min-width="200">
         <template slot-scope="scope">
-          <span v-if="scope.row.selectionStartDate && scope.row.selectionEndDate">
-            {{ parseTime(scope.row.selectionStartDate, '{y}-{m}-{d}') }} ~ {{ parseTime(scope.row.selectionEndDate, '{y}-{m}-{d}') }}
+          <span v-if="scope.row.entryStartDate && scope.row.entryEndDate">
+            {{ parseTime(scope.row.entryStartDate, '{y}-{m}-{d}') }} ~ {{ parseTime(scope.row.entryEndDate, '{y}-{m}-{d}') }}
           </span>
           <span v-else style="color: #909399">未设置</span>
         </template>
@@ -286,11 +286,11 @@
         <el-descriptions-item label="联系人">{{ viewData.contactPerson }}</el-descriptions-item>
         <el-descriptions-item label="联系方式">{{ viewData.contactPhone }}</el-descriptions-item>
         <el-descriptions-item label="所属项目">{{ viewData.projectName }}</el-descriptions-item>
-        <el-descriptions-item label="选房开始日期">
-          {{ parseTime(viewData.selectionStartDate, '{y}-{m}-{d}') }}
+        <el-descriptions-item label="入驻开始日期">
+          {{ parseTime(viewData.entryStartDate, '{y}-{m}-{d}') }}
         </el-descriptions-item>
-        <el-descriptions-item label="选房结束日期">
-          {{ parseTime(viewData.selectionEndDate, '{y}-{m}-{d}') }}
+        <el-descriptions-item label="入驻结束日期">
+          {{ parseTime(viewData.entryEndDate, '{y}-{m}-{d}') }}
         </el-descriptions-item>
         <el-descriptions-item label="创建人">{{ viewData.createBy }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">

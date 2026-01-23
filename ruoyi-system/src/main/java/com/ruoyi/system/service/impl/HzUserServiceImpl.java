@@ -186,8 +186,8 @@ public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> impleme
             user.setSourceType("2"); // 2=郑好办
             user.setLoginType("zhenghaoban");
             user.setStatus("0"); // 正常状态
-            // 获取到了身份证号，视为信息已完善
-            user.setIsInfoCompleted(com.ruoyi.common.utils.StringUtils.isNotEmpty(idCard) ? "1" : "0");
+            // 新用户需要完善工作单位、单位电话等信息
+            user.setIsInfoCompleted("0");
             user.setDelFlag("0");
             user.setCreateTime(new Date());
             user.setLastLoginTime(new Date());

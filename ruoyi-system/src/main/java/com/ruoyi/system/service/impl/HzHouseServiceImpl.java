@@ -56,7 +56,7 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
     private HzHouseVrMapper houseVrMapper;
 
     /**
-     * 查询房源列表（支持分页）
+     * 查询房源列表（支持分页，带项目名称）
      *
      * @param house 房源查询条件
      * @return 房源分页列表
@@ -66,10 +66,8 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
     {
         // 获取分页参数
         Page<HzHouse> page = com.ruoyi.common.utils.PageUtils.getPage();
-        // 构建查询条件
-        LambdaQueryWrapper<HzHouse> wrapper = buildQueryWrapper(house);
-        // 使用 MyBatis-Plus 的 page 方法进行分页查询
-        return this.page(page, wrapper);
+        // 使用 XML 中定义的关联查询，获取项目名称
+        return baseMapper.selectHouseListWithImages(page, house);
     }
 
     /**

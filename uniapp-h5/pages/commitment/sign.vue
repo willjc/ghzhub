@@ -37,7 +37,7 @@ export default {
 	data() {
 		return {
 			projectId: '',
-			tenantId: 1, // TODO: 从登录信息获取
+			tenantId: null, // 从登录信息获取
 			agreed: false,
 			signatureData: '',
 			commitmentData: {
@@ -55,6 +55,23 @@ export default {
 		}
 	},
 	onLoad(options) {
+		// 从本地存储获取登录用户信息
+		const userInfo = uni.getStorageSync('userInfo');
+		if (!userInfo || !userInfo.userId) {
+			uni.showToast({
+				title: '请先登录',
+				icon: 'none'
+			});
+			setTimeout(() => {
+				uni.navigateTo({
+					url: '/pages/login/index'
+				});
+			}, 1500);
+			return;
+		}
+
+		this.tenantId = userInfo.userId;
+
 		if (options.projectId) {
 			this.projectId = options.projectId
 			this.loadCommitmentContent()

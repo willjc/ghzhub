@@ -88,10 +88,10 @@
           <el-tag v-else type="success" size="small">定向人才</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="选房日期" align="center" min-width="200">
+      <el-table-column label="入驻日期" align="center" min-width="200">
         <template slot-scope="scope">
-          <span v-if="scope.row.selectionStartDate && scope.row.selectionEndDate">
-            {{ parseTime(scope.row.selectionStartDate, '{y}-{m}-{d}') }} ~ {{ parseTime(scope.row.selectionEndDate, '{y}-{m}-{d}') }}
+          <span v-if="scope.row.entryStartDate && scope.row.entryEndDate">
+            {{ parseTime(scope.row.entryStartDate, '{y}-{m}-{d}') }} ~ {{ parseTime(scope.row.entryEndDate, '{y}-{m}-{d}') }}
           </span>
           <span v-else style="color: #909399">未设置</span>
         </template>
@@ -99,6 +99,13 @@
       <el-table-column label="房源/已分配" align="center" width="110">
         <template slot-scope="scope">
           <span>{{ scope.row.houseCount }}/{{ scope.row.allocatedCount }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="审批状态" align="center" prop="approveStatus" width="100">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.approveStatus === '0'" type="warning" size="small">待审批</el-tag>
+          <el-tag v-else-if="scope.row.approveStatus === '1'" type="success" size="small">已通过</el-tag>
+          <el-tag v-else-if="scope.row.approveStatus === '2'" type="danger" size="small">已拒绝</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="申请时间" align="center" prop="applyTime" width="160">
@@ -114,6 +121,14 @@
             icon="el-icon-view"
             @click="handleView(scope.row)"
           >详情</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-check"
+            @click="handleApprove(scope.row)"
+            v-if="scope.row.approveStatus === '0'"
+            v-hasPermi="['gangzhu:batch:approve']"
+          >审批</el-button>
           <el-button
             size="mini"
             type="text"
@@ -174,22 +189,22 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="选房开始日期" prop="selectionStartDate">
+            <el-form-item label="入驻开始日期" prop="entryStartDate">
               <el-date-picker
-                v-model="form.selectionStartDate"
+                v-model="form.entryStartDate"
                 type="date"
-                placeholder="请选择选房开始日期"
+                placeholder="请选择入驻开始日期"
                 value-format="timestamp"
                 style="width: 100%"
               />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="选房结束日期" prop="selectionEndDate">
+            <el-form-item label="入驻结束日期" prop="entryEndDate">
               <el-date-picker
-                v-model="form.selectionEndDate"
+                v-model="form.entryEndDate"
                 type="date"
-                placeholder="请选择选房结束日期"
+                placeholder="请选择入驻结束日期"
                 value-format="timestamp"
                 style="width: 100%"
               />
@@ -333,16 +348,15 @@
       <el-descriptions :column="2" border>
         <el-descriptions-item label="批次编号">{{ viewData.batchNo }}</el-descriptions-item>
         <el-descriptions-item label="批次名称">{{ viewData.batchName }}</el-descriptions-item>
-        <el-descriptions-item label="所属项目">{{ viewData.projectName }}</el-descriptions-item>
         <el-descriptions-item label="人才类型">
           <el-tag v-if="viewData.talentType === '0'" type="info" size="small">普通人才</el-tag>
           <el-tag v-else type="success" size="small">定向人才</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="选房开始日期">
-          {{ parseTime(viewData.selectionStartDate, '{y}-{m}-{d}') }}
+        <el-descriptions-item label="入驻开始日期">
+          {{ parseTime(viewData.entryStartDate, '{y}-{m}-{d}') }}
         </el-descriptions-item>
-        <el-descriptions-item label="选房结束日期">
-          {{ parseTime(viewData.selectionEndDate, '{y}-{m}-{d}') }}
+        <el-descriptions-item label="入驻结束日期">
+          {{ parseTime(viewData.entryEndDate, '{y}-{m}-{d}') }}
         </el-descriptions-item>
         <el-descriptions-item label="房源数量">{{ viewData.houseCount }}</el-descriptions-item>
         <el-descriptions-item label="已分配数量">{{ viewData.allocatedCount }}</el-descriptions-item>
@@ -364,6 +378,7 @@
       >
         <el-table-column label="序号" type="index" width="60" align="center" />
         <el-table-column label="房源编号" prop="houseCode" width="150" show-overflow-tooltip />
+        <el-table-column label="项目名称" prop="projectName" width="150" show-overflow-tooltip />
         <el-table-column label="房间号" prop="houseNo" width="120" />
         <el-table-column label="楼层" prop="floor" width="80" align="center" />
         <el-table-column label="户型" prop="houseTypeName" width="140" show-overflow-tooltip />
@@ -409,11 +424,42 @@
         <el-button @click="viewOpen = false">关 闭</el-button>
       </div>
     </el-dialog>
+
+    <!-- 审批对话框 -->
+    <el-dialog title="审批配组批次" :visible.sync="approveOpen" width="600px" append-to-body>
+      <el-form ref="approveForm" :model="approveForm" label-width="100px">
+        <el-form-item label="批次名称">
+          <span>{{ approveRow.batchName }}</span>
+        </el-form-item>
+        <el-form-item label="批次编号">
+          <span>{{ approveRow.batchNo }}</span>
+        </el-form-item>
+        <el-form-item label="房源数量">
+          <span>{{ approveRow.houseCount }}套</span>
+        </el-form-item>
+        <el-form-item label="申请时间">
+          <span>{{ parseTime(approveRow.applyTime) }}</span>
+        </el-form-item>
+        <el-form-item label="审批结果" prop="approveStatus">
+          <el-radio-group v-model="approveForm.approveStatus">
+            <el-radio label="1">通过</el-radio>
+            <el-radio label="2">拒绝</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="审批意见">
+          <el-input v-model="approveForm.remark" type="textarea" placeholder="请输入审批意见" :rows="3" />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitApprove">确 定</el-button>
+        <el-button @click="approveOpen = false">取 消</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listBatch, getBatch, addBatch, updateBatch, delBatch, getAvailableHouses, downloadTenantTemplate, importTenants, saveBatchAllocation, getBatchHouses, getBatchTenants } from "@/api/gangzhu/batch";
+import { listBatch, getBatch, addBatch, updateBatch, delBatch, getAvailableHouses, downloadTenantTemplate, importTenants, saveBatchAllocation, getBatchHouses, getBatchTenants, approveBatch } from "@/api/gangzhu/batch";
 import { listProject } from "@/api/gangzhu/project";
 
 export default {
@@ -431,6 +477,13 @@ export default {
       title: "",
       open: false,
       viewOpen: false,
+      approveOpen: false,
+      approveRow: {},
+      approveForm: {
+        batchId: null,
+        approveStatus: '1',
+        remark: ''
+      },
       viewData: {},
       houseLoading: false,
       tenantLoading: false,
@@ -456,11 +509,11 @@ export default {
         talentType: [
           { required: true, message: "批次人才类型不能为空", trigger: "change" }
         ],
-        selectionStartDate: [
-          { required: true, message: "选房开始日期不能为空", trigger: "change" }
+        entryStartDate: [
+          { required: true, message: "入驻开始日期不能为空", trigger: "change" }
         ],
-        selectionEndDate: [
-          { required: true, message: "选房结束日期不能为空", trigger: "change" }
+        entryEndDate: [
+          { required: true, message: "入驻结束日期不能为空", trigger: "change" }
         ]
       }
     };
@@ -533,8 +586,8 @@ export default {
         batchNo: null,
         batchName: null,
         talentType: "0",  // 默认普通人才
-        selectionStartDate: null,
-        selectionEndDate: null,
+        entryStartDate: null,
+        entryEndDate: null,
         houseCount: 0,
         allocatedCount: 0,
         approveStatus: "0",
@@ -753,8 +806,8 @@ export default {
               batchName: this.form.batchName,
               talentType: this.form.talentType,
               projectIds: this.selectedProjectIds.join(','),
-              selectionStartDate: this.form.selectionStartDate,
-              selectionEndDate: this.form.selectionEndDate,
+              entryStartDate: this.form.entryStartDate,
+              entryEndDate: this.form.entryEndDate,
               remark: this.form.remark,
               houseCount: this.selectedHouses.length
             },
@@ -785,6 +838,26 @@ export default {
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("删除成功");
+      }).catch(() => {});
+    },
+    /** 审批按钮操作 */
+    handleApprove(row) {
+      this.approveRow = row;
+      this.approveForm = {
+        batchId: row.batchId,
+        approveStatus: '1',
+        remark: ''
+      };
+      this.approveOpen = true;
+    },
+    /** 提交审批 */
+    submitApprove() {
+      this.$modal.confirm('确认提交审批结果吗?').then(() => {
+        return approveBatch(this.approveForm);
+      }).then(() => {
+        this.$modal.msgSuccess("审批成功");
+        this.approveOpen = false;
+        this.getList();
       }).catch(() => {});
     },
     /** 导出按钮操作 */

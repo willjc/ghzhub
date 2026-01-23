@@ -43,21 +43,25 @@
 			}
 		},
 		onLoad() {
-			this.getUserId();
+			// 从本地存储获取登录用户信息
+			const userInfo = uni.getStorageSync('userInfo');
+			if (!userInfo || !userInfo.userId) {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				});
+				setTimeout(() => {
+					uni.navigateTo({
+						url: '/pages/login/index'
+					});
+				}, 1500);
+				return;
+			}
+
+			this.userId = userInfo.userId;
 			this.loadMessageList();
 		},
 		methods: {
-			/** 获取当前用户ID（临时方案） */
-			getUserId() {
-				// 优先从缓存获取
-				const userInfo = uni.getStorageSync('userInfo');
-				if (userInfo && userInfo.userId) {
-					this.userId = userInfo.userId;
-				} else {
-					// 临时方案：使用测试用户ID
-					this.userId = 1;
-				}
-			},
 
 			/** 加载消息列表 */
 			loadMessageList() {

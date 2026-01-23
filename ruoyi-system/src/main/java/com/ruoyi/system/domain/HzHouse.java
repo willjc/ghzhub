@@ -113,10 +113,29 @@ public class HzHouse extends BaseEntity
     @TableField("view_count")
     private Integer viewCount;
 
+    /** 分配类型(1:常规分配 2:集中分配) */
+    @Excel(name = "分配类型", type = Excel.Type.IMPORT, readConverterExp = "1=常规分配,2=集中分配", prompt = "选填，填写：1=常规分配、2=集中分配，默认：1")
+    @TableField("allocation_type")
+    private String allocationType;
+
+    /** 是否应届生房源(0:否 1:是) */
+    @Excel(name = "是否应届生房源", type = Excel.Type.IMPORT, readConverterExp = "0=否,1=是", prompt = "选填，填写：0=否、1=是，默认：0")
+    @TableField("is_fresh_graduate")
+    private String isFreshGraduate;
+
+    /** 管家电话 */
+    @Excel(name = "管家电话", type = Excel.Type.IMPORT, prompt = "选填，如：13800138000")
+    @TableField("manager_phone")
+    private String managerPhone;
+
     /** 状态(0:正常 1:停用) */
     @Excel(name = "状态", type = Excel.Type.IMPORT, readConverterExp = "0=正常,1=停用", prompt = "必填，填写：0=正常、1=停用，默认：0")
     @TableField("status")
     private String status;
+
+    /** 项目名称(非数据库字段,用于前端显示) */
+    @TableField(exist = false)
+    private String projectName;
 
     public void setHouseId(Long houseId)
     {
@@ -318,6 +337,46 @@ public class HzHouse extends BaseEntity
         return status;
     }
 
+    public void setAllocationType(String allocationType)
+    {
+        this.allocationType = allocationType;
+    }
+
+    public String getAllocationType()
+    {
+        return allocationType;
+    }
+
+    public void setIsFreshGraduate(String isFreshGraduate)
+    {
+        this.isFreshGraduate = isFreshGraduate;
+    }
+
+    public String getIsFreshGraduate()
+    {
+        return isFreshGraduate;
+    }
+
+    public void setManagerPhone(String managerPhone)
+    {
+        this.managerPhone = managerPhone;
+    }
+
+    public String getManagerPhone()
+    {
+        return managerPhone;
+    }
+
+    public void setProjectName(String projectName)
+    {
+        this.projectName = projectName;
+    }
+
+    public String getProjectName()
+    {
+        return projectName;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -340,6 +399,9 @@ public class HzHouse extends BaseEntity
             .append("isFeatured", getIsFeatured())
             .append("viewCount", getViewCount())
             .append("status", getStatus())
+            .append("allocationType", getAllocationType())
+            .append("isFreshGraduate", getIsFreshGraduate())
+            .append("managerPhone", getManagerPhone())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

@@ -61,7 +61,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 AND p.status = #{status}
             </if>
         </where>
-        ORDER BY p.sort_order ASC, p.create_time DESC
+        ORDER BY p.create_time DESC
     </select>
 
 </mapper>
