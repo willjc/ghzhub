@@ -107,9 +107,23 @@ export default {
 		}
 	},
 	onLoad(options) {
-		// TODO: 后期从登录状态获取userId
-		// 临时方案：从路由参数获取，或使用测试ID
-		this.userId = options.userId || '1' // 临时使用ID 1进行测试
+		// 从本地存储获取登录用户信息
+		const userInfo = uni.getStorageSync('userInfo')
+		if (!userInfo || !userInfo.userId) {
+			uni.showToast({
+				title: '请先登录',
+				icon: 'none'
+			})
+			setTimeout(() => {
+				uni.navigateTo({
+					url: '/pages/login/index'
+				})
+			}, 1500)
+			return
+		}
+
+		// 使用当前登录用户的userId
+		this.userId = userInfo.userId
 		this.loadUserInfo()
 	},
 	methods: {
