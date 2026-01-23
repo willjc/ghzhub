@@ -1,0 +1,2021 @@
+[
+    [
+        {
+            "type": "header",
+            "bbox": [
+                0.076,
+                0.069,
+                0.649,
+                0.105
+            ],
+            "angle": 0,
+            "content": "文档4-用户信息授权接口（后端）"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.075,
+                0.145,
+                0.185,
+                0.161
+            ],
+            "angle": 0,
+            "content": "文档修订记录"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.075,
+                0.173,
+                0.339,
+                0.19
+            ],
+            "angle": 0,
+            "content": "一、接口功能介绍及相关参数解释"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.093,
+                0.201,
+                0.195,
+                0.218
+            ],
+            "angle": 0,
+            "content": "1、接口介绍"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.093,
+                0.23,
+                0.194,
+                0.246
+            ],
+            "angle": 0,
+            "content": "2、相关参数"
+        },
+        {
+            "type": "list",
+            "bbox": [
+                0.093,
+                0.201,
+                0.195,
+                0.246
+            ],
+            "angle": 0,
+            "content": null
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.109,
+                0.259,
+                0.17,
+                0.275
+            ],
+            "angle": 0,
+            "content": "scope:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.109,
+                0.287,
+                0.198,
+                0.303
+            ],
+            "angle": 0,
+            "content": "authCode:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.109,
+                0.316,
+                0.212,
+                0.332
+            ],
+            "angle": 0,
+            "content": "oauthToken:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.109,
+                0.345,
+                0.201,
+                0.361
+            ],
+            "angle": 0,
+            "content": "grantType:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.109,
+                0.373,
+                0.23,
+                0.388
+            ],
+            "angle": 0,
+            "content": "reOauthToken:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.109,
+                0.401,
+                0.192,
+                0.417
+            ],
+            "angle": 0,
+            "content": "moduled:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.109,
+                0.43,
+                0.19,
+                0.446
+            ],
+            "angle": 0,
+            "content": "ExpiresIn:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.109,
+                0.458,
+                0.142,
+                0.473
+            ],
+            "angle": 0,
+            "content": "zid:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.093,
+                0.486,
+                0.264,
+                0.502
+            ],
+            "angle": 0,
+            "content": "3、相关参数获取方式"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.075,
+                0.514,
+                0.339,
+                0.531
+            ],
+            "angle": 0,
+            "content": "二、用户授权业务方后端一般流程"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.093,
+                0.542,
+                0.177,
+                0.559
+            ],
+            "angle": 0,
+            "content": "1、流程图"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.093,
+                0.572,
+                0.173,
+                0.587
+            ],
+            "angle": 0,
+            "content": "2、Demo"
+        },
+        {
+            "type": "list",
+            "bbox": [
+                0.093,
+                0.542,
+                0.177,
+                0.587
+            ],
+            "angle": 0,
+            "content": null
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.075,
+                0.599,
+                0.304,
+                0.616
+            ],
+            "angle": 0,
+            "content": "三、接口规范与数郑网关简介"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.093,
+                0.628,
+                0.228,
+                0.644
+            ],
+            "angle": 0,
+            "content": "1、数郑网关简介"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.093,
+                0.656,
+                0.228,
+                0.672
+            ],
+            "angle": 0,
+            "content": "2、网关接口地址"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.093,
+                0.684,
+                0.228,
+                0.7
+            ],
+            "angle": 0,
+            "content": "3、网关必传参数"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.093,
+                0.713,
+                0.228,
+                0.729
+            ],
+            "angle": 0,
+            "content": "4、网关出参格式"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.093,
+                0.741,
+                0.233,
+                0.757
+            ],
+            "angle": 0,
+            "content": "5、网关code含义"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.093,
+                0.77,
+                0.194,
+                0.785
+            ],
+            "angle": 0,
+            "content": "6、接口规范"
+        },
+        {
+            "type": "list",
+            "bbox": [
+                0.093,
+                0.628,
+                0.233,
+                0.785
+            ],
+            "angle": 0,
+            "content": null
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.075,
+                0.798,
+                0.184,
+                0.814
+            ],
+            "angle": 0,
+            "content": "四、接口列表"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.093,
+                0.827,
+                0.495,
+                0.844
+            ],
+            "angle": 0,
+            "content": "1、获取 OAuthToken接口（szzz.uc.ai.oauth_token）"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.108,
+                0.855,
+                0.303,
+                0.872
+            ],
+            "angle": 0,
+            "content": "网关请求入参method值："
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.108,
+                0.883,
+                0.294,
+                0.9
+            ],
+            "angle": 0,
+            "content": "接口入参（SDK入参）："
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.108,
+                0.911,
+                0.327,
+                0.928
+            ],
+            "angle": 0,
+            "content": "接口出参 (data中的数据) :"
+        },
+        {
+            "type": "page_number",
+            "bbox": [
+                0.91,
+                0.974,
+                0.92,
+                0.986
+            ],
+            "angle": 0,
+            "content": "1"
+        }
+    ],
+    [
+        {
+            "type": "text",
+            "bbox": [
+                0.11,
+                0.047,
+                0.206,
+                0.063
+            ],
+            "angle": 0,
+            "content": "错误码含义:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.11,
+                0.075,
+                0.223,
+                0.091
+            ],
+            "angle": 0,
+            "content": "请求代码示例："
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.091,
+                0.104,
+                0.681,
+                0.121
+            ],
+            "angle": 0,
+            "content": "2、获取用户信息接口（szzz.uc.ai.userInfo.get/szzz.uc.ai.userdetail.get）"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.109,
+                0.132,
+                0.3,
+                0.148
+            ],
+            "angle": 0,
+            "content": "网关请求入参method值："
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.108,
+                0.16,
+                0.293,
+                0.176
+            ],
+            "angle": 0,
+            "content": "接口入参（SDK入参）："
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.108,
+                0.189,
+                0.327,
+                0.205
+            ],
+            "angle": 0,
+            "content": "接口出参 (data中的数据) :"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.109,
+                0.217,
+                0.206,
+                0.233
+            ],
+            "angle": 0,
+            "content": "错误码含义:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.109,
+                0.246,
+                0.223,
+                0.262
+            ],
+            "angle": 0,
+            "content": "请求代码示例："
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.075,
+                0.274,
+                0.268,
+                0.291
+            ],
+            "angle": 0,
+            "content": "五、常见问题及解决方案"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.094,
+                0.303,
+                0.193,
+                0.318
+            ],
+            "angle": 0,
+            "content": "1、测试参数"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.091,
+                0.331,
+                0.573,
+                0.347
+            ],
+            "angle": 0,
+            "content": "2、用户未进行实名认证（LO用户），获取不到身份证号怎么办"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.092,
+                0.36,
+                0.277,
+                0.375
+            ],
+            "angle": 0,
+            "content": "3、接口返回401未登录"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.092,
+                0.388,
+                0.244,
+                0.404
+            ],
+            "angle": 0,
+            "content": "4、接口返回无权限"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.092,
+                0.416,
+                0.244,
+                0.432
+            ],
+            "angle": 0,
+            "content": "5、提示令牌已过期"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.092,
+                0.445,
+                0.315,
+                0.461
+            ],
+            "angle": 0,
+            "content": "6、调用jsapi后提示需要鉴权"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.092,
+                0.473,
+                0.193,
+                0.489
+            ],
+            "angle": 0,
+            "content": "7、其他问题"
+        },
+        {
+            "type": "list",
+            "bbox": [
+                0.091,
+                0.303,
+                0.573,
+                0.489
+            ],
+            "angle": 0,
+            "content": null
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.075,
+                0.531,
+                0.256,
+                0.557
+            ],
+            "angle": 0,
+            "content": "文档修订记录"
+        },
+        {
+            "type": "table",
+            "bbox": [
+                0.077,
+                0.577,
+                0.925,
+                0.735
+            ],
+            "angle": 0,
+            "content": "<table><tr><td>日期</td><td>修订内容</td><td>版本</td><td>修订人</td></tr><tr><td>2022-05-10</td><td>接口文档规范化</td><td>V1.0.0</td><td>王煜坤</td></tr><tr><td>2025-04-03</td><td>生产网关域名替换</td><td>V.1.0.1</td><td>李洋</td></tr></table>"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.768,
+                0.523,
+                0.794
+            ],
+            "angle": 0,
+            "content": "一、接口功能介绍及相关参数解释"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.814,
+                0.212,
+                0.836
+            ],
+            "angle": 0,
+            "content": "1、接口介绍"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.871,
+                0.791,
+                0.888
+            ],
+            "angle": 0,
+            "content": "该文档相关接口用于对接郑好办用户体系，获取用户信息使用。本文档共涉及三个接口："
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.896,
+                0.531,
+                0.913
+            ],
+            "angle": 0,
+            "content": "szzz.uc.ai.oauth_token：获取用户信息鉴权token接口"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.921,
+                0.447,
+                0.938
+            ],
+            "angle": 0,
+            "content": "szzz.uc.ai.userinfo.get：获取用户基本信息"
+        },
+        {
+            "type": "page_number",
+            "bbox": [
+                0.909,
+                0.974,
+                0.92,
+                0.985
+            ],
+            "angle": 0,
+            "content": "2"
+        }
+    ],
+    [
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.049,
+                0.462,
+                0.066
+            ],
+            "angle": 0,
+            "content": "szzz.uc.ai.userdetail.get：获取用户详细信息"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.073,
+                0.909,
+                0.091
+            ],
+            "angle": 0,
+            "content": "其中szzz.uc.ai.oauth_token为一定会使用到的接口，另外两个接口根据业务场景可能只需要使用一个"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.112,
+                0.218,
+                0.134
+            ],
+            "angle": 0,
+            "content": "2、相关参数"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.15,
+                0.145,
+                0.166
+            ],
+            "angle": 0,
+            "content": "scope:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.176,
+                0.88,
+                0.22
+            ],
+            "angle": 0,
+            "content": "授权范围，scope表示开发者需要请求用户授权的权限范围。前端调用jsapi获取authCode时传的scope需和后端请求接口时传的scope保持一致"
+        },
+        {
+            "type": "table",
+            "bbox": [
+                0.076,
+                0.238,
+                0.925,
+                0.421
+            ],
+            "angle": 0,
+            "content": "<table><tr><td>前端scope</td><td>网关接口method值</td><td>描述</td><td>备注</td></tr><tr><td>userInfo</td><td>szzz.uc.ai.userinfo.get</td><td>获取用户基本信息（zid、手机号、昵称等信息）</td><td>需单独申请调用权限</td></tr><tr><td>userDetail</td><td>szzz.uc.ai.userdetail.get</td><td>获取用户详细信息（zid、uid，、手机、姓名、身份证号等信息）</td><td>需单独申请调用权限</td></tr></table>"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.446,
+                0.179,
+                0.461
+            ],
+            "angle": 0,
+            "content": "authCode:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.472,
+                0.79,
+                0.491
+            ],
+            "angle": 0,
+            "content": "授权码，临时的用户授权凭证（authCode单次有效，不可重复使用，有效期10分钟）。"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.507,
+                0.199,
+                0.523
+            ],
+            "angle": 0,
+            "content": "oauthToken:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.534,
+                0.439,
+                0.552
+            ],
+            "angle": 0,
+            "content": "访问令牌。通过该令牌调用需要授权类接口。"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.569,
+                0.182,
+                0.586
+            ],
+            "angle": 0,
+            "content": "grantType:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.595,
+                0.291,
+                0.613
+            ],
+            "angle": 0,
+            "content": "授权类型，支持如下类型："
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.089,
+                0.62,
+                0.84,
+                0.661
+            ],
+            "angle": 0,
+            "content": "- authorization_code：用户授权，此类型下传入用户授权码 authCode 换取用户授权令牌 OAuthToken，无需传入 reOauthToken。"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.089,
+                0.669,
+                0.88,
+                0.71
+            ],
+            "angle": 0,
+            "content": "- refresh_token: 刷新令牌，此类型下传入有效的 reOauthToken用于刷新授权令牌，无需传入 authCode。"
+        },
+        {
+            "type": "list",
+            "bbox": [
+                0.089,
+                0.62,
+                0.88,
+                0.71
+            ],
+            "angle": 0,
+            "content": null
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.729,
+                0.22,
+                0.744
+            ],
+            "angle": 0,
+            "content": "reOauthToken:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.755,
+                0.588,
+                0.773
+            ],
+            "angle": 0,
+            "content": "刷新令牌。通过该令牌可以刷新 OAuthToken（有效期30天）。"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.79,
+                0.171,
+                0.806
+            ],
+            "angle": 0,
+            "content": "moduleld:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.817,
+                0.79,
+                0.835
+            ],
+            "angle": 0,
+            "content": "开放平台分配给开发者的应用ID，由郑好办管理人员配置，开发者需要提供相应的信息。"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.852,
+                0.17,
+                0.868
+            ],
+            "angle": 0,
+            "content": "expiresln:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.879,
+                0.346,
+                0.896
+            ],
+            "angle": 0,
+            "content": "访问令牌的有效时间，单位是秒。"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.914,
+                0.113,
+                0.929
+            ],
+            "angle": 0,
+            "content": "zid:"
+        },
+        {
+            "type": "page_number",
+            "bbox": [
+                0.909,
+                0.974,
+                0.92,
+                0.986
+            ],
+            "angle": 0,
+            "content": "3"
+        }
+    ],
+    [
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.049,
+                0.197,
+                0.066
+            ],
+            "angle": 0,
+            "content": "郑好办用户ID。"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.087,
+                0.317,
+                0.109
+            ],
+            "angle": 0,
+            "content": "3、相关参数获取方式"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.119,
+                0.206,
+                0.136
+            ],
+            "angle": 0,
+            "content": "获取mouldeld:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.144,
+                0.796,
+                0.187
+            ],
+            "angle": 0,
+            "content": "填写“郑好办事项服务上线申请表”，后提交给郑好办运营人员，即可获取mouldeld获取appld、ivStr、keyStr、secretKey:"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.11,
+                0.193,
+                0.678,
+                0.21
+            ],
+            "angle": 0,
+            "content": "1、如果应用中不涉及用户身份证号，姓名字段申请基本用户信息接口"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.109,
+                0.218,
+                0.905,
+                0.258
+            ],
+            "angle": 0,
+            "content": "2、如果应用中涉及用户身份证号，姓名字段申请详细用户信息接口，并且描述使用身份证号信息的场景"
+        },
+        {
+            "type": "list",
+            "bbox": [
+                0.109,
+                0.193,
+                0.905,
+                0.258
+            ],
+            "angle": 0,
+            "content": null
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.11,
+                0.267,
+                0.668,
+                0.285
+            ],
+            "angle": 0,
+            "content": "接口权限申请对接后，即可获取appId、ivStr、keyStr、secretKey"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.31,
+                0.523,
+                0.336
+            ],
+            "angle": 0,
+            "content": "二、用户授权业务方后端一般流程"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.075,
+                0.356,
+                0.187,
+                0.378
+            ],
+            "angle": 0,
+            "content": "1、流程图"
+        },
+        {
+            "type": "page_number",
+            "bbox": [
+                0.909,
+                0.974,
+                0.92,
+                0.985
+            ],
+            "angle": 0,
+            "content": "4"
+        }
+    ],
+    [
+        {
+            "type": "image",
+            "bbox": [
+                0.078,
+                0.043,
+                0.923,
+                0.835
+            ],
+            "angle": 0,
+            "content": null
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.073,
+                0.852,
+                0.191,
+                0.874
+            ],
+            "angle": 0,
+            "content": "2、Demo"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.072,
+                0.882,
+                0.826,
+                0.903
+            ],
+            "angle": 0,
+            "content": "数郑提供完整流程测试Demo（Java/PHP/Python/JS版），请点击下方链接下载运行测试"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.075,
+                0.906,
+                0.794,
+                0.929
+            ],
+            "angle": 0,
+            "content": "JAVA Demo下载地址: https://cdn-test.digitalcnzz.com/zhb/jsapi_test/Demo.zip"
+        },
+        {
+            "type": "page_number",
+            "bbox": [
+                0.909,
+                0.974,
+                0.921,
+                0.986
+            ],
+            "angle": 0,
+            "content": "5"
+        }
+    ],
+    [
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.048,
+                0.885,
+                0.091
+            ],
+            "angle": 0,
+            "content": "后端项目需用到的jar包：https://cdn.digitalcnzz.com/pss/open-platform/static/szzz-open-gateway-sdk-1.0-SNAPSHOTJAR"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.097,
+                0.526,
+                0.117
+            ],
+            "angle": 0,
+            "content": "Pyhton、PHP、JS、JAVA版本Demo: https://cdn-"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.075,
+                0.122,
+                0.735,
+                0.142
+            ],
+            "angle": 0,
+            "content": "test.digitalcnzz.com/zhb/jsapi_test/szzz_open_GATEway_demo_v1_0_0.zip"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.165,
+                0.463,
+                0.191
+            ],
+            "angle": 0,
+            "content": "三、接口规范与数郑网关简介"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.211,
+                0.262,
+                0.233
+            ],
+            "angle": 0,
+            "content": "1、数郑网关简介"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.243,
+                0.908,
+                0.311
+            ],
+            "angle": 0,
+            "content": "数郑的接口通过网关进行请求；数郑提供SDK（Java版），业务方后端系统导入该jar包后，按照接口介绍中的代码示例的方式进行调用即可，无需关注内部加密逻辑和网络请求；数郑网关通过method参数区分不同的接口"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.331,
+                0.267,
+                0.353
+            ],
+            "angle": 0,
+            "content": "2、网关接口地址"
+        },
+        {
+            "type": "table",
+            "bbox": [
+                0.078,
+                0.373,
+                0.92,
+                0.466
+            ],
+            "angle": 0,
+            "content": "<table><tr><td colspan=\"2\">Plain Text</td></tr><tr><td>1</td><td>线上访问地址</td></tr><tr><td>2</td><td>https://zhenghaoban.zzsxzspj.zhengzhou.gov.cn:10019/open/api/do</td></tr></table>"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.485,
+                0.267,
+                0.506
+            ],
+            "angle": 0,
+            "content": "3、网关必传参数"
+        },
+        {
+            "type": "table",
+            "bbox": [
+                0.077,
+                0.516,
+                0.923,
+                0.887
+            ],
+            "angle": 0,
+            "content": "<table><tr><td>属性</td><td>类型</td><td>必填</td><td>说明</td></tr><tr><td>appld</td><td>string</td><td>是</td><td>用户信息授权接口申请通过后数郑分配，注意与上述mouldeld进行区分，appld和moduleld是两个参数</td></tr><tr><td>method</td><td>string</td><td>是</td><td>接口method，下文提供</td></tr><tr><td>ivStr</td><td>string</td><td>是</td><td>网关加密参数，用户信息授权接口申请通过后数郑分配</td></tr><tr><td>keyStr</td><td>string</td><td>是</td><td>网关加密参数，用户信息授权接口申请通过后数郑分配</td></tr><tr><td>secretKey</td><td>string</td><td>是</td><td>网关加密参数，用户信息授权接口申请通过后数郑分配</td></tr><tr><td>body</td><td>string</td><td>是</td><td>接口业务参数，为JSON格式化的字符串</td></tr></table>"
+        },
+        {
+            "type": "page_number",
+            "bbox": [
+                0.909,
+                0.974,
+                0.92,
+                0.985
+            ],
+            "angle": 0,
+            "content": "6"
+        }
+    ],
+    [
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.048,
+                0.918,
+                0.091
+            ],
+            "angle": 0,
+            "content": "以上参数中：method和body根据不同接口需要的参数来传；appld、ivStr、keyStr、secretKey为数郑分配的固定参数"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.111,
+                0.269,
+                0.134
+            ],
+            "angle": 0,
+            "content": "4、网关出参格式"
+        },
+        {
+            "type": "table",
+            "bbox": [
+                0.077,
+                0.142,
+                0.923,
+                0.285
+            ],
+            "angle": 0,
+            "content": "<table><tr><td>属性</td><td>类型</td><td>必填</td><td>说明</td></tr><tr><td>code</td><td>Int</td><td>是</td><td>网关状态码</td></tr><tr><td>message</td><td>string</td><td>是</td><td>网关提示信息</td></tr><tr><td>data</td><td>object</td><td>是</td><td>接口返回的数据内容</td></tr></table>"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.301,
+                0.276,
+                0.323
+            ],
+            "angle": 0,
+            "content": "5、网关code含义"
+        },
+        {
+            "type": "table",
+            "bbox": [
+                0.077,
+                0.343,
+                0.923,
+                0.485
+            ],
+            "angle": 0,
+            "content": "<table><tr><td>code值</td><td>含义</td></tr><tr><td>0</td><td>请求成功，接口正常返回数据</td></tr><tr><td></td><td></td></tr><tr><td></td><td></td></tr></table>"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.515,
+                0.218,
+                0.536
+            ],
+            "angle": 0,
+            "content": "6、接口规范"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.547,
+                0.27,
+                0.565
+            ],
+            "angle": 0,
+            "content": "接口通信协议：HTTPS"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.075,
+                0.572,
+                0.268,
+                0.589
+            ],
+            "angle": 0,
+            "content": "接口编码格式：UTF-8"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.596,
+                0.351,
+                0.613
+            ],
+            "angle": 0,
+            "content": "返回参数格式：以JSON形式返回"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.621,
+                0.763,
+                0.64
+            ],
+            "angle": 0,
+            "content": "接口地址：https://zhenghaoban.zzsxzspj.zhengzhou.gov.cn:10019/open/api/do"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.645,
+                0.92,
+                0.689
+            ],
+            "angle": 0,
+            "content": "备注：数郑已提供Java版本SDK，可直接使用，网络请求相关SDK已封装，无需关注请求数据格式等内容，只需对出参JSON数据和接口错误异常情况进行处理即可。"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.713,
+                0.258,
+                0.738
+            ],
+            "angle": 0,
+            "content": "四、接口列表"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.759,
+                0.661,
+                0.782
+            ],
+            "angle": 0,
+            "content": "1、获取 OAuthToken接口（szzz.uc api.oauth_token）"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.825,
+                0.297,
+                0.843
+            ],
+            "angle": 0,
+            "content": "网关请求入参method值："
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.855,
+                0.286,
+                0.871
+            ],
+            "angle": 0,
+            "content": "szzz.uc.ai.oauth.token"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.911,
+                0.286,
+                0.929
+            ],
+            "angle": 0,
+            "content": "接口入参（SDK入参）："
+        },
+        {
+            "type": "page_number",
+            "bbox": [
+                0.909,
+                0.974,
+                0.92,
+                0.985
+            ],
+            "angle": 0,
+            "content": "7"
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "bbox": [
+                0.078,
+                0.045,
+                0.922,
+                0.371
+            ],
+            "angle": 0,
+            "content": "<table><tr><td>属性</td><td>类型</td><td>必填</td><td>说明</td></tr><tr><td>moduleId</td><td>string</td><td>是</td><td>数郑开放平台分配给开发者的应用ID，注意与上述 appld进行区分，appld和moduleId是两个参数</td></tr><tr><td>grantType</td><td>string</td><td>是</td><td>值为authorization_code时，代表用authCode换取 oauthToken；值为refresh_token时，代表用 reOauthToken换取oauthToken。</td></tr><tr><td>authCode</td><td>string</td><td>否</td><td>授权码，用户对应用授权后得到,当grantType=authorization_code时必填。(前端调用jsapi获取并传递给后端服务)</td></tr><tr><td>reOauthToken</td><td>string</td><td>否</td><td>刷新令牌，上次换取访问令牌时得到，当grantType=refresh_token时必填。</td></tr></table>"
+        },
+        {
+            "type": "table_caption",
+            "bbox": [
+                0.075,
+                0.405,
+                0.326,
+                0.424
+            ],
+            "angle": 0,
+            "content": "接口出参（data中的数据）："
+        },
+        {
+            "type": "table",
+            "bbox": [
+                0.077,
+                0.432,
+                0.922,
+                0.634
+            ],
+            "angle": 0,
+            "content": "<table><tr><td>属性</td><td>类型</td><td>必填</td><td>说明</td></tr><tr><td>oauthToken</td><td>string</td><td>是</td><td>访问令牌</td></tr><tr><td>expiresIn</td><td>Int</td><td>是</td><td>访问令牌的有效时间，单位是秒。</td></tr><tr><td>reOauthToken</td><td>string</td><td>是</td><td>刷新令牌。通过该令牌可以刷新oauthToken。</td></tr><tr><td>zid</td><td>string</td><td>是</td><td>郑好办用户ID</td></tr></table>"
+        },
+        {
+            "type": "table_caption",
+            "bbox": [
+                0.075,
+                0.645,
+                0.186,
+                0.663
+            ],
+            "angle": 0,
+            "content": "错误码含义："
+        },
+        {
+            "type": "table",
+            "bbox": [
+                0.077,
+                0.683,
+                0.922,
+                0.826
+            ],
+            "angle": 0,
+            "content": "<table><tr><td>code值</td><td>含义</td></tr><tr><td>0</td><td>请求成功，接口正常返回数据</td></tr><tr><td></td><td></td></tr><tr><td></td><td></td></tr></table>"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.075,
+                0.849,
+                0.206,
+                0.868
+            ],
+            "angle": 0,
+            "content": "请求代码示例："
+        },
+        {
+            "type": "page_number",
+            "bbox": [
+                0.909,
+                0.974,
+                0.92,
+                0.985
+            ],
+            "angle": 0,
+            "content": "8"
+        }
+    ],
+    [
+        {
+            "type": "code",
+            "bbox": [
+                0.09,
+                0.046,
+                0.922,
+                0.953
+            ],
+            "angle": 0,
+            "content": "```java\nimport com.alibaba.fastjson.json0bject;\nimport com.digital.szzz_GATEwaysdk.ai.GatewaySender;\nimport com.digital.szzz_GATEwaysdk.bean.GatewayResponse;\nimport com.digital.szzz_GATEwaysdk.util.AesUtil;\nimport com.digital.szzz_GATEwaysdk.utilSIGNUtil;\nimport java.nio.charrset.StandardCharrsets;\npublic class MainTest {\n    public static void main(String[] args) {\n        /* 通过网关调用的method名称 */\n        String method = \"szzz.uc.ai.oauth.token\";\n        /* 业务参数，具体取值参考下文接口入参*/\n        JSON0bject json = new JSON0bject();\n        json.put(\"moduleId\", \"1220\");\n        json.put(\"grantType\", \"authorization_code\");\n        // 这里的authCode是随便写的，实际应使用前端调用jsapi获取到的authCode\n        json.put(\"authCode\", \"dsa4d5d456wd\");\n        String body = json.toString();\n        /* 网关必传参数，当前参数仅为示例，用户信息授权接口申请通过后数郑分配，参见文末用户\n            授权接入流程 */\n            String appId = \"testApi\";\n            String ivStr = \"dT75Gm+jR+P302sthbfguA==\"};\n            String keyStr = \"T69mM0GctM4XUbCsphlauQ==\"};\n            String secreKey = \"abcsadfefafd\";\n            /* 请求网关接口 */\n            GatewayResponse response = GatewaySender.send(appId, method, ivStr, keyStr, secreKey, body, 2000, 2000);\n            /* code不为200时，请求异常（这个code是网络状态code，不是接口出参code） */\n            if (response_Code() != 200) {\n                System.out.println(\"code not succ + response\");\n            }\n            return;\n        }\n    */\n}"
+        },
+        {
+            "type": "page_number",
+            "bbox": [
+                0.908,
+                0.973,
+                0.921,
+                0.986
+            ],
+            "angle": 0,
+            "content": "9"
+        }
+    ],
+    [
+        {
+            "type": "code",
+            "bbox": [
+                0.09,
+                0.045,
+                0.918,
+                0.3
+            ],
+            "angle": 0,
+            "content": "44 /** 接口出参获取 */\n45 byte[] data = AesUtil.base64ToByte(responseGetData());\n46 byte[]plainData = AesUtil.decrypt(AesUtil.base64ToByte(ivStr), AesUtil.base64ToByte(keyStr), data);\n47 System.out.println(\"receive plain data \" + new String(plainData, StandardChars.UTF_8));\n48 } else {\n49 /* * 网关出参被篡改 */\n50 System.out.println(\"sign failed! \" + factSign);\n51 }\n52 }\n53 }\n54 }\n55"
+        },
+        {
+            "type": "code_caption",
+            "bbox": [
+                0.075,
+                0.335,
+                0.16,
+                0.353
+            ],
+            "angle": 0,
+            "content": "返回示例："
+        },
+        {
+            "type": "code",
+            "bbox": [
+                0.073,
+                0.372,
+                0.921,
+                0.619
+            ],
+            "angle": 0,
+            "content": "```\nJSON\n1 { \"code\": 0, \"message\": \"操作成功\", \"data\": { \" OAuthToken\": \"ULJ53H7vrUP5qvhQt2NlvpVhk9he2tYr0epkpvnb\", \"expireIn\": 7200, \"re0authToken\": \"01drMeauKEPdfKpVCHqUBShoJAbKl4oeWYK2D45F\", \"cid\": \"1606408741394572\" }\n10 }"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.677,
+                0.316,
+                0.698
+            ],
+            "angle": 0,
+            "content": "2、获取用户信息接口"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.087,
+                0.703,
+                0.699,
+                0.727
+            ],
+            "angle": 0,
+            "content": "(szzz.uc.ai.userInfo.get/szzz.uc.ai.userdetail.get)"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.769,
+                0.298,
+                0.788
+            ],
+            "angle": 0,
+            "content": "网关请求入参method值："
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.797,
+                0.622,
+                0.816
+            ],
+            "angle": 0,
+            "content": "获取用户基本信息：szzz.uc.ai.userInfo.get (需单独开通权限)"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.822,
+                0.636,
+                0.84
+            ],
+            "angle": 0,
+            "content": "获取用户详细信息：szzz.uc.ai.userdetail.get (需单独开通权限)"
+        },
+        {
+            "type": "code_caption",
+            "bbox": [
+                0.074,
+                0.879,
+                0.286,
+                0.898
+            ],
+            "angle": 0,
+            "content": "接口入参（SDK入参）："
+        },
+        {
+            "type": "code",
+            "bbox": [
+                0.074,
+                0.906,
+                0.922,
+                0.943
+            ],
+            "angle": 0,
+            "content": "属性 类型 必填 说明"
+        },
+        {
+            "type": "page_number",
+            "bbox": [
+                0.901,
+                0.974,
+                0.92,
+                0.986
+            ],
+            "angle": 0,
+            "content": "10"
+        }
+    ],
+    [
+        {
+            "type": "table",
+            "bbox": [
+                0.078,
+                0.044,
+                0.922,
+                0.142
+            ],
+            "angle": 0,
+            "content": "<table><tr><td>oauthToken</td><td>string</td><td>是</td><td>访问令牌</td></tr><tr><td>moduleId</td><td>string</td><td>是</td><td>开放平台分配给开发者的应用ID（需和前端调用jsapi传入的保持一致）</td></tr></table>"
+        },
+        {
+            "type": "table_caption",
+            "bbox": [
+                0.075,
+                0.177,
+                0.327,
+                0.196
+            ],
+            "angle": 0,
+            "content": "接口出参（data中的数据）："
+        },
+        {
+            "type": "table",
+            "bbox": [
+                0.075,
+                0.204,
+                0.922,
+                0.486
+            ],
+            "angle": 0,
+            "content": "<table><tr><td>属性</td><td>类型</td><td>必填</td><td>说明</td></tr><tr><td>cid</td><td>string</td><td>是</td><td>郑好办用户ID</td></tr><tr><td>phone</td><td>string</td><td>是</td><td>手机号</td></tr><tr><td>avatarUrl</td><td>string</td><td>是</td><td>头像地址</td></tr><tr><td>gender</td><td>int</td><td>是</td><td>性别，0:男 1:女</td></tr><tr><td>displayName</td><td>string</td><td>是</td><td>昵称</td></tr><tr><td>idCode</td><td>string</td><td>是</td><td>身份证号（详细信息中返回）</td></tr><tr><td>realName</td><td>string</td><td>是</td><td>真实姓名（详细信息中返回）</td></tr></table>"
+        },
+        {
+            "type": "table_caption",
+            "bbox": [
+                0.075,
+                0.497,
+                0.186,
+                0.515
+            ],
+            "angle": 0,
+            "content": "错误码含义："
+        },
+        {
+            "type": "table",
+            "bbox": [
+                0.075,
+                0.534,
+                0.922,
+                0.678
+            ],
+            "angle": 0,
+            "content": "<table><tr><td>code值</td><td>含义</td></tr><tr><td>0</td><td>请求成功，接口正常返回数据</td></tr><tr><td></td><td></td></tr><tr><td></td><td></td></tr></table>"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.075,
+                0.702,
+                0.206,
+                0.72
+            ],
+            "angle": 0,
+            "content": "请求代码示例："
+        },
+        {
+            "type": "page_number",
+            "bbox": [
+                0.902,
+                0.974,
+                0.919,
+                0.985
+            ],
+            "angle": 0,
+            "content": "11"
+        }
+    ],
+    [
+        {
+            "type": "code",
+            "bbox": [
+                0.09,
+                0.046,
+                0.922,
+                0.953
+            ],
+            "angle": 0,
+            "content": "```java\nimport com.alibaba.fastjson.json0bject;\nimport com.digital.szzz[gatewaysdk api.GatewaySender;\nimport com.digital.szzz[gatewaysdk破裂.GatewayResponse;\nimport com.digital.szzz[gatewaysdk.util.AesUtil;\nimport com.digital.szzz[gatewaysdk.utilSIGNUtil;\nimport java.nio.charset.StandardCharsets;\npublic class MainTest {\n    public static void main(String[] args) {\n        /* 通过网关调用的method名称 */\n        String method = \"szzz.uc.ai.userdetail.get\";\n        /* 业务参数，具体取值参考下文接口入参*/\n        JSON0bject json = new JSON0bject();\n        json.put(\"moduleId\", \"1220\");\n        // 这里的oauthToken为随便写的，实际应使用szzz.uc.ai.oauth_token接口返回的响应值\n        json.put(\"oauthToken\", \"dasdasdasdas56da47s56da4d6d4a89wda65ds456\");\n        String body = json.toString();\n        /* 网关必传参数，当前参数仅为示例，用户信息授权接口申请通过后数郑分配，参见文末用户授权接入流程 */\n        String appId = \"testApi\";\n        String ivStr = \"dT75Gm+jR+P302sthbfguA==\"};\n        String keyStr = \"T69mM0GctM4XUbCsphlauQ==\"};\n        String secreKey = \"abcsadfefafd\";\n        /* 请求网关接口 */\n        GatewayResponse response = GatewaySender.send(appId, method, ivStr, keyStr, secreKey, body, 2000, 2000);\n        /* code不为200时，请求异常（这个code是网络状态code，不是接口出参code） */\n        if (responseGPC() != 200) {\n            System.out.println(\"code not succ + response\");\n            return;\n        }\n        /* 验证接口出参未被恶意拦截篡改 */\n        String expectSign = response积极响应();\n        String factSign = SignUtil积极响应(response, SECRETKey);\n        if (expectSign.equals(factSign)) {\n            /* 网关出参未被篡改 */\n            System.out.println(\"sign succ + factSign\");\n        }\n    }\n}"
+        },
+        {
+            "type": "page_number",
+            "bbox": [
+                0.901,
+                0.973,
+                0.921,
+                0.986
+            ],
+            "angle": 0,
+            "content": "12"
+        }
+    ],
+    [
+        {
+            "type": "code",
+            "bbox": [
+                0.09,
+                0.045,
+                0.918,
+                0.309
+            ],
+            "angle": 0,
+            "content": "```java\n43 /** 接口出参获取 */\nbyte[] data = AesUtil.base64ToByte(responseGetData());\nbyte[]plainData = AesUtil.decrypt(AesUtil.base64ToByte(ivStr), AesUtil.base64ToByte(keyStr), data);\nSystem.out.println(\"receive plain data \" + new String(plainData, StandardCharrsets.UTF_8));\n} else {\n*** 网关出参被篡改 */\nSystem.out.println(\"sign failed! \" + factSign);\n}"
+        },
+        {
+            "type": "code_caption",
+            "bbox": [
+                0.075,
+                0.331,
+                0.16,
+                0.349
+            ],
+            "angle": 0,
+            "content": "返回示例："
+        },
+        {
+            "type": "code",
+            "bbox": [
+                0.073,
+                0.369,
+                0.921,
+                0.691
+            ],
+            "angle": 0,
+            "content": "```\nJSON\n1 { \n2 \"code\": 0, \n3 \"message\": \"操作成功\", \n4 \"data\": { \n5 \"cid\": \"1606408741394572\", \n6 \"phone\": \"13213213213\", \n7 \"?url\": null, \n8 \"gender\": 0, \n9 \"displayName\": \"孙星1130\", \n10 \"idCode\": \"xxxxxxxxxxxxxxxxxx\", \n11 \"realName\": \"xxx\", \n12 \"uid\":\"xxxxx\" \n13 } \n14 }"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.713,
+                0.405,
+                0.74
+            ],
+            "angle": 0,
+            "content": "五、常见问题及解决方案"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.759,
+                0.214,
+                0.782
+            ],
+            "angle": 0,
+            "content": "1、测试参数"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.791,
+                0.586,
+                0.81
+            ],
+            "angle": 0,
+            "content": "请联系运营人员获取测试参数，并提供应用的跳转链接，例如："
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.817,
+                0.495,
+                0.835
+            ],
+            "angle": 0,
+            "content": "https://www.xxx.com/zhenghaoban/index.html。"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.073,
+                0.854,
+                0.763,
+                0.878
+            ],
+            "angle": 0,
+            "content": "2、用户未进行实名认证（LO用户），获取不到身份证号怎么办"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.887,
+                0.637,
+                0.906
+            ],
+            "angle": 0,
+            "content": "后端一般不用考虑，由前端处理，参考前端文档常见问题及解决方案"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.926,
+                0.331,
+                0.948
+            ],
+            "angle": 0,
+            "content": "3、接口返回401未登录"
+        },
+        {
+            "type": "page_number",
+            "bbox": [
+                0.901,
+                0.974,
+                0.92,
+                0.987
+            ],
+            "angle": 0,
+            "content": "13"
+        }
+    ],
+    [
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.048,
+                0.878,
+                0.091
+            ],
+            "angle": 0,
+            "content": "authCode无效或已过期，一个authCode只能使用一次且有效期只有十分钟，测试时请让前端使用JSAPI生成最新的authCode进行测试"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.112,
+                0.292,
+                0.134
+            ],
+            "angle": 0,
+            "content": "4、接口返回无权限"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.075,
+                0.144,
+                0.255,
+                0.161
+            ],
+            "angle": 0,
+            "content": "可能原因有以下几点："
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.169,
+                0.597,
+                0.186
+            ],
+            "angle": 0,
+            "content": "1、后端和前端使用的moduleId不一致，请使用相同的moduleId"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.193,
+                0.713,
+                0.211
+            ],
+            "angle": 0,
+            "content": "2、后端和前端使用的scope不一致，当前端使用userInfo时，后端对应接口为"
+        },
+        {
+            "type": "list",
+            "bbox": [
+                0.073,
+                0.169,
+                0.713,
+                0.211
+            ],
+            "angle": 0,
+            "content": null
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.218,
+                0.864,
+                0.237
+            ],
+            "angle": 0,
+            "content": "szzz.uc.ai.userinfo.get，当前端使用userDetail时，后端对应接口为szzz.uc.ai.userdetail.get"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.242,
+                0.916,
+                0.285
+            ],
+            "angle": 0,
+            "content": "3、未开通对应接口权限，szzz.uc.ai.userdetail.get和szzz.uc.ai.userinfo.get接口都需要单独开通权限，请根据自己的应用需要联系运营人员开通对应权限"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.306,
+                0.292,
+                0.328
+            ],
+            "angle": 0,
+            "content": "5、提示令牌已过期"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.073,
+                0.338,
+                0.892,
+                0.381
+            ],
+            "angle": 0,
+            "content": "网关请求参数中有个timestamp字段，他的值和郑好办服务器时间相差超过5分钟，会返回这个错误，解决方法：三方应用开发人员检查下服务器时间是否设置正确"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.074,
+                0.402,
+                0.397,
+                0.424
+            ],
+            "angle": 0,
+            "content": "6、调用jsapi后提示需要鉴权"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.434,
+                0.547,
+                0.452
+            ],
+            "angle": 0,
+            "content": "在本地环境调试时，需要使用郑好办V9.9.9版本的应用包，"
+        },
+        {
+            "type": "title",
+            "bbox": [
+                0.075,
+                0.473,
+                0.218,
+                0.494
+            ],
+            "angle": 0,
+            "content": "7、其他问题"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.505,
+                0.395,
+                0.522
+            ],
+            "angle": 0,
+            "content": "应用上线流程问题请联系运营人员处理"
+        },
+        {
+            "type": "text",
+            "bbox": [
+                0.074,
+                0.529,
+                0.431,
+                0.547
+            ],
+            "angle": 0,
+            "content": "技术对接问题请联系运营人员联系研发处理"
+        },
+        {
+            "type": "page_number",
+            "bbox": [
+                0.901,
+                0.974,
+                0.92,
+                0.985
+            ],
+            "angle": 0,
+            "content": "14"
+        }
+    ]
+]

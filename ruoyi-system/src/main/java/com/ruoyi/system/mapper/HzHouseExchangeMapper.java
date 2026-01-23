@@ -4,12 +4,12 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.ruoyi.system.domain.HzHouseExchange;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 调换房申请Mapper接口
@@ -26,27 +26,6 @@ public interface HzHouseExchangeMapper extends BaseMapper<HzHouseExchange> {
      * @param exchange 查询条件
      * @return 分页结果
      */
-    @Select("<script>" +
-            "SELECT " +
-            "  e.exchange_id, e.tenant_id, e.old_contract_id, e.old_house_id, e.old_house_code, " +
-            "  e.new_house_id, e.new_house_code, e.exchange_reason, e.apply_time, " +
-            "  e.approve_result, e.approve_opinion, e.approve_by, e.approve_time, " +
-            "  e.exchange_time, e.new_contract_id, e.status, " +
-            "  e.create_by, e.create_time, e.update_by, e.update_time, e.remark, e.del_flag, " +
-            "  ct.contract_no AS contractNo, " +
-            "  ct.tenant_name AS tenantName, " +
-            "  ct.tenant_id_card AS tenantIdCard, " +
-            "  ct.tenant_phone AS tenantPhone, " +
-            "  ct.house_address AS roomAddress, " +
-            "  ct.rent_price AS oldRent " +
-            "FROM hz_house_exchange e " +
-            "LEFT JOIN hz_contract ct ON e.old_contract_id = ct.contract_id " +
-            "WHERE e.del_flag = '0' " +
-            "<if test='exchange.tenantId != null'> AND e.tenant_id = #{exchange.tenantId} </if>" +
-            "<if test='exchange.status != null and exchange.status != \"\"'> AND e.status = #{exchange.status} </if>" +
-            "<if test='exchange.approveResult != null and exchange.approveResult != \"\"'> AND e.approve_result = #{exchange.approveResult} </if>" +
-            "ORDER BY e.create_time DESC" +
-            "</script>")
     IPage<HzHouseExchange> selectExchangePageWithRelations(Page<HzHouseExchange> page, @Param("exchange") HzHouseExchange exchange);
 
     /**
@@ -55,21 +34,6 @@ public interface HzHouseExchangeMapper extends BaseMapper<HzHouseExchange> {
      * @param exchangeId 调换房ID
      * @return 调换房申请
      */
-    @Select("SELECT " +
-            "  e.exchange_id, e.tenant_id, e.old_contract_id, e.old_house_id, e.old_house_code, " +
-            "  e.new_house_id, e.new_house_code, e.exchange_reason, e.apply_time, " +
-            "  e.approve_result, e.approve_opinion, e.approve_by, e.approve_time, " +
-            "  e.exchange_time, e.new_contract_id, e.status, " +
-            "  e.create_by, e.create_time, e.update_by, e.update_time, e.remark, e.del_flag, " +
-            "  ct.contract_no AS contractNo, " +
-            "  ct.tenant_name AS tenantName, " +
-            "  ct.tenant_id_card AS tenantIdCard, " +
-            "  ct.tenant_phone AS tenantPhone, " +
-            "  ct.house_address AS roomAddress, " +
-            "  ct.rent_price AS oldRent " +
-            "FROM hz_house_exchange e " +
-            "LEFT JOIN hz_contract ct ON e.old_contract_id = ct.contract_id " +
-            "WHERE e.exchange_id = #{exchangeId} AND e.del_flag = '0'")
     HzHouseExchange selectExchangeByIdWithRelations(@Param("exchangeId") Long exchangeId);
 
     /**
@@ -78,26 +42,43 @@ public interface HzHouseExchangeMapper extends BaseMapper<HzHouseExchange> {
      * @param exchange 查询条件
      * @return 调换房申请列表
      */
-    @Select("<script>" +
-            "SELECT " +
-            "  e.exchange_id, e.tenant_id, e.old_contract_id, e.old_house_id, e.old_house_code, " +
-            "  e.new_house_id, e.new_house_code, e.exchange_reason, e.apply_time, " +
-            "  e.approve_result, e.approve_opinion, e.approve_by, e.approve_time, " +
-            "  e.exchange_time, e.new_contract_id, e.status, " +
-            "  e.create_by, e.create_time, e.update_by, e.update_time, e.remark, e.del_flag, " +
-            "  ct.contract_no AS contractNo, " +
-            "  ct.tenant_name AS tenantName, " +
-            "  ct.tenant_id_card AS tenantIdCard, " +
-            "  ct.tenant_phone AS tenantPhone, " +
-            "  ct.house_address AS roomAddress, " +
-            "  ct.rent_price AS oldRent " +
-            "FROM hz_house_exchange e " +
-            "LEFT JOIN hz_contract ct ON e.old_contract_id = ct.contract_id " +
-            "WHERE e.del_flag = '0' " +
-            "<if test='tenantId != null'> AND e.tenant_id = #{tenantId} </if>" +
-            "<if test='status != null and status != \"\"'> AND e.status = #{status} </if>" +
-            "<if test='approveResult != null and approveResult != \"\"'> AND e.approve_result = #{approveResult} </if>" +
-            "ORDER BY e.create_time DESC" +
-            "</script>")
     List<HzHouseExchange> selectExchangeListWithRelations(HzHouseExchange exchange);
+
+    // ==================== 换房处理相关查询方法 ====================
+
+    /**
+     * 根据ID查询调换房申请（带完整原房源和目标房源信息）
+     *
+     * @param exchangeId 调换房ID
+     * @return 调换房申请（含原房源和目标房源详细信息）
+     */
+    HzHouseExchange selectExchangeDetailById(@Param("exchangeId") Long exchangeId);
+
+    /**
+     * 获取项目下的楼栋列表
+     *
+     * @param projectId 项目ID
+     * @return 楼栋列表
+     */
+    List<Map<String, Object>> selectBuildingsByProjectId(@Param("projectId") Long projectId);
+
+    /**
+     * 获取楼栋下的单元列表
+     *
+     * @param buildingId 楼栋ID
+     * @return 单元列表
+     */
+    List<Map<String, Object>> selectUnitsByBuildingId(@Param("buildingId") Long buildingId);
+
+    /**
+     * 获取单元下的可用房间列表（空置状态）
+     *
+     * @param projectId 项目ID
+     * @param buildingId 楼栋ID
+     * @param unitId 单元ID
+     * @return 可用房间列表
+     */
+    List<Map<String, Object>> selectAvailableRooms(@Param("projectId") Long projectId,
+                                                   @Param("buildingId") Long buildingId,
+                                                   @Param("unitId") Long unitId);
 }

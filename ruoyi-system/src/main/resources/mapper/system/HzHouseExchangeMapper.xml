@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzHouseExchangeMapper">
+
+    <!-- 根据ID查询调换房申请（带关联信息） -->
+    <select id="selectExchangeByIdWithRelations" resultType="com.ruoyi.system.domain.HzHouseExchange">
+        SELECT
+          e.exchange_id, e.tenant_id, e.old_contract_id, e.old_house_id, e.old_house_code,
+          e.new_house_id, e.new_house_code, e.exchange_reason, e.apply_time,
+          e.approve_result, e.approve_opinion, e.approve_by, e.approve_time,
+          e.exchange_time, e.new_contract_id, e.status,
+          e.create_by, e.create_time, e.update_by, e.update_time, e.remark, e.del_flag,
+          ct.contract_no AS contractNo,
+          ct.tenant_name AS tenantName,
+          ct.tenant_id_card AS tenantIdCard,
+          ct.tenant_phone AS tenantPhone,
+          ct.house_address AS roomAddress,
+          ct.rent_price AS oldRent
+        FROM hz_house_exchange e
+        LEFT JOIN hz_contract ct ON e.old_contract_id = ct.contract_id
+        WHERE e.exchange_id = #{exchangeId} AND e.del_flag = '0'
+    </select>
+
+    <!-- 查询调换房申请列表（带关联信息） -->
+    <select id="selectExchangeListWithRelations" resultType="com.ruoyi.system.domain.HzHouseExchange">
+        SELECT
+          e.exchange_id, e.tenant_id, e.old_contract_id, e.old_house_id, e.old_house_code,
+          e.new_house_id, e.new_house_code, e.exchange_reason, e.apply_time,
+          e.approve_result, e.approve_opinion, e.approve_by, e.approve_time,
+          e.exchange_time, e.new_contract_id, e.status,
+          e.create_by, e.create_time, e.update_by, e.update_time, e.remark, e.del_flag,
+          ct.contract_no AS contractNo,
+          ct.tenant_name AS tenantName,
+          ct.tenant_id_card AS tenantIdCard,
+          ct.tenant_phone AS tenantPhone,
+          ct.house_address AS roomAddress,
+          ct.rent_price AS oldRent,
+          ct.start_date AS contractStartDate,
+          ct.end_date AS contractEndDate,
+          -- 原房源完整地址
+          CONCAT(old_p.project_name, old_b.building_name, old_u.unit_name, old_h.house_no, '室') AS oldFullAddress,
+          -- 目标房源完整地址
+          CONCAT(new_p.project_name, new_b.building_name, new_u.unit_name, new_h.house_no, '室') AS newFullAddress
+        FROM hz_house_exchange e
+        LEFT JOIN hz_contract ct ON e.old_contract_id = ct.contract_id
+        LEFT JOIN hz_house old_h ON e.old_house_id = old_h.house_id
+        LEFT JOIN hz_project old_p ON old_h.project_id = old_p.project_id
+        LEFT JOIN hz_building old_b ON old_h.building_id = old_b.building_id
+        LEFT JOIN hz_unit old_u ON old_h.unit_id = old_u.unit_id
+        LEFT JOIN hz_house new_h ON e.new_house_id = new_h.house_id
+        LEFT JOIN hz_project new_p ON new_h.project_id = new_p.project_id
+        LEFT JOIN hz_building new_b ON new_h.building_id = new_b.building_id
+        LEFT JOIN hz_unit new_u ON new_h.unit_id = new_u.unit_id
+        WHERE e.del_flag = '0'
+        <if test="tenantId != null"> AND e.tenant_id = #{tenantId} </if>
+        <if test="status != null and status != ''"> AND e.status = #{status} </if>
+        <if test="approveResult != null and approveResult != ''"> AND e.approve_result = #{approveResult} </if>
+        ORDER BY e.create_time DESC
+    </select>
+
+    <!-- 分页查询调换房申请（���关联信息） -->
+    <select id="selectExchangePageWithRelations" resultType="com.ruoyi.system.domain.HzHouseExchange">
+        SELECT
+          e.exchange_id, e.tenant_id, e.old_contract_id, e.old_house_id, e.old_house_code,
+          e.new_house_id, e.new_house_code, e.exchange_reason, e.apply_time,
+          e.approve_result, e.approve_opinion, e.approve_by, e.approve_time,
+          e.exchange_time, e.new_contract_id, e.status,
+          e.create_by, e.create_time, e.update_by, e.update_time, e.remark, e.del_flag,
+          ct.contract_no AS contractNo,
+          ct.tenant_name AS tenantName,
+          ct.tenant_id_card AS tenantIdCard,
+          ct.tenant_phone AS tenantPhone,
+          ct.house_address AS roomAddress,
+          ct.rent_price AS oldRent,
+          ct.start_date AS contractStartDate,
+          ct.end_date AS contractEndDate,
+          -- 原房源完整地址
+          CONCAT(old_p.project_name, old_b.building_name, old_u.unit_name, old_h.house_no, '室') AS oldFullAddress,
+          -- 目标房源完整地址
+          CONCAT(new_p.project_name, new_b.building_name, new_u.unit_name, new_h.house_no, '室') AS newFullAddress
+        FROM hz_house_exchange e
+        LEFT JOIN hz_contract ct ON e.old_contract_id = ct.contract_id
+        LEFT JOIN hz_house old_h ON e.old_house_id = old_h.house_id
+        LEFT JOIN hz_project old_p ON old_h.project_id = old_p.project_id
+        LEFT JOIN hz_building old_b ON old_h.building_id = old_b.building_id
+        LEFT JOIN hz_unit old_u ON old_h.unit_id = old_u.unit_id
+        LEFT JOIN hz_house new_h ON e.new_house_id = new_h.house_id
+        LEFT JOIN hz_project new_p ON new_h.project_id = new_p.project_id
+        LEFT JOIN hz_building new_b ON new_h.building_id = new_b.building_id
+        LEFT JOIN hz_unit new_u ON new_h.unit_id = new_u.unit_id
+        WHERE e.del_flag = '0'
+        <if test="exchange.tenantId != null"> AND e.tenant_id = #{exchange.tenantId} </if>
+        <if test="exchange.status != null and exchange.status != ''"> AND e.status = #{exchange.status} </if>
+        <if test="exchange.approveResult != null and exchange.approveResult != ''"> AND e.approve_result = #{exchange.approveResult} </if>
+        ORDER BY e.create_time DESC
+    </select>
+
+    <!-- 根据ID查询调换房申请（带完整原房源和目标房源信息） -->
+    <select id="selectExchangeDetailById" resultType="com.ruoyi.system.domain.HzHouseExchange">
+        SELECT
+          e.*,
+          ct.contract_no AS contractNo,
+          ct.tenant_name AS tenantName,
+          ct.tenant_id_card AS tenantIdCard,
+          ct.tenant_phone AS tenantPhone,
+          ct.start_date AS contractStartDate,
+          ct.end_date AS contractEndDate,
+          -- 原房源信息
+          old_p.project_id AS oldProjectId,
+          old_p.project_name AS oldProjectName,
+          old_b.building_id AS oldBuildingId,
+          old_b.building_name AS oldBuildingName,
+          old_u.unit_id AS oldUnitId,
+          old_u.unit_name AS oldUnitName,
+          old_h.house_no AS oldHouseNo,
+          CONCAT(old_p.project_name, old_b.building_name, old_u.unit_name, old_h.house_no, '室') AS oldFullAddress,
+          -- 目标房源信息
+          new_p.project_id AS newProjectId,
+          new_p.project_name AS newProjectName,
+          new_b.building_id AS newBuildingId,
+          new_b.building_name AS newBuildingName,
+          new_u.unit_id AS newUnitId,
+          new_u.unit_name AS newUnitName,
+          new_h.house_no AS newHouseNo,
+          CONCAT(new_p.project_name, new_b.building_name, new_u.unit_name, new_h.house_no, '室') AS newFullAddress
+        FROM hz_house_exchange e
+        LEFT JOIN hz_contract ct ON e.old_contract_id = ct.contract_id
+        LEFT JOIN hz_house old_h ON e.old_house_id = old_h.house_id
+        LEFT JOIN hz_project old_p ON old_h.project_id = old_p.project_id
+        LEFT JOIN hz_building old_b ON old_h.building_id = old_b.building_id
+        LEFT JOIN hz_unit old_u ON old_h.unit_id = old_u.unit_id
+        LEFT JOIN hz_house new_h ON e.new_house_id = new_h.house_id
+        LEFT JOIN hz_project new_p ON new_h.project_id = new_p.project_id
+        LEFT JOIN hz_building new_b ON new_h.building_id = new_b.building_id
+        LEFT JOIN hz_unit new_u ON new_h.unit_id = new_u.unit_id
+        WHERE e.exchange_id = #{exchangeId} AND e.del_flag = '0'
+    </select>
+
+    <!-- 获取项目下的楼栋列表 -->
+    <select id="selectBuildingsByProjectId" resultType="java.util.HashMap">
+        SELECT building_id AS buildingId, building_name AS buildingName, building_code AS buildingCode
+        FROM hz_building
+        WHERE project_id = #{projectId} AND del_flag = '0' AND status = '0'
+        ORDER BY sort_order ASC, building_id ASC
+    </select>
+
+    <!-- 获取楼栋下的单元列表 -->
+    <select id="selectUnitsByBuildingId" resultType="java.util.HashMap">
+        SELECT unit_id AS unitId, unit_name AS unitName, unit_code AS unitCode
+        FROM hz_unit
+        WHERE building_id = #{buildingId} AND del_flag = '0' AND status = '0'
+        ORDER BY sort_order ASC, unit_id ASC
+    </select>
+
+    <!-- 获取单元下的可用房间列表（空置状态） -->
+    <select id="selectAvailableRooms" resultType="java.util.HashMap">
+        SELECT h.house_id AS houseId, h.house_code AS houseCode, h.house_no AS houseNo,
+               h.floor AS floor, h.house_type_name AS houseTypeName, h.area AS area, h.rent_price AS rentPrice,
+               p.project_name AS projectName, b.building_name AS buildingName, u.unit_name AS unitName
+        FROM hz_house h
+        LEFT JOIN hz_project p ON h.project_id = p.project_id
+        LEFT JOIN hz_building b ON h.building_id = b.building_id
+        LEFT JOIN hz_unit u ON h.unit_id = u.unit_id
+        WHERE h.project_id = #{projectId}
+          AND h.building_id = #{buildingId}
+          AND (#{unitId} IS NULL OR h.unit_id = #{unitId})
+          AND h.house_status = '0'
+          AND h.del_flag = '0'
+        ORDER BY h.floor ASC, h.house_no ASC
+    </select>
+
+</mapper>

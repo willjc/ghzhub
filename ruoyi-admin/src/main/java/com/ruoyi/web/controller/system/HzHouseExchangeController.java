@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 调换房管理Controller
@@ -102,6 +103,66 @@ public class HzHouseExchangeController extends BaseController {
             exchange.getExchangeId(),
             exchange.getApproveResult(),
             exchange.getApproveOpinion()
+        ));
+    }
+
+    // ==================== 新增换房处理相关接口 ====================
+
+    /**
+     * 获取项目下的楼栋列表
+     */
+    @GetMapping("/buildings/{projectId}")
+    public AjaxResult getBuildings(@PathVariable Long projectId) {
+        List<Map<String, Object>> buildings = exchangeService.getBuildingsByProjectId(projectId);
+        return success(buildings);
+    }
+
+    /**
+     * 获取楼栋下的单元列表
+     */
+    @GetMapping("/units/{buildingId}")
+    public AjaxResult getUnits(@PathVariable Long buildingId) {
+        List<Map<String, Object>> units = exchangeService.getUnitsByBuildingId(buildingId);
+        return success(units);
+    }
+
+    /**
+     * 获取单元下的可用房间列表
+     */
+    @GetMapping("/availableRooms")
+    public AjaxResult getAvailableRooms(@RequestParam Long projectId,
+                                        @RequestParam Long buildingId,
+                                        @RequestParam(required = false) Long unitId) {
+        List<Map<String, Object>> rooms = exchangeService.getAvailableRooms(projectId, buildingId, unitId);
+        return success(rooms);
+    }
+
+    /**
+     * 分配目标房源
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:exchange:audit')")
+    @Log(title = "分配目标房源", businessType = BusinessType.UPDATE)
+    @PutMapping("/assignTarget")
+    public AjaxResult assignTarget(@RequestBody HzHouseExchange exchange) {
+        return toAjax(exchangeService.assignTargetHouse(
+            exchange.getExchangeId(),
+            exchange.getNewHouseId(),
+            exchange.getExchangeTime()
+        ));
+    }
+
+    /**
+     * 确认换房（审核通过时执行完整换房逻辑）
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:exchange:audit')")
+    @Log(title = "确认换房", businessType = BusinessType.UPDATE)
+    @PostMapping("/confirmExchange")
+    public AjaxResult confirmExchange(@RequestBody HzHouseExchange exchange) {
+        return toAjax(exchangeService.confirmExchange(
+            exchange.getExchangeId(),
+            exchange.getApproveResult(),
+            exchange.getApproveOpinion(),
+            exchange.getExchangeTime()
         ));
     }
 }

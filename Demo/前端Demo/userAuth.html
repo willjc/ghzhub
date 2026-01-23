@@ -1,0 +1,64 @@
+<html>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+  />
+  <body>
+    <script src="https://digitalcnzz-test.oss-cn-north-2-gov-1.aliyuncs.com/zhb/jsapi_test/vconsole.min.js"></script>
+    <script>
+      var vConsole = new VConsole()
+    </script>
+    <button class="button" onclick="userAuth()">用户授权</button>
+    <button class="button" onclick="popWindow()">退出webView</button>
+    <script>
+      function ready(callback) {
+        if (window.AlipayJSBridge) {
+          callback && callback()
+        } else {
+          document.addEventListener('AlipayJSBridgeReady', callback, false)
+        }
+      }
+      function userAuth() {
+        ready(function () {
+          // 备注:
+          // 1. 入参中moduleId值1220为测试参数,实际请使用数郑分配的moduleId
+          // 2. 入参中scope值userDetail为测试参数,实际使用根据业务场景和权限开通情况
+          //    其中userDetail为获取用户详细信息(包含身份证号);userInfo为获取用户基本信息(不含身份证号)
+          AlipayJSBridge.call(
+            'userAuth',
+            {
+              moduleId: '1220',
+              scope: 'userDetail'
+            },
+            function (result) {
+              alert(JSON.stringify(result))
+              console.log(JSON.stringify(result))
+            }
+          )
+        })
+      }
+      function popWindow() {
+        ready(function () {
+          AlipayJSBridge.call('popWindow')
+        })
+      }
+    </script>
+    <style>
+      body {
+        background-color: aqua;
+      }
+      .button {
+        width: 43vw;
+        height: 4vh;
+        margin: 0.5vh 0.5vw;
+        font-size: 1.5vh;
+        border-radius: 2vh;
+      }
+      .bottom_blank {
+        width: 80vw;
+        height: 40vh;
+      }
+    </style>
+  </body>
+</html>

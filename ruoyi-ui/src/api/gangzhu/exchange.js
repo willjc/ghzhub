@@ -51,3 +51,57 @@ export function auditExchange(data) {
     data: data
   })
 }
+
+// ==================== 换房处理相关接口 ====================
+
+// 获取项目列表
+export function getProjectList() {
+  return request({
+    url: '/system/project/list',
+    method: 'get',
+    params: { pageNum: 1, pageSize: 1000 }
+  })
+}
+
+// 获取项目下的楼栋列表
+export function getBuildings(projectId) {
+  return request({
+    url: '/gangzhu/exchange/buildings/' + projectId,
+    method: 'get'
+  })
+}
+
+// 获取楼��下的单元列表
+export function getUnits(buildingId) {
+  return request({
+    url: '/gangzhu/exchange/units/' + buildingId,
+    method: 'get'
+  })
+}
+
+// 获取单元下的可用房间列表
+export function getAvailableRooms(params) {
+  return request({
+    url: '/gangzhu/exchange/availableRooms',
+    method: 'get',
+    params: params
+  })
+}
+
+// 分配目标房源
+export function assignTargetHouse(data) {
+  return request({
+    url: '/gangzhu/exchange/assignTarget',
+    method: 'put',
+    data: data
+  })
+}
+
+// 确认换房
+export function confirmExchange(data) {
+  return request({
+    url: '/gangzhu/exchange/confirmExchange',
+    method: 'post',
+    data: data
+  })
+}

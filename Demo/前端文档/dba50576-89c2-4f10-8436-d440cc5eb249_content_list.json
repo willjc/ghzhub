@@ -1,0 +1,1131 @@
+[
+    {
+        "type": "text",
+        "text": "修改记录",
+        "text_level": 1,
+        "bbox": [
+            73,
+            143,
+            148,
+            160
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "一、功能介绍及参数解释",
+        "text_level": 1,
+        "bbox": [
+            73,
+            172,
+            269,
+            189
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "功能介绍",
+        "bbox": [
+            91,
+            200,
+            166,
+            217
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "名词解释",
+        "bbox": [
+            91,
+            229,
+            165,
+            244
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "二、用户授权前端流程图",
+        "text_level": 1,
+        "bbox": [
+            73,
+            257,
+            267,
+            273
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "三、用户授权流程前端涉及到的参数获取方式：",
+        "text_level": 1,
+        "bbox": [
+            73,
+            285,
+            429,
+            301
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "获取mouldeld:",
+        "bbox": [
+            91,
+            314,
+            210,
+            330
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "四、业务方前端相关JSAPI:",
+        "text_level": 1,
+        "bbox": [
+            73,
+            342,
+            284,
+            359
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "1、初始化JSAPI",
+        "bbox": [
+            91,
+            371,
+            223,
+            387
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "AlipayJSBridgeReady 调用方法代码示例：",
+        "bbox": [
+            107,
+            398,
+            429,
+            416
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "2、获取用户授权码JSAPI",
+        "bbox": [
+            91,
+            428,
+            290,
+            444
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "入参：",
+        "bbox": [
+            107,
+            455,
+            160,
+            472
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "出参:",
+        "bbox": [
+            107,
+            484,
+            153,
+            500
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "3、关闭当前WebView容器JSAPI",
+        "bbox": [
+            91,
+            513,
+            346,
+            529
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "五、开发联调方式",
+        "text_level": 1,
+        "bbox": [
+            73,
+            541,
+            217,
+            556
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "六、常见问题",
+        "text_level": 1,
+        "bbox": [
+            73,
+            570,
+            183,
+            585
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "1、前端接入是否需要引入js",
+            "2、userAuth JSAPI测试参数",
+            "3、调用userAuth JSAPI是否需要判断用户登录态",
+            "4、用户未进行实名认证（LO用户），获取不到身份证号怎么办",
+            "5、授权码authCode是否可以重复使用，有无时间限制？",
+            "6、如何进行调试",
+            "7、其他问题"
+        ],
+        "bbox": [
+            89,
+            598,
+            573,
+            785
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "修改记录",
+        "text_level": 1,
+        "bbox": [
+            73,
+            827,
+            196,
+            853
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "table",
+        "img_path": "images/c454fa2d6c2264c204bcd3b0dda8473a5e14b6c6e97a260f15c843ed8ef2d84b.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>日期</td><td>版本号</td><td>修订说明</td><td>修订人</td></tr><tr><td>2022.05.10</td><td>1.0.0</td><td>初始版本</td><td>王煜坤、张刚</td></tr></table>",
+        "bbox": [
+            76,
+            873,
+            782,
+            946
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "header",
+        "text": "文档5-用户信息授权流程（前端）",
+        "bbox": [
+            75,
+            68,
+            647,
+            104
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "page_number",
+        "text": "1",
+        "bbox": [
+            908,
+            973,
+            919,
+            984
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "一、功能介绍及参数解释",
+        "text_level": 1,
+        "bbox": [
+            73,
+            111,
+            405,
+            138
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "功能介绍",
+        "text_level": 1,
+        "bbox": [
+            73,
+            157,
+            179,
+            180
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "本文档旨在向接入郑好办的业务方h5提供对接流程、郑好办jsapi如何使用，业务参数如何获取及传递，提高接入业务方开发效率。",
+        "bbox": [
+            71,
+            189,
+            919,
+            233
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "名词解释",
+        "text_level": 1,
+        "bbox": [
+            73,
+            253,
+            179,
+            275
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "h5应用、h5前端：要透出到郑好办的业务方h5",
+        "bbox": [
+            109,
+            285,
+            496,
+            301
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "客户端：郑好办app",
+        "bbox": [
+            109,
+            310,
+            277,
+            328
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "mouldeld：郑好办方提供的应用ID，测试参数和生产参数联系运营人员获取",
+        "bbox": [
+            109,
+            334,
+            733,
+            352
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "用户基本信息：用户昵称，用户手机号，用户唯一标示（zid）、用户性别",
+        "bbox": [
+            109,
+            359,
+            715,
+            376
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "用户详细信息：用户真实姓名、身份证号、用户昵称，用户手机号，用户唯一标示（zid）、用户性别",
+        "bbox": [
+            71,
+            383,
+            919,
+            426
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "二、用户授权前端流程图",
+        "text_level": 1,
+        "bbox": [
+            73,
+            474,
+            403,
+            502
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "page_number",
+        "text": "2",
+        "bbox": [
+            908,
+            973,
+            919,
+            984
+        ],
+        "page_idx": 1
+    },
+    {
+        "type": "image",
+        "img_path": "images/3774d0b13f366d28fda7de0199c81d40844ce2e5291ab46628182fc2c8222df2.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            76,
+            44,
+            923,
+            513
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "备注：",
+        "bbox": [
+            73,
+            540,
+            125,
+            556
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "jsapi调用Demo下载地址: https://cdn-test.digitalcnzz.com/zhb/jsapi_test/Demo.zip",
+        "bbox": [
+            107,
+            564,
+            849,
+            584
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "三、用户授权流程前端涉及到的参数获取方式：",
+        "text_level": 1,
+        "bbox": [
+            73,
+            607,
+            681,
+            633
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "获取mouldeld:",
+        "bbox": [
+            73,
+            652,
+            248,
+            675
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "moduleId即应用ID，请联系运营人员获取",
+        "bbox": [
+            73,
+            685,
+            419,
+            703
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "四、业务方前端相关JSAPI:",
+        "text_level": 1,
+        "bbox": [
+            73,
+            729,
+            434,
+            753
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "jsapi调用Demo",
+        "bbox": [
+            73,
+            766,
+            207,
+            782
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "Demo下载地址: https://cdn-test.digitalcnzz.com/zhb/jsapi_test/Demo.zip",
+        "bbox": [
+            71,
+            815,
+            733,
+            833
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "1、初始化JSAPI",
+        "text_level": 1,
+        "bbox": [
+            73,
+            878,
+            258,
+            898
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "当window.onload后，容器会初始化，产生全局变量AlipayJSBridge，然后触发JS Bridge",
+        "bbox": [
+            73,
+            912,
+            736,
+            929
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "page_number",
+        "text": "3",
+        "bbox": [
+            908,
+            973,
+            919,
+            984
+        ],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "初始化完毕（AlipayJSBridgeReady）事件。AlipayJSBridge 注入是一个异步过程，因此尽可能监听window.onload事件后，再调用",
+        "bbox": [
+            71,
+            47,
+            910,
+            90
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "code",
+        "sub_type": "code",
+        "code_caption": [
+            "AlipayJSBridgeReady 调用方法代码示例："
+        ],
+        "code_body": "1 <script>\n2 //备注:\n3 //无需另外引入js，参照下文开发联调方式生成二维码，线上郑好办扫一扫即可\n4 function ready(callback) {\n5 if (window.AlipayJSBridge) {\n6 callback && callback();\n7 } else {\n8 document.addEventListener('AlipayJSBridgeReady', callback, false);\n9 }\n10 }\n11 ready(function(){\n12 alert('bridge ready');\n13 });\n14 </script>",
+        "guess_lang": "html",
+        "bbox": [
+            75,
+            142,
+            918,
+            481
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "2、获取用户授权码JSAPI",
+        "text_level": 1,
+        "bbox": [
+            73,
+            500,
+            359,
+            523
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "该JSAPI会判断用户是否登录，如果用户未登录，客户端会处理登录逻辑，前端无感知，无需前端项目主动调用登录",
+        "bbox": [
+            71,
+            532,
+            908,
+            575
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "page_number",
+        "text": "4",
+        "bbox": [
+            908,
+            973,
+            919,
+            984
+        ],
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/788ab6e37ff4c544d5266dd06a2c861d58ffd6571e030c037aae5adcff706c38.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            75,
+            42,
+            921,
+            405
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "入参：",
+        "text_level": 1,
+        "bbox": [
+            75,
+            422,
+            133,
+            441
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "(参数取值见下方备注)",
+        "text_level": 1,
+        "bbox": [
+            83,
+            450,
+            269,
+            469
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "-  $\\{\\text{String}\\} : \\text{userAuth} -$  调起native进行用户授权",
+            "- {map}: map - 请求数据",
+            "- map中的参数如下："
+        ],
+        "bbox": [
+            89,
+            474,
+            555,
+            542
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "image",
+        "img_path": "images/92c5b156ce998da342454e0f5de282e041b14c89c34831ed1bbd0b86b2e8a0b8.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            71,
+            560,
+            921,
+            695
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "image",
+        "img_path": "images/d65458f284ab8bd960c43b813c0761adf2d78066a7b4b7413f0916c78150d865.jpg",
+        "image_caption": [],
+        "image_footnote": [],
+        "bbox": [
+            71,
+            736,
+            921,
+            945
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "page_number",
+        "text": "5",
+        "bbox": [
+            908,
+            973,
+            919,
+            984
+        ],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "备注：",
+        "text_level": 1,
+        "bbox": [
+            73,
+            47,
+            122,
+            64
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "list",
+        "sub_type": "text",
+        "list_items": [
+            "1、mouldeld的值参见文末用户授权接入流程",
+            "2、scope表示开发者需要获取的用户信息范围，两种授权范围需要单独申请后端接口调用权限"
+        ],
+        "bbox": [
+            109,
+            71,
+            885,
+            114
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "出参：",
+        "text_level": 1,
+        "bbox": [
+            73,
+            130,
+            125,
+            148
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "- {function}: function(res) {} - 回调函数",
+        "bbox": [
+            89,
+            157,
+            576,
+            176
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "code",
+        "sub_type": "code",
+        "code_caption": [],
+        "code_body": "JSON\n1 { \n2 \"code\":0, \n3 \"message\":\"用户授权成功\", \n4 \"data\":{ \n5 \"authCode\":\"dsxsdfsdfs\" \n6 } \n7 }",
+        "guess_lang": "txt",
+        "bbox": [
+            76,
+            196,
+            919,
+            385
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "table",
+        "img_path": "images/57ab7dce9a0b5d17665ccf9c400c1e813e9c87eb8b76b68eb75601d4733def34.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>字段名</td><td>变量名</td><td>类型</td><td>示例值</td><td>描述</td></tr><tr><td>返回码</td><td>code</td><td>String</td><td>0</td><td>返回值:0成功1参数错误2用户取消授权无data数据3用户取消登录无data数据4授权失败,无data数据</td></tr><tr><td>返回描述</td><td>message</td><td>string</td><td>success</td><td>返回码描述</td></tr><tr><td>返回结果</td><td>data</td><td>json</td><td></td><td>返回结果</td></tr><tr><td>授权码</td><td>authCode</td><td>String</td><td></td><td>拿到授权码去换取用户token有效期10分钟</td></tr></table>",
+        "bbox": [
+            75,
+            402,
+            921,
+            728
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "3、关闭当前WebView容器JSAPI",
+        "text_level": 1,
+        "bbox": [
+            73,
+            768,
+            444,
+            790
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "如果用户取消授权或者授权失败，可以调用JSAPI关闭当前webview容器以提升用户体验。",
+        "bbox": [
+            71,
+            801,
+            803,
+            819
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "code",
+        "sub_type": "code",
+        "code_caption": [],
+        "code_body": "JavaScript 1 AlipayJSBridge.call('popWindow');",
+        "guess_lang": "javascript",
+        "bbox": [
+            75,
+            839,
+            919,
+            912
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "page_number",
+        "text": "6",
+        "bbox": [
+            908,
+            973,
+            919,
+            984
+        ],
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "五、开发联调方式",
+        "text_level": 1,
+        "bbox": [
+            73,
+            46,
+            313,
+            71
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "前端H5链接地址生成二维码，使用正式版郑好办APP扫码访问即可。（郑好办可在手机应用商店下载)",
+        "bbox": [
+            71,
+            107,
+            905,
+            125
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "注：本地环境联调需要使用郑好办V9.9.9版本进行测试",
+        "bbox": [
+            73,
+            131,
+            524,
+            148
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "二维码生成工具：https://cdn-test.digitalcnzz.com/zhb/jsapi_test/QRCode/index.html#/qrCode",
+        "bbox": [
+            73,
+            156,
+            903,
+            175
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "六、常见问题",
+        "text_level": 1,
+        "bbox": [
+            73,
+            199,
+            256,
+            224
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "1、前端接入是否需要引入js",
+        "text_level": 1,
+        "bbox": [
+            73,
+            244,
+            380,
+            268
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "jsapi相关的初始化、授权、关闭等都无需另外引入js",
+        "bbox": [
+            71,
+            277,
+            504,
+            296
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "2、userAuth JSAPI测试参数",
+        "text_level": 1,
+        "bbox": [
+            73,
+            316,
+            400,
+            338
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "moduled:",
+        "bbox": [
+            71,
+            349,
+            165,
+            364
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "scope: userDetail",
+        "bbox": [
+            73,
+            375,
+            236,
+            390
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "moduleld的值请联系运营人员获取",
+        "bbox": [
+            73,
+            398,
+            359,
+            415
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "3、调用userAuth JSAPI是否需要判断用户登录态",
+        "text_level": 1,
+        "bbox": [
+            73,
+            436,
+            622,
+            459
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "前端项目调用userAuth时无需判断用户是否已登录，客户端已经处理了登录逻辑，用户未登录时会自动拉起登录，对前端无感知，因此前端无需手段判断登录",
+        "bbox": [
+            71,
+            468,
+            913,
+            512
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "4、用户未进行实名认证（LO用户），获取不到身份证号怎么办",
+        "text_level": 1,
+        "bbox": [
+            71,
+            532,
+            763,
+            555
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "用户认证等级为LO时，接口返回的用户信息不包含身份证号等，如果应用要求用户已进行实名认证，可在未获取到身份证号时，调用实名认证JSAPI拉起用户认证页面，用户进行认证过后，再进行获取用户信息操作",
+        "bbox": [
+            71,
+            564,
+            913,
+            631
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "拉起实名认证JSAPI如下：",
+        "bbox": [
+            73,
+            638,
+            282,
+            655
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "调用代码示例",
+        "text_level": 1,
+        "bbox": [
+            73,
+            686,
+            189,
+            705
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "code",
+        "sub_type": "code",
+        "code_caption": [],
+        "code_body": "JavaScript   \n1 AlipayJSBridge.call('getonverified',{}function(result){   \n2   \n3 }）;",
+        "guess_lang": "javascript",
+        "bbox": [
+            76,
+            724,
+            919,
+            837
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "出参JSON",
+        "text_level": 1,
+        "bbox": [
+            73,
+            858,
+            166,
+            875
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "page_number",
+        "text": "7",
+        "bbox": [
+            908,
+            973,
+            919,
+            984
+        ],
+        "page_idx": 6
+    },
+    {
+        "type": "code",
+        "sub_type": "code",
+        "code_caption": [],
+        "code_body": "JSON  \n1 { result':false', 3 'message':'回调信息', 4 'authLevel':'用户认证等级' 5 }",
+        "guess_lang": "txt",
+        "bbox": [
+            71,
+            45,
+            919,
+            210
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "table",
+        "img_path": "images/c21c1433946e76bd397249f9cd5e3514f9304ecc75b2d7caa84ac4ff4b4529de.jpg",
+        "table_caption": [],
+        "table_footnote": [],
+        "table_body": "<table><tr><td>字段名</td><td>变量名</td><td>类型</td><td>示例值</td><td>描述</td></tr><tr><td>提示信息</td><td>message</td><td>string</td><td>页面返回成功</td><td></td></tr><tr><td>返回状态</td><td>result</td><td>string</td><td>true</td><td>用户是否已认证true是,false否</td></tr><tr><td>授权码</td><td>authCode</td><td>int</td><td>2</td><td>0未认证1:L1认证,1:L2认证</td></tr></table>",
+        "bbox": [
+            73,
+            224,
+            921,
+            420
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "5、授权码authCode是否可以重复使用，有无时间限制？",
+        "text_level": 1,
+        "bbox": [
+            71,
+            435,
+            689,
+            458
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "不能重复使用，业务方前后端联调时，一个authCode只能用一次且每个authCode有效期是10min",
+        "bbox": [
+            71,
+            468,
+            870,
+            486
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "6、如何进行调试",
+        "text_level": 1,
+        "bbox": [
+            71,
+            506,
+            267,
+            530
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "详见上文开发联调方式",
+        "bbox": [
+            73,
+            537,
+            264,
+            558
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "7、其他问题",
+        "text_level": 1,
+        "bbox": [
+            71,
+            577,
+            218,
+            599
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "应用上线流程问题请联系@郑好办运营黎哲/时阳阳/龚雨处理技术对接问题请联系运营人员联系研发处理",
+        "bbox": [
+            71,
+            609,
+            578,
+            654
+        ],
+        "page_idx": 7
+    },
+    {
+        "type": "page_number",
+        "text": "8",
+        "bbox": [
+            908,
+            973,
+            919,
+            984
+        ],
+        "page_idx": 7
+    }
+]

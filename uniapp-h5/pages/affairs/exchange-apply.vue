@@ -110,7 +110,7 @@
 		data() {
 			return {
 				housingType: '',
-				tenantId: 1, // TODO: 从登录信息获取租户ID
+				tenantId: null,
 				loading: false,
 				contractList: [],
 
@@ -129,6 +129,24 @@
 			}
 		},
 		onLoad(options) {
+			// 获取登录用户信息
+			const userInfo = uni.getStorageSync('userInfo')
+			if (!userInfo || !userInfo.userId) {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				})
+				setTimeout(() => {
+					uni.navigateTo({
+						url: '/pages/login/index'
+					})
+				}, 1500)
+				return
+			}
+
+			// 使用真实登录用户的 userId
+			this.tenantId = userInfo.userId
+
 			if (options.type) {
 				this.housingType = options.type
 			}

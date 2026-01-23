@@ -117,6 +117,82 @@ public class HzHouseExchange extends BaseEntity {
     @TableField(exist = false)
     private BigDecimal newRent;
 
+    // ==================== 原房源详细信息 ====================
+
+    /** 原项目ID */
+    @TableField(exist = false)
+    private Long oldProjectId;
+
+    /** 原项目名称 */
+    @TableField(exist = false)
+    private String oldProjectName;
+
+    /** 原楼栋ID */
+    @TableField(exist = false)
+    private Long oldBuildingId;
+
+    /** 原楼栋名称 */
+    @TableField(exist = false)
+    private String oldBuildingName;
+
+    /** 原单元ID */
+    @TableField(exist = false)
+    private Long oldUnitId;
+
+    /** 原单元名称 */
+    @TableField(exist = false)
+    private String oldUnitName;
+
+    /** 原房间号 */
+    @TableField(exist = false)
+    private String oldHouseNo;
+
+    /** 原房源完整地址 */
+    @TableField(exist = false)
+    private String oldFullAddress;
+
+    /** 合同开始日期 */
+    @TableField(exist = false)
+    private String contractStartDate;
+
+    /** 合同结束日期 */
+    @TableField(exist = false)
+    private String contractEndDate;
+
+    // ==================== 目标房源详细信息 ====================
+
+    /** 目标项目ID */
+    @TableField(exist = false)
+    private Long newProjectId;
+
+    /** 目标项目名称 */
+    @TableField(exist = false)
+    private String newProjectName;
+
+    /** 目标楼栋ID */
+    @TableField(exist = false)
+    private Long newBuildingId;
+
+    /** 目标楼栋名称 */
+    @TableField(exist = false)
+    private String newBuildingName;
+
+    /** 目标单元ID */
+    @TableField(exist = false)
+    private Long newUnitId;
+
+    /** 目标单元名称 */
+    @TableField(exist = false)
+    private String newUnitName;
+
+    /** 目标房间号 */
+    @TableField(exist = false)
+    private String newHouseNo;
+
+    /** 目标房源完整地址 */
+    @TableField(exist = false)
+    private String newFullAddress;
+
     public void setExchangeId(Long exchangeId) {
         this.exchangeId = exchangeId;
     }
@@ -307,6 +383,154 @@ public class HzHouseExchange extends BaseEntity {
 
     public BigDecimal getNewRent() {
         return newRent;
+    }
+
+    // ==================== 原房源详细信息 getter/setter ====================
+
+    public Long getOldProjectId() {
+        return oldProjectId;
+    }
+
+    public void setOldProjectId(Long oldProjectId) {
+        this.oldProjectId = oldProjectId;
+    }
+
+    public String getOldProjectName() {
+        return oldProjectName;
+    }
+
+    public void setOldProjectName(String oldProjectName) {
+        this.oldProjectName = oldProjectName;
+    }
+
+    public Long getOldBuildingId() {
+        return oldBuildingId;
+    }
+
+    public void setOldBuildingId(Long oldBuildingId) {
+        this.oldBuildingId = oldBuildingId;
+    }
+
+    public String getOldBuildingName() {
+        return oldBuildingName;
+    }
+
+    public void setOldBuildingName(String oldBuildingName) {
+        this.oldBuildingName = oldBuildingName;
+    }
+
+    public Long getOldUnitId() {
+        return oldUnitId;
+    }
+
+    public void setOldUnitId(Long oldUnitId) {
+        this.oldUnitId = oldUnitId;
+    }
+
+    public String getOldUnitName() {
+        return oldUnitName;
+    }
+
+    public void setOldUnitName(String oldUnitName) {
+        this.oldUnitName = oldUnitName;
+    }
+
+    public String getOldHouseNo() {
+        return oldHouseNo;
+    }
+
+    public void setOldHouseNo(String oldHouseNo) {
+        this.oldHouseNo = oldHouseNo;
+    }
+
+    public String getOldFullAddress() {
+        return oldFullAddress;
+    }
+
+    public void setOldFullAddress(String oldFullAddress) {
+        this.oldFullAddress = oldFullAddress;
+    }
+
+    public String getContractStartDate() {
+        return contractStartDate;
+    }
+
+    public void setContractStartDate(String contractStartDate) {
+        this.contractStartDate = contractStartDate;
+    }
+
+    public String getContractEndDate() {
+        return contractEndDate;
+    }
+
+    public void setContractEndDate(String contractEndDate) {
+        this.contractEndDate = contractEndDate;
+    }
+
+    // ==================== 目标房源详细信息 getter/setter ====================
+
+    public Long getNewProjectId() {
+        return newProjectId;
+    }
+
+    public void setNewProjectId(Long newProjectId) {
+        this.newProjectId = newProjectId;
+    }
+
+    public String getNewProjectName() {
+        return newProjectName;
+    }
+
+    public void setNewProjectName(String newProjectName) {
+        this.newProjectName = newProjectName;
+    }
+
+    public Long getNewBuildingId() {
+        return newBuildingId;
+    }
+
+    public void setNewBuildingId(Long newBuildingId) {
+        this.newBuildingId = newBuildingId;
+    }
+
+    public String getNewBuildingName() {
+        return newBuildingName;
+    }
+
+    public void setNewBuildingName(String newBuildingName) {
+        this.newBuildingName = newBuildingName;
+    }
+
+    public Long getNewUnitId() {
+        return newUnitId;
+    }
+
+    public void setNewUnitId(Long newUnitId) {
+        this.newUnitId = newUnitId;
+    }
+
+    public String getNewUnitName() {
+        return newUnitName;
+    }
+
+    public void setNewUnitName(String newUnitName) {
+        this.newUnitName = newUnitName;
+    }
+
+    public String getNewHouseNo() {
+        return newHouseNo;
+    }
+
+    public void setNewHouseNo(String newHouseNo) {
+        this.newHouseNo = newHouseNo;
+    }
+
+    public String getNewFullAddress() {
+        return newFullAddress;
+    }
+
+    public void setNewFullAddress(String newFullAddress) {
+        this.newFullAddress = newFullAddress;
     }
 
     @Override

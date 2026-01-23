@@ -55,6 +55,18 @@ public class HzExchangeAppController extends BaseController {
             item.put("roomAddress", exchange.getRoomAddress());
             item.put("applyTime", exchange.getApplyTime());
             item.put("reason", exchange.getExchangeReason());
+            // 原房源完整地址
+            item.put("oldFullAddress", exchange.getOldFullAddress());
+            // 目标房源完整地址（换房完成后）
+            item.put("newFullAddress", exchange.getNewFullAddress());
+            // 合同期限
+            item.put("contractStartDate", exchange.getContractStartDate());
+            item.put("contractEndDate", exchange.getContractEndDate());
+            // 换房时间
+            item.put("exchangeTime", exchange.getExchangeTime());
+            // 审核意见和时间
+            item.put("approveOpinion", exchange.getApproveOpinion());
+            item.put("approveTime", exchange.getApproveTime());
             return item;
         }).toList();
 

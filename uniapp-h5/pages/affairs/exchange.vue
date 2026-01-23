@@ -6,49 +6,61 @@
 				<!-- 申请状态 -->
 				<view class="info-row">
 					<text class="info-label">申请状态</text>
-					<text class="info-value" :class="getStatusClass(item.status)">{{ item.statusText }}</text>
+					<text class="info-value" :class="getStatusClass(item.status)">{{ getStatusText(item.status) }}</text>
 				</view>
 
-				<!-- 合同编号 -->
-				<view class="info-row">
-					<text class="info-label">合同编号</text>
-					<text class="info-value">{{ item.contractNo }}</text>
+				<!-- 原房源信息 -->
+				<view class="section-title">原房源</view>
+				<view class="info-section">
+					<view class="info-row">
+						<text class="info-label">房源地址</text>
+						<text class="info-value">{{ item.oldFullAddress || item.roomAddress || '-' }}</text>
+					</view>
+					<view class="info-row">
+						<text class="info-label">合同期限</text>
+						<text class="info-value">{{ item.contractStartDate || '-' }} ~ {{ item.contractEndDate || '-' }}</text>
+					</view>
 				</view>
 
-				<!-- 申请人 -->
-				<view class="info-row">
-					<text class="info-label">申请人</text>
-					<text class="info-value">{{ item.applicant }}</text>
+				<!-- 换房箭头指示（仅已完成时显示） -->
+				<view class="exchange-arrow" v-if="item.status === '1' && item.newFullAddress">
+					<text class="arrow-text">↓ 换房成功 ↓</text>
 				</view>
 
-				<!-- 身份证号 -->
-				<view class="info-row">
-					<text class="info-label">身份证号</text>
-					<text class="info-value">{{ item.idCard }}</text>
+				<!-- 目标房源信息（仅已完成时显示） -->
+				<view v-if="item.status === '1' && item.newFullAddress">
+					<view class="section-title">目标房源</view>
+					<view class="info-section">
+						<view class="info-row">
+							<text class="info-label">房源地址</text>
+							<text class="info-value highlight">{{ item.newFullAddress }}</text>
+						</view>
+						<view class="info-row">
+							<text class="info-label">换房时间</text>
+							<text class="info-value">{{ item.exchangeTime || '-' }}</text>
+						</view>
+					</view>
 				</view>
 
-				<!-- 联系电话 -->
-				<view class="info-row">
-					<text class="info-label">联系电话</text>
-					<text class="info-value">{{ item.phone }}</text>
+				<!-- 申请信息 -->
+				<view class="section-title">申请信息</view>
+				<view class="info-section">
+					<view class="info-row">
+						<text class="info-label">申请时间</text>
+						<text class="info-value">{{ item.applyTime || '-' }}</text>
+					</view>
+					<view class="info-row last-row">
+						<text class="info-label">申请原因</text>
+						<text class="info-value">{{ item.exchangeReason || item.reason || '-' }}</text>
+					</view>
 				</view>
 
-				<!-- 房间地址 -->
-				<view class="info-row">
-					<text class="info-label">房间地址</text>
-					<text class="info-value">{{ item.roomAddress }}</text>
-				</view>
-
-				<!-- 申请调换时间 -->
-				<view class="info-row">
-					<text class="info-label">申请调换时间</text>
-					<text class="info-value">{{ item.applyTime }}</text>
-				</view>
-
-				<!-- 申请原因 -->
-				<view class="info-row last-row">
-					<text class="info-label">申请原因</text>
-					<text class="info-value">{{ item.reason }}</text>
+				<!-- 审核信息（有审核意见时显示） -->
+				<view class="info-section" v-if="item.approveOpinion || item.status === '2'">
+					<view class="info-row last-row">
+						<text class="info-label">审核意见</text>
+						<text class="info-value" :class="getStatusClass(item.status)">{{ item.approveOpinion || (item.status === '2' ? '申请已拒绝' : '-') }}</text>
+					</view>
 				</view>
 			</view>
 
@@ -74,12 +86,30 @@
 		data() {
 			return {
 				housingType: '',
-				tenantId: 1, // TODO: 从登录信息获取租户ID
+				tenantId: null,
 				loading: false,
 				exchangeList: []
 			}
 		},
 		onLoad(options) {
+			// 获取登录用户信息
+			const userInfo = uni.getStorageSync('userInfo')
+			if (!userInfo || !userInfo.userId) {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				})
+				setTimeout(() => {
+					uni.navigateTo({
+						url: '/pages/login/index'
+					})
+				}, 1500)
+				return
+			}
+
+			// 使用真实登录用户的 userId
+			this.tenantId = userInfo.userId
+
 			if (options.type) {
 				this.housingType = options.type
 			}
@@ -93,7 +123,13 @@
 					const response = await getExchangeList(this.tenantId)
 
 					if (response.code === 200) {
-						this.exchangeList = response.data || []
+						// 处理数据，添加状态文本
+						this.exchangeList = (response.data || []).map(item => {
+							return {
+								...item,
+								statusText: this.getStatusText(item.status)
+							}
+						})
 					} else {
 						this.exchangeList = []
 						uni.showToast({
@@ -113,12 +149,22 @@
 				}
 			},
 
+			// 获取状态文本
+			getStatusText(status) {
+				const textMap = {
+					'0': '待审核',
+					'1': '已完成',
+					'2': '已拒绝'
+				}
+				return textMap[status] || '未知'
+			},
+
 			// 获取状态样式类
 			getStatusClass(status) {
 				const classMap = {
-					'0': 'status-pending',    // 审批中
-					'1': 'status-approved',   // 审批通过
-					'2': 'status-rejected'    // 审批拒绝
+					'0': 'status-pending',
+					'1': 'status-approved',
+					'2': 'status-rejected'
 				}
 				return classMap[status] || ''
 			},
@@ -159,38 +205,62 @@
 		position: relative;
 	}
 
+	/* 分区标题 */
+	.section-title {
+		color: #0f73ff;
+		font-size: 28rpx;
+		font-weight: 600;
+		margin-bottom: 16rpx;
+		margin-top: 8rpx;
+	}
+
+	.info-section {
+		background: #f8f9fc;
+		border-radius: 12rpx;
+		padding: 16rpx 20rpx;
+		margin-bottom: 16rpx;
+	}
+
+	/* 换房箭头 */
+	.exchange-arrow {
+		text-align: center;
+		padding: 16rpx 0;
+	}
+
+	.arrow-text {
+		color: #0f73ff;
+		font-size: 26rpx;
+		font-weight: 500;
+	}
+
 	.info-row {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 28rpx;
+		margin-bottom: 20rpx;
 	}
 
-	.last-row {
+	.info-row:last-child {
 		margin-bottom: 0;
 	}
 
 	.info-label {
-		height: 37rpx;
 		color: #888888;
 		font-size: 26rpx;
-		font-weight: normal;
-		font-family: "PingFang SC", "苹方-简", sans-serif;
-		line-height: 37rpx;
+		min-width: 140rpx;
 	}
 
 	.info-value {
-		height: 37rpx;
 		color: #1a1a1a;
 		font-size: 26rpx;
-		font-weight: normal;
-		font-family: "PingFang SC", "苹方-简", sans-serif;
-		line-height: 37rpx;
 		text-align: right;
-		max-width: 450rpx;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		flex: 1;
+		word-break: break-all;
+	}
+
+	.info-value.highlight {
+		color: #0f73ff;
+		font-weight: 500;
 	}
 
 	/* 状态颜色 */
@@ -231,7 +301,6 @@
 		color: #ffffff;
 		font-size: 36rpx;
 		font-weight: 600;
-		font-family: "PingFang SC", "苹方-简", sans-serif;
 	}
 
 	/* 空状态 */
