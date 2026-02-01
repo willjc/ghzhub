@@ -213,6 +213,8 @@
             >
               <el-table-column type="selection" width="50" align="center" />
               <el-table-column label="房源编号" prop="houseCode" width="150" show-overflow-tooltip />
+              <el-table-column label="楼栋" prop="buildingName" width="100" show-overflow-tooltip />
+              <el-table-column label="单元" prop="unitName" width="100" show-overflow-tooltip />
               <el-table-column label="房间号" prop="houseNo" width="120" />
               <el-table-column label="楼层" prop="floor" width="80" align="center" />
               <el-table-column label="户型" prop="houseTypeName" min-width="140" show-overflow-tooltip />
@@ -323,6 +325,8 @@
       >
         <el-table-column label="序号" type="index" width="60" align="center" />
         <el-table-column label="房源编号" prop="houseCode" width="150" show-overflow-tooltip />
+        <el-table-column label="楼栋" prop="buildingName" width="100" show-overflow-tooltip />
+        <el-table-column label="单元" prop="unitName" width="100" show-overflow-tooltip />
         <el-table-column label="房间号" prop="houseNo" width="120" />
         <el-table-column label="楼层" prop="floor" width="80" align="center" />
         <el-table-column label="户型" prop="houseTypeName" min-width="140" show-overflow-tooltip />

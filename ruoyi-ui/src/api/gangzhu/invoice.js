@@ -22,10 +22,7 @@ export function completeInvoice(data) {
   return request({
     url: '/gangzhu/invoice/complete',
     method: 'post',
-    data: data,
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+    data: data
   })
 }
 

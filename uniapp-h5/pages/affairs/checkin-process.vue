@@ -54,7 +54,7 @@
 				</view>
 				
 				<view class="form-row" @click="showDatePicker('cohabitantDate')">
-					<text class="form-label">退租日期</text>
+					<text class="form-label">入住日期</text>
 					<view class="form-value-wrap">
 						<text class="form-value placeholder" v-if="!formData.cohabitantDate">请选择入住日期</text>
 						<text class="form-value" v-else>{{ formData.cohabitantDate }}</text>

@@ -77,7 +77,6 @@
     <el-table v-loading="loading" :data="unitList" @selection-change="handleSelectionChange" :height="embedded ? '500px' : 'calc(100vh - 320px)'" style="width: 100%">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="单元名称" align="center" prop="unitName" width="150" />
-      <el-table-column label="单元编码" align="center" prop="unitCode" width="120" />
       <el-table-column label="所属楼栋" align="center" prop="buildingName" width="150" />
       <el-table-column label="所属项目" align="center" prop="projectName" width="180" show-overflow-tooltip />
       <el-table-column label="总房源" align="center" prop="totalHouses" width="100" />
@@ -149,11 +148,6 @@
           <el-col :span="12">
             <el-form-item label="单元名称" prop="unitName">
               <el-input v-model="form.unitName" placeholder="请输入单元名称" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="单元编码" prop="unitCode">
-              <el-input v-model="form.unitCode" placeholder="请输入单元编码" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -238,9 +232,6 @@ export default {
         ],
         unitName: [
           { required: true, message: "单元名称不能为空", trigger: "blur" }
-        ],
-        unitCode: [
-          { required: true, message: "单元编码不能为空", trigger: "blur" }
         ]
       }
     };

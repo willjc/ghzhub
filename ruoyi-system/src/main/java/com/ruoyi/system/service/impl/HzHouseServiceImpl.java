@@ -238,7 +238,7 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
      * 导入房源数据
      *
      * @param houseList 房源列表
-     * @param updateSupport 是否更新已存在数据
+     * @param updateSupport 是否更新已存在数据(此参数已废弃,保留用��接口兼容)
      * @return 结果消息
      */
     @Override
@@ -258,31 +258,105 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
         {
             try
             {
-                // 检查房源编码是否已存在
+                // 1. 检查房源编码是否已存在
                 LambdaQueryWrapper<HzHouse> wrapper = new LambdaQueryWrapper<>();
                 wrapper.eq(HzHouse::getHouseCode, house.getHouseCode());
                 HzHouse existHouse = this.getOne(wrapper);
 
-                if (existHouse == null)
-                {
-                    // 新增房源
-                    this.save(house);
-                    successNum++;
-                    successMsg.append("<br/>").append(successNum).append("、房源编码 ").append(house.getHouseCode()).append(" 导入成功");
-                }
-                else if (updateSupport)
-                {
-                    // 更新房源
-                    house.setHouseId(existHouse.getHouseId());
-                    this.updateById(house);
-                    successNum++;
-                    successMsg.append("<br/>").append(successNum).append("、房源编码 ").append(house.getHouseCode()).append(" 更新成功");
-                }
-                else
+                if (existHouse != null)
                 {
                     failureNum++;
                     failureMsg.append("<br/>").append(failureNum).append("、房源编码 ").append(house.getHouseCode()).append(" 已存在");
+                    continue;
                 }
+
+                // 2. 根据项目名称查找项目ID
+                if (house.getProjectName() == null || house.getProjectName().trim().isEmpty())
+                {
+                    failureNum++;
+                    failureMsg.append("<br/>").append(failureNum).append("、房源编码 ").append(house.getHouseCode()).append(" 导入失败：项目名称不能为空");
+                    continue;
+                }
+
+                LambdaQueryWrapper<com.ruoyi.system.domain.HzProject> projectWrapper = new LambdaQueryWrapper<>();
+                projectWrapper.eq(com.ruoyi.system.domain.HzProject::getProjectName, house.getProjectName().trim());
+                com.ruoyi.system.domain.HzProject project = projectMapper.selectOne(projectWrapper);
+
+                if (project == null)
+                {
+                    failureNum++;
+                    failureMsg.append("<br/>").append(failureNum).append("、房源编码 ").append(house.getHouseCode()).append(" 导入失败：项目名称 '").append(house.getProjectName()).append("' 不存在，请检查项目信息是否正确");
+                    continue;
+                }
+                house.setProjectId(project.getProjectId());
+
+                // 3. 根据项目名称+楼栋名称查找楼栋ID
+                if (house.getBuildingName() == null || house.getBuildingName().trim().isEmpty())
+                {
+                    failureNum++;
+                    failureMsg.append("<br/>").append(failureNum).append("、房源编码 ").append(house.getHouseCode()).append(" 导入失败：楼栋名称不能为空");
+                    continue;
+                }
+
+                LambdaQueryWrapper<com.ruoyi.system.domain.HzBuilding> buildingWrapper = new LambdaQueryWrapper<>();
+                buildingWrapper.eq(com.ruoyi.system.domain.HzBuilding::getProjectId, project.getProjectId())
+                              .eq(com.ruoyi.system.domain.HzBuilding::getBuildingName, house.getBuildingName().trim());
+                com.ruoyi.system.domain.HzBuilding building = buildingMapper.selectOne(buildingWrapper);
+
+                if (building == null)
+                {
+                    failureNum++;
+                    failureMsg.append("<br/>").append(failureNum).append("、房源编码 ").append(house.getHouseCode()).append(" 导入失败：楼栋名称 '").append(house.getBuildingName()).append("' 在项目 '").append(house.getProjectName()).append("' 下不存在，请检查楼栋信息是否正确");
+                    continue;
+                }
+                house.setBuildingId(building.getBuildingId());
+
+                // 4. 根据楼栋ID+单元名称查找单元ID
+                if (house.getUnitName() == null || house.getUnitName().trim().isEmpty())
+                {
+                    failureNum++;
+                    failureMsg.append("<br/>").append(failureNum).append("、房源编码 ").append(house.getHouseCode()).append(" 导入失败：单元名称不能为空");
+                    continue;
+                }
+
+                LambdaQueryWrapper<com.ruoyi.system.domain.HzUnit> unitWrapper = new LambdaQueryWrapper<>();
+                unitWrapper.eq(com.ruoyi.system.domain.HzUnit::getBuildingId, building.getBuildingId())
+                         .eq(com.ruoyi.system.domain.HzUnit::getUnitName, house.getUnitName().trim());
+                com.ruoyi.system.domain.HzUnit unit = unitMapper.selectOne(unitWrapper);
+
+                if (unit == null)
+                {
+                    failureNum++;
+                    failureMsg.append("<br/>").append(failureNum).append("、房源编码 ").append(house.getHouseCode()).append(" 导入失败：单元名称 '").append(house.getUnitName()).append("' 在楼栋 '").append(house.getBuildingName()).append("' 下不存在，请检查单元信息是否正确");
+                    continue;
+                }
+                house.setUnitId(unit.getUnitId());
+
+                // 5. 根据项目名称+户型名称查找户型ID
+                if (house.getHouseTypeName() == null || house.getHouseTypeName().trim().isEmpty())
+                {
+                    failureNum++;
+                    failureMsg.append("<br/>").append(failureNum).append("、房源编码 ").append(house.getHouseCode()).append(" 导入失败：户型名称不能为空");
+                    continue;
+                }
+
+                LambdaQueryWrapper<com.ruoyi.system.domain.HzHouseType> houseTypeWrapper = new LambdaQueryWrapper<>();
+                houseTypeWrapper.eq(com.ruoyi.system.domain.HzHouseType::getProjectId, project.getProjectId())
+                               .eq(com.ruoyi.system.domain.HzHouseType::getHouseTypeName, house.getHouseTypeName().trim());
+                com.ruoyi.system.domain.HzHouseType houseType = houseTypeMapper.selectOne(houseTypeWrapper);
+
+                if (houseType == null)
+                {
+                    failureNum++;
+                    failureMsg.append("<br/>").append(failureNum).append("、房源编码 ").append(house.getHouseCode()).append(" 导入失败：户型名称 '").append(house.getHouseTypeName()).append("' 在项目 '").append(house.getProjectName()).append("' 下不存在，请检查户型信息是否正确");
+                    continue;
+                }
+                house.setHouseTypeId(houseType.getHouseTypeId());
+
+                // 6. 新增房源
+                this.save(house);
+                successNum++;
+                successMsg.append("<br/>").append(successNum).append("、房源编码 ").append(house.getHouseCode()).append(" 导入成功");
             }
             catch (Exception e)
             {

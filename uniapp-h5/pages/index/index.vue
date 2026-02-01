@@ -126,7 +126,7 @@
 			<!-- 通知栏 -->
 			<view class="notice-wrapper">
 				<view class="notice-section"></view>
-				<view class="notice-content">
+				<view class="notice-content" @click="handleNoticeClick">
 					<image class="notice-icon" src="/static/通知@2x.png"></image>
 					<text class="notice-label">最新通知：</text>
 					<view class="notice-scroll-container">
@@ -224,6 +224,7 @@
 		data() {
 			return {
 				noticeText: '', // 最新通知内容
+				latestNoticeId: null, // 最新通知ID（用于跳转）
 				showModal: false, // 弹窗显示状态
 				formData: { // 弹窗表单数据
 					identity: '',
@@ -695,13 +696,31 @@
 			async loadLatestNotice() {
 				try {
 					const response = await getLatestNotice()
-					if (response.code === 200 && response.msg) {
+					if (response.code === 200 && response.data) {
+						// 保存通知ID用于跳转
+						this.latestNoticeId = response.data.noticeId
 						// 去除 HTML 标签，只保留纯文本
-						this.noticeText = this.stripHtmlTags(response.msg)
+						this.noticeText = this.stripHtmlTags(response.data.noticeContent)
 					}
 				} catch (error) {
 					console.error('加载最新通知失败:', error)
 					this.noticeText = '暂无通知'
+				}
+			},
+
+			/**
+			 * 点击通知栏跳转到通知详情
+			 */
+			handleNoticeClick() {
+				if (this.latestNoticeId) {
+					uni.navigateTo({
+						url: '/pages/notice/detail?noticeId=' + this.latestNoticeId
+					})
+				} else {
+					uni.showToast({
+						title: '暂无通知详情',
+						icon: 'none'
+					})
 				}
 			},
 

@@ -67,7 +67,6 @@
     <el-table v-loading="loading" :data="buildingList" @selection-change="handleSelectionChange" height="calc(100vh - 320px)" style="width: 100%">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="楼栋名称" align="center" prop="buildingName" width="150" />
-      <el-table-column label="楼栋编码" align="center" prop="buildingCode" width="120" />
       <el-table-column label="所属项目" align="center" prop="projectName" width="180" show-overflow-tooltip />
       <el-table-column label="总楼层" align="center" prop="totalFloors" width="100" />
       <el-table-column label="总单元" align="center" prop="totalUnits" width="100" />
@@ -126,11 +125,6 @@
           <el-col :span="12">
             <el-form-item label="楼栋名称" prop="buildingName">
               <el-input v-model="form.buildingName" placeholder="请输入楼栋名称" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="楼栋编码" prop="buildingCode">
-              <el-input v-model="form.buildingCode" placeholder="请输入楼栋编码" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -220,9 +214,6 @@ export default {
         ],
         buildingName: [
           { required: true, message: "楼栋名称不能为空", trigger: "blur" }
-        ],
-        buildingCode: [
-          { required: true, message: "楼栋编码不能为空", trigger: "blur" }
         ]
       }
     };

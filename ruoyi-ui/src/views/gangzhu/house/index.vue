@@ -128,6 +128,8 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="项目名称" align="center" prop="projectName" width="150" show-overflow-tooltip />
       <el-table-column label="房源编码" align="center" prop="houseCode" width="120" />
+      <el-table-column label="楼栋" align="center" prop="buildingName" width="100" show-overflow-tooltip />
+      <el-table-column label="单元" align="center" prop="unitName" width="100" show-overflow-tooltip />
       <el-table-column label="房间号" align="center" prop="houseNo" width="100" />
       <el-table-column label="户型" align="center" prop="houseTypeName" width="120" />
       <el-table-column label="楼层" align="center" prop="floor" width="80" />
@@ -744,13 +746,26 @@
     <vr-viewer :visible.sync="vrViewerVisible" :vrList="vrList" />
 
     <!-- 房源导入对话框 -->
-    <el-dialog :title="upload.title" :visible.sync="upload.open" width="400px" append-to-body>
+    <el-dialog :title="upload.title" :visible.sync="upload.open" width="500px" append-to-body>
+      <el-alert
+        title="导入说明"
+        type="info"
+        :closable="false"
+        style="margin-bottom: 15px;">
+        <div style="font-size: 12px; line-height: 1.8;">
+          1. 项目名称、楼栋名称、单元名称、户型名称请与系统中维护的名称<strong>完全一致</strong><br/>
+          2. 楼栋匹配规则：项目名称 + 楼栋名称<br/>
+          3. 单元匹配规则：楼栋名称 + 单元名称<br/>
+          4. 户型匹配规则：项目名称 + 户型名称<br/>
+          5. 如匹配失败，请检查对应信息是否已在系统中正确维护
+        </div>
+      </el-alert>
       <el-upload
         ref="upload"
         :limit="1"
         accept=".xlsx, .xls"
         :headers="upload.headers"
-        :action="upload.url + '?updateSupport=' + upload.updateSupport"
+        :action="upload.url"
         :disabled="upload.isUploading"
         :on-progress="handleFileUploadProgress"
         :on-success="handleFileSuccess"
@@ -760,9 +775,6 @@
         <i class="el-icon-upload"></i>
         <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
         <div class="el-upload__tip text-center" slot="tip">
-          <div class="el-upload__tip" slot="tip">
-            <el-checkbox v-model="upload.updateSupport" />是否更新已经存在的房源数据
-          </div>
           <span>仅允许导入xls、xlsx格式文件。</span>
           <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importTemplate">下载模板</el-link>
         </div>
@@ -833,7 +845,6 @@ export default {
         open: false,
         title: "",
         isUploading: false,
-        updateSupport: false,
         headers: { Authorization: "Bearer " + this.$store.getters.token },
         url: process.env.VUE_APP_BASE_API + "/system/house/importData"
       },

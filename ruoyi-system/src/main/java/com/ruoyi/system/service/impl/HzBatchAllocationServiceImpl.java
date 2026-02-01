@@ -10,11 +10,15 @@ import com.ruoyi.system.domain.HzBatchHouse;
 import com.ruoyi.system.domain.HzBatchTenant;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzProject;
+import com.ruoyi.system.domain.HzBuilding;
+import com.ruoyi.system.domain.HzUnit;
 import com.ruoyi.system.mapper.HzBatchAllocationMapper;
 import com.ruoyi.system.mapper.HzBatchHouseMapper;
 import com.ruoyi.system.mapper.HzBatchTenantMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzProjectMapper;
+import com.ruoyi.system.mapper.HzBuildingMapper;
+import com.ruoyi.system.mapper.HzUnitMapper;
 import com.ruoyi.system.service.IHzBatchAllocationService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -52,6 +56,12 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
 
     @Autowired
     private HzProjectMapper projectMapper;
+
+    @Autowired
+    private HzBuildingMapper buildingMapper;
+
+    @Autowired
+    private HzUnitMapper unitMapper;
 
     @Override
     public List<HzBatchAllocation> selectBatchAllocationList(HzBatchAllocation batch) {
@@ -262,6 +272,27 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
             map.put("houseTypeName", house.getHouseTypeName());
             map.put("area", house.getArea());
             map.put("rentPrice", house.getRentPrice());
+            // 获取项目名称
+            if (house.getProjectId() != null) {
+                HzProject project = projectMapper.selectById(house.getProjectId());
+                if (project != null) {
+                    map.put("projectName", project.getProjectName());
+                }
+            }
+            // 获取楼栋名称
+            if (house.getBuildingId() != null) {
+                HzBuilding building = buildingMapper.selectById(house.getBuildingId());
+                if (building != null) {
+                    map.put("buildingName", building.getBuildingName());
+                }
+            }
+            // 获取单元名称
+            if (house.getUnitId() != null) {
+                HzUnit unit = unitMapper.selectById(house.getUnitId());
+                if (unit != null) {
+                    map.put("unitName", unit.getUnitName());
+                }
+            }
             return map;
         }).collect(Collectors.toList());
     }

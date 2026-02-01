@@ -123,6 +123,13 @@
 			}
 			this.loadCheckoutList()
 		},
+		onShow() {
+			// 每次页面显示时重新加载列表数据，确保显示最新状态
+			// 包括：退租申请签字后、退租确认签字后返回
+			if (this.tenantId) {
+				this.loadCheckoutList()
+			}
+		},
 		methods: {
 			// 加载退租列表 (已入住确认的入住单 + 退租申请)
 			async loadCheckoutList() {

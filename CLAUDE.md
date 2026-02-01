@@ -35,7 +35,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **主机**: localhost
 - **端口**: 3306
 - **用户名**: root
-- **密码**: 123456
+- **密码**: 123456789w
 - **连接URL**: jdbc:mysql://localhost:3306/newgangzhu?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
 
 **说明**：

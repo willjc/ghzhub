@@ -102,6 +102,12 @@
 			}
 			this.loadCohabitantList()
 		},
+		onShow() {
+			// 每次页面显示时重新加载列表数据，确保显示最新数据
+			if (this.tenantId) {
+				this.loadCohabitantList()
+			}
+		},
 		methods: {
 			// 加载合租户申请列表
 			async loadCohabitantList() {

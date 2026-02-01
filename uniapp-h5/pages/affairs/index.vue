@@ -126,7 +126,22 @@
 				console.log('点击功能:', type, key)
 
 				// 根据功能key跳转到对应页面
-				if (key === 'appeal') {
+				if (key === 'select') {
+					// 选房 - 根据类型跳转到不同页面
+					if (type === 'talent') {
+						uni.navigateTo({
+							url: '/pages/talent/index'
+						})
+					} else if (type === 'guaranteed') {
+						uni.navigateTo({
+							url: '/pages/rental/index'
+						})
+					} else if (type === 'market') {
+						uni.navigateTo({
+							url: '/pages/market/index'
+						})
+					}
+				} else if (key === 'appeal') {
 					// 资格申诉
 					uni.navigateTo({
 						url: `/pages/affairs/appeal?type=${type}`

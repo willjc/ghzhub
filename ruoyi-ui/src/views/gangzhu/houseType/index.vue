@@ -63,7 +63,6 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="所属项目" align="center" prop="projectName" width="150" show-overflow-tooltip />
       <el-table-column label="户型名称" align="center" prop="houseTypeName" width="120" show-overflow-tooltip />
-      <el-table-column label="户型编码" align="center" prop="houseTypeCode" width="120" />
       <el-table-column label="卧室" align="center" prop="bedroomCount" width="80" />
       <el-table-column label="客厅" align="center" prop="livingroomCount" width="80" />
       <el-table-column label="卫生间" align="center" prop="bathroomCount" width="80" />
@@ -129,11 +128,6 @@
           <el-col :span="12">
             <el-form-item label="户型名称" prop="houseTypeName">
               <el-input v-model="form.houseTypeName" placeholder="请输入户型名称，如：一室一厅" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="户型编码" prop="houseTypeCode">
-              <el-input v-model="form.houseTypeCode" placeholder="请输入唯一的户型编码" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -207,7 +201,6 @@
     <el-dialog title="查看户型" :visible.sync="viewOpen" width="700px" append-to-body>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="户型名称">{{ viewData.houseTypeName }}</el-descriptions-item>
-        <el-descriptions-item label="户型编码">{{ viewData.houseTypeCode }}</el-descriptions-item>
         <el-descriptions-item label="卧室数量">{{ viewData.bedroomCount }}</el-descriptions-item>
         <el-descriptions-item label="客厅数量">{{ viewData.livingroomCount }}</el-descriptions-item>
         <el-descriptions-item label="卫生间数量">{{ viewData.bathroomCount }}</el-descriptions-item>
@@ -306,7 +299,6 @@ export default {
         pageSize: 10,
         projectId: null,
         houseTypeName: null,
-        houseTypeCode: null,
         bedroomCount: null,
         livingroomCount: null,
         bathroomCount: null,
@@ -321,9 +313,6 @@ export default {
         ],
         houseTypeName: [
           { required: true, message: "户型名称不能为空", trigger: "blur" }
-        ],
-        houseTypeCode: [
-          { required: true, message: "户型编码不能为空", trigger: "blur" }
         ]
       }
     };
@@ -369,8 +358,8 @@ export default {
     getList() {
       this.loading = true;
       listHouseType(this.queryParams).then(response => {
-        this.houseTypeList = response.rows;
-        this.total = response.total;
+        this.houseTypeList = response.rows || response.data || [];
+        this.total = response.total || 0;
         this.loading = false;
       });
     },
@@ -407,6 +396,10 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      // 清空数字类型的搜索条件
+      this.queryParams.bedroomCount = null;
+      this.queryParams.livingroomCount = null;
+      this.queryParams.bathroomCount = null;
       this.handleQuery();
     },
     // 多选框选中数据
@@ -499,17 +492,17 @@ export default {
               this.saveImages(houseTypeId).then(() => {
                 this.$modal.msgSuccess(successMsg);
                 this.open = false;
-                this.getList();
+                this.resetQuery();
               }).catch(() => {
                 this.$modal.msgSuccess(successMsg);
                 this.open = false;
-                this.getList();
+                this.resetQuery();
               });
             } else {
               // 没有图片直接关闭
               this.$modal.msgSuccess(successMsg);
               this.open = false;
-              this.getList();
+              this.resetQuery();
             }
           }).catch(() => {
             // 保存失败时不关闭弹出框,让用户看到错误信息

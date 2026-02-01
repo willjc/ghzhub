@@ -27,19 +27,31 @@ public class HzHouse extends BaseEntity
     private Long houseId;
 
     /** 项目ID */
-    @Excel(name = "项目ID", type = Excel.Type.IMPORT, prompt = "必填，填写已存在的项目ID，如：1")
     @TableField("project_id")
     private Long projectId;
 
     /** 楼栋ID */
-    @Excel(name = "楼栋ID", type = Excel.Type.IMPORT, prompt = "必填，填写已存在的楼栋ID，如：1")
     @TableField("building_id")
     private Long buildingId;
 
     /** 单元ID */
-    @Excel(name = "单元ID", type = Excel.Type.IMPORT, prompt = "必填，填写已存在的单元ID，如：1")
     @TableField("unit_id")
     private Long unitId;
+
+    /** 项目名称(导入用,非数据库字段) */
+    @Excel(name = "项目名称", type = Excel.Type.IMPORT, prompt = "必填，填写项目名称，如：航南新城专家公寓项目")
+    @TableField(exist = false)
+    private String projectName;
+
+    /** 楼栋名称(导入用,非数据库字段) */
+    @Excel(name = "楼栋名称", type = Excel.Type.IMPORT, prompt = "必填，填写楼栋名称，如：1号楼")
+    @TableField(exist = false)
+    private String buildingName;
+
+    /** 单元名称(导入用,非数据库字段) */
+    @Excel(name = "单元名称", type = Excel.Type.IMPORT, prompt = "必填，填写单元名称，如：1单元")
+    @TableField(exist = false)
+    private String unitName;
 
     /** 房源编码 */
     @Excel(name = "房源编码", type = Excel.Type.IMPORT, prompt = "必填，唯一标识，如：FY001")
@@ -57,11 +69,11 @@ public class HzHouse extends BaseEntity
     private Integer floor;
 
     /** 户型ID */
-    @Excel(name = "户型ID", type = Excel.Type.IMPORT, prompt = "必填，填写已存在的户型ID，如：1")
     @TableField("house_type_id")
     private Long houseTypeId;
 
     /** 户型名称 */
+    @Excel(name = "户型名称", type = Excel.Type.IMPORT, prompt = "必填，填写户型名称，如：一室一厅")
     @TableField("house_type_name")
     private String houseTypeName;
 
@@ -132,10 +144,6 @@ public class HzHouse extends BaseEntity
     @Excel(name = "状态", type = Excel.Type.IMPORT, readConverterExp = "0=正常,1=停用", prompt = "必填，填写：0=正常、1=停用，默认：0")
     @TableField("status")
     private String status;
-
-    /** 项目名称(非数据库字段,用于前端显示) */
-    @TableField(exist = false)
-    private String projectName;
 
     public void setHouseId(Long houseId)
     {
@@ -375,6 +383,26 @@ public class HzHouse extends BaseEntity
     public String getProjectName()
     {
         return projectName;
+    }
+
+    public void setBuildingName(String buildingName)
+    {
+        this.buildingName = buildingName;
+    }
+
+    public String getBuildingName()
+    {
+        return buildingName;
+    }
+
+    public void setUnitName(String unitName)
+    {
+        this.unitName = unitName;
+    }
+
+    public String getUnitName()
+    {
+        return unitName;
     }
 
     @Override

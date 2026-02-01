@@ -174,26 +174,12 @@
         <el-form-item label="发票号码" prop="invoiceNo">
           <el-input v-model="completeForm.invoiceNo" placeholder="请输入发票号码（可选）" />
         </el-form-item>
-        <el-form-item label="发票文件" prop="file">
-          <el-upload
-            class="upload-demo"
-            action="#"
-            :auto-upload="false"
-            :show-file-list="false"
-            :on-change="handleFileChange"
-            accept=".pdf,image/*"
-          >
-            <el-button size="small" type="primary" icon="el-icon-upload">点击上传</el-button>
-            <div slot="tip" class="el-upload__tip">支持上传发票图片或PDF文件</div>
-          </el-upload>
-          <div v-if="uploadedFile" class="upload-preview">
-            <img v-if="isImageFile(uploadedFile)" :src="getFilePreviewUrl(uploadedFile)" class="upload-img" />
-            <div v-else class="upload-pdf">
-              <i class="el-icon-document upload-pdf-icon"></i>
-              <span class="upload-pdf-name">{{ uploadedFile.name }}</span>
-            </div>
-            <i class="el-icon-close upload-close" @click="removeFile"></i>
-          </div>
+        <el-form-item label="发票文件" prop="invoiceFile">
+          <image-upload
+            v-model="completeForm.invoiceFile"
+            :limit="1"
+            :file-type="['jpg', 'jpeg', 'png', 'pdf']"
+          />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -205,10 +191,14 @@
 </template>
 
 <script>
-import { listInvoice, getInvoice, completeInvoice, delInvoice } from '@/api/gangzhu/invoice'
+import { listInvoice, getInvoice, completeInvoice } from '@/api/gangzhu/invoice'
+import ImageUpload from '@/components/ImageUpload'
 
 export default {
   name: 'Invoice',
+  components: {
+    ImageUpload
+  },
   data() {
     return {
       // 遮罩层
@@ -247,10 +237,8 @@ export default {
       completeForm: {
         applyId: null,
         invoiceNo: null,
-        file: null
+        invoiceFile: null
       },
-      // 上传的文件
-      uploadedFile: null,
       // 表单校验
       completeRules: {
         // invoiceNo: [{ required: true, message: '请输入发票号码', trigger: 'blur' }]
@@ -311,39 +299,17 @@ export default {
     handleComplete(row) {
       this.completeForm.applyId = row.applyId
       this.completeForm.invoiceNo = null
-      this.completeForm.file = null
-      this.uploadedFile = null
+      this.completeForm.invoiceFile = null
       this.completeOpen = true
       this.resetForm('completeForm')
     },
-    // 文件选择
-    handleFileChange(file) {
-      this.uploadedFile = file.raw
-    },
-    // 移除文件
-    removeFile() {
-      this.uploadedFile = null
-    },
-    // 获取文件预览URL
-    getFilePreviewUrl(file) {
-      return URL.createObjectURL(file)
-    },
-    // 判断是否为图片文件
-    isImageFile(file) {
-      return file && file.type && file.type.startsWith('image/')
-    },
     // 提交完成开票
     submitComplete() {
-      const formData = new FormData()
-      formData.append('applyId', this.completeForm.applyId)
-      if (this.completeForm.invoiceNo) {
-        formData.append('invoiceNo', this.completeForm.invoiceNo)
-      }
-      if (this.uploadedFile) {
-        formData.append('file', this.uploadedFile)
-      }
-
-      completeInvoice(formData).then(response => {
+      completeInvoice({
+        applyId: this.completeForm.applyId,
+        invoiceNo: this.completeForm.invoiceNo,
+        invoiceFile: this.completeForm.invoiceFile
+      }).then(() => {
         this.$modal.msgSuccess('开票成功')
         this.completeOpen = false
         this.getList()

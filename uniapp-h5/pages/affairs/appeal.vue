@@ -108,6 +108,12 @@
 			}
 			this.loadQualificationData()
 		},
+		onShow() {
+			// 每次页面显示时重新加载列表数据，确保显示最新数据
+			if (this.userId) {
+				this.loadQualificationData()
+			}
+		},
 		methods: {
 			// 加载资格数据
 			async loadQualificationData() {
@@ -128,7 +134,10 @@
 							status: this.getAppealStatus(appeal.handleResult),
 							appealType: '学历',
 							handleResult: appeal.handleResult
-						}))
+						})).sort((a, b) => {
+							// 按提交时间倒序排列（最新的在前）
+							return new Date(b.createTime) - new Date(a.createTime)
+						})
 					}
 					uni.hideLoading()
 				} catch (err) {

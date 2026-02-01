@@ -78,6 +78,12 @@
 			}
 			this.loadInvoiceList()
 		},
+		onShow() {
+			// 每次页面显示时重新加载列表数据，确保显示最新数据
+			if (this.userId) {
+				this.loadInvoiceList()
+			}
+		},
 		methods: {
 			// 获取状态样式类
 			getStatusClass(status) {

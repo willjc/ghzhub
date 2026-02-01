@@ -94,8 +94,11 @@ export function importTenants(file) {
   return request({
     url: '/system/batch/importTenants',
     method: 'post',
-    headers: { 'Content-Type': 'multipart/form-data' },
-    data: formData
+    data: formData,
+    transformRequest: [function(data, headers) {
+      delete headers['Content-Type']
+      return data
+    }]
   })
 }
 

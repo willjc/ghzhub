@@ -19,14 +19,11 @@ import com.ruoyi.system.service.IHzInvoiceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 开票管理Controller
@@ -136,11 +133,9 @@ public class HzInvoiceController extends BaseController
     @PreAuthorize("@ss.hasPermi('gangzhu:invoice:complete')")
     @Log(title = "开票管理", businessType = BusinessType.UPDATE)
     @PostMapping("/complete")
-    public AjaxResult complete(@RequestParam("applyId") Long applyId,
-                               @RequestParam(value = "invoiceNo", required = false) String invoiceNo,
-                               @RequestParam(value = "file", required = false) MultipartFile file)
+    public AjaxResult complete(@RequestBody com.ruoyi.system.domain.CompleteInvoiceDTO dto)
     {
-        HzInvoiceApply invoiceApply = invoiceApplyService.selectInvoiceApplyById(applyId);
+        HzInvoiceApply invoiceApply = invoiceApplyService.selectInvoiceApplyById(dto.getApplyId());
         if (invoiceApply == null)
         {
             return error("开票申请不存在");
@@ -151,52 +146,17 @@ public class HzInvoiceController extends BaseController
             return error("当前状态不允许开票");
         }
 
-        // 保存发票图片
-        String invoicePdf = null;
-        if (file != null && !file.isEmpty())
-        {
-            try
-            {
-                // 生成文件名
-                String originalFilename = file.getOriginalFilename();
-                if (originalFilename == null || originalFilename.isEmpty())
-                {
-                    return error("文件名不能为空");
-                }
-                String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-                String newFileName = UUID.randomUUID().toString() + extension;
-
-                // 保存文件
-                String uploadPath = "D:/ruoyi/uploadPath/invoice/";
-                File dir = new File(uploadPath);
-                if (!dir.exists())
-                {
-                    dir.mkdirs();
-                }
-                File destFile = new File(uploadPath + newFileName);
-                file.transferTo(destFile);
-
-                // 设置相对路径
-                invoicePdf = "/profile/invoice/" + newFileName;
-            }
-            catch (Exception e)
-            {
-                logger.error("上传发票图片失败", e);
-                return error("上传发票图片失败");
-            }
-        }
-
         // 创建发票记录
         com.ruoyi.system.domain.HzInvoice invoice = new com.ruoyi.system.domain.HzInvoice();
-        invoice.setApplyId(applyId);
+        invoice.setApplyId(dto.getApplyId());
         invoice.setTenantId(invoiceApply.getTenantId());
-        invoice.setInvoiceNo(StringUtils.isNotEmpty(invoiceNo) ? invoiceNo : generateInvoiceNo());
+        invoice.setInvoiceNo(StringUtils.isNotEmpty(dto.getInvoiceNo()) ? dto.getInvoiceNo() : generateInvoiceNo());
         invoice.setInvoiceType(invoiceApply.getInvoiceType());
         invoice.setInvoiceTitle(invoiceApply.getInvoiceTitle());
         invoice.setTaxNo(invoiceApply.getTaxNo());
         invoice.setInvoiceAmount(invoiceApply.getInvoiceAmount());
         invoice.setInvoiceDate(DateUtils.getTime());
-        invoice.setInvoiceFile(invoicePdf);
+        invoice.setInvoiceFile(dto.getInvoiceFile());
         invoice.setInvoiceStatus("0"); // 0=正常
         invoice.setCreateTime(DateUtils.getNowDate());
         invoice.setDelFlag("0");

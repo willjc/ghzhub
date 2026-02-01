@@ -122,6 +122,12 @@
 				}, 1500)
 			}
 		},
+		onShow() {
+			// 每次页面显示时重新加载列表数据，确保显示最新状态
+			if (this.tenantId) {
+				this.loadCheckinList()
+			}
+		},
 		methods: {
 			// 加载入住申请列表
 			async loadCheckinList() {

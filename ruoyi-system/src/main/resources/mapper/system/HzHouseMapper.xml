@@ -11,9 +11,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                h.decoration, h.facilities, h.house_status, h.is_featured, h.view_count, h.status,
                h.allocation_type, h.is_fresh_graduate, h.manager_phone,
                h.create_by, h.create_time, h.update_by, h.update_time, h.remark, h.del_flag,
-               p.project_name
+               p.project_name, b.building_name, u.unit_name
         FROM hz_house h
         LEFT JOIN hz_project p ON h.project_id = p.project_id
+        LEFT JOIN hz_building b ON h.building_id = b.building_id
+        LEFT JOIN hz_unit u ON h.unit_id = u.unit_id
     </sql>
 
     <!-- 分页查询房源列表(带项目名称) -->

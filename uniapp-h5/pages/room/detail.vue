@@ -107,7 +107,7 @@
 		<!-- 底部按钮 -->
 		<view class="footer-btns">
 			<view class="reserve-btn" @click="reserveRoom">
-				<text class="reserve-text">预约选房</text>
+				<text class="reserve-text">预约看房</text>
 			</view>
 			<view class="select-btn" @click="selectRoom">
 				<text class="select-text">房源选定</text>

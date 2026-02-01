@@ -252,12 +252,16 @@ export default {
 				})
 				return
 			}
-			// 提交逻辑
-			console.log('提交材料')
+			// 提交逻辑（文件已在handleUpload中上传到服务器）
 			uni.showToast({
 				title: '提交成功',
 				icon: 'success'
 			})
+			setTimeout(() => {
+				uni.switchTab({
+					url: '/pages/index/index'
+				})
+			}, 1500)
 		}
 	}
 }

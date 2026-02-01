@@ -65,8 +65,8 @@ public class HzOperationConfigAppController extends BaseController {
 
         List<SysNotice> list = noticeService.selectNoticeList(query);
         if (list != null && !list.isEmpty()) {
-            // 返回第一条记录的内容
-            return success(list.get(0).getNoticeContent());
+            // 返回第一条记录的完整对象（包含noticeId用于跳转）
+            return success(list.get(0));
         }
         return success("");
     }

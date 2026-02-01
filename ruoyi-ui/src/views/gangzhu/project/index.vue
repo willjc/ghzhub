@@ -67,7 +67,6 @@
     <el-table v-loading="loading" :data="projectList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="项目名称" align="center" prop="projectName" width="180" show-overflow-tooltip />
-      <el-table-column label="项目编码" align="center" prop="projectCode" width="120" />
       <el-table-column label="项目类型" align="center" prop="projectType" width="100">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.projectType === '1'" type="success">人才公寓</el-tag>
@@ -160,10 +159,6 @@
               <el-input v-model="form.projectName" placeholder="请输入项目名称" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="项目编码" prop="projectCode">
-              <el-input v-model="form.projectCode" placeholder="请输入项目编码" />
-            </el-form-item>
           </el-col>
         </el-row>
         <el-row>
@@ -418,10 +413,6 @@
               </div>
               <div class="card-body">
                 <div class="info-row">
-                  <span class="label">项目编码</span>
-                  <span class="value">{{ detailData.projectCode || '-' }}</span>
-                </div>
-                <div class="info-row">
                   <span class="label">显示顺序</span>
                   <span class="value">{{ detailData.sortOrder || 0 }}</span>
                 </div>
@@ -673,9 +664,6 @@ export default {
       rules: {
         projectName: [
           { required: true, message: "项目名称不能为空", trigger: "blur" }
-        ],
-        projectCode: [
-          { required: true, message: "项目编码不能为空", trigger: "blur" }
         ],
         projectType: [
           { required: true, message: "项目类型不能为空", trigger: "change" }

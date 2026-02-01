@@ -238,7 +238,10 @@
               style="width: 100%"
             >
               <el-table-column type="selection" width="50" align="center" />
+              <el-table-column label="项目名称" prop="projectName" min-width="150" show-overflow-tooltip />
               <el-table-column label="房源编号" prop="houseCode" width="120" show-overflow-tooltip />
+              <el-table-column label="楼栋" prop="buildingName" width="100" show-overflow-tooltip />
+              <el-table-column label="单元" prop="unitName" width="100" show-overflow-tooltip />
               <el-table-column label="房间号" prop="houseNo" width="100" />
               <el-table-column label="楼层" prop="floor" width="70" align="center" />
               <el-table-column label="户型" prop="houseTypeName" width="120" show-overflow-tooltip />

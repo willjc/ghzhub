@@ -59,7 +59,7 @@
 						<text class="required">*</text>
 						<text class="label-text">看房时间</text>
 					</view>
-					<picker mode="date" :value="formData.visitDate" @change="onDateChange">
+					<picker mode="date" :value="formData.visitDate" :start="minDate" :end="maxDate" @change="onDateChange">
 						<view class="picker-wrapper">
 							<text class="picker-text" :class="{ placeholder: !formData.visitDate }">{{ formData.visitDate || '请选择看房时间' }}</text>
 						</view>
@@ -98,10 +98,21 @@
 					contactName: '',
 					contactPhone: '',
 					visitDate: ''
-				}
+				},
+				minDate: '',  // 最小可选日期（明天）
+				maxDate: ''   // 最大可选日期（90天后）
 			}
 		},
 		onLoad(options) {
+			// 初始化日期范围：明天到90天后
+			const tomorrow = new Date()
+			tomorrow.setDate(tomorrow.getDate() + 1)
+			this.minDate = tomorrow.toISOString().split('T')[0]
+
+			const maxDay = new Date()
+			maxDay.setDate(maxDay.getDate() + 90)
+			this.maxDate = maxDay.toISOString().split('T')[0]
+
 			if (options.roomId) {
 				this.roomId = options.roomId
 			}
@@ -152,7 +163,9 @@
 						icon: 'success'
 					})
 					setTimeout(() => {
-						uni.navigateBack()
+						uni.redirectTo({
+							url: '/pages/affairs/appointment'
+						})
 					}, 1500)
 
 				} catch (error) {

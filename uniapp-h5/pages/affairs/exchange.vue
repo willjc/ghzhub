@@ -115,6 +115,12 @@
 			}
 			this.loadExchangeList()
 		},
+		onShow() {
+			// 每次页面显示时重新加载列表数据，确保显示最新数据
+			if (this.tenantId) {
+				this.loadExchangeList()
+			}
+		},
 		methods: {
 			// 加载调换房申请列表
 			async loadExchangeList() {

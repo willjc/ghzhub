@@ -111,6 +111,18 @@
 			}
 		},
 		{
+			"path": "pages/notice/list",
+			"style": {
+				"navigationBarTitleText": "通知公告"
+			}
+		},
+		{
+			"path": "pages/notice/detail",
+			"style": {
+				"navigationBarTitleText": "通知详情"
+			}
+		},
+		{
 			"path": "pages/policy/index",
 			"style": {
 				"navigationBarTitleText": "政策文件"
