@@ -237,8 +237,9 @@
 		{ "path": "pages/service/enterprise", "style": { "navigationBarTitleText": "企业客户" } }
 	],
 	"globalStyle": {
+		// "navigationStyle": "custom",
 		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "uni-app",
+		"navigationBarTitleText": "港好住",
 		"navigationBarBackgroundColor": "#ffffff",
 		"backgroundColor": "#F8F8F8"
 	},
