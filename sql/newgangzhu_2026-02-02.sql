@@ -119,7 +119,7 @@ CREATE TABLE `hz_activity` (
   KEY `idx_status` (`status`),
   KEY `idx_registration_time` (`registration_start_time`,`registration_end_time`),
   KEY `idx_activity_time` (`activity_start_time`,`activity_end_time`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='人才家园活动表';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='人才家园活动表';
 
 LOCK TABLES `hz_activity` WRITE;
 /*!40000 ALTER TABLE `hz_activity` DISABLE KEYS */;
@@ -156,7 +156,7 @@ CREATE TABLE `hz_announcement` (
   `remark` varchar(500) DEFAULT NULL COMMENT '澶囨敞',
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`announcement_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='閫氱煡鍏?憡琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='閫氱煡鍏?憡琛';
 
 
 
@@ -194,7 +194,7 @@ CREATE TABLE `hz_appointment` (
   UNIQUE KEY `uk_appointment_no` (`appointment_no`),
   KEY `idx_tenant_id` (`tenant_id`),
   KEY `idx_project_id` (`project_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='棰勭害鐪嬫埧琛';
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='棰勭害鐪嬫埧琛';
 
 LOCK TABLES `hz_appointment` WRITE;
 /*!40000 ALTER TABLE `hz_appointment` DISABLE KEYS */;
@@ -237,7 +237,7 @@ CREATE TABLE `hz_banner` (
   `remark` varchar(500) DEFAULT NULL COMMENT '澶囨敞',
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`banner_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='杞?挱鍥捐〃';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='杞?挱鍥捐〃';
 
 
 
@@ -274,7 +274,7 @@ CREATE TABLE `hz_batch_allocation` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`batch_id`),
   UNIQUE KEY `uk_batch_no` (`batch_no`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='闆嗕腑閰嶇?鎵规?琛';
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='闆嗕腑閰嶇?鎵规?琛';
 
 LOCK TABLES `hz_batch_allocation` WRITE;
 /*!40000 ALTER TABLE `hz_batch_allocation` DISABLE KEYS */;
@@ -313,7 +313,7 @@ CREATE TABLE `hz_batch_house` (
   PRIMARY KEY (`id`),
   KEY `idx_batch_id` (`batch_id`),
   KEY `idx_house_id` (`house_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鎵规?鎴挎簮琛';
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鎵规?鎴挎簮琛';
 
 LOCK TABLES `hz_batch_house` WRITE;
 /*!40000 ALTER TABLE `hz_batch_house` DISABLE KEYS */;
@@ -360,7 +360,7 @@ CREATE TABLE `hz_batch_tenant` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`id`),
   KEY `idx_batch_id` (`batch_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鎵规?绉熸埛琛';
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鎵规?绉熸埛琛';
 
 LOCK TABLES `hz_batch_tenant` WRITE;
 /*!40000 ALTER TABLE `hz_batch_tenant` DISABLE KEYS */;
@@ -422,7 +422,7 @@ CREATE TABLE `hz_bill` (
   KEY `idx_contract_id` (`contract_id`),
   KEY `idx_tenant_id` (`tenant_id`),
   KEY `idx_bill_status` (`bill_status`)
-) ENGINE=InnoDB AUTO_INCREMENT=186 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='璐﹀崟琛';
+) ENGINE=InnoDB AUTO_INCREMENT=186 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='璐﹀崟琛';
 
 LOCK TABLES `hz_bill` WRITE;
 /*!40000 ALTER TABLE `hz_bill` DISABLE KEYS */;
@@ -642,7 +642,7 @@ CREATE TABLE `hz_blacklist` (
   PRIMARY KEY (`blacklist_id`),
   KEY `idx_tenant_id` (`tenant_id`),
   KEY `idx_id_card` (`id_card`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='榛戝悕鍗曡〃';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='榛戝悕鍗曡〃';
 
 
 
@@ -670,7 +670,7 @@ CREATE TABLE `hz_building` (
   PRIMARY KEY (`building_id`),
   UNIQUE KEY `uk_building_code` (`building_code`),
   KEY `idx_project_id` (`project_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='妤兼爧琛';
+) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='妤兼爧琛';
 
 LOCK TABLES `hz_building` WRITE;
 /*!40000 ALTER TABLE `hz_building` DISABLE KEYS */;
@@ -754,7 +754,7 @@ CREATE TABLE `hz_checkin_apply` (
   PRIMARY KEY (`apply_id`),
   KEY `idx_contract_id` (`contract_id`),
   KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鍏ヤ綇鐢宠?琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鍏ヤ綇鐢宠?琛';
 
 
 
@@ -801,7 +801,7 @@ CREATE TABLE `hz_checkin_record` (
   UNIQUE KEY `idx_checkin_no` (`checkin_no`),
   KEY `idx_contract_id` (`contract_id`),
   KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鍏ヤ綇璁板綍琛';
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鍏ヤ綇璁板綍琛';
 
 LOCK TABLES `hz_checkin_record` WRITE;
 /*!40000 ALTER TABLE `hz_checkin_record` DISABLE KEYS */;
@@ -887,7 +887,7 @@ CREATE TABLE `hz_checkout_apply` (
   PRIMARY KEY (`apply_id`),
   KEY `idx_contract_id` (`contract_id`),
   KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='閫??鐢宠?琛';
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='閫??鐢宠?琛';
 
 LOCK TABLES `hz_checkout_apply` WRITE;
 /*!40000 ALTER TABLE `hz_checkout_apply` DISABLE KEYS */;
@@ -964,7 +964,7 @@ CREATE TABLE `hz_checkout_record` (
   PRIMARY KEY (`record_id`),
   KEY `idx_contract_id` (`contract_id`),
   KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='閫??璁板綍琛';
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='閫??璁板綍琛';
 
 LOCK TABLES `hz_checkout_record` WRITE;
 /*!40000 ALTER TABLE `hz_checkout_record` DISABLE KEYS */;
@@ -1004,7 +1004,7 @@ CREATE TABLE `hz_co_tenant` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`co_tenant_id`),
   KEY `idx_contract_id` (`contract_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鍏卞悓绉熸埛琛';
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鍏卞悓绉熸埛琛';
 
 LOCK TABLES `hz_co_tenant` WRITE;
 /*!40000 ALTER TABLE `hz_co_tenant` DISABLE KEYS */;
@@ -1044,7 +1044,7 @@ CREATE TABLE `hz_commitment` (
   PRIMARY KEY (`commitment_id`),
   KEY `idx_tenant_id` (`tenant_id`),
   KEY `idx_project_id` (`project_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=70 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鎵胯?涔﹁〃';
+) ENGINE=InnoDB AUTO_INCREMENT=70 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鎵胯?涔﹁〃';
 
 LOCK TABLES `hz_commitment` WRITE;
 /*!40000 ALTER TABLE `hz_commitment` DISABLE KEYS */;
@@ -1159,7 +1159,7 @@ CREATE TABLE `hz_commitment_template` (
   `del_flag` char(1) DEFAULT '0' COMMENT '删除标志(0:存在 2:删除)',
   PRIMARY KEY (`template_id`),
   UNIQUE KEY `uk_template_code` (`template_code`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='承诺书模板表';
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='承诺书模板表';
 
 LOCK TABLES `hz_commitment_template` WRITE;
 /*!40000 ALTER TABLE `hz_commitment_template` DISABLE KEYS */;
@@ -1203,7 +1203,7 @@ CREATE TABLE `hz_complaint` (
   KEY `idx_user_id` (`user_id`),
   KEY `idx_status` (`status`),
   KEY `idx_create_time` (`create_time`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='投诉建议表';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='投诉建议表';
 
 LOCK TABLES `hz_complaint` WRITE;
 /*!40000 ALTER TABLE `hz_complaint` DISABLE KEYS */;
@@ -1260,7 +1260,7 @@ CREATE TABLE `hz_contract` (
   KEY `idx_tenant_id` (`tenant_id`),
   KEY `idx_house_id` (`house_id`),
   KEY `idx_contract_status` (`contract_status`)
-) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鍚堝悓琛';
+) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鍚堝悓琛';
 
 LOCK TABLES `hz_contract` WRITE;
 /*!40000 ALTER TABLE `hz_contract` DISABLE KEYS */;
@@ -1330,7 +1330,7 @@ CREATE TABLE `hz_contract_attachment` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`attachment_id`),
   KEY `idx_contract_id` (`contract_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鍚堝悓闄勪欢琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鍚堝悓闄勪欢琛';
 
 
 
@@ -1358,7 +1358,7 @@ CREATE TABLE `hz_contract_signature` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`signature_id`),
   KEY `idx_contract_id` (`contract_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鍚堝悓绛剧讲璁板綍琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鍚堝悓绛剧讲璁板綍琛';
 
 
 
@@ -1390,7 +1390,7 @@ CREATE TABLE `hz_contract_template` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`template_id`),
   UNIQUE KEY `uk_template_code` (`template_code`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鍚堝悓妯℃澘琛';
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鍚堝悓妯℃澘琛';
 
 LOCK TABLES `hz_contract_template` WRITE;
 /*!40000 ALTER TABLE `hz_contract_template` DISABLE KEYS */;
@@ -1434,7 +1434,7 @@ CREATE TABLE `hz_coupon` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`coupon_id`),
   UNIQUE KEY `uk_coupon_code` (`coupon_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='浼樻儬鍒歌〃';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='浼樻儬鍒歌〃';
 
 
 
@@ -1460,7 +1460,7 @@ CREATE TABLE `hz_coupon_receive` (
   PRIMARY KEY (`receive_id`),
   KEY `idx_coupon_id` (`coupon_id`),
   KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='浼樻儬鍒搁?鍙栬?褰曡〃';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='浼樻儬鍒搁?鍙栬?褰曡〃';
 
 
 
@@ -1486,7 +1486,7 @@ CREATE TABLE `hz_coupon_use` (
   PRIMARY KEY (`use_id`),
   KEY `idx_receive_id` (`receive_id`),
   KEY `idx_bill_id` (`bill_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='浼樻儬鍒镐娇鐢ㄨ?褰曡〃';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='浼樻儬鍒镐娇鐢ㄨ?褰曡〃';
 
 
 
@@ -1511,7 +1511,7 @@ CREATE TABLE `hz_document_audit` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`audit_id`),
   KEY `idx_document_id` (`document_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='璧勬枡瀹℃牳璁板綍琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='璧勬枡瀹℃牳璁板綍琛';
 
 
 
@@ -1540,7 +1540,7 @@ CREATE TABLE `hz_enterprise` (
   `remark` varchar(500) DEFAULT NULL COMMENT '澶囨敞',
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`enterprise_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='浼佷笟淇℃伅琛';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='浼佷笟淇℃伅琛';
 
 LOCK TABLES `hz_enterprise` WRITE;
 /*!40000 ALTER TABLE `hz_enterprise` DISABLE KEYS */;
@@ -1585,7 +1585,7 @@ CREATE TABLE `hz_enterprise_batch` (
   `contract_file` varchar(255) DEFAULT NULL COMMENT '合同文件路径',
   PRIMARY KEY (`batch_id`),
   UNIQUE KEY `uk_batch_no` (`batch_no`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='企业批次表';
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='企业批次表';
 
 LOCK TABLES `hz_enterprise_batch` WRITE;
 /*!40000 ALTER TABLE `hz_enterprise_batch` DISABLE KEYS */;
@@ -1628,7 +1628,7 @@ CREATE TABLE `hz_enterprise_batch_house` (
   PRIMARY KEY (`id`),
   KEY `idx_batch_id` (`batch_id`),
   KEY `idx_house_id` (`house_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=252 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='企业批次房源表';
+) ENGINE=InnoDB AUTO_INCREMENT=252 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='企业批次房源表';
 
 LOCK TABLES `hz_enterprise_batch_house` WRITE;
 /*!40000 ALTER TABLE `hz_enterprise_batch_house` DISABLE KEYS */;
@@ -1912,7 +1912,7 @@ CREATE TABLE `hz_featured_house` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`featured_id`),
   KEY `idx_house_id` (`house_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='绮鹃?鎴挎簮琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='绮鹃?鎴挎簮琛';
 
 
 
@@ -1956,7 +1956,7 @@ CREATE TABLE `hz_house` (
   KEY `idx_building_id` (`building_id`),
   KEY `idx_house_status` (`house_status`),
   KEY `idx_is_featured` (`is_featured`)
-) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鎴挎簮琛';
+) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鎴挎簮琛';
 
 LOCK TABLES `hz_house` WRITE;
 /*!40000 ALTER TABLE `hz_house` DISABLE KEYS */;
@@ -2062,7 +2062,7 @@ CREATE TABLE `hz_house_exchange` (
   PRIMARY KEY (`exchange_id`),
   KEY `idx_tenant_id` (`tenant_id`),
   KEY `idx_old_contract_id` (`old_contract_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鎹㈡埧璁板綍琛';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鎹㈡埧璁板綍琛';
 
 LOCK TABLES `hz_house_exchange` WRITE;
 /*!40000 ALTER TABLE `hz_house_exchange` DISABLE KEYS */;
@@ -2098,7 +2098,7 @@ CREATE TABLE `hz_house_image` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`image_id`),
   KEY `idx_house_id` (`house_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=112 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鎴挎簮鍥剧墖琛';
+) ENGINE=InnoDB AUTO_INCREMENT=112 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鎴挎簮鍥剧墖琛';
 
 LOCK TABLES `hz_house_image` WRITE;
 /*!40000 ALTER TABLE `hz_house_image` DISABLE KEYS */;
@@ -2249,7 +2249,7 @@ CREATE TABLE `hz_house_type` (
   PRIMARY KEY (`house_type_id`),
   UNIQUE KEY `uk_house_type_code` (`house_type_code`),
   KEY `idx_project_id` (`project_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=73 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鎴峰瀷琛';
+) ENGINE=InnoDB AUTO_INCREMENT=73 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鎴峰瀷琛';
 
 LOCK TABLES `hz_house_type` WRITE;
 /*!40000 ALTER TABLE `hz_house_type` DISABLE KEYS */;
@@ -2351,7 +2351,7 @@ CREATE TABLE `hz_house_type_image` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`image_id`),
   KEY `idx_house_type_id` (`house_type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鎴峰瀷鍥剧墖琛';
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鎴峰瀷鍥剧墖琛';
 
 LOCK TABLES `hz_house_type_image` WRITE;
 /*!40000 ALTER TABLE `hz_house_type_image` DISABLE KEYS */;
@@ -2385,7 +2385,7 @@ CREATE TABLE `hz_house_vr` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`vr_id`),
   KEY `idx_house_id` (`house_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鎴挎簮VR琛';
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鎴挎簮VR琛';
 
 LOCK TABLES `hz_house_vr` WRITE;
 /*!40000 ALTER TABLE `hz_house_vr` DISABLE KEYS */;
@@ -2429,7 +2429,7 @@ CREATE TABLE `hz_inventory_list` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`list_id`),
   KEY `idx_house_id` (`house_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鐗╁搧娓呭崟琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鐗╁搧娓呭崟琛';
 
 
 
@@ -2463,7 +2463,7 @@ CREATE TABLE `hz_invoice` (
   PRIMARY KEY (`invoice_id`),
   UNIQUE KEY `uk_invoice_no` (`invoice_no`),
   KEY `idx_apply_id` (`apply_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鍙戠エ琛';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鍙戠エ琛';
 
 LOCK TABLES `hz_invoice` WRITE;
 /*!40000 ALTER TABLE `hz_invoice` DISABLE KEYS */;
@@ -2517,7 +2517,7 @@ CREATE TABLE `hz_invoice_apply` (
   PRIMARY KEY (`apply_id`),
   UNIQUE KEY `uk_apply_no` (`apply_no`),
   KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='寮?エ鐢宠?琛';
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='寮?エ鐢宠?琛';
 
 LOCK TABLES `hz_invoice_apply` WRITE;
 /*!40000 ALTER TABLE `hz_invoice_apply` DISABLE KEYS */;
@@ -2554,7 +2554,7 @@ CREATE TABLE `hz_invoice_attachment` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`attachment_id`),
   KEY `idx_invoice_id` (`invoice_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鍙戠エ闄勪欢琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鍙戠エ闄勪欢琛';
 
 
 
@@ -2581,7 +2581,7 @@ CREATE TABLE `hz_item_status` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`status_id`),
   KEY `idx_list_id` (`list_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鐗╁搧鐘舵?琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鐗╁搧鐘舵?琛';
 
 
 
@@ -2606,7 +2606,7 @@ CREATE TABLE `hz_map_point` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`point_id`),
   KEY `idx_project_id` (`project_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鍦板浘鎵炬埧鐐逛綅琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鍦板浘鎵炬埧鐐逛綅琛';
 
 
 
@@ -2637,7 +2637,7 @@ CREATE TABLE `hz_message` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`message_id`),
   KEY `idx_receiver_id` (`receiver_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='娑堟伅璁板綍琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='娑堟伅璁板綍琛';
 
 
 
@@ -2661,7 +2661,7 @@ CREATE TABLE `hz_message_template` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`template_id`),
   UNIQUE KEY `uk_template_code` (`template_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='娑堟伅妯℃澘琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='娑堟伅妯℃澘琛';
 
 
 
@@ -2735,7 +2735,7 @@ CREATE TABLE `hz_payment` (
   UNIQUE KEY `uk_payment_no` (`payment_no`),
   KEY `idx_bill_id` (`bill_id`),
   KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='缂磋垂璁板綍琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='缂磋垂璁板綍琛';
 
 
 
@@ -2764,7 +2764,7 @@ CREATE TABLE `hz_policy` (
   `remark` varchar(500) DEFAULT NULL COMMENT '澶囨敞',
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`policy_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鏀跨瓥鏂囦欢琛';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鏀跨瓥鏂囦欢琛';
 
 LOCK TABLES `hz_policy` WRITE;
 /*!40000 ALTER TABLE `hz_policy` DISABLE KEYS */;
@@ -2822,7 +2822,7 @@ CREATE TABLE `hz_project` (
   UNIQUE KEY `uk_project_code` (`project_code`),
   KEY `idx_project_type` (`project_type`),
   KEY `idx_status` (`status`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='椤圭洰琛';
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='椤圭洰琛';
 
 LOCK TABLES `hz_project` WRITE;
 /*!40000 ALTER TABLE `hz_project` DISABLE KEYS */;
@@ -2863,7 +2863,7 @@ CREATE TABLE `hz_project_manager` (
   `remark` varchar(500) DEFAULT NULL COMMENT '澶囨敞',
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`manager_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='椤圭洰璐熻矗浜鸿〃';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='椤圭洰璐熻矗浜鸿〃';
 
 
 
@@ -2909,7 +2909,7 @@ CREATE TABLE `hz_qiyebill` (
   KEY `idx_batch_id` (`batch_id`),
   KEY `idx_contact_phone` (`contact_phone`),
   KEY `idx_bill_status` (`bill_status`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='企业账单表';
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='企业账单表';
 
 LOCK TABLES `hz_qiyebill` WRITE;
 /*!40000 ALTER TABLE `hz_qiyebill` DISABLE KEYS */;
@@ -2962,7 +2962,7 @@ CREATE TABLE `hz_qiyetuizu` (
   UNIQUE KEY `uk_checkout_no` (`checkout_no`),
   KEY `idx_bill_id` (`bill_id`),
   KEY `idx_contact_phone` (`contact_phone`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='企业退租申请表';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='企业退租申请表';
 
 LOCK TABLES `hz_qiyetuizu` WRITE;
 /*!40000 ALTER TABLE `hz_qiyetuizu` DISABLE KEYS */;
@@ -3013,7 +3013,7 @@ CREATE TABLE `hz_qualification` (
   KEY `idx_tenant_id` (`tenant_id`),
   KEY `idx_apply_type` (`apply_type`),
   KEY `idx_final_result` (`final_result`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='璧勬牸瀹℃牳琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='璧勬牸瀹℃牳琛';
 
 
 
@@ -3043,7 +3043,7 @@ CREATE TABLE `hz_qualification_appeal` (
   PRIMARY KEY (`appeal_id`),
   KEY `idx_qualification_id` (`qualification_id`),
   KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='璧勬牸鐢宠瘔琛';
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='璧勬牸鐢宠瘔琛';
 
 LOCK TABLES `hz_qualification_appeal` WRITE;
 /*!40000 ALTER TABLE `hz_qualification_appeal` DISABLE KEYS */;
@@ -3094,7 +3094,7 @@ CREATE TABLE `hz_refund_apply` (
   UNIQUE KEY `uk_apply_no` (`apply_no`),
   KEY `idx_payment_id` (`payment_id`),
   KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='閫??鐢宠?琛';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='閫??鐢宠?琛';
 
 LOCK TABLES `hz_refund_apply` WRITE;
 /*!40000 ALTER TABLE `hz_refund_apply` DISABLE KEYS */;
@@ -3138,7 +3138,7 @@ CREATE TABLE `hz_refund_record` (
   UNIQUE KEY `uk_refund_no` (`refund_no`),
   KEY `idx_apply_id` (`apply_id`),
   KEY `idx_payment_id` (`payment_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='閫??璁板綍琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='閫??璁板綍琛';
 
 
 
@@ -3175,7 +3175,7 @@ CREATE TABLE `hz_repair` (
   KEY `idx_user_id` (`user_id`),
   KEY `idx_status` (`status`),
   KEY `idx_repair_no` (`repair_no`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='物业报修表';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='物业报修表';
 
 LOCK TABLES `hz_repair` WRITE;
 /*!40000 ALTER TABLE `hz_repair` DISABLE KEYS */;
@@ -3208,7 +3208,7 @@ CREATE TABLE `hz_shortcut` (
   `remark` varchar(500) DEFAULT NULL COMMENT '澶囨敞',
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`shortcut_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='蹇?嵎鍏ュ彛琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='蹇?嵎鍏ュ彛琛';
 
 
 
@@ -3248,7 +3248,7 @@ CREATE TABLE `hz_tenant` (
   UNIQUE KEY `uk_id_card` (`id_card`),
   KEY `idx_phone` (`phone`),
   KEY `idx_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='绉熸埛琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='绉熸埛琛';
 
 
 
@@ -3277,7 +3277,7 @@ CREATE TABLE `hz_tenant_document` (
   `del_flag` char(1) DEFAULT '0' COMMENT '鍒犻櫎鏍囧織(0:姝ｅ父 2:鍒犻櫎)',
   PRIMARY KEY (`document_id`),
   KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='绉熸埛璧勬枡琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='绉熸埛璧勬枡琛';
 
 
 
@@ -3307,7 +3307,7 @@ CREATE TABLE `hz_transaction` (
   PRIMARY KEY (`transaction_id`),
   UNIQUE KEY `uk_transaction_no` (`transaction_no`),
   KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='浜ゆ槗娴佹按琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='浜ゆ槗娴佹按琛';
 
 
 
@@ -3333,7 +3333,7 @@ CREATE TABLE `hz_unit` (
   PRIMARY KEY (`unit_id`),
   UNIQUE KEY `uk_unit_code` (`unit_code`),
   KEY `idx_building_id` (`building_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鍗曞厓琛';
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鍗曞厓琛';
 
 LOCK TABLES `hz_unit` WRITE;
 /*!40000 ALTER TABLE `hz_unit` DISABLE KEYS */;
@@ -3419,7 +3419,7 @@ CREATE TABLE `hz_user` (
   UNIQUE KEY `uk_phone` (`phone`),
   KEY `idx_wechat_openid` (`wechat_openid`),
   KEY `idx_zhaohao_user_id` (`zhaohao_user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户信息表';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户信息表';
 
 LOCK TABLES `hz_user` WRITE;
 /*!40000 ALTER TABLE `hz_user` DISABLE KEYS */;
@@ -3458,7 +3458,7 @@ CREATE TABLE `hz_user_message` (
   KEY `idx_user_id` (`user_id`),
   KEY `idx_create_time` (`create_time`),
   KEY `idx_is_read` (`is_read`)
-) ENGINE=InnoDB AUTO_INCREMENT=107 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户消息表';
+) ENGINE=InnoDB AUTO_INCREMENT=107 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户消息表';
 
 LOCK TABLES `hz_user_message` WRITE;
 /*!40000 ALTER TABLE `hz_user_message` DISABLE KEYS */;
@@ -3604,7 +3604,7 @@ CREATE TABLE `hz_viewing_record` (
   PRIMARY KEY (`record_id`),
   KEY `idx_appointment_id` (`appointment_id`),
   KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鐪嬫埧璁板綍琛';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='鐪嬫埧璁板綍琛';
 
 
 

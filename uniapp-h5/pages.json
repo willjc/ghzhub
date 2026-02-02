@@ -249,7 +249,7 @@
 		{ "path": "pages/service/enterprise", "style": { "navigationBarTitleText": "企业客户" } }
 	],
 	"globalStyle": {
-		// "navigationStyle": "custom",
+		"navigationStyle": "custom",
 		"navigationBarTextStyle": "black",
 		"navigationBarTitleText": "港好住",
 		"navigationBarBackgroundColor": "#ffffff",
