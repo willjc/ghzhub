@@ -6,6 +6,7 @@ import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.file.FileUploadUtils;
 import com.ruoyi.common.config.RuoYiConfig;
 import com.ruoyi.system.domain.*;
+import com.ruoyi.system.domain.vo.BatchPreferenceVo;
 import com.ruoyi.system.mapper.*;
 import com.ruoyi.system.service.IHzCheckInService;
 import com.ruoyi.system.service.IHzContractService;
@@ -65,6 +66,9 @@ public class HzContractAppController extends BaseController {
 
     @Autowired
     private HzUserMapper hzUserMapper;
+
+    @Autowired
+    private HzBatchHouseMapper batchHouseMapper;
 
     /**
      * 根据用户ID获取合同列表
@@ -306,6 +310,23 @@ public class HzContractAppController extends BaseController {
             contract.setHouseAddress(houseAddress);
             contract.setRentPrice(house.getRentPrice());
 
+            // 5.1 获取批次优惠信息（如果该房源属于配租批次）
+            try {
+                BatchPreferenceVo batchPreference = batchHouseMapper.selectBatchPreferenceByHouseId(houseId);
+                if (batchPreference != null && "1".equals(batchPreference.getPreferentialType())) {
+                    // 有免租优惠
+                    contract.setBatchId(batchPreference.getBatchId());
+                    contract.setFreeRentPeriods(batchPreference.getFreeRentPeriods());
+                    logger.info("房源 {} 属于配租批次 {}，享受免租 {} 期优惠", houseId, batchPreference.getBatchId(), batchPreference.getFreeRentPeriods());
+                } else {
+                    // 无优惠
+                    contract.setFreeRentPeriods(0);
+                }
+            } catch (Exception ex) {
+                logger.error("获取批次优惠信息失败，默认无优惠: {}", ex.getMessage());
+                contract.setFreeRentPeriods(0);
+            }
+
             // 获取模版押金
             HzContractTemplate template = templateMapper.selectById(templateId);
             contract.setDeposit(template.getDepositAmount());
@@ -470,6 +491,9 @@ public class HzContractAppController extends BaseController {
             contract.setSignTime(DateUtils.getTime());
             contract.setContractStatus("0"); // 草稿(待审核)
             contract.setDelFlag("0");
+
+            // 续租不享受免租优惠
+            contract.setFreeRentPeriods(0);
 
             // 6. 保存合同
             int result = contractService.insertContract(contract);
@@ -641,6 +665,9 @@ public class HzContractAppController extends BaseController {
         int rentMonths = contract.getRentMonths();  // 总租期（月）
         BigDecimal monthlyRent = contract.getRentPrice();  // 月租金
 
+        // 获取免租期数
+        int freeRentPeriods = contract.getFreeRentPeriods() != null ? contract.getFreeRentPeriods() : 0;
+
         // 计算需要生成几条账单
         int billCount = rentMonths / paymentCycle;
         if (rentMonths % paymentCycle != 0) {
@@ -673,21 +700,35 @@ public class HzContractAppController extends BaseController {
             int monthsForThisBill = Math.min(paymentCycle, rentMonths - i * paymentCycle);
             BigDecimal billAmount = monthlyRent.multiply(new BigDecimal(monthsForThisBill));
 
+            // 【免租优惠】如果当前期数在免租范围内，金额设为0
+            if (i < freeRentPeriods) {
+                billAmount = BigDecimal.ZERO;
+            }
+
             rentBill.setBillAmount(billAmount);
-            rentBill.setPaidAmount(BigDecimal.ZERO);
-            rentBill.setUnpaidAmount(billAmount);
             rentBill.setLateFee(BigDecimal.ZERO);
-            rentBill.setBillStatus("0");  // 0=待支付
             rentBill.setDelFlag("0");
+
+            // 【免租优惠】0元账单直接设为已支付状态
+            if (billAmount.compareTo(BigDecimal.ZERO) == 0) {
+                rentBill.setPaidAmount(BigDecimal.ZERO);
+                rentBill.setUnpaidAmount(BigDecimal.ZERO);
+                rentBill.setBillStatus("1");  // 已支付
+            } else {
+                rentBill.setPaidAmount(BigDecimal.ZERO);
+                rentBill.setUnpaidAmount(billAmount);
+                rentBill.setBillStatus("0");  // 待支付
+            }
 
             billMapper.insert(rentBill);
         }
 
-        logger.info("合同 {} 生成账单成功：押金1条，租金{}条", contract.getContractNo(), billCount);
+        logger.info("合同 {} 生成账单成功：押金1条，租金{}条，免租{}期", contract.getContractNo(), billCount, freeRentPeriods);
     }
 
     /**
      * 续租时只生成租金账单(不生成押金账单)
+     * 注意：续租不享受免租优惠
      */
     private void generateRentBillsOnly(HzContract contract) {
         // 生成租金账单
@@ -695,6 +736,9 @@ public class HzContractAppController extends BaseController {
         int rentMonths = contract.getRentMonths();  // 总租期（月）
         BigDecimal monthlyRent = contract.getRentPrice();  // 月租金
 
+        // 续租不享受免租优惠
+        int freeRentPeriods = 0;
+
         // 计算需要生成几条账单
         int billCount = rentMonths / paymentCycle;
         if (rentMonths % paymentCycle != 0) {
@@ -706,7 +750,7 @@ public class HzContractAppController extends BaseController {
 
         for (int i = 0; i < billCount; i++) {
             HzBill rentBill = new HzBill();
-            rentBill.setBillNo("ZJ" + DateUtils.dateTimeNow(DateUtils.YYYYMMDDHHMMSS) + String.format("%02d", i + 1));
+            rentBill.setBillNo("XZ" + DateUtils.dateTimeNow(DateUtils.YYYYMMDDHHMMSS) + String.format("%02d", i + 1));
             rentBill.setContractId(contract.getContractId());
             rentBill.setTenantId(contract.getTenantId());
             rentBill.setTenantName(contract.getTenantName());
@@ -737,7 +781,7 @@ public class HzContractAppController extends BaseController {
             billMapper.insert(rentBill);
         }
 
-        logger.info("续租合同 {} 生成租金账单成功：{}条", contract.getContractNo(), billCount);
+        logger.info("续租合同 {} 生成租金账单成功：{}条（续租不享受免租优惠）", contract.getContractNo(), billCount);
     }
 
     /**

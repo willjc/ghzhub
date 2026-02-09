@@ -101,6 +101,12 @@
           <span>{{ scope.row.houseCount }}/{{ scope.row.allocatedCount }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="优惠方式" align="center" width="120">
+        <template slot-scope="scope">
+          <span v-if="!scope.row.preferentialType || scope.row.preferentialType === '0'" style="color: #909399;">无优惠</span>
+          <span v-else-if="scope.row.preferentialType === '1'" style="color: #F56C6C;">免租{{ scope.row.freeRentPeriods || 0 }}期</span>
+        </template>
+      </el-table-column>
       <el-table-column label="审批状态" align="center" prop="approveStatus" width="100">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.approveStatus === '0'" type="warning" size="small">待审批</el-tag>
@@ -215,6 +221,28 @@
           <el-col :span="24">
             <el-form-item label="备注">
               <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="优惠方式" prop="preferentialType">
+              <el-radio-group v-model="form.preferentialType" @change="handlePreferentialTypeChange" :disabled="form.approveStatus === '1'">
+                <el-radio label="0">无优惠</el-radio>
+                <el-radio label="1">免租期数</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12" v-if="form.preferentialType === '1'">
+            <el-form-item label="免租期数" prop="freeRentPeriods">
+              <el-input-number
+                v-model="form.freeRentPeriods"
+                :min="1"
+                :disabled="form.approveStatus === '1'"
+                placeholder="请输入免租期数"
+                style="width: 200px"
+              />
+              <span style="margin-left: 10px; color: #909399;">期</span>
             </el-form-item>
           </el-col>
         </el-row>
@@ -368,6 +396,12 @@
           {{ parseTime(viewData.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}
         </el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">{{ viewData.remark }}</el-descriptions-item>
+        <el-descriptions-item label="优惠方式">
+          <span v-if="!viewData.preferentialType || viewData.preferentialType === '0'">无优惠</span>
+          <span v-else-if="viewData.preferentialType === '1'">
+            免租 <span style="color: #F56C6C; font-weight: bold;">{{ viewData.freeRentPeriods || 0 }}</span> 期
+          </span>
+        </el-descriptions-item>
       </el-descriptions>
 
       <!-- 分配房源列表 -->
@@ -595,7 +629,9 @@ export default {
         allocatedCount: 0,
         approveStatus: "0",
         batchStatus: "0",
-        remark: null
+        remark: null,
+        preferentialType: "0",  // 默认无优惠
+        freeRentPeriods: 0
       };
       // 重置新增的字段
       this.selectedProjectIds = [];
@@ -812,6 +848,8 @@ export default {
               entryStartDate: this.form.entryStartDate,
               entryEndDate: this.form.entryEndDate,
               remark: this.form.remark,
+              preferentialType: this.form.preferentialType || '0',
+              freeRentPeriods: this.form.preferentialType === '1' ? (this.form.freeRentPeriods || 0) : 0,
               houseCount: this.selectedHouses.length
             },
             houseList: this.selectedHouses.map(house => ({
@@ -952,6 +990,13 @@ export default {
     /** 检查数量匹配 */
     checkQuantityMatch() {
       this.showMatchPreview = this.selectedHouses.length > 0 && this.tenantList.length > 0;
+    },
+    /** 优惠方式变更处理 */
+    handlePreferentialTypeChange(val) {
+      if (val === '0') {
+        // 切换到无优惠时，清空免租期数
+        this.form.freeRentPeriods = 0;
+      }
     }
   }
 };

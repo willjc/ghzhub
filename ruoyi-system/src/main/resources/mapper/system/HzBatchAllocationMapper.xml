@@ -31,6 +31,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"            column="update_by"       />
         <result property="updateTime"          column="update_time"     />
         <result property="remark"              column="remark"          />
+        <result property="preferentialType"    column="preferential_type" />
+        <result property="freeRentPeriods"     column="free_rent_periods" />
     </resultMap>
 
     <sql id="selectBatchAllocationVo">
@@ -41,7 +43,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             GROUP_CONCAT(DISTINCT p.project_name ORDER BY p.project_id SEPARATOR ', ') AS project_name,
             b.house_count, b.allocated_count, b.apply_time,
             b.approve_status, b.approve_by, b.approve_time, b.batch_status,
-            b.del_flag, b.create_by, b.create_time, b.update_by, b.update_time, b.remark
+            b.del_flag, b.create_by, b.create_time, b.update_by, b.update_time, b.remark,
+            b.preferential_type, b.free_rent_periods
         FROM hz_batch_allocation b
         LEFT JOIN hz_project p ON FIND_IN_SET(p.project_id, b.project_ids)
     </sql>

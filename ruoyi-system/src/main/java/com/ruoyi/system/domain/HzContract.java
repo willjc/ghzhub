@@ -35,6 +35,10 @@ public class HzContract extends BaseEntity {
     @TableField("template_id")
     private Long templateId;
 
+    /** 配租批次ID */
+    @TableField("batch_id")
+    private Long batchId;
+
     /** 租户ID */
     @TableField("tenant_id")
     private Long tenantId;
@@ -94,6 +98,10 @@ public class HzContract extends BaseEntity {
     /** 租金支付日 */
     @TableField("payment_day")
     private Integer paymentDay;
+
+    /** 免租期数 */
+    @TableField("free_rent_periods")
+    private Integer freeRentPeriods;
 
     /** 合同内容 */
     @TableField("contract_content")
@@ -210,6 +218,14 @@ public class HzContract extends BaseEntity {
 
     public Long getTemplateId() {
         return templateId;
+    }
+
+    public void setBatchId(Long batchId) {
+        this.batchId = batchId;
+    }
+
+    public Long getBatchId() {
+        return batchId;
     }
 
     public void setTenantId(Long tenantId) {
@@ -330,6 +346,14 @@ public class HzContract extends BaseEntity {
 
     public Integer getPaymentDay() {
         return paymentDay;
+    }
+
+    public Integer getFreeRentPeriods() {
+        return freeRentPeriods;
+    }
+
+    public void setFreeRentPeriods(Integer freeRentPeriods) {
+        this.freeRentPeriods = freeRentPeriods;
     }
 
     public void setContractContent(String contractContent) {

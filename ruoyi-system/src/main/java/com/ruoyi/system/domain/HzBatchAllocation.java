@@ -109,6 +109,14 @@ public class HzBatchAllocation extends BaseEntity {
     @TableField("del_flag")
     private String delFlag;
 
+    /** 优惠类型(0:无优惠 1:免租期数) */
+    @TableField("preferential_type")
+    private String preferentialType;
+
+    /** 免租期数 */
+    @TableField("free_rent_periods")
+    private Integer freeRentPeriods;
+
     public Long getBatchId() {
         return batchId;
     }
@@ -275,6 +283,22 @@ public class HzBatchAllocation extends BaseEntity {
 
     public void setDelFlag(String delFlag) {
         this.delFlag = delFlag;
+    }
+
+    public String getPreferentialType() {
+        return preferentialType;
+    }
+
+    public void setPreferentialType(String preferentialType) {
+        this.preferentialType = preferentialType;
+    }
+
+    public Integer getFreeRentPeriods() {
+        return freeRentPeriods;
+    }
+
+    public void setFreeRentPeriods(Integer freeRentPeriods) {
+        this.freeRentPeriods = freeRentPeriods;
     }
 
     @Override

@@ -396,6 +396,15 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
         batch.setAllocatedCount(houseList.size());
         batch.setRemark((String) batchInfo.get("remark"));
 
+        // 优惠方式
+        batch.setPreferentialType((String) batchInfo.getOrDefault("preferentialType", "0"));
+        Object freeRentPeriodsObj = batchInfo.get("freeRentPeriods");
+        if (freeRentPeriodsObj != null) {
+            batch.setFreeRentPeriods(Integer.valueOf(freeRentPeriodsObj.toString()));
+        } else {
+            batch.setFreeRentPeriods(0);
+        }
+
         // 处理入驻日期
         if (batchInfo.get("entryStartDate") != null) {
             batch.setEntryStartDate(new Date((Long) batchInfo.get("entryStartDate")));
