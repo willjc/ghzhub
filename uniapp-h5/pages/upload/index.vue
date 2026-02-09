@@ -88,6 +88,7 @@
 <script>
 import { getUserInfo, uploadWorkProof } from '@/api/user'
 import config from '@/config/index'
+import authCheck from '@/mixins/authCheck'
 
 export default {
 	data() {
@@ -107,24 +108,10 @@ export default {
 		}
 	},
 	onLoad(options) {
-		// 从本地存储获取登录用户信息
-		const userInfo = uni.getStorageSync('userInfo')
-		if (!userInfo || !userInfo.userId) {
-			uni.showToast({
-				title: '请先登录',
-				icon: 'none'
-			})
-			setTimeout(() => {
-				uni.navigateTo({
-					url: '/pages/login/index'
-				})
-			}, 1500)
-			return
-		}
-
-		// 使用当前登录用户的userId
-		this.userId = userInfo.userId
-		this.loadUserInfo()
+		// 使用统一的登录检查
+		authCheck.checkLogin.call(this, options, () => {
+			this.loadUserInfo()
+		})
 	},
 	methods: {
 		/**

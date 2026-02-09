@@ -34,9 +34,9 @@ const production = {
 
 // 测试环境配置（本地开发，后端8090端口）
 const test = {
-  baseUrl: 'http://192.168.31.50:8090',
-  uploadUrl: 'http://192.168.31.50:8090',
-  staticUrl: 'http://192.168.31.50:8090',
+  baseUrl: 'http://192.168.31.8:8090',
+  uploadUrl: 'http://192.168.31.8:8090',
+  staticUrl: 'http://192.168.31.8:8090',
   timeout: 30000,
 
   // 郑好办配置
@@ -45,7 +45,7 @@ const test = {
 
 // 根据环境变量选择配置
 // UniApp 没有 process.env.NODE_ENV，需要手动切换
-const env = 'production' // 手动切换：development | test | production
+const env = 'test' // 手动切换：development | test | production
 
 const config = {
   development,

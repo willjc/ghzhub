@@ -264,7 +264,7 @@ public class HzHouseAppController extends BaseController {
             result.put("address", project.getAddress());
             result.put("latitude", project.getLatitude());
             result.put("longitude", project.getLongitude());
-            result.put("contactPhone", project.getManagerPhone());
+            result.put("contactPhone", house.getManagerPhone());  // 使用房源级别的管家电话
         }
 
         // 房源状态

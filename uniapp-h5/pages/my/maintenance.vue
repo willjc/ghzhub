@@ -100,6 +100,7 @@
 
 <script>
 	import { getUserInfo, updateUser, getEducationLabel, maskIdCard } from '@/api/user'
+	import authCheck from '@/mixins/authCheck'
 
 	export default {
 		data() {
@@ -124,13 +125,15 @@
 			}
 		},
 		onLoad() {
-			this.loadUserInfo()
+			// 使用统一的登录检查
+			authCheck.checkLogin.call(this, {}, () => {
+				this.loadUserInfo()
+			})
 		},
 		methods: {
 			// 加载用户信息
 			loadUserInfo() {
-				const userId = uni.getStorageSync('userId') || 1
-				getUserInfo(userId).then(res => {
+				getUserInfo(this.userId).then(res => {
 					if (res.code === 200 && res.data) {
 						const data = res.data
 						this.formData = {
@@ -172,9 +175,8 @@
 					return
 				}
 
-				const userId = uni.getStorageSync('userId') || 1
 				const saveData = {
-					userId,
+					userId: this.userId,
 					realName: this.formData.name,
 					contactPhone: this.formData.phone,
 					workUnit: this.formData.company,

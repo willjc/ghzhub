@@ -39,6 +39,7 @@
 <script>
 import { getMyListings } from '@/api/checkin'
 import { BASE_URL } from '@/utils/request'
+import authCheck from '@/mixins/authCheck'
 
 export default {
 	data() {
@@ -48,16 +49,18 @@ export default {
 		}
 	},
 	onLoad() {
-		this.loadListingData()
+		// 使用统一的登录检查
+		authCheck.checkLogin.call(this, {}, () => {
+			this.loadListingData()
+		})
 	},
 	methods: {
 		// 加载房源数据
 		async loadListingData() {
 			this.loading = true
 			try {
-				// 从本地存储获取用户ID
-				const userId = uni.getStorageSync('userId') || uni.getStorageSync('id') || 1
-				const res = await getMyListings(userId)
+				// 使用登录检查时保存的 userId
+				const res = await getMyListings(this.userId)
 
 				if (res.code === 200 && res.data) {
 					this.listingData = res.data

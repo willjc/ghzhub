@@ -1401,5 +1401,146 @@ export default {
 
 ---
 
-**更新时间**: 2026-01-21
+## UniApp H5 用户端登录检查规范 (重要!)
+
+### 问题背景
+
+用户端页面在返回时可能跳转到登录页（返回循环问题），原因是使用了 `uni.navigateTo` 保留页面栈。
+
+### 登录检查混入 (统一解决方案)
+
+项目创建了全局登录检查混入 `@/mixins/authCheck.js`，所有需要登录的页面必须使用此混入。
+
+#### 混入文件位置
+`uniapp-h5/mixins/authCheck.js`
+
+#### 混入代码
+```javascript
+export default {
+    /**
+     * 检查用户是否已登录
+     * @param {Object} options 页面 onLoad 的 options 参数
+     * @param {Function} callback 登录成功后的回调函数
+     */
+    checkLogin(options, callback) {
+        // 获取用户信息
+        const userInfo = uni.getStorageSync('userInfo')
+        const token = uni.getStorageSync('token')
+
+        // 检查是否已登录
+        if (!userInfo || !userInfo.userId || !token) {
+            uni.showToast({
+                title: '请先登录',
+                icon: 'none',
+                duration: 1500
+            })
+            setTimeout(() => {
+                // ✅ 使用 redirectTo 而不是 navigateTo，避免返回循环
+                uni.redirectTo({
+                    url: '/pages/login/index'
+                })
+            }, 1500)
+            return false
+        }
+
+        // 登录成功，保存用户ID到组件实例
+        this.userId = userInfo.userId
+        this.userInfo = userInfo
+
+        // 执行回调
+        if (callback && typeof callback === 'function') {
+            callback.call(this, options)
+        }
+
+        return true
+    }
+}
+```
+
+### 标准使用方式
+
+#### 新建需要登录的页面时
+
+```javascript
+import authCheck from '@/mixins/authCheck'
+
+export default {
+    data() {
+        return {
+            userId: null  // 当前登录用户ID (由混入自动设置)
+        }
+    },
+    onLoad(options) {
+        // 使用统一的登录检查
+        authCheck.checkLogin.call(this, options, (options) => {
+            // 登录成功后的逻辑
+            this.loadData()
+        })
+    },
+    methods: {
+        loadData() {
+            // 直接使用 this.userId
+            console.log('当前用户ID:', this.userId)
+        }
+    }
+}
+```
+
+### 关键要点
+
+1. ✅ **必须使用 `uni.redirectTo` 跳转登录页** - 避免返回循环
+2. ✅ **同时检查 `userInfo` 和 `token`** - 双重验证
+3. ✅ **使用混入统一处理** - 避免代码重复
+4. ✅ **混入会自动设置 `this.userId`** - 无需手动赋值
+
+### 已修改的页面列表
+
+以下页面已使用统一登录检查：
+
+| 分类 | 页面 |
+|------|------|
+| **affairs** | contract.vue, appointment.vue, bill.vue, appeal.vue, checkin.vue, checkout.vue, exchange.vue, invoice.vue, renew.vue |
+| **my** | index.vue, listing.vue, maintenance.vue, profile.vue |
+| **message** | index.vue |
+| **service** | complaint.vue, repair.vue |
+| **upload** | index.vue |
+
+### 常见错误
+
+❌ **错误1: 使用 navigateTo 跳转登录页**
+```javascript
+// ❌ 错误 - 会导致返回循环
+uni.navigateTo({ url: '/pages/login/index' })
+
+// ✅ 正确 - 使用混入的 checkLogin
+authCheck.checkLogin.call(this, options, () => { /* ... */ })
+```
+
+❌ **错误2: 每个页面重复写登录检查代码**
+```javascript
+// ❌ 错误 - 重复代码
+onLoad() {
+    const userInfo = uni.getStorageSync('userInfo')
+    if (!userInfo || !userInfo.userId) {
+        // ... 20 行重复代码
+    }
+}
+
+// ✅ 正确 - 使用混入
+onLoad(options) {
+    authCheck.checkLogin.call(this, options, () => {
+        // 业务逻辑
+    })
+}
+```
+
+### 参考实现
+
+可参考以下页面的完整实现：
+- [pages/affairs/contract.vue](uniapp-h5/pages/affairs/contract.vue:124-140)
+- [pages/affairs/appointment.vue](uniapp-h5/pages/affairs/appointment.vue:75-83)
+
+---
+
+**更新时间**: 2026-02-09
 **维护者**: Claude Code

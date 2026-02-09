@@ -81,6 +81,7 @@
 
 <script>
 	import { getExchangeList } from '@/api/exchange.js'
+	import authCheck from '@/mixins/authCheck'
 
 	export default {
 		data() {
@@ -92,28 +93,16 @@
 			}
 		},
 		onLoad(options) {
-			// 获取登录用户信息
-			const userInfo = uni.getStorageSync('userInfo')
-			if (!userInfo || !userInfo.userId) {
-				uni.showToast({
-					title: '请先登录',
-					icon: 'none'
-				})
-				setTimeout(() => {
-					uni.navigateTo({
-						url: '/pages/login/index'
-					})
-				}, 1500)
-				return
-			}
+			// 使用统一的登录检查
+			authCheck.checkLogin.call(this, options, (options) => {
+				// 使用真实登录用户的 userId
+				this.tenantId = this.userId
 
-			// 使用真实登录用户的 userId
-			this.tenantId = userInfo.userId
-
-			if (options.type) {
-				this.housingType = options.type
-			}
-			this.loadExchangeList()
+				if (options.type) {
+					this.housingType = options.type
+				}
+				this.loadExchangeList()
+			})
 		},
 		onShow() {
 			// 每次页面显示时重新加载列表数据，确保显示最新数据

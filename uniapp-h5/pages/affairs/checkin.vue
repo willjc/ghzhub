@@ -91,6 +91,7 @@
 
 <script>
 	import { getCheckInList, cancelCheckIn } from '@/api/checkin.js'
+	import authCheck from '@/mixins/authCheck'
 
 	export default {
 		data() {
@@ -102,25 +103,14 @@
 			}
 		},
 		onLoad(options) {
-			if (options.type) {
-				this.housingType = options.type
-			}
-			// 从本地存储获取用户ID（即tenantId）
-			const userId = uni.getStorageSync('userId')
-			if (userId) {
-				this.tenantId = userId
+			// 使用统一的登录检查
+			authCheck.checkLogin.call(this, options, (options) => {
+				if (options.type) {
+					this.housingType = options.type
+				}
+				this.tenantId = this.userId
 				this.loadCheckinList()
-			} else {
-				uni.showToast({
-					title: '请先登录',
-					icon: 'none'
-				})
-				setTimeout(() => {
-					uni.navigateTo({
-						url: '/pages/login/index'
-					})
-				}, 1500)
-			}
+			})
 		},
 		onShow() {
 			// 每次页面显示时重新加载列表数据，确保显示最新状态

@@ -80,6 +80,7 @@
 <script>
 	import { getUserInfo, updateUser, uploadAvatar, getEducationLabel, getGenderLabel, maskIdCard } from '@/api/user'
 	import config from '@/config/index'
+	import authCheck from '@/mixins/authCheck'
 
 	export default {
 		data() {
@@ -119,13 +120,15 @@
 			}
 		},
 		onLoad() {
-			this.loadUserInfo()
+			// 使用统一的登录检查
+			authCheck.checkLogin.call(this, {}, () => {
+				this.loadUserInfo()
+			})
 		},
 		methods: {
 			// 加载用户信息
 			loadUserInfo() {
-				const userId = uni.getStorageSync('userId') || 1
-				getUserInfo(userId).then(res => {
+				getUserInfo(this.userId).then(res => {
 					if (res.code === 200 && res.data) {
 						this.userInfo = res.data
 					}

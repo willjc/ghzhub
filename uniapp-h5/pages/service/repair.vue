@@ -79,6 +79,7 @@
 <script>
 import { getMyRepairList } from '@/api/repair.js'
 import { BASE_URL } from '@/utils/request'
+import authCheck from '@/mixins/authCheck'
 
 export default {
 	data() {
@@ -89,23 +90,10 @@ export default {
 		}
 	},
 	onLoad() {
-		// 获取用户信息
-		const userInfo = uni.getStorageSync('userInfo')
-		if (!userInfo || !userInfo.userId) {
-			uni.showToast({
-				title: '请先登录',
-				icon: 'none'
-			})
-			setTimeout(() => {
-				uni.navigateTo({
-					url: '/pages/login/index'
-				})
-			}, 1500)
-			return
-		}
-
-		this.userId = userInfo.userId
-		this.loadRepairList()
+		// 使用统一的登录检查
+		authCheck.checkLogin.call(this, {}, () => {
+			this.loadRepairList()
+		})
 	},
 	onShow() {
 		// 页面显示时刷新列表

@@ -31,6 +31,7 @@
 <script>
 	import { getUserInfo, maskPhone } from '@/api/user'
 	import config from '@/config/index'
+	import authCheck from '@/mixins/authCheck'
 
 	export default {
 		data() {
@@ -53,22 +54,10 @@
 			}
 		},
 		onLoad() {
-			// 从本地存储获取登录用户信息
-			const userInfo = uni.getStorageSync('userInfo');
-			if (!userInfo || !userInfo.userId) {
-				uni.showToast({
-					title: '请先登录',
-					icon: 'none'
-				});
-				setTimeout(() => {
-					uni.navigateTo({
-						url: '/pages/login/index'
-					});
-				}, 1500);
-				return;
-			}
-
-			this.loadUserInfo(userInfo.userId);
+			// 使用统一的登录检查
+			authCheck.checkLogin.call(this, {}, () => {
+				this.loadUserInfo(this.userId)
+			})
 		},
 		methods: {
 			// 加载用户信息

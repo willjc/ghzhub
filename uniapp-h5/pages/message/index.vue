@@ -34,6 +34,7 @@
 
 <script>
 	import config from '@/config/index'
+	import authCheck from '@/mixins/authCheck'
 
 	export default {
 		data() {
@@ -43,23 +44,11 @@
 			}
 		},
 		onLoad() {
-			// 从本地存储获取登录用户信息
-			const userInfo = uni.getStorageSync('userInfo');
-			if (!userInfo || !userInfo.userId) {
-				uni.showToast({
-					title: '请先登录',
-					icon: 'none'
-				});
-				setTimeout(() => {
-					uni.navigateTo({
-						url: '/pages/login/index'
-					});
-				}, 1500);
-				return;
-			}
-
-			this.userId = userInfo.userId;
-			this.loadMessageList();
+			// 使用统一的登录检查
+			authCheck.checkLogin.call(this, {}, () => {
+				this.userId = this.userId
+				this.loadMessageList()
+			})
 		},
 		methods: {
 

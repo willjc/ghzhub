@@ -88,6 +88,7 @@
 
 <script>
 	import { getMyContracts } from '@/api/contract.js'
+	import authCheck from '@/mixins/authCheck'
 
 	export default {
 		data() {
@@ -122,34 +123,21 @@
 			}
 		},
 		onLoad(options) {
-			if (options.type) {
-				this.housingType = options.type
-			}
+			// 使用统一的登录检查
+			authCheck.checkLogin.call(this, options, (options) => {
+				if (options.type) {
+					this.housingType = options.type
+				}
 
-			// 如果传入了contractId参数,保存用于高亮显示
-			if (options.contractId) {
-				this.highlightContractId = parseInt(options.contractId)
-				console.log('需要高亮的合同ID:', this.highlightContractId)
-			}
+				// 如果传入了contractId参数,保存用于高亮显示
+				if (options.contractId) {
+					this.highlightContractId = parseInt(options.contractId)
+					console.log('需要高亮的合同ID:', this.highlightContractId)
+				}
 
-			// 获取当前登录用户信息
-			const userInfo = uni.getStorageSync('userInfo')
-			if (userInfo) {
-				this.userId = userInfo.userId
 				console.log('当前用户ID:', this.userId)
 				this.loadContractList()
-			} else {
-				// 未登录，跳转到登录页
-				uni.showToast({
-					title: '请先登录',
-					icon: 'none'
-				})
-				setTimeout(() => {
-					uni.navigateTo({
-						url: '/pages/login/index'
-					})
-				}, 1500)
-			}
+			})
 		},
 		methods: {
 			switchTab(tab) {

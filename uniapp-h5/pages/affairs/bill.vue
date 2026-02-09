@@ -122,6 +122,7 @@
 
 <script>
 	import { getBillListByUserId, payBillBatch } from '@/api/bill.js'
+	import authCheck from '@/mixins/authCheck'
 
 	export default {
 		data() {
@@ -163,28 +164,13 @@
 			}
 		},
 		onLoad(options) {
-			if (options.type) {
-				this.housingType = options.type
-			}
-
-			// 获取当前登录用户信息
-			const userInfo = uni.getStorageSync('userInfo')
-			if (userInfo) {
-				this.userId = userInfo.userId
-				console.log('当前用户ID:', this.userId)
+			// 使用统一的登录检查
+			authCheck.checkLogin.call(this, options, (options) => {
+				if (options.type) {
+					this.housingType = options.type
+				}
 				this.loadBillList()
-			} else {
-				// 未登录，跳转到登录页
-				uni.showToast({
-					title: '请先登录',
-					icon: 'none'
-				})
-				setTimeout(() => {
-					uni.navigateTo({
-						url: '/pages/login/index'
-					})
-				}, 1500)
-			}
+			})
 		},
 		methods: {
 			/**

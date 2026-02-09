@@ -61,6 +61,7 @@
 
 <script>
 import { getMyAppointments, confirmViewing, cancelAppointment } from '@/api/appointment'
+import authCheck from '@/mixins/authCheck'
 
 export default {
 	data() {
@@ -72,27 +73,13 @@ export default {
 		}
 	},
 	onLoad(options) {
-		if (options.type) {
-			this.housingType = options.type
-		}
-
-		// 获取用户信息
-		const userInfo = uni.getStorageSync('userInfo')
-		if (!userInfo || !userInfo.userId) {
-			uni.showToast({
-				title: '请先登录',
-				icon: 'none'
-			})
-			setTimeout(() => {
-				uni.navigateTo({
-					url: '/pages/login/index'
-				})
-			}, 1500)
-			return
-		}
-
-		this.userId = userInfo.userId
-		this.loadAppointmentList()
+		// 使用统一的登录检查
+		authCheck.checkLogin.call(this, options, (options) => {
+			if (options.type) {
+				this.housingType = options.type
+			}
+			this.loadAppointmentList()
+		})
 	},
 	methods: {
 		// 加载预约列表
