@@ -264,7 +264,15 @@
 						icon: 'none'
 					})
 					setTimeout(() => {
-						uni.navigateBack()
+						// 判断页面栈深度，如果只有当前页则跳转回列表页
+						const pages = getCurrentPages()
+						if (pages.length > 1) {
+							uni.navigateBack()
+						} else {
+							uni.redirectTo({
+								url: `/pages/affairs/checkin?type=${this.housingType}`
+							})
+						}
 					}, 1500)
 				} finally {
 					this.loading = false
@@ -462,6 +470,17 @@
 						title: error.msg || '提交失败，请重试',
 						icon: 'none'
 					})
+					setTimeout(() => {
+						// 判断页面栈深度，如果只有当前页则跳转回列表页
+						const pages = getCurrentPages()
+						if (pages.length > 1) {
+							uni.navigateBack()
+						} else {
+							uni.redirectTo({
+								url: `/pages/affairs/checkin?type=${this.housingType}`
+							})
+						}
+					}, 1500)
 				}
 			}
 		}

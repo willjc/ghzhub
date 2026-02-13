@@ -259,7 +259,7 @@
 			// 修改信息 - 直接跳转到办理页面进行编辑
 			handleEdit(index) {
 				const item = this.checkinList[index]
-				uni.navigateTo({
+				uni.redirectTo({
 					url: `/pages/affairs/checkin-process?type=${this.housingType}&id=${item.recordId}&mode=edit`
 				})
 			},
@@ -267,7 +267,7 @@
 			// 办理入住 (status=0 时显示)
 			handleCheckin(index) {
 				const item = this.checkinList[index]
-				uni.navigateTo({
+				uni.redirectTo({
 					url: `/pages/affairs/checkin-process?type=${this.housingType}&id=${item.recordId}`
 				})
 			},
@@ -275,7 +275,7 @@
 			// 查看详情
 			handleDetail(index) {
 				const item = this.checkinList[index]
-				uni.navigateTo({
+				uni.redirectTo({
 					url: `/pages/affairs/checkin-detail?type=${this.housingType}&id=${item.recordId}`
 				})
 			},
@@ -283,7 +283,7 @@
 			// 入住确认 (status=1 时显示，用于管理员审核后用户确认)
 			handleConfirm(index) {
 				const item = this.checkinList[index]
-				uni.navigateTo({
+				uni.redirectTo({
 					url: `/pages/affairs/checkin-confirm?type=${this.housingType}&id=${item.recordId}`
 				})
 			},
@@ -291,7 +291,7 @@
 			// 入驻详情 (status=4 时显示，跳转到入驻详情页面)
 			handleCheckinDetail(index) {
 				const item = this.checkinList[index]
-				uni.navigateTo({
+				uni.redirectTo({
 					url: `/pages/affairs/checkin-detail?type=${this.housingType}&id=${item.recordId}`
 				})
 			}
