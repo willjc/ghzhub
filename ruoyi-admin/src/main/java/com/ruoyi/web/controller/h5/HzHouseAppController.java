@@ -8,11 +8,18 @@ import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.domain.HzBuilding;
 import com.ruoyi.system.domain.HzUnit;
 import com.ruoyi.system.domain.HzAppointment;
+import com.ruoyi.system.domain.HzUser;
+import com.ruoyi.system.domain.HzBatchTenant;
+import com.ruoyi.system.domain.HzBatchHouse;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.mapper.HzBuildingMapper;
 import com.ruoyi.system.mapper.HzUnitMapper;
+import com.ruoyi.system.mapper.HzUserMapper;
+import com.ruoyi.system.mapper.HzBatchTenantMapper;
+import com.ruoyi.system.mapper.HzBatchHouseMapper;
 import com.ruoyi.system.service.IHzAppointmentService;
+import com.ruoyi.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -40,6 +47,15 @@ public class HzHouseAppController extends BaseController {
 
     @Autowired
     private HzUnitMapper unitMapper;
+
+    @Autowired
+    private HzUserMapper userMapper;
+
+    @Autowired
+    private HzBatchTenantMapper batchTenantMapper;
+
+    @Autowired
+    private HzBatchHouseMapper batchHouseMapper;
 
     @Autowired
     private com.ruoyi.system.mapper.HzHouseImageMapper houseImageMapper;
@@ -191,6 +207,39 @@ public class HzHouseAppController extends BaseController {
 
         List<HzHouse> houses = houseMapper.selectList(wrapper);
 
+        // 获取当前登录用户分配的房源ID列表（用于判断已预订房源是否对当前用户可见）
+        Set<Long> assignedHouseIds = new HashSet<>();
+        Long userId = getHzUserIdFromToken();
+        if (userId != null) {
+            HzUser user = userMapper.selectById(userId);
+            if (user != null && StringUtils.isNotEmpty(user.getIdCard())) {
+                // 根据身份证查询批次租户
+                QueryWrapper<HzBatchTenant> tenantWrapper = new QueryWrapper<>();
+                tenantWrapper.eq("id_card", user.getIdCard())
+                        .eq("del_flag", "0");
+                List<HzBatchTenant> batchTenants = batchTenantMapper.selectList(tenantWrapper);
+
+                if (!batchTenants.isEmpty()) {
+                    // 获取租户ID列表
+                    List<Long> tenantIds = batchTenants.stream()
+                            .map(HzBatchTenant::getId)
+                            .collect(Collectors.toList());
+
+                    // 查询分配给这些租户的房源
+                    QueryWrapper<HzBatchHouse> batchHouseWrapper = new QueryWrapper<>();
+                    batchHouseWrapper.in("tenant_id", tenantIds);
+                    List<HzBatchHouse> batchHouses = batchHouseMapper.selectList(batchHouseWrapper);
+
+                    assignedHouseIds = batchHouses.stream()
+                            .map(HzBatchHouse::getHouseId)
+                            .collect(Collectors.toSet());
+                }
+            }
+        }
+
+        // 用于lambda表达式
+        final Set<Long> finalAssignedHouseIds = assignedHouseIds;
+
         // 按楼层分组
         Map<Integer, List<HzHouse>> floorGroupMap = houses.stream()
                 .collect(Collectors.groupingBy(HzHouse::getFloor));
@@ -206,7 +255,14 @@ public class HzHouseAppController extends BaseController {
                         Map<String, Object> room = new HashMap<>();
                         room.put("id", house.getHouseId());
                         room.put("name", house.getHouseNo());
-                        room.put("available", "0".equals(house.getHouseStatus()));  // 0=空置(可选), 其他不可选
+
+                        // 判断是否可选：
+                        // 1. 房源状态为空置(0)
+                        // 2. 或者 房源状态为已预订(1) 且 在当前用户的分配列表中
+                        boolean isAvailable = "0".equals(house.getHouseStatus()) ||
+                                             ("1".equals(house.getHouseStatus()) && finalAssignedHouseIds.contains(house.getHouseId()));
+
+                        room.put("available", isAvailable);
                         return room;
                     }).collect(Collectors.toList());
 
@@ -392,14 +448,16 @@ public class HzHouseAppController extends BaseController {
 
     /**
      * 房源状态文本
+     * 状态值定义: 0=空置, 1=已预订, 2=已出租, 3=维修中, 4=下架
      */
     private String getHouseStatusText(String status) {
         if (status == null) return "未知";
         switch (status) {
             case "0": return "空置";
-            case "1": return "已租";
-            case "2": return "预订";
-            case "3": return "维修";
+            case "1": return "已预订";
+            case "2": return "已出租";
+            case "3": return "维修中";
+            case "4": return "下架";
             default: return "未知";
         }
     }

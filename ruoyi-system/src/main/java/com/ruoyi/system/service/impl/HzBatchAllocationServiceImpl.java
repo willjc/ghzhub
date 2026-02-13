@@ -520,6 +520,21 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
                 }
             }
 
+            // 获取楼栋名称
+            if (house.getBuildingId() != null) {
+                HzBuilding building = buildingMapper.selectById(house.getBuildingId());
+                if (building != null) {
+                    map.put("buildingName", building.getBuildingName());
+                }
+            }
+            // 获取单元名称
+            if (house.getUnitId() != null) {
+                HzUnit unit = unitMapper.selectById(house.getUnitId());
+                if (unit != null) {
+                    map.put("unitName", unit.getUnitName());
+                }
+            }
+
             // 获取关联的租户信息
             if (batchHouse.getTenantId() != null) {
                 HzBatchTenant tenant = batchTenantMapper.selectById(batchHouse.getTenantId());
