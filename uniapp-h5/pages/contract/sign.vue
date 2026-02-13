@@ -4,16 +4,13 @@
 		<view class="lease-card">
 			<view class="card-title">租期选择</view>
 
-			<!-- 合同生效日期选�� -->
-			<view class="date-row">
-				<text class="label">合同生效日期</text>
-				<picker mode="date" :value="startDate" :start="minDate" @change="onStartDateChange">
-					<view class="date-picker">
-						<text class="date-text" :class="{ placeholder: !startDate }">{{ startDate || '请选择生效日期' }}</text>
-						<text class="arrow">›</text>
+			<!-- 合同生效日期提示 -->
+				<view class="date-row">
+					<text class="label">合同生效日期</text>
+					<view class="date-tip">
+						<text class="tip-text">签字生效后第3天</text>
 					</view>
-				</picker>
-			</view>
+				</view>
 
 			<!-- 租期下拉选择 -->
 			<view class="date-row">
@@ -128,8 +125,7 @@ export default {
 			isRenew: false,  // 是否续租
 			oldContractId: '',  // 原合同ID(续租时使用)
 			selectedMonths: '',  // 选中的租期（字符串，select的value）
-			startDate: '',  // 合同生效日期（用户选择）
-			minDate: '',    // 可选择的最早日期（今天）
+			// 合同生效日期由后端自动计算为签字日期+3天
 			agreed: false,
 			showSignature: false,
 			signatureData: '',
@@ -153,7 +149,7 @@ export default {
 	},
 	computed: {
 		canSign() {
-			return this.agreed && this.contractData.contractContent && this.startDate && this.selectedMonths
+			return this.agreed && this.contractData.contractContent && this.selectedMonths
 		}
 	},
 	onLoad(options) {
@@ -186,19 +182,10 @@ export default {
 			}
 		},
 
-		/**
-		 * 合同生效日期变更处理
-		 */
-		onStartDateChange(e) {
-			this.startDate = e.detail.value
-			// 如果已选择租期，重新加载合同
-			if (this.selectedMonths) {
-				this.loadContract()
-			}
-		},
+
 
 		async loadContract() {
-			if (!this.startDate || !this.selectedMonths) return
+			if (!this.selectedMonths) return
 
 			try {
 				uni.showLoading({ title: '生成合同中...' })
@@ -206,7 +193,6 @@ export default {
 				const response = await generateContract({
 					houseId: this.roomId,
 					rentMonths: this.selectedMonths,
-					startDate: this.startDate
 				})
 
 				uni.hideLoading()
@@ -369,7 +355,6 @@ export default {
 					templateId: this.contractData.templateId,
 					contractContent: this.contractData.contractContent,
 					tenantSignature: this.signatureData,
-					startDate: this.startDate,
 					endDate: this.contractData.endDate,
 					rentMonths: this.selectedMonths
 				}
@@ -417,12 +402,7 @@ export default {
 			}
 		},
 
-		formatDate(date) {
-			const year = date.getFullYear()
-			const month = String(date.getMonth() + 1).padStart(2, '0')
-			const day = String(date.getDate()).padStart(2, '0')
-			return `${year}-${month}-${day}`
-		}
+		
 	}
 }
 </script>
@@ -504,6 +484,16 @@ export default {
 	font-size: 36rpx;
 	color: #999999;
 	font-weight: 300;
+}
+
+.date-tip {
+	display: flex;
+	align-items: center;
+}
+
+.tip-text {
+	font-size: 28rpx;
+	color: #4A90E2;
 }
 
 .summary-box {

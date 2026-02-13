@@ -45,7 +45,7 @@ const test = {
 
 // 根据环境变量选择配置
 // UniApp 没有 process.env.NODE_ENV，需要手动切换
-const env = 'test' // 手动切换：development | test | production
+const env = 'production' // 手动切换：development | test | production
 
 const config = {
   development,

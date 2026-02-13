@@ -132,7 +132,10 @@ public class HzContractAppController extends BaseController {
     public AjaxResult generateContract(@RequestBody Map<String, Object> params) {
         Long houseId = Long.parseLong(params.get("houseId").toString());
         Integer rentMonths = Integer.parseInt(params.get("rentMonths").toString());
-        String startDate = params.get("startDate").toString();
+
+        // 合同生效日期自动计算为当前日期 + 3天
+        LocalDate startDate = LocalDate.now().plusDays(3);
+        String startDateStr = startDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
         // 1. 获取房源信息
         HzHouse house = houseMapper.selectById(houseId);
@@ -175,8 +178,7 @@ public class HzContractAppController extends BaseController {
         tenant.setPhone("13800138000");
 
         // 7. 计算结束日期
-        LocalDate start = LocalDate.parse(startDate);
-        LocalDate end = start.plusMonths(rentMonths);
+        LocalDate end = startDate.plusMonths(rentMonths);
         String endDate = end.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
         // 8. 替换合同模版变量
@@ -189,7 +191,7 @@ public class HzContractAppController extends BaseController {
                 .replace("${rentPriceUpper}", convertToUpperCase(house.getRentPrice()))
                 .replace("${deposit}", template.getDepositAmount().toString())
                 .replace("${depositUpper}", convertToUpperCase(template.getDepositAmount()))
-                .replace("${startDate}", startDate)
+                .replace("${startDate}", startDateStr)
                 .replace("${endDate}", endDate);
 
         // 9. 组装返回数据
@@ -218,9 +220,12 @@ public class HzContractAppController extends BaseController {
             Long templateId = Long.parseLong(params.get("templateId").toString());
             String contractContent = params.get("contractContent").toString();
             String tenantSignatureBase64 = params.get("tenantSignature").toString();
-            String startDate = params.get("startDate").toString();
             String endDate = params.get("endDate").toString();
             Integer rentMonths = Integer.parseInt(params.get("rentMonths").toString());
+
+            // 合同生效日期自动计算为当前日期 + 3天
+            LocalDate startDateLocal = LocalDate.now().plusDays(3);
+            String startDate = startDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
             // 1. 处理签名图片 - 将 base64 转为图片并上传
             String signatureUrl = "";
@@ -331,7 +336,7 @@ public class HzContractAppController extends BaseController {
             HzContractTemplate template = templateMapper.selectById(templateId);
             contract.setDeposit(template.getDepositAmount());
 
-            contract.setStartDate(startDate);
+            contract.setStartDate(startDate);  // 使用自动计算的生效日期（签字日期+3天）
             contract.setEndDate(endDate);
             contract.setRentMonths(rentMonths);
 
@@ -391,9 +396,12 @@ public class HzContractAppController extends BaseController {
             Long templateId = Long.parseLong(params.get("templateId").toString());
             String contractContent = params.get("contractContent").toString();
             String tenantSignatureBase64 = params.get("tenantSignature").toString();
-            String startDate = params.get("startDate").toString();
             String endDate = params.get("endDate").toString();
             Integer rentMonths = Integer.parseInt(params.get("rentMonths").toString());
+
+            // 合同生效日期自动计算为当前日期 + 3天
+            LocalDate startDateLocal = LocalDate.now().plusDays(3);
+            String startDate = startDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
             // 1. 处理签名图片 - 将 base64 转为图片并上传
             String signatureUrl = "";
@@ -478,7 +486,7 @@ public class HzContractAppController extends BaseController {
             HzContractTemplate template = templateMapper.selectById(templateId);
             contract.setDeposit(template.getDepositAmount());
 
-            contract.setStartDate(startDate);
+            contract.setStartDate(startDate);  // 使用自动计算的生效日期（签字日期+3天）
             contract.setEndDate(endDate);
             contract.setRentMonths(rentMonths);
 

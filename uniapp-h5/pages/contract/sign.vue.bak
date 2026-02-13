@@ -4,12 +4,15 @@
 		<view class="lease-card">
 			<view class="card-title">租期选择</view>
 
-			<!-- 签订日期显示（不可选择） -->
+			<!-- 合同生效日期选�� -->
 			<view class="date-row">
-				<text class="label">签订日期</text>
-				<view class="date-display">
-					<text class="date-text">{{ startDate }}</text>
-				</view>
+				<text class="label">合同生效日期</text>
+				<picker mode="date" :value="startDate" :start="minDate" @change="onStartDateChange">
+					<view class="date-picker">
+						<text class="date-text" :class="{ placeholder: !startDate }">{{ startDate || '请选择生效日期' }}</text>
+						<text class="arrow">›</text>
+					</view>
+				</picker>
 			</view>
 
 			<!-- 租期下拉选择 -->
@@ -80,13 +83,13 @@
 		</view>
 
 		<!-- 签字弹窗 -->
-		<view class="signature-modal" v-if="showSignature" @click="closeSignature">
-			<view class="modal-content" @click.stop>
+		<view class="signature-modal" v-if="showSignature" @click="closeSignature" @touchmove.prevent @mousemove.stop>
+			<view class="modal-content" @click.stop @touchmove.stop @mousemove.stop>
 				<view class="modal-header">
 					<text class="modal-title">请签名</text>
 					<text class="close-btn" @click="closeSignature">×</text>
 				</view>
-				<view class="signature-box">
+				<view class="signature-box" @touchmove.stop.prevent @mousemove.stop>
 					<canvas
 						ref="signatureCanvas"
 						canvas-id="signatureCanvas"
@@ -95,6 +98,7 @@
 						:style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }"
 						:width="canvasWidth"
 						:height="canvasHeight"
+						@touchmove.stop.prevent
 					></canvas>
 				</view>
 				<view class="modal-footer">
@@ -114,14 +118,18 @@
 // #ifdef H5
 import SmoothSignature from 'smooth-signature'
 // #endif
+import { generateContract, signContract, renewContract } from '@/api/contract'
 
 export default {
 	data() {
 		return {
 			roomId: '',
 			projectId: '',
+			isRenew: false,  // 是否续租
+			oldContractId: '',  // 原合同ID(续租时使用)
 			selectedMonths: '',  // 选中的租期（字符串，select的value）
-			startDate: '',  // 签订日期（将在onLoad中设置为今天）
+			startDate: '',  // 合同生效日期（用户选择）
+			minDate: '',    // 可选择的最早日期（今天）
 			agreed: false,
 			showSignature: false,
 			signatureData: '',
@@ -155,10 +163,16 @@ export default {
 		if (options.projectId) {
 			this.projectId = options.projectId
 		}
+		// 检查是否为续租
+		if (options.isRenew === 'true') {
+			this.isRenew = true
+			this.oldContractId = options.oldContractId || ''
+		}
 
-		// 设置入住日期为今天
+		// 设置可选择的最小日期为今天，但不自动选择
 		const today = new Date()
-		this.startDate = this.formatDate(today)
+		this.minDate = this.formatDate(today)
+		// startDate 由用户选择，保持空值
 	},
 	onReady() {
 		// 初始化签名板将在打开弹窗时进行
@@ -172,31 +186,35 @@ export default {
 			}
 		},
 
+		/**
+		 * 合同生效日期变更处理
+		 */
+		onStartDateChange(e) {
+			this.startDate = e.detail.value
+			// 如果已选择租期，重新加载合同
+			if (this.selectedMonths) {
+				this.loadContract()
+			}
+		},
+
 		async loadContract() {
 			if (!this.startDate || !this.selectedMonths) return
 
 			try {
 				uni.showLoading({ title: '生成合同中...' })
 
-				const response = await uni.request({
-					url: 'http://localhost:8090/h5/app/contract/generate',
-					method: 'POST',
-					header: {
-						'Content-Type': 'application/json'
-					},
-					data: {
-						houseId: this.roomId,
-						rentMonths: this.selectedMonths,
-						startDate: this.startDate
-					}
+				const response = await generateContract({
+					houseId: this.roomId,
+					rentMonths: this.selectedMonths,
+					startDate: this.startDate
 				})
 
 				uni.hideLoading()
 
-				if (response.statusCode === 200 && response.data.code === 200) {
-					this.contractData = response.data.data
+				if (response.code === 200) {
+					this.contractData = response.data
 				} else {
-					throw new Error(response.data?.msg || '生成合同失败')
+					throw new Error(response.msg || '生成合同失败')
 				}
 			} catch (error) {
 				uni.hideLoading()
@@ -212,7 +230,7 @@ export default {
 			this.agreed = e.detail.value.includes('agree')
 		},
 
-		async handleSign() {
+		handleSign() {
 			if (!this.canSign) {
 				if (!this.agreed) {
 					uni.showToast({
@@ -223,54 +241,91 @@ export default {
 				return
 			}
 
-			this.showSignature = true
-
-			// 等待DOM渲染完成后初始化签名板
-			this.$nextTick(async () => {
-				// #ifdef H5
-				// 使用$refs获取canvas元素，在H5端需要获取原生DOM
-				let canvas = this.$refs.signatureCanvas
-
-				// 如果是uni-app包装的元素，需要获取原生canvas
-				if (canvas && canvas.$el) {
-					canvas = canvas.$el
+		// 跳转到签名页面
+		uni.navigateTo({
+			url: '/pages/signature/index',
+			events: {
+				// 监听签名页面返回的数据
+				acceptSignature: (data) => {
+					this.signatureData = data.signature
+					console.log('收到签名数据', this.signatureData)
+					// 自动提交合同
+					this.submitContract()
 				}
-
-				// H5端canvas可能在内部，尝试querySelector
-				if (!canvas || typeof canvas.getContext !== 'function') {
-					canvas = document.querySelector('#signatureCanvas')
-				}
-
-				if (canvas && typeof canvas.getContext === 'function' && !this.signaturePad) {
-					// 动态加载smooth-signature库
-					if (!this.SmoothSignature) {
-						try {
-							const module = await import('smooth-signature')
-							this.SmoothSignature = module.default || module
-						} catch (e) {
-							console.error('加载签名库失败:', e)
-							uni.showToast({
-								title: '初始化签名板失败',
-								icon: 'none'
-							})
-							return
-						}
-					}
-
-					this.signaturePad = new this.SmoothSignature(canvas, {
-						width: canvas.offsetWidth || canvas.width || 750,
-						height: canvas.offsetHeight || canvas.height || 400,
-						minWidth: 2,
-						maxWidth: 4,
-						color: '#000000',
-						bgColor: '#fafafa'
-					})
-				} else {
-					console.error('无法获取canvas元素或canvas不支持getContext')
-				}
-				// #endif
-			})
+			}
+		})
 		},
+
+	initSignaturePad() {
+		// #ifdef H5
+		let canvas = document.querySelector('#signatureCanvas')
+		if (!canvas) {
+			console.error('找不到 canvas 元素')
+			uni.showToast({
+				title: '初始化签名板失败',
+				icon: 'none'
+			})
+			return
+		}
+
+		// uni-app H5 编译后可能包装了元素，需要获取真正的 canvas
+		if (canvas.tagName !== 'CANVAS') {
+			const innerCanvas = canvas.querySelector('canvas')
+			if (innerCanvas) {
+				canvas = innerCanvas
+			}
+		}
+
+		// 验证是否为真正的 canvas
+		if (!canvas || canvas.tagName !== 'CANVAS' || typeof canvas.getContext !== 'function') {
+			console.error('获取到的不是有效的 canvas 元素', canvas)
+			uni.showToast({
+				title: '签名板初始化失败',
+				icon: 'none'
+			})
+			return
+		}
+		// 获取容器宽度（减去padding）
+		const container = canvas.parentElement
+		const containerWidth = container.offsetWidth
+		const computedWidth = containerWidth > 60 ? containerWidth - 60 : 300
+
+		// 先更新响应式数据，让Vue更新canvas的DOM属性
+		this.canvasWidth = computedWidth
+		this.canvasHeight = 300
+
+		// 等待Vue更新DOM后再初始化签名板
+		this.$nextTick(() => {
+			// 再次获取canvas（确保使用Vue更新后的）
+			let updatedCanvas = document.querySelector('#signatureCanvas')
+			if (updatedCanvas.tagName !== 'CANVAS') {
+				updatedCanvas = updatedCanvas.querySelector('canvas')
+			}
+
+			console.log('Canvas尺寸:', updatedCanvas.width, 'x', updatedCanvas.height)
+			console.log('Canvas元素:', updatedCanvas, 'getContext:', typeof updatedCanvas.getContext)
+
+			// 初始化签名板
+			try {
+				this.signaturePad = new SmoothSignature(updatedCanvas, {
+					width: updatedCanvas.width,
+					height: updatedCanvas.height,
+					minWidth: 2,
+					maxWidth: 4,
+					color: '#000000',
+					bgColor: '#fafafa'
+				})
+				console.log('签名板初始化成功', this.signaturePad)
+			} catch (error) {
+				console.error('初始化签名板失败:', error)
+				uni.showToast({
+					title: '签名板初始化失败',
+					icon: 'none'
+				})
+			}
+		})
+		// #endif
+	},
 
 		closeSignature() {
 			this.showSignature = false
@@ -308,40 +363,49 @@ export default {
 			try {
 				uni.showLoading({ title: '提交中...' })
 
-				const response = await uni.request({
-					url: 'http://localhost:8090/h5/app/contract/sign',
-					method: 'POST',
-					header: {
-						'Content-Type': 'application/json'
-					},
-					data: {
-						houseId: this.roomId,
-						projectId: this.projectId,
-						templateId: this.contractData.templateId,
-						contractContent: this.contractData.contractContent,
-						tenantSignature: this.signatureData,
-						startDate: this.startDate,
-						endDate: this.contractData.endDate,
-						rentMonths: this.selectedMonths
-					}
-				})
+				const requestData = {
+					houseId: this.roomId,
+					projectId: this.projectId,
+					templateId: this.contractData.templateId,
+					contractContent: this.contractData.contractContent,
+					tenantSignature: this.signatureData,
+					startDate: this.startDate,
+					endDate: this.contractData.endDate,
+					rentMonths: this.selectedMonths
+				}
+
+				// 续租时需要传递原合同ID
+				if (this.isRenew) {
+					requestData.oldContractId = this.oldContractId
+				}
+
+				// 根据是否续租调用不同接口
+				const response = this.isRenew
+					? await renewContract(requestData)
+					: await signContract(requestData)
 
 				uni.hideLoading()
 
-				if (response.statusCode === 200 && response.data.code === 200) {
+				if (response.code === 200) {
 					uni.showToast({
-						title: '签署成功',
+						title: this.isRenew ? '续租成功' : '签署成功',
 						icon: 'success'
 					})
 
-					// 跳转到押金缴纳页面
+					// 跳转逻辑: 续租直接返回我的合同,新租跳转到押金缴纳
 					setTimeout(() => {
-						uni.redirectTo({
-							url: `/pages/room/deposit?roomId=${this.roomId}&contractId=${response.data.data.contractId}`
-						})
+						if (this.isRenew) {
+							// 续租成功,返回我的合同页面
+							uni.navigateBack()
+						} else {
+							// 新租,跳转到押金缴纳页面
+							uni.redirectTo({
+								url: `/pages/room/deposit?roomId=${this.roomId}&contractId=${response.data.contractId}`
+							})
+						}
 					}, 1500)
 				} else {
-					throw new Error(response.data?.msg || '签署失败')
+					throw new Error(response.msg || '提交失败')
 				}
 			} catch (error) {
 				uni.hideLoading()
@@ -399,11 +463,6 @@ export default {
 	color: #333333;
 }
 
-.date-display {
-	display: flex;
-	align-items: center;
-}
-
 .select-wrapper {
 	display: flex;
 	align-items: center;
@@ -428,7 +487,8 @@ export default {
 .date-picker {
 	display: flex;
 	align-items: center;
-	gap: 12rpx;
+	gap: 8rpx;
+	cursor: pointer;
 }
 
 .date-text {
@@ -436,9 +496,14 @@ export default {
 	color: #333333;
 }
 
-.arrow {
-	font-size: 40rpx;
+.date-text.placeholder {
 	color: #999999;
+}
+
+.arrow {
+	font-size: 36rpx;
+	color: #999999;
+	font-weight: 300;
 }
 
 .summary-box {
@@ -591,8 +656,7 @@ export default {
 }
 
 .signature-canvas {
-	width: 100%;
-	height: 400rpx;
+	display: block;
 	background: #fafafa;
 	border: 2rpx dashed #cccccc;
 	border-radius: 12rpx;
