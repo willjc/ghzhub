@@ -22,4 +22,12 @@ public interface HzProjectMapper extends BaseMapper<HzProject>
      * @return 项目集合
      */
     List<HzProject> selectProjectAllocationList(HzProject project);
+
+    /**
+     * 查询单个项目详情(带实时统计)
+     *
+     * @param projectId 项目ID
+     * @return 项目
+     */
+    HzProject selectProjectByIdWithStats(Long projectId);
 }

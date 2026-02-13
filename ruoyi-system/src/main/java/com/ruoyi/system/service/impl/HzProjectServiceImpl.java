@@ -56,7 +56,7 @@ public class HzProjectServiceImpl extends ServiceImpl<HzProjectMapper, HzProject
     }
 
     /**
-     * 查询项目详情
+     * 查询项目详情（带实时统计）
      *
      * @param projectId 项目ID
      * @return 项目
@@ -64,7 +64,8 @@ public class HzProjectServiceImpl extends ServiceImpl<HzProjectMapper, HzProject
     @Override
     public HzProject selectProjectById(Long projectId)
     {
-        return this.getById(projectId);
+        // 使用自定义SQL查询，包含实时统计的总房源数和可用房源数
+        return this.baseMapper.selectProjectByIdWithStats(projectId);
     }
 
     /**
