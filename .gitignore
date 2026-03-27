@@ -45,3 +45,9 @@ nbdist/
 !*/build/*.java
 !*/build/*.html
 !*/build/*.xml
+
+# 用户上传文件（运行时数据，不入库）
+# uploadfile/
+
+# Git worktrees
+.worktrees/
