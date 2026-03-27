@@ -62,9 +62,11 @@
 					<text class="info-value">{{ item.deposit }}</text>
 				</view>
 
-				<!-- 草稿状态 - 显示待审核,无操作按钮 -->
-				<view class="pending-row" v-if="item.status === 'pending'">
-					<text class="pending-text">合同审核中,请耐心等待...</text>
+				<!-- 待签署状态 - 显示去签署按钮 -->
+				<view class="button-group" v-if="item.status === 'pending'">
+					<view class="btn btn-sign" @click="goSign(item)">
+						<text class="btn-text-white">去签署</text>
+					</view>
 				</view>
 
 				<!-- 按钮区域 - 合约中 -->
@@ -154,7 +156,14 @@
 				return classMap[status] || ''
 			},
 			
-			// 签约
+			// 去签署 (e签宝流程)
+			goSign(item) {
+				uni.navigateTo({
+					url: `/pages/contract/sign?contractId=${item.contractId || item.id}`
+				})
+			},
+
+			// 签约 (旧流程，保留兼容)
 			handleSign(index) {
 				uni.navigateTo({
 					url: `/pages/contract/sign?type=${this.housingType}&id=${index}`
