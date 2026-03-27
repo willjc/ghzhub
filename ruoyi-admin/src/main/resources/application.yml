@@ -174,3 +174,14 @@ zhenghaoban:
   # 应用配置
   app:
     module-id: ${ZHB_MODULE_ID:413780}
+
+# 微信支付配置
+wechat:
+  pay:
+    appid: "wx_your_appid"
+    mch-id: "your_mch_id"
+    api-v3-key: "your_api_v3_key_32chars"
+    private-key-path: "classpath:certs/apiclient_key.pem"
+    cert-serial-no: "your_cert_serial_no"
+    notify-domain: "https://your-domain.com"
+    h5-notify-url: "${wechat.pay.notify-domain}/h5/pay/wechat/notify"

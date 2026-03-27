@@ -67,6 +67,13 @@
             <artifactId>spring-security-crypto</artifactId>
         </dependency>
 
+        <!-- 微信支付 Java SDK -->
+        <dependency>
+            <groupId>com.github.wechatpay-apiv3</groupId>
+            <artifactId>wechatpay-java</artifactId>
+            <version>0.2.14</version>
+        </dependency>
+
     </dependencies>
 
     <build>
