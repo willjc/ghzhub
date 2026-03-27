@@ -5,6 +5,7 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.system.domain.HzDocument;
 import com.ruoyi.system.domain.HzTenant;
 import com.ruoyi.system.service.IHzDocumentService;
+import com.ruoyi.system.service.IHzHouseOrderService;
 import com.ruoyi.system.service.IHzTenantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +26,9 @@ public class HzDocumentController extends BaseController {
 
     @Autowired
     private IHzTenantService tenantService;
+
+    @Autowired
+    private IHzHouseOrderService orderService;
 
     /**
      * 查询当前用户的资料列表
@@ -117,5 +121,31 @@ public class HzDocumentController extends BaseController {
 
         int result = documentService.deleteDocumentById(documentId);
         return result > 0 ? success() : error("删除失败");
+    }
+
+    /**
+     * 审核资料（管理端调用）
+     * 请求体：{ "documentId": 1, "auditStatus": "1", "auditOpinion": "审核通过" }
+     * auditStatus: 1=通过, 2=拒绝
+     */
+    @PutMapping("/audit")
+    public AjaxResult audit(@RequestBody HzDocument document) {
+        if (document.getDocumentId() == null || document.getAuditStatus() == null) {
+            return error("参数不完整");
+        }
+
+        HzDocument existDocument = documentService.selectDocumentById(document.getDocumentId());
+        if (existDocument == null) {
+            return error("资料不存在");
+        }
+
+        int result = documentService.updateDocument(document);
+        if (result > 0 && "1".equals(document.getAuditStatus())) {
+            // 触发检查：如果该租户的工作证明和学历证明均已通过，则完成预订单
+            if (existDocument.getTenantId() != null) {
+                orderService.onDocumentsApproved(existDocument.getTenantId());
+            }
+        }
+        return result > 0 ? success() : error("审核失败");
     }
 }

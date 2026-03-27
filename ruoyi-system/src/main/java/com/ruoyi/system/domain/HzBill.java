@@ -27,6 +27,10 @@ public class HzBill extends BaseEntity {
     @TableField("bill_no")
     private String billNo;
 
+    /** 预订单号（关联 hz_house_order.order_no，用于支付回调反查） */
+    @TableField("order_no")
+    private String orderNo;
+
     /** 合同ID */
     @TableField("contract_id")
     private Long contractId;
@@ -123,6 +127,14 @@ public class HzBill extends BaseEntity {
 
     public String getBillNo() {
         return billNo;
+    }
+
+    public String getOrderNo() {
+        return orderNo;
+    }
+
+    public void setOrderNo(String orderNo) {
+        this.orderNo = orderNo;
     }
 
     public void setContractId(Long contractId) {
