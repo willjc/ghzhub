@@ -95,6 +95,7 @@
 
 <script>
 	import { get, post } from '@/utils/request'
+	import { wechatPrepay, queryPayResult } from '@/api/pay'
 
 	export default {
 		data() {
@@ -104,7 +105,8 @@
 				showDetail: false,
 				billList: [],
 				discountAmount: '0.00',
-				loading: false
+				loading: false,
+				billInfo: null
 			}
 		},
 		computed: {
@@ -172,41 +174,148 @@
 					})
 					return
 				}
+				const selectedBill = this.billList.find(bill => bill.selected)
+				if (!selectedBill) return
+				// 将 billNo 赋值后交给 handlePay 统一处理
+				this.billInfo = selectedBill
+				await this.handlePay()
+			},
 
-				if (this.loading) {
-					return
-				}
+			/**
+			 * 判断当前运行环境
+			 * 返回: 'miniprogram' | 'wechat_h5' | 'browser'
+			 */
+			detectPayEnv() {
+				// #ifdef MP-WEIXIN
+				return 'miniprogram'
+				// #endif
 
+				// #ifdef H5
+				const ua = navigator.userAgent.toLowerCase()
+				const isWechat = /micromessenger/.test(ua)
+				return isWechat ? 'wechat_h5' : 'browser'
+				// #endif
+			},
+
+			/**
+			 * 获取微信 openid
+			 */
+			getOpenid() {
+				return uni.getStorageSync('openid') || ''
+			},
+
+			async handlePay() {
+				if (this.loading || !this.billInfo) return
 				this.loading = true
 
 				try {
-					// 获取选中的账单
-					const selectedBill = this.billList.find(bill => bill.selected)
+					const payEnv = this.detectPayEnv()
+					const billNo = this.billInfo.billNo
 
-					// 调用支付接口
-					const res = await this.payBill(selectedBill.id, selectedBill.amount)
+					let prepayParams = { billNo }
 
-					if (res.code === 200) {
-						// 支付成功，跳转到成功页面
-						uni.navigateTo({
-							url: `/pages/room/success?amount=${this.finalAmount}.00&transactionNo=${res.data.transactionNo}`
-						})
+					if (payEnv === 'miniprogram' || payEnv === 'wechat_h5') {
+						const openid = this.getOpenid()
+						if (!openid) {
+							uni.showToast({ title: '获取用户信息失败，请重新登录', icon: 'none' })
+							this.loading = false
+							return
+						}
+						prepayParams.payType = 'jsapi'
+						prepayParams.openid = openid
 					} else {
-						uni.showToast({
-							title: res.msg || '支付失败',
-							icon: 'none'
-						})
+						prepayParams.payType = 'h5'
 					}
-				} catch (error) {
-					console.error('支付失败:', error)
-					uni.showToast({
-						title: '支付失败，请重试',
-						icon: 'none'
-					})
+
+					const res = await wechatPrepay(prepayParams)
+					if (res.code !== 200) {
+						uni.showToast({ title: res.msg || '预支付失败', icon: 'none' })
+						return
+					}
+
+					if (payEnv === 'miniprogram') {
+						await this.invokeWxPayMiniprogram(res.data)
+					} else if (payEnv === 'wechat_h5') {
+						await this.invokeWxPayJsapi(res.data)
+					} else {
+						// H5 WAP: redirect to WeChat payment page
+						const redirectUrl = encodeURIComponent(
+							window.location.origin + '/#/pages/room/payResult?billNo=' + billNo
+						)
+						window.location.href = res.data.mwebUrl + '&redirect_url=' + redirectUrl
+						return
+					}
+
+					await this.pollPayResult(billNo)
+
+				} catch (e) {
+					console.error('支付失败', e)
+					uni.showToast({ title: '支付失败，请重试', icon: 'none' })
 				} finally {
 					this.loading = false
 				}
 			},
+
+			invokeWxPayMiniprogram(params) {
+				return new Promise((resolve, reject) => {
+					// #ifdef MP-WEIXIN
+					wx.requestPayment({
+						timeStamp: params.timeStamp,
+						nonceStr:  params.nonceStr,
+						package:   params.package,
+						signType:  params.signType,
+						paySign:   params.paySign,
+						success:   resolve,
+						fail:      reject
+					})
+					// #endif
+				})
+			},
+
+			invokeWxPayJsapi(params) {
+				return new Promise((resolve, reject) => {
+					// #ifdef H5
+					if (typeof WeixinJSBridge === 'undefined') {
+						reject(new Error('WeixinJSBridge 未就绪'))
+						return
+					}
+					WeixinJSBridge.invoke('getBrandWCPayRequest', {
+						appId:     params.appId,
+						timeStamp: params.timeStamp,
+						nonceStr:  params.nonceStr,
+						package:   params.package,
+						signType:  params.signType,
+						paySign:   params.paySign
+					}, (res) => {
+						if (res.err_msg === 'get_brand_wcpay_request:ok') {
+							resolve(res)
+						} else {
+							reject(new Error(res.err_msg))
+						}
+					})
+					// #endif
+				})
+			},
+
+			async pollPayResult(billNo) {
+				for (let i = 0; i < 10; i++) {
+					await new Promise(r => setTimeout(r, 2000))
+					try {
+						const res = await queryPayResult(billNo)
+						if (res.code === 200 && res.data.paid) {
+							uni.showToast({ title: '支付成功', icon: 'success' })
+							setTimeout(() => {
+								uni.navigateTo({ url: '/pages/upload/index' })
+							}, 1500)
+							return
+						}
+					} catch (e) {
+						console.error('查询支付结果失败', e)
+					}
+				}
+				uni.showToast({ title: '支付结果未确认，请稍后在账单页查看', icon: 'none' })
+			},
+
 			async loadBillList() {
 				try {
 					// 调用API获取押金账单
