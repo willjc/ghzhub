@@ -32,11 +32,11 @@ CREATE TABLE IF NOT EXISTS hz_house_order (
 
 -- 2. hz_bill 新增 order_no 字段（用于微信回调反查预订单）
 ALTER TABLE hz_bill
-    ADD COLUMN IF NOT EXISTS order_no VARCHAR(32) NULL COMMENT '关联选房预订单号' AFTER bill_no;
+    ADD COLUMN order_no VARCHAR(32) NULL COMMENT '关联选房预订单号' AFTER bill_no;
 
 -- 3. hz_tenant 新增 esign_psn_id 字段（供 Phase 3 e签宝使用）
 ALTER TABLE hz_tenant
-    ADD COLUMN IF NOT EXISTS esign_psn_id VARCHAR(64) NULL COMMENT 'e签宝个人账号ID' AFTER remark;
+    ADD COLUMN esign_psn_id VARCHAR(64) NULL COMMENT 'e签宝个人账号ID' AFTER remark;
 
 -- 4. 在 sys_job 中注册预订单过期定时任务（每1分钟扫描一次）
 INSERT IGNORE INTO sys_job (job_name, job_group, invoke_target, cron_expression, misfire_policy, concurrent, status, create_by, create_time, remark)
