@@ -194,6 +194,7 @@
 				"navigationBarTitleText": "支付成功"
 			}
 		},
+		{ "path": "pages/room/payResult", "style": { "navigationBarTitleText": "支付结果" } },
 		{
 			"path": "pages/commitment/sign",
 			"style": {
