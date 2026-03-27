@@ -101,6 +101,10 @@ public class HzTenant extends BaseEntity {
     @TableField("del_flag")
     private String delFlag;
 
+    /** e签宝个人认证psnId */
+    @TableField("esign_psn_id")
+    private String esignPsnId;
+
     public void setTenantId(Long tenantId) {
         this.tenantId = tenantId;
     }
@@ -267,6 +271,14 @@ public class HzTenant extends BaseEntity {
 
     public String getDelFlag() {
         return delFlag;
+    }
+
+    public String getEsignPsnId() {
+        return esignPsnId;
+    }
+
+    public void setEsignPsnId(String esignPsnId) {
+        this.esignPsnId = esignPsnId;
     }
 
     @Override
