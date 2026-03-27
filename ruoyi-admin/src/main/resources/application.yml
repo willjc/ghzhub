@@ -185,3 +185,18 @@ wechat:
     cert-serial-no: "your_cert_serial_no"
     notify-domain: "https://your-domain.com"
     h5-notify-url: "${wechat.pay.notify-domain}/h5/pay/wechat/notify"
+
+# e签宝配置
+esign:
+  app-id: "your_esign_app_id"
+  app-secret: "your_esign_app_secret"
+  # 沙箱环境（联调使用）
+  host: "https://smlopenapi.esign.cn"
+  # 生产环境（上线时切换）
+  # host: "https://openapi.esign.cn"
+  # 签署完成后回调地址（公网可访问）
+  notify-url: "https://your-domain.com/h5/esign/notify"
+  # 签署后跳回的页面（H5端）
+  redirect-url: "https://your-domain.com/pages/contract/signResult"
+  # 平台企业（甲方）在 e签宝 的 orgId
+  org-id: "your_org_id"

@@ -139,6 +139,10 @@ public class HzContract extends BaseEntity {
     @TableField("del_flag")
     private String delFlag;
 
+    /** e签宝签署流程ID */
+    @TableField("esign_flow_id")
+    private String esignFlowId;
+
     // ========== 以下字段来自房源表，不存储在合同表中 ==========
     /** 项目名称（来自房源表） */
     @TableField(exist = false)
@@ -426,6 +430,14 @@ public class HzContract extends BaseEntity {
 
     public String getDelFlag() {
         return delFlag;
+    }
+
+    public String getEsignFlowId() {
+        return esignFlowId;
+    }
+
+    public void setEsignFlowId(String esignFlowId) {
+        this.esignFlowId = esignFlowId;
     }
 
     public String getProjectName() {
