@@ -1,5 +1,13 @@
 <template>
 	<view class="page">
+		<!-- 入住前置检查警告 -->
+		<view v-if="!canCheckin" style="background:#fff7e6;border:1rpx solid #ffd591;border-radius:12rpx;padding:20rpx 24rpx;margin:20rpx 24rpx;display:flex;align-items:center;justify-content:space-between;">
+			<text style="font-size:24rpx;color:#d46b08;flex:1;line-height:36rpx;">{{ checkinBlockMsg }}</text>
+			<view @click="goUpload" style="background:#fa8c16;border-radius:8rpx;padding:10rpx 20rpx;margin-left:16rpx;flex-shrink:0;">
+				<text style="font-size:24rpx;color:#fff;">去上传资料</text>
+			</view>
+		</view>
+
 		<scroll-view class="scroll-content" scroll-y>
 			<!-- 入住申请卡片列表 -->
 			<view class="card" v-for="(item, index) in checkinList" :key="index">
@@ -91,6 +99,7 @@
 
 <script>
 	import { getCheckInList, cancelCheckIn } from '@/api/checkin.js'
+	import { checkinCheck } from '@/api/order'
 	import authCheck from '@/mixins/authCheck'
 
 	export default {
@@ -99,7 +108,11 @@
 				housingType: '',
 				tenantId: null, // 从登录信息获取租户ID
 				loading: false,
-				checkinList: []
+				checkinList: [],
+				canCheckin: true,
+				checkinBlockMsg: '',
+				checkinRemainSeconds: 0,
+				_checkinTimer: null,
 			}
 		},
 		onLoad(options) {
@@ -110,7 +123,11 @@
 				}
 				this.tenantId = this.userId
 				this.loadCheckinList()
+				this.checkCheckinCondition()
 			})
+		},
+		onUnload() {
+			if (this._checkinTimer) clearInterval(this._checkinTimer)
 		},
 		onShow() {
 			// 每次页面显示时重新加载列表数据，确保显示最新状态
@@ -294,7 +311,41 @@
 				uni.redirectTo({
 					url: `/pages/affairs/checkin-detail?type=${this.housingType}&id=${item.recordId}`
 				})
-			}
+			},
+
+			// 入住前置检查
+			async checkCheckinCondition() {
+				try {
+					const res = await checkinCheck(this.userId)
+					if (res.code === 200) {
+						this.canCheckin = res.data.canCheckin
+						if (!this.canCheckin) {
+							this.checkinRemainSeconds = res.data.remainSeconds || 0
+							this.checkinBlockMsg = `您有资料尚未上传，需在 ${this.formatCountdownCheckin(this.checkinRemainSeconds)} 内完成上传方可办理入住`
+							this.startCheckinCountdown()
+						}
+					}
+				} catch (e) {
+					console.error('入住前置检查失败', e)
+				}
+			},
+			startCheckinCountdown() {
+				if (this._checkinTimer) clearInterval(this._checkinTimer)
+				this._checkinTimer = setInterval(() => {
+					if (this.checkinRemainSeconds > 0) {
+						this.checkinRemainSeconds--
+						this.checkinBlockMsg = `您有资料尚未上传，需在 ${this.formatCountdownCheckin(this.checkinRemainSeconds)} 内完成上传方可办理入住`
+					}
+				}, 1000)
+			},
+			formatCountdownCheckin(s) {
+				if (!s || s <= 0) return '已到期'
+				const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60
+				return `${h}时${m}分${sec}秒`
+			},
+			goUpload() {
+				uni.navigateTo({ url: '/pages/upload/index' })
+			},
 		}
 	}
 </script>

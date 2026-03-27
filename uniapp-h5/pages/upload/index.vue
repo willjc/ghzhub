@@ -1,6 +1,26 @@
 <template>
 	<view class="page">
 		<view class="scroll-content">
+			<!-- 待上传资料订单卡片 -->
+			<view class="order-cards" v-if="pendingOrders.length > 0">
+				<view style="display:flex;align-items:center;margin:20rpx 0 10rpx 24rpx;">
+					<view style="width:6rpx;height:32rpx;background:#4A90E2;border-radius:3rpx;margin-right:14rpx;"></view>
+					<text style="font-size:28rpx;font-weight:500;color:#333;">待上传资料的预订单</text>
+				</view>
+				<view v-for="order in pendingOrders" :key="order.orderNo"
+					style="background:#fff;border-radius:16rpx;padding:24rpx;margin:0 24rpx 16rpx;box-shadow:0 2rpx 12rpx rgba(0,0,0,0.06);">
+					<view style="display:flex;margin-bottom:10rpx;">
+						<text style="color:#999;font-size:26rpx;">预订单号：</text>
+						<text style="color:#333;font-size:26rpx;">{{ order.orderNo }}</text>
+					</view>
+					<view style="display:flex;align-items:center;margin-top:10rpx;">
+						<text style="font-size:26rpx;" :style="{ color: order.docRemainSeconds < 86400 ? '#e5252b' : '#fa8c16' }">
+							剩余时间：{{ formatCountdown(order.docRemainSeconds) }}
+						</text>
+					</view>
+				</view>
+			</view>
+
 			<!-- 基本信息卡片 -->
 			<view class="info-card">
 				<!-- 基本信息标题 -->
@@ -73,6 +93,22 @@
 						<text class="template-link">工作证明模版</text>
 					</view>
 				</view>
+
+				<!-- 学历证明上传 -->
+				<view class="upload-section" style="margin-top:30rpx;">
+					<view class="upload-label-row">
+						<text class="required-mark">*</text>
+						<text class="upload-label">学历证明</text>
+						<text class="upload-tip">（毕业证或在读证明）</text>
+					</view>
+					<view class="upload-area" @click="handleEducationUpload">
+						<image v-if="educationFile" :src="getImageUrl(educationFile)" mode="aspectFill" class="uploaded-image"></image>
+						<view v-else class="upload-placeholder">
+							<image class="upload-icon" src="/static/上传@2x.png"></image>
+							<text class="upload-text">点击上传</text>
+						</view>
+					</view>
+				</view>
 			</view>
 		</view>
 		
@@ -87,6 +123,7 @@
 
 <script>
 import { getUserInfo, uploadWorkProof } from '@/api/user'
+import { getPendingUploadOrders } from '@/api/order'
 import config from '@/config/index'
 import authCheck from '@/mixins/authCheck'
 
@@ -104,14 +141,22 @@ export default {
 				spouse: ''         // 配偶
 			},
 			uploadedFile: '',
-			loading: false
+			loading: false,
+			pendingOrders: [],
+			educationFile: null,
+			educationUploaded: false,
+			_countdownTimer: null,
 		}
 	},
 	onLoad(options) {
 		// 使用统一的登录检查
 		authCheck.checkLogin.call(this, options, () => {
 			this.loadUserInfo()
+			this.loadPendingOrders()
 		})
+	},
+	onUnload() {
+		if (this._countdownTimer) clearInterval(this._countdownTimer)
 	},
 	methods: {
 		/**
@@ -239,6 +284,10 @@ export default {
 				})
 				return
 			}
+			if (!this.educationFile) {
+				uni.showToast({ title: '请上传学历证明', icon: 'none' })
+				return
+			}
 			// 提交逻辑（文件已在handleUpload中上传到服务器）
 			uni.showToast({
 				title: '提交成功',
@@ -249,7 +298,60 @@ export default {
 					url: '/pages/index/index'
 				})
 			}, 1500)
-		}
+		},
+		async loadPendingOrders() {
+			try {
+				const res = await getPendingUploadOrders(this.userId)
+				if (res.code === 200) {
+					this.pendingOrders = res.data || []
+					this.startCountdownTimer()
+				}
+			} catch (e) {
+				console.error('加载待上传订单失败', e)
+			}
+		},
+		startCountdownTimer() {
+			if (this._countdownTimer) clearInterval(this._countdownTimer)
+			this._countdownTimer = setInterval(() => {
+				this.pendingOrders.forEach(o => {
+					if (o.docRemainSeconds > 0) o.docRemainSeconds--
+				})
+			}, 1000)
+		},
+		formatCountdown(seconds) {
+			if (!seconds || seconds <= 0) return '已到期'
+			const h = Math.floor(seconds / 3600)
+			const m = Math.floor((seconds % 3600) / 60)
+			const s = seconds % 60
+			return `${h}时${m}分${s}秒`
+		},
+		async handleEducationUpload() {
+			try {
+				const res = await uni.chooseImage({ count: 1, sizeType: ['compressed'], sourceType: ['album', 'camera'] })
+				if (res && res.tempFilePaths && res.tempFilePaths.length > 0) {
+					const uploadRes = await this.uploadFile(res.tempFilePaths[0], '2')
+					if (uploadRes.code === 200) {
+						this.educationFile = uploadRes.data.filePath || uploadRes.data.fileName
+						this.educationUploaded = true
+					}
+				}
+			} catch (e) {
+				console.error('学历证明上传失败', e)
+			}
+		},
+		async uploadFile(filePath, documentType) {
+			return new Promise((resolve) => {
+				uni.uploadFile({
+					url: config.baseUrl + '/h5/document/upload',
+					filePath,
+					name: 'file',
+					formData: { documentType, tenantId: this.userId },
+					header: { Authorization: uni.getStorageSync('token') || '' },
+					success: (res) => resolve(JSON.parse(res.data)),
+					fail: () => resolve({ code: 500 })
+				})
+			})
+		},
 	}
 }
 </script>
