@@ -1,28 +1,83 @@
 <template>
   <view class="container">
-    <!-- 步骤1: 加载中 -->
+    <!-- 加载中 -->
     <view v-if="loading" class="loading-wrap">
       <view class="loading-text">加载中...</view>
     </view>
 
-    <!-- 步骤2: 合同预览 -->
+    <!-- 合同确认页面（显示摘要+个人信息） -->
     <view v-else-if="step === 'preview'" class="preview-wrap">
       <view class="preview-header">
-        <text class="preview-title">合同预览</text>
+        <text class="preview-title">合同签署确认</text>
         <text class="preview-sub">{{ projectName }}</text>
       </view>
+
       <scroll-view scroll-y class="preview-content">
-        <rich-text :nodes="contractContent"></rich-text>
+        <!-- 租户信息 -->
+        <view class="info-section">
+          <view class="section-title">租户信息</view>
+          <view class="info-row">
+            <text class="info-label">姓名</text>
+            <text class="info-value">{{ tenantName }}</text>
+          </view>
+          <view class="info-row">
+            <text class="info-label">手机号</text>
+            <text class="info-value">{{ tenantPhone }}</text>
+          </view>
+          <view class="info-row">
+            <text class="info-label">身份证号</text>
+            <text class="info-value">{{ tenantIdCard || '未填写' }}</text>
+          </view>
+        </view>
+
+        <!-- 房源信息 -->
+        <view class="info-section">
+          <view class="section-title">房源信息</view>
+          <view class="info-row">
+            <text class="info-label">项目</text>
+            <text class="info-value">{{ projectName }}</text>
+          </view>
+          <view class="info-row">
+            <text class="info-label">房间</text>
+            <text class="info-value">{{ houseCode }}</text>
+          </view>
+        </view>
+
+        <!-- 合同条款 -->
+        <view class="info-section">
+          <view class="section-title">合同条款</view>
+          <view class="info-row">
+            <text class="info-label">月租金</text>
+            <text class="info-value price">¥{{ rentPrice }}</text>
+          </view>
+          <view class="info-row">
+            <text class="info-label">押金</text>
+            <text class="info-value price">¥{{ deposit }}</text>
+          </view>
+          <view class="info-row">
+            <text class="info-label">租期</text>
+            <text class="info-value">{{ rentMonths }}个月</text>
+          </view>
+          <view class="info-row">
+            <text class="info-label">合同期限</text>
+            <text class="info-value">{{ startDate }} 至 {{ endDate }}</text>
+          </view>
+        </view>
+
+        <!-- 温馨提示 -->
+        <view class="info-section tips">
+          <text class="tips-text">点击"确认并签署"后，将跳转至 e签宝 平台完成电子合同签署。合同内容将以 e签宝 电子合同为准。</text>
+        </view>
       </scroll-view>
+
       <view class="preview-footer">
-        <text class="price-info">月租金：¥{{ rentPrice }} | 押金：¥{{ deposit }}</text>
         <button class="btn-primary" :disabled="submitting" @click="handleConfirmSign">
           {{ submitting ? '处理中...' : '确认并签署' }}
         </button>
       </view>
     </view>
 
-    <!-- 步骤3: e签宝实名认证 -->
+    <!-- e签宝实名认证 -->
     <view v-else-if="step === 'auth'" class="step-wrap">
       <view class="step-icon">
         <text>&#x1f510;</text>
@@ -32,7 +87,7 @@
       <button class="btn-primary" @click="goAuth">前往认证</button>
     </view>
 
-    <!-- 步骤4: 等待认证 -->
+    <!-- 等待认证 -->
     <view v-else-if="step === 'auth_waiting'" class="step-wrap">
       <view class="step-icon">
         <text>&#x23f3;</text>
@@ -43,7 +98,7 @@
       <button class="btn-secondary" @click="goAuth">重新认证</button>
     </view>
 
-    <!-- 步骤5: e签宝签署 -->
+    <!-- e签宝签署 -->
     <view v-else-if="step === 'esign'" class="step-wrap">
       <view class="step-icon">
         <text>&#x1f4dd;</text>
@@ -53,7 +108,7 @@
       <button class="btn-primary" @click="goEsign">前往 e签宝签署</button>
     </view>
 
-    <!-- 步骤6: 等待e签宝签署完成 -->
+    <!-- 等待e签宝签署完成 -->
     <view v-else-if="step === 'esign_waiting'" class="step-wrap">
       <view class="step-icon">
         <text>&#x23f3;</text>
@@ -63,7 +118,7 @@
       <button class="btn-secondary" @click="goBack">返回合同列表</button>
     </view>
 
-    <!-- 步骤7: 完成 -->
+    <!-- 完成 -->
     <view v-else-if="step === 'done'" class="step-wrap">
       <view class="step-icon success">
         <text>&#x2713;</text>
@@ -95,19 +150,26 @@ export default {
   data() {
     return {
       loading: true,
-      step: 'preview',  // preview | auth | auth_waiting | esign | esign_waiting | done | error
+      step: 'preview',
       userId: null,
+      userInfo: null,
       roomId: null,
       projectId: null,
       contractId: null,
       rentMonths: 12,
-      // 合同预览数据
-      contractContent: '',
+      // 合同数据
       templateId: null,
       projectName: '',
+      houseCode: '',
       rentPrice: '0',
       deposit: '0',
+      startDate: '',
       endDate: '',
+      contractContent: '',
+      // 租户信息
+      tenantName: '',
+      tenantPhone: '',
+      tenantIdCard: '',
       // e签宝
       authUrl: '',
       signUrl: '',
@@ -124,6 +186,11 @@ export default {
       return
     }
     this.userId = userInfo.userId
+    this.userInfo = userInfo
+    this.tenantName = userInfo.realName || userInfo.nickname || ''
+    this.tenantPhone = userInfo.phone || ''
+    this.tenantIdCard = userInfo.idCard || ''
+
     this.roomId = options.roomId ? parseInt(options.roomId) : null
     this.projectId = options.projectId ? parseInt(options.projectId) : null
     this.contractId = options.contractId ? parseInt(options.contractId) : null
@@ -149,23 +216,28 @@ export default {
     async init() {
       this.loading = true
       try {
-        // 如果已有 contractId，说明合同已保存，直接走 e签宝流程
+        // 如果已有 contractId，直接走 e签宝流程
         if (this.contractId) {
           await this.callInitSign()
           return
         }
-        // 否则先生成合同预览
+        // 获取合同数据（用于显示摘要）
         const res = await generateContract({
           houseId: this.roomId,
           rentMonths: this.rentMonths
         })
-        if (res.code !== 200) throw new Error(res.msg || '生成合同失败')
+        if (res.code !== 200) throw new Error(res.msg || '获取合同信息失败')
         this.contractContent = res.data.contractContent || ''
         this.templateId = res.data.templateId
         this.rentPrice = res.data.rentPrice || '0'
         this.deposit = res.data.deposit || '0'
         this.endDate = res.data.endDate || ''
         this.projectName = res.data.projectName || ''
+        this.houseCode = res.data.houseCode || ''
+        // 生效日期 = 当前日期 + 3天
+        const start = new Date()
+        start.setDate(start.getDate() + 3)
+        this.startDate = start.toISOString().split('T')[0]
         this.step = 'preview'
       } catch (e) {
         this.step = 'error'
@@ -179,7 +251,7 @@ export default {
     async handleConfirmSign() {
       if (this.submitting) return
       this.submitting = true
-      uni.showLoading({ title: '处理中...' })
+      uni.showLoading({ title: '正在发起签署...' })
       try {
         // 1. 保存合同（获取 contractId）
         if (!this.contractId) {
@@ -189,7 +261,8 @@ export default {
             templateId: this.templateId,
             contractContent: this.contractContent,
             endDate: this.endDate,
-            rentMonths: this.rentMonths
+            rentMonths: this.rentMonths,
+            userId: this.userId
           })
           if (saveRes.code !== 200) throw new Error(saveRes.msg || '保存合同失败')
           this.contractId = saveRes.data.contractId
@@ -214,11 +287,9 @@ export default {
         if (res.code !== 200) throw new Error(res.msg || '发起签署失败')
 
         if (res.data.needAuth) {
-          // 需要实名认证
           this.authUrl = res.data.authUrl
           this.step = 'auth'
         } else {
-          // 已认证，获取签署链接
           this.signUrl = res.data.signUrl
           this.step = 'esign'
         }
@@ -248,7 +319,6 @@ export default {
         uni.hideLoading()
         if (res.code !== 200) throw new Error(res.msg || '查询失败')
         if (res.data.authenticated) {
-          // 认证完成，重新调用 initSign
           await this.callInitSign()
         } else {
           uni.showToast({ title: '认证未完成，请先完成认证', icon: 'none' })
@@ -290,7 +360,7 @@ export default {
               this.step = 'done'
             }
           }
-        } catch (e) { /* 轮询失败不中断 */ }
+        } catch (e) { /* ignore */ }
       }, 5000)
     },
     stopPolling() {
@@ -339,7 +409,7 @@ export default {
 }
 .loading-text { font-size: 32rpx; color: #666; }
 
-/* 合同预览 */
+/* 合同确认页 */
 .preview-wrap {
   flex: 1; display: flex; flex-direction: column; min-height: 100vh;
 }
@@ -350,11 +420,33 @@ export default {
 .preview-title { font-size: 36rpx; font-weight: 600; color: #1a1a1a; }
 .preview-sub { font-size: 26rpx; color: #999; margin-top: 8rpx; }
 .preview-content {
-  flex: 1; padding: 30rpx; background: #fff; margin-top: 20rpx;
-  max-height: calc(100vh - 360rpx);
+  flex: 1; padding: 20rpx 30rpx; background: #f5f6fc;
+  max-height: calc(100vh - 260rpx);
 }
+
+/* 信息卡片 */
+.info-section {
+  background: #fff; border-radius: 16rpx; padding: 24rpx 30rpx;
+  margin-bottom: 20rpx;
+}
+.section-title {
+  font-size: 30rpx; font-weight: 600; color: #1a1a1a;
+  padding-bottom: 16rpx; border-bottom: 1rpx solid #f0f0f0;
+  margin-bottom: 12rpx;
+}
+.info-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10rpx 0;
+}
+.info-label { font-size: 26rpx; color: #999; }
+.info-value { font-size: 26rpx; color: #333; font-weight: 500; }
+.info-value.price { color: #e5252b; font-weight: 600; }
+
+/* 温馨提示 */
+.tips { background: #fff8e6; }
+.tips-text { font-size: 24rpx; color: #b8860b; line-height: 1.6; }
+
 .preview-footer {
   padding: 20rpx 30rpx; background: #fff; border-top: 1rpx solid #eee;
 }
-.price-info { display: block; font-size: 26rpx; color: #e5252b; margin-bottom: 20rpx; text-align: center; }
 </style>

@@ -215,12 +215,28 @@ public class HzContractAppController extends BaseController {
     @PostMapping("/sign")
     public AjaxResult signContract(@RequestBody Map<String, Object> params) {
         try {
-            Long houseId = Long.parseLong(params.get("houseId").toString());
-            Long projectId = Long.parseLong(params.get("projectId").toString());
-            Long templateId = Long.parseLong(params.get("templateId").toString());
-            String contractContent = params.get("contractContent").toString();
-            String endDate = params.get("endDate").toString();
-            Integer rentMonths = Integer.parseInt(params.get("rentMonths").toString());
+            // 参数安全解析（兼容e签宝流程，部分参数可选）
+            Long houseId = Long.parseLong(params.getOrDefault("houseId", "0").toString());
+            Long projectId = Long.parseLong(params.getOrDefault("projectId", "0").toString());
+            Long templateId = params.get("templateId") != null
+                ? Long.parseLong(params.get("templateId").toString()) : 0L;
+            String contractContent = params.getOrDefault("contractContent", "").toString();
+            String endDate = params.getOrDefault("endDate", "").toString();
+            Integer rentMonths = params.get("rentMonths") != null
+                ? Integer.parseInt(params.get("rentMonths").toString()) : 12;
+
+            // 优先从请求参数获取 userId（e签宝流程前端直接传参），否则从 token 解析
+            Long userId = null;
+            Object userIdParam = params.get("userId");
+            if (userIdParam != null) {
+                try { userId = Long.parseLong(userIdParam.toString()); } catch (Exception ignored) {}
+            }
+            if (userId == null) {
+                userId = getHzUserIdFromToken();
+            }
+            if (userId == null) {
+                return error("获取用户信息失败，请重新登录");
+            }
 
             // 合同生效日期自动计算为当前日期 + 3天
             LocalDate startDateLocal = LocalDate.now().plusDays(3);
@@ -268,11 +284,7 @@ public class HzContractAppController extends BaseController {
             }
             houseAddress += house.getHouseNo();
 
-            // 从token中解析用户ID，获取真实用户信息
-            Long userId = getHzUserIdFromToken();
-            if (userId == null) {
-                return error("获取用户信息失败，请重新登录");
-            }
+            // userId 已在方法开头从请求参数或token中获取
 
             HzUser hzUser = hzUserMapper.selectById(userId);
             if (hzUser == null) {
@@ -374,18 +386,32 @@ public class HzContractAppController extends BaseController {
             Long houseId = Long.parseLong(params.get("houseId").toString());
             Long projectId = Long.parseLong(params.get("projectId").toString());
             Long templateId = Long.parseLong(params.get("templateId").toString());
-            String contractContent = params.get("contractContent").toString();
-            String tenantSignatureBase64 = params.get("tenantSignature").toString();
-            String endDate = params.get("endDate").toString();
-            Integer rentMonths = Integer.parseInt(params.get("rentMonths").toString());
+            String contractContent = params.getOrDefault("contractContent", "").toString();
+            String endDate = params.getOrDefault("endDate", "").toString();
+            Integer rentMonths = params.get("rentMonths") != null
+                ? Integer.parseInt(params.get("rentMonths").toString()) : 12;
+
+            // 优先从请求参数获取 userId，兼容前端直接传参
+            Long userId = null;
+            Object userIdParam = params.get("userId");
+            if (userIdParam != null) {
+                try { userId = Long.parseLong(userIdParam.toString()); } catch (Exception ignored) {}
+            }
+            if (userId == null) {
+                userId = getHzUserIdFromToken();
+            }
+            if (userId == null) {
+                return error("获取用户信息失败，请重新登录");
+            }
 
             // 合同生效日期自动计算为当前日期 + 3天
             LocalDate startDateLocal = LocalDate.now().plusDays(3);
             String startDate = startDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
-            // 1. 处理签名图片 - 将 base64 转为图片并上传
+            // 1. 处理签名图片（e签宝模式下签名由e签宝完成）
             String signatureUrl = "";
-            if (tenantSignatureBase64 != null && tenantSignatureBase64.startsWith("data:image")) {
+            String tenantSignatureBase64 = params.get("tenantSignature") != null
+                ? params.get("tenantSignature").toString() : "";
                 try {
                     String base64Data = tenantSignatureBase64.substring(tenantSignatureBase64.indexOf(",") + 1);
                     byte[] imageBytes = Base64.getDecoder().decode(base64Data);
@@ -420,11 +446,7 @@ public class HzContractAppController extends BaseController {
             }
             houseAddress += house.getHouseNo();
 
-            // 从token中解析用户ID，获取真实用户信息
-            Long userId = getHzUserIdFromToken();
-            if (userId == null) {
-                return error("获取用户信息失败，请重新登录");
-            }
+            // userId 已在方法开头从请求参数或token中获取
 
             HzUser hzUser = hzUserMapper.selectById(userId);
             if (hzUser == null) {
