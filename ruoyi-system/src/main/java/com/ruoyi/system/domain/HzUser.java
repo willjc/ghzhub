@@ -108,6 +108,9 @@ public class HzUser extends BaseEntity {
     /** 是否完善个人信息（0=否 1=是） */
     private String isInfoCompleted;
 
+    /** e签宝个人账号ID */
+    private String esignPsnId;
+
     public Long getUserId() {
         return userId;
     }
@@ -298,6 +301,14 @@ public class HzUser extends BaseEntity {
 
     public void setIsInfoCompleted(String isInfoCompleted) {
         this.isInfoCompleted = isInfoCompleted;
+    }
+
+    public String getEsignPsnId() {
+        return esignPsnId;
+    }
+
+    public void setEsignPsnId(String esignPsnId) {
+        this.esignPsnId = esignPsnId;
     }
 
     @Override

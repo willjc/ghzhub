@@ -36,7 +36,7 @@ public class EsignServiceImpl implements EsignService {
     @Value("${esign.redirect-url}") private String redirectUrl;
     @Value("${esign.template-id}") private String templateId;
 
-    private final HzTenantMapper tenantMapper;
+    private final HzUserMapper userMapper;
     private final HzContractMapper contractMapper;
     private final HzHouseOrderMapper orderMapper;
     private final HzBillMapper billMapper;
@@ -46,12 +46,12 @@ public class EsignServiceImpl implements EsignService {
     private final HzUnitMapper unitMapper;
     private final IHzCheckInService checkInService;
 
-    public EsignServiceImpl(HzTenantMapper tenantMapper, HzContractMapper contractMapper,
+    public EsignServiceImpl(HzUserMapper userMapper, HzContractMapper contractMapper,
                             HzHouseOrderMapper orderMapper, HzBillMapper billMapper,
                             HzHouseMapper houseMapper, HzProjectMapper projectMapper,
                             HzBuildingMapper buildingMapper, HzUnitMapper unitMapper,
                             IHzCheckInService checkInService) {
-        this.tenantMapper = tenantMapper;
+        this.userMapper = userMapper;
         this.contractMapper = contractMapper;
         this.orderMapper = orderMapper;
         this.billMapper = billMapper;
@@ -65,9 +65,9 @@ public class EsignServiceImpl implements EsignService {
     // ==================== 实名认证 ====================
 
     @Override
-    public String getPsnAuthUrl(Long tenantId, String mobile, String redirectUrl) {
-        HzTenant tenant = tenantMapper.selectById(tenantId);
-        if (tenant != null && tenant.getEsignPsnId() != null && !tenant.getEsignPsnId().isEmpty()) return null;
+    public String getPsnAuthUrl(Long userId, String mobile, String redirectUrl) {
+        HzUser user = userMapper.selectById(userId);
+        if (user != null && user.getEsignPsnId() != null && !user.getEsignPsnId().isEmpty()) return null;
         String jsonParm = "{\"psnAuthConfig\":{\"psnAccount\":\"" + mobile + "\",\"psnAuthPageConfig\":{\"psnEditableFields\":[\"name\",\"IDCardNum\",\"mobile\"]}},"
                 + "\"clientType\":\"ALL\",\"redirectConfig\":{\"redirectDelayTime\":\"3\",\"redirectUrl\":\"" + redirectUrl + "\"},"
                 + "\"authorizeConfig\":{\"authorizedScopes\":[\"get_psn_identity_info\",\"psn_initiate_sign\",\"manage_psn_resource\"]},"
@@ -79,14 +79,14 @@ public class EsignServiceImpl implements EsignService {
     }
 
     @Override
-    public String queryAndSavePsnId(Long tenantId, String mobile) {
+    public String queryAndSavePsnId(Long userId, String mobile) {
         try {
             EsignHttpResponse resp = callApi("GET", "/v3/persons/identity-info?psnAccount=" + mobile, null);
             JsonObject data = gson.fromJson(resp.getBody(), JsonObject.class).getAsJsonObject("data");
             if (!"2".equals(data.get("realnameStatus").getAsString())) return null;
             String psnId = data.get("psnId").getAsString();
-            tenantMapper.update(null, new LambdaUpdateWrapper<HzTenant>().eq(HzTenant::getTenantId, tenantId).set(HzTenant::getEsignPsnId, psnId));
-            log.info("e签宝个人认证完成，tenantId={}, psnId={}", tenantId, psnId);
+            userMapper.update(null, new LambdaUpdateWrapper<HzUser>().eq(HzUser::getUserId, userId).set(HzUser::getEsignPsnId, psnId));
+            log.info("e签宝个人认证完成，userId={}, psnId={}", userId, psnId);
             return psnId;
         } catch (Exception e) { throw new RuntimeException("查询 e签宝 认证状态失败", e); }
     }
@@ -109,10 +109,10 @@ public class EsignServiceImpl implements EsignService {
         HzContract contract = contractMapper.selectById(contractId);
         if (contract == null) throw new RuntimeException("合同不存在: " + contractId);
 
-        HzTenant tenant = tenantMapper.selectById(contract.getTenantId());
-        if (tenant == null) throw new RuntimeException("租户不存在");
+        HzUser user = userMapper.selectById(contract.getTenantId());
+        if (user == null) throw new RuntimeException("用户不存在");
 
-        String componentsJson = buildTemplateComponents(contract, tenant);
+        String componentsJson = buildTemplateComponents(contract, user);
         String fileName = "租赁合同_" + contractId + ".pdf";
 
         String jsonParm = "{\"docTemplateId\":\"" + templateId + "\","
@@ -185,8 +185,8 @@ public class EsignServiceImpl implements EsignService {
         log.info("签署流创建成功，contractId={}, signFlowId={}", contractId, signFlowId);
 
         // 4. 获取签署链接
-        HzTenant tenant = tenantMapper.selectById(contract.getTenantId());
-        String mobile = tenant != null ? tenant.getPhone() : "";
+        HzUser signUser = userMapper.selectById(contract.getTenantId());
+        String mobile = signUser != null ? signUser.getPhone() : "";
         return getSignUrl(signFlowId, mobile, redirectUrl);
     }
 
@@ -194,10 +194,10 @@ public class EsignServiceImpl implements EsignService {
      * 构建模板填充数据 — 将合同+租户数据映射到 e签宝 模板控件
      * 控件 ID 来自模板详情（已通过 API 验证）
      */
-    private String buildTemplateComponents(HzContract contract, HzTenant tenant) {
-        String tenantName = tenant.getTenantName() != null ? tenant.getTenantName() : "";
-        String idCard = tenant.getIdCard() != null ? tenant.getIdCard() : "";
-        String phone = tenant.getPhone() != null ? tenant.getPhone() : "";
+    private String buildTemplateComponents(HzContract contract, HzUser user) {
+        String tenantName = user.getRealName() != null ? user.getRealName() : (user.getNickname() != null ? user.getNickname() : "");
+        String idCard = user.getIdCard() != null ? user.getIdCard() : "";
+        String phone = user.getPhone() != null ? user.getPhone() : "";
         String rentPrice = contract.getRentPrice() != null ? contract.getRentPrice().toString() : "0";
         String deposit = contract.getDeposit() != null ? contract.getDeposit().toString() : "0";
 

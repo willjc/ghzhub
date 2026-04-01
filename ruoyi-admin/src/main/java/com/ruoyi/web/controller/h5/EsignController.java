@@ -3,10 +3,10 @@ package com.ruoyi.web.controller.h5;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.system.domain.HzContract;
-import com.ruoyi.system.domain.HzTenant;
+import com.ruoyi.system.domain.HzUser;
 import com.ruoyi.system.mapper.HzContractMapper;
+import com.ruoyi.system.mapper.HzUserMapper;
 import com.ruoyi.system.service.EsignService;
-import com.ruoyi.system.service.IHzTenantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +22,7 @@ public class EsignController extends BaseController {
     @Value("${esign.redirect-url}") private String redirectUrl;
     @Autowired private EsignService esignService;
     @Autowired private HzContractMapper contractMapper;
-    @Autowired private IHzTenantService tenantService;
+    @Autowired private HzUserMapper userMapper;
 
     // ==================== 实名认证 ====================
 
@@ -32,15 +32,15 @@ public class EsignController extends BaseController {
     @GetMapping("/auth-url/{userId}")
     public AjaxResult getAuthUrl(@PathVariable Long userId,
                                  @RequestParam(required = false) String redirectUrl) {
-        HzTenant tenant = tenantService.selectTenantByUserId(userId);
-        if (tenant == null) return error("租户信息不存在，请先完善个人信息");
-        if (tenant.getEsignPsnId() != null && !tenant.getEsignPsnId().isEmpty()) {
+        HzUser user = userMapper.selectById(userId);
+        if (user == null) return error("用户信息不存在，请先完善个人信息");
+        if (user.getEsignPsnId() != null && !user.getEsignPsnId().isEmpty()) {
             Map<String, Object> r = new HashMap<>();
             r.put("needAuth", false);
             return success(r);
         }
         String callbackUrl = redirectUrl != null ? redirectUrl : this.redirectUrl;
-        String authUrl = esignService.getPsnAuthUrl(tenant.getTenantId(), tenant.getPhone(), callbackUrl);
+        String authUrl = esignService.getPsnAuthUrl(user.getUserId(), user.getPhone(), callbackUrl);
         Map<String, Object> r = new HashMap<>();
         r.put("needAuth", true);
         r.put("authUrl", authUrl);
@@ -52,15 +52,15 @@ public class EsignController extends BaseController {
      */
     @GetMapping("/auth-status/{userId}")
     public AjaxResult getAuthStatus(@PathVariable Long userId) {
-        HzTenant tenant = tenantService.selectTenantByUserId(userId);
-        if (tenant == null) return error("租户信息不存在");
-        if (tenant.getEsignPsnId() != null && !tenant.getEsignPsnId().isEmpty()) {
+        HzUser user = userMapper.selectById(userId);
+        if (user == null) return error("用户信息不存在");
+        if (user.getEsignPsnId() != null && !user.getEsignPsnId().isEmpty()) {
             Map<String, Object> r = new HashMap<>();
             r.put("authenticated", true);
-            r.put("psnId", tenant.getEsignPsnId());
+            r.put("psnId", user.getEsignPsnId());
             return success(r);
         }
-        String psnId = esignService.queryAndSavePsnId(tenant.getTenantId(), tenant.getPhone());
+        String psnId = esignService.queryAndSavePsnId(user.getUserId(), user.getPhone());
         Map<String, Object> r = new HashMap<>();
         r.put("authenticated", psnId != null);
         r.put("psnId", psnId);
@@ -72,11 +72,6 @@ public class EsignController extends BaseController {
     /**
      * 一体化签署接口：模板填充→创建签署流→返回签署URL
      * POST /h5/esign/init-sign
-     *
-     * 请求体：{ "contractId": 123, "userId": 456 }
-     * 响应：
-     *   需认证 → { "code": 200, "data": { "needAuth": true, "authUrl": "https://..." } }
-     *   签署链接 → { "code": 200, "data": { "needAuth": false, "signUrl": "https://..." } }
      */
     @PostMapping("/init-sign")
     public AjaxResult initSign(@RequestBody Map<String, Long> params) {
@@ -84,14 +79,14 @@ public class EsignController extends BaseController {
         Long userId = params.get("userId");
         if (contractId == null || userId == null) return error("参数不完整");
 
-        HzTenant tenant = tenantService.selectTenantByUserId(userId);
-        if (tenant == null) return error("租户信息不存在");
+        HzUser user = userMapper.selectById(userId);
+        if (user == null) return error("用户信息不存在");
 
         // 1. 检查实名认证
-        String psnId = tenant.getEsignPsnId();
+        String psnId = user.getEsignPsnId();
         if (psnId == null || psnId.isEmpty()) {
             // 未认证 → 返回认证链接
-            String authUrl = esignService.getPsnAuthUrl(tenant.getTenantId(), tenant.getPhone(), redirectUrl);
+            String authUrl = esignService.getPsnAuthUrl(user.getUserId(), user.getPhone(), redirectUrl);
             Map<String, Object> r = new HashMap<>();
             r.put("needAuth", true);
             r.put("authUrl", authUrl);
@@ -112,7 +107,7 @@ public class EsignController extends BaseController {
     }
 
     /**
-     * 获取合同签署URL（兼容旧入口，内部改为调用模板模式）
+     * 获取合同签署URL（兼容旧入口）
      */
     @GetMapping("/sign-url/{contractId}")
     public AjaxResult getSignUrl(@PathVariable Long contractId, @RequestParam Long userId) {
@@ -120,22 +115,20 @@ public class EsignController extends BaseController {
         if (contract == null) return error("合同不存在");
         if ("2".equals(contract.getContractStatus())) return error("合同已签署");
 
-        HzTenant tenant = tenantService.selectTenantByUserId(userId);
-        if (tenant == null) return error("租户信息不存在");
+        HzUser user = userMapper.selectById(userId);
+        if (user == null) return error("用户信息不存在");
 
-        String psnId = tenant.getEsignPsnId();
+        String psnId = user.getEsignPsnId();
         if (psnId == null || psnId.isEmpty()) return error("请先完成实名认证");
 
         try {
-            // 如果已有签署流，直接获取签署链接
             String signFlowId = contract.getEsignFlowId();
             if (signFlowId != null && !signFlowId.isEmpty()) {
-                String signUrl = esignService.getSignUrl(signFlowId, tenant.getPhone(), redirectUrl);
+                String signUrl = esignService.getSignUrl(signFlowId, user.getPhone(), redirectUrl);
                 Map<String, String> r = new HashMap<>();
                 r.put("signUrl", signUrl);
                 return success(r);
             }
-            // 否则走一体化流程
             String signUrl = esignService.initSign(contractId, psnId);
             Map<String, String> r = new HashMap<>();
             r.put("signUrl", signUrl);
@@ -149,8 +142,7 @@ public class EsignController extends BaseController {
     // ==================== 回调 ====================
 
     /**
-     * e签宝回调通知（签署完成等事件）
-     * 此接口由e签宝服务器调用，无需JWT认证
+     * e签宝回调通知
      */
     @PostMapping("/notify")
     public ResponseEntity<Map<String, Object>> esignNotify(HttpServletRequest request, @RequestBody String body) {
@@ -173,9 +165,6 @@ public class EsignController extends BaseController {
 
     // ==================== 调试接口 ====================
 
-    /**
-     * 查询模板详情（调试用）
-     */
     @GetMapping("/template-detail")
     public AjaxResult queryTemplateDetail() {
         try {
