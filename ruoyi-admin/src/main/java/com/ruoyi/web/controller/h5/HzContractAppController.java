@@ -354,21 +354,7 @@ public class HzContractAppController extends BaseController {
             int result = contractService.insertContract(contract);
 
             if (result > 0) {
-                // 7. 生成账单（押金 + 租金）
-                try {
-                    generateBills(contract);
-                } catch (Exception billEx) {
-                    logger.error("生成账单失败", billEx);
-                    // 账单生成失败不影响合同保存，只记录日志
-                }
-
-                // 8. 生成入驻记录
-                try {
-                    generateCheckInRecord(contract, house, project, tenant);
-                } catch (Exception checkInEx) {
-                    logger.error("生成入驻记录失败", checkInEx);
-                    // 入驻记录生成失败不影响合同保存，只记录日志
-                }
+                // 注意：账单和入驻记录已迁移到 e签宝签署回调中生成（EsignServiceImpl.handleSignCallback）
 
                 Map<String, Object> data = new HashMap<>();
                 data.put("contractId", contract.getContractId());

@@ -217,8 +217,8 @@ public class EsignServiceImpl implements EsignService {
 
     // ==================== 旧方法（保留兼容）====================
 
-    @Override
-    public String uploadContractPdf(byte[] pdfBytes, String fileName) throws Exception {
+    @SuppressWarnings("unused")
+    private String uploadContractPdf(byte[] pdfBytes, String fileName) throws Exception {
         EsignFileBean fileBean = new EsignFileBean(pdfBytes, fileName);
         String getUrlParm = "{\"contentMd5\":\"" + fileBean.getFileContentMD5() + "\",\"fileName\":\"" + fileName
                 + "\",\"fileSize\":" + fileBean.getFileSize() + ",\"convertToPDF\":false,\"contentType\":\"application/octet-stream\"}";
@@ -236,9 +236,9 @@ public class EsignServiceImpl implements EsignService {
         throw new RuntimeException("e签宝文件长时间未就绪，fileId=" + fileId);
     }
 
-    @Override
+    @SuppressWarnings("unused")
     @Transactional
-    public String createSignFlow(Long contractId, String psnId, String fileId) throws Exception {
+    private String createSignFlow(Long contractId, String psnId, String fileId) throws Exception {
         HzContract contract = contractMapper.selectById(contractId);
         if (contract == null) throw new RuntimeException("合同不存在: " + contractId);
         String jsonParm = "{\"docs\":[{\"fileId\":\"" + fileId + "\",\"fileName\":\"港好住租赁合同.pdf\"}],"
