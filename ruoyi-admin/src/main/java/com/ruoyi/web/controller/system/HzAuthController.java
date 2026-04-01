@@ -65,6 +65,8 @@ public class HzAuthController extends BaseController {
             userInfo.put("userId", user.getUserId());
             userInfo.put("phone", user.getPhone());
             userInfo.put("nickname", user.getNickname());
+            userInfo.put("realName", user.getRealName());
+            userInfo.put("idCard", user.getIdCard());
             userInfo.put("loginType", user.getLoginType());
             userInfo.put("isInfoCompleted", user.getIsInfoCompleted());
 
@@ -123,6 +125,8 @@ public class HzAuthController extends BaseController {
             userInfo.put("userId", user.getUserId());
             userInfo.put("phone", user.getPhone());
             userInfo.put("nickname", user.getNickname());
+            userInfo.put("realName", user.getRealName());
+            userInfo.put("idCard", user.getIdCard());
             userInfo.put("loginType", user.getLoginType());
             userInfo.put("isInfoCompleted", user.getIsInfoCompleted());
             if (user.getRealName() != null) {
