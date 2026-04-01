@@ -188,15 +188,17 @@ wechat:
 
 # e签宝配置
 esign:
-  app-id: "your_esign_app_id"
-  app-secret: "your_esign_app_secret"
+  app-id: "7439105666"
+  app-secret: "eed1af15e2f693c248077c7f91a23079"
   # 沙箱环境（联调使用）
   host: "https://smlopenapi.esign.cn"
   # 生产环境（上线时切换）
   # host: "https://openapi.esign.cn"
   # 签署完成后回调地址（公网可访问）
-  notify-url: "https://your-domain.com/h5/esign/notify"
+  notify-url: "https://toshiko-unpeaceful-dania.ngrok-free.dev/h5/esign/notify"
   # 签署后跳回的页面（H5端）
-  redirect-url: "https://your-domain.com/pages/contract/signResult"
+  redirect-url: "https://toshiko-unpeaceful-dania.ngrok-free.dev/pages/contract/sign"
   # 平台企业（甲方）在 e签宝 的 orgId
-  org-id: "your_org_id"
+  org-id: "eeffbc60d8bd4c03a68126a32da9cd4e"
+  # 文档模板 ID（在 e签宝 SaaS 后台配置）
+  template-id: "a7e3e9e70d3543b3b221ec0770ed3666"
