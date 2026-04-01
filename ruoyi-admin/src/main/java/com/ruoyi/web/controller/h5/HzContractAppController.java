@@ -219,7 +219,6 @@ public class HzContractAppController extends BaseController {
             Long projectId = Long.parseLong(params.get("projectId").toString());
             Long templateId = Long.parseLong(params.get("templateId").toString());
             String contractContent = params.get("contractContent").toString();
-            String tenantSignatureBase64 = params.get("tenantSignature").toString();
             String endDate = params.get("endDate").toString();
             Integer rentMonths = Integer.parseInt(params.get("rentMonths").toString());
 
@@ -227,24 +226,17 @@ public class HzContractAppController extends BaseController {
             LocalDate startDateLocal = LocalDate.now().plusDays(3);
             String startDate = startDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
-            // 1. 处理签名图片 - 将 base64 转为图片并上传
+            // 1. 处理签名图片（e签宝模式下不再需要手写签名，签名由e签宝完成）
             String signatureUrl = "";
-            if (tenantSignatureBase64 != null && tenantSignatureBase64.startsWith("data:image")) {
+            String tenantSignatureBase64 = params.get("tenantSignature") != null
+                ? params.get("tenantSignature").toString() : "";
+            if (!tenantSignatureBase64.isEmpty() && tenantSignatureBase64.startsWith("data:image")) {
                 try {
-                    // 移除 data:image/png;base64, 前缀
                     String base64Data = tenantSignatureBase64.substring(tenantSignatureBase64.indexOf(",") + 1);
                     byte[] imageBytes = Base64.getDecoder().decode(base64Data);
-
-                    // 生成文件名
                     String fileName = DateUtils.datePath() + "/" + com.ruoyi.common.utils.uuid.IdUtils.fastSimpleUUID() + ".png";
-
-                    // 获取绝对路径
                     java.io.File file = FileUploadUtils.getAbsoluteFile(RuoYiConfig.getUploadPath(), fileName);
-
-                    // 写入文件
                     java.nio.file.Files.write(file.toPath(), imageBytes);
-
-                    // 返回相对路径
                     signatureUrl = FileUploadUtils.getPathFileName(RuoYiConfig.getUploadPath(), fileName);
                 } catch (Exception e) {
                     logger.error("上传签名图片失败", e);
@@ -252,9 +244,12 @@ public class HzContractAppController extends BaseController {
                 }
             }
 
-            // 2. 将签名图片插入到合同内容中（在乙方签字处）
-            String finalContract = contractContent.replace("乙方（签字）：______________",
-                "乙方（签字）：<img src='" + signatureUrl + "' style='height:60px;vertical-align:middle;'/>");
+            // 2. 将签名图片插入到合同内容中（仅在旧模式下有手写签名时执行）
+            String finalContract = contractContent;
+            if (!signatureUrl.isEmpty()) {
+                finalContract = contractContent.replace("乙方（签字）：______________",
+                    "乙方（签字）：<img src='" + signatureUrl + "' style='height:60px;vertical-align:middle;'/>");
+            }
 
             // 3. 获取房源和项目信息
             HzHouse house = houseMapper.selectById(houseId);
@@ -345,9 +340,8 @@ public class HzContractAppController extends BaseController {
             contract.setPaymentCycle(paymentCycleCode);
 
             contract.setContractContent(finalContract);
-            contract.setTenantSignature(signatureUrl);
-            contract.setSignTime(DateUtils.getTime());
-            contract.setContractStatus("0"); // 草稿(待审核)
+            contract.setTenantSignature(signatureUrl.isEmpty() ? null : signatureUrl);
+            contract.setContractStatus("0"); // 草稿(待e签宝签署)
             contract.setDelFlag("0");
 
             // 6. 保存合同
