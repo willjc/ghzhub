@@ -79,7 +79,61 @@ public class HzContractAppController extends BaseController {
         // 查询该用户的所有合同（关联项目、楼栋、单元信息）
         List<Map<String, Object>> contracts = contractMapper.selectContractVOByUserId(userId);
 
+        // 补充押金支付状态和资料提交状态
+        for (Map<String, Object> contract : contracts) {
+            Object contractIdObj = contract.get("contract_id");
+            if (contractIdObj != null) {
+                Long contractId = Long.parseLong(contractIdObj.toString());
+                // 查询押金账单状态
+                HzBill depositBill = billMapper.selectOne(new LambdaQueryWrapper<HzBill>()
+                        .eq(HzBill::getContractId, contractId)
+                        .eq(HzBill::getBillType, "1")
+                        .last("LIMIT 1"));
+                contract.put("deposit_paid", depositBill != null && "1".equals(depositBill.getBillStatus()) ? "1" : "0");
+            }
+            // 资料状态默认未提交（后续对接资料上传模块时补充）
+            contract.put("material_status", "0");
+        }
         return success(contracts);
+    }
+
+    /**
+     * 获取合同详情
+     */
+    @GetMapping("/detail/{contractId}")
+    public AjaxResult getContractDetail(@PathVariable Long contractId) {
+        HzContract contract = contractMapper.selectById(contractId);
+        if (contract == null) return error("合同不存在");
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("contractId", contract.getContractId());
+        data.put("contractNo", contract.getContractNo());
+        data.put("contractStatus", contract.getContractStatus());
+        data.put("projectId", contract.getProjectId());
+        data.put("houseId", contract.getHouseId());
+        data.put("houseCode", contract.getHouseCode());
+        data.put("houseAddress", contract.getHouseAddress());
+        data.put("rentPrice", contract.getRentPrice());
+        data.put("deposit", contract.getDeposit());
+        data.put("startDate", contract.getStartDate());
+        data.put("endDate", contract.getEndDate());
+        data.put("rentMonths", contract.getRentMonths());
+        data.put("signedFileUrl", contract.getContractContent());
+        data.put("esignFlowId", contract.getEsignFlowId());
+
+        // 押金账单
+        HzBill depositBill = billMapper.selectOne(new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, contractId)
+                .eq(HzBill::getBillType, "1")
+                .last("LIMIT 1"));
+        data.put("depositPaid", depositBill != null && "1".equals(depositBill.getBillStatus()));
+        if (depositBill != null) {
+            data.put("depositBillId", depositBill.getBillId());
+            data.put("depositAmount", depositBill.getUnpaidAmount() != null ? depositBill.getUnpaidAmount() : depositBill.getBillAmount());
+        }
+        data.put("materialStatus", "0");
+
+        return success(data);
     }
 
     /**
@@ -412,6 +466,7 @@ public class HzContractAppController extends BaseController {
             String signatureUrl = "";
             String tenantSignatureBase64 = params.get("tenantSignature") != null
                 ? params.get("tenantSignature").toString() : "";
+            if (!tenantSignatureBase64.isEmpty() && tenantSignatureBase64.startsWith("data:image")) {
                 try {
                     String base64Data = tenantSignatureBase64.substring(tenantSignatureBase64.indexOf(",") + 1);
                     byte[] imageBytes = Base64.getDecoder().decode(base64Data);
