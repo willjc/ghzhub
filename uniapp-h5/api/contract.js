@@ -38,3 +38,29 @@ export function signContract(data) {
 export function renewContract(data) {
   return request.post('/h5/app/contract/renew', data)
 }
+
+/**
+ * 获取合同的押金账单
+ * @param {Number} contractId 合同ID
+ */
+export function getDepositBill(contractId) {
+  return request.get(`/h5/app/bill/deposit/${contractId}`)
+}
+
+/**
+ * 支付押金
+ * @param {Object} data 支付数据
+ * @param {Number} data.billId 账单ID
+ * @param {Number} data.payAmount 支付金额
+ */
+export function payDeposit(data) {
+  return request.post('/h5/app/bill/pay', data)
+}
+
+/**
+ * 获取合同详情
+ * @param {Number} contractId 合同ID
+ */
+export function getContractDetail(contractId) {
+  return request.get(`/h5/app/contract/detail/${contractId}`)
+}
