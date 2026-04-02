@@ -70,12 +70,33 @@ public class EsignServiceImpl implements EsignService {
         if (user != null && user.getEsignPsnId() != null && !user.getEsignPsnId().isEmpty()) return null;
         String jsonParm = "{\"psnAuthConfig\":{\"psnAccount\":\"" + mobile + "\",\"psnAuthPageConfig\":{\"psnEditableFields\":[\"name\",\"IDCardNum\",\"mobile\"]}},"
                 + "\"clientType\":\"ALL\",\"redirectConfig\":{\"redirectDelayTime\":\"3\",\"redirectUrl\":\"" + redirectUrl + "\"},"
-                + "\"authorizeConfig\":{\"authorizedScopes\":[\"get_psn_identity_info\",\"psn_initiate_sign\",\"manage_psn_resource\"]},"
                 + "\"repeatableAuth\":true}";
         try {
             EsignHttpResponse resp = callApi("POST", "/v3/psn-auth-url", jsonParm);
-            return gson.fromJson(resp.getBody(), JsonObject.class).getAsJsonObject("data").get("authUrl").getAsString();
-        } catch (Exception e) { throw new RuntimeException("获取 e签宝 认证链接失败", e); }
+            JsonObject root = gson.fromJson(resp.getBody(), JsonObject.class);
+            int code = root.has("code") ? root.get("code").getAsInt() : -1;
+            if (code == 1450005) {
+                // 个人用户已实名，查询并保存psnId
+                log.info("e签宝提示已实名，查询psnId并保存, mobile={}", mobile);
+                String psnId = queryAndSavePsnId(userId, mobile);
+                if (psnId != null) return null; // 已保存psnId，无需认证
+                throw new RuntimeException("已实名但查询psnId失败");
+            }
+            if (code != 0) {
+                String msg = root.has("message") ? root.get("message").getAsString() : "未知错误";
+                log.error("e签宝获取认证链接失败: code={}, message={}, body={}", code, msg, resp.getBody());
+                throw new RuntimeException("e签宝返回错误(" + code + "): " + msg);
+            }
+            JsonObject data = root.getAsJsonObject("data");
+            if (data == null || data.isJsonNull()) {
+                log.error("e签宝获取认证链接data为空: body={}", resp.getBody());
+                throw new RuntimeException("e签宝返回数据为空");
+            }
+            return data.get("authUrl").getAsString();
+        } catch (Exception e) {
+            log.error("获取e签宝认证链接失败, mobile={}, error={}", mobile, e.getMessage(), e);
+            throw new RuntimeException("获取 e签宝 认证链接失败: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -83,12 +104,19 @@ public class EsignServiceImpl implements EsignService {
         try {
             EsignHttpResponse resp = callApi("GET", "/v3/persons/identity-info?psnAccount=" + mobile, null);
             JsonObject data = gson.fromJson(resp.getBody(), JsonObject.class).getAsJsonObject("data");
-            if (!"2".equals(data.get("realnameStatus").getAsString())) return null;
-            String psnId = data.get("psnId").getAsString();
+            // realnameStatus: 0=未实名, 1=已实名(可能信息不全), 2=已实名
+            String psnId = (data.has("psnId") && !data.get("psnId").isJsonNull()) ? data.get("psnId").getAsString() : null;
+            if (psnId == null || psnId.isEmpty()) {
+                log.warn("e签宝查询psnId为空, mobile={}, realnameStatus={}", mobile, data.get("realnameStatus"));
+                return null;
+            }
             userMapper.update(null, new LambdaUpdateWrapper<HzUser>().eq(HzUser::getUserId, userId).set(HzUser::getEsignPsnId, psnId));
             log.info("e签宝个人认证完成，userId={}, psnId={}", userId, psnId);
             return psnId;
-        } catch (Exception e) { throw new RuntimeException("查询 e签宝 认证状态失败", e); }
+        } catch (Exception e) {
+            log.error("查询e签宝认证状态失败, userId={}, error={}", userId, e.getMessage(), e);
+            throw new RuntimeException("查询 e签宝 认证状态失败: " + e.getMessage(), e);
+        }
     }
 
     // ==================== 模板模式 ====================
@@ -184,7 +212,15 @@ public class EsignServiceImpl implements EsignService {
                 .set(HzContract::getContractStatus, "1")); // 1=待签署
         log.info("签署流创建成功，contractId={}, signFlowId={}", contractId, signFlowId);
 
-        // 4. 获取签署链接
+        // 4. 启动签署流（将状态从"草稿"变为"签署中"，签署人才能签署）
+        EsignHttpResponse startResp = callApi("POST", "/v3/sign-flow/" + signFlowId + "/start", "");
+        JsonObject startRoot = gson.fromJson(startResp.getBody(), JsonObject.class);
+        if (startRoot.get("code").getAsInt() != 0) {
+            throw new RuntimeException("启动签署流失败: " + startRoot.get("message").getAsString());
+        }
+        log.info("签署流已启动，signFlowId={}", signFlowId);
+
+        // 5. 获取签署链接
         HzUser signUser = userMapper.selectById(contract.getTenantId());
         String mobile = signUser != null ? signUser.getPhone() : "";
         return getSignUrl(signFlowId, mobile, redirectUrl);
@@ -264,9 +300,11 @@ public class EsignServiceImpl implements EsignService {
 
     @Override
     public String getSignUrl(String signFlowId, String mobile, String redirectUrl) throws Exception {
-        String jsonParm = "{\"clientType\":\"ALL\",\"needLogin\":true,\"operator\":{\"psnAccount\":\"" + mobile + "\"},"
-                + "\"redirectUrl\":\"" + redirectUrl + "\",\"urlType\":1}";
+        String jsonParm = "{\"clientType\":\"ALL\",\"needLogin\":false,\"operator\":{\"psnAccount\":\"" + mobile + "\"},"
+                + "\"redirectConfig\":{\"redirectUrl\":\"" + redirectUrl + "\"},\"urlType\":2}";
+        log.info("获取签署链接: signFlowId={}, mobile={}, request={}", signFlowId, mobile, jsonParm);
         EsignHttpResponse resp = callApi("POST", "/v3/sign-flow/" + signFlowId + "/sign-url", jsonParm);
+        log.info("获取签署链接响应: {}", resp.getBody());
         return gson.fromJson(resp.getBody(), JsonObject.class).getAsJsonObject("data").get("url").getAsString();
     }
 
@@ -275,14 +313,27 @@ public class EsignServiceImpl implements EsignService {
     @Override
     @Transactional
     public void handleSignCallback(String timestamp, String requestQuery, String body, String signature) throws Exception {
-        if (!EsignEncryption.callBackCheck(timestamp, requestQuery, body, appSecret, signature))
+        // 验签
+        boolean verified = EsignEncryption.callBackCheck(timestamp, requestQuery, body, appSecret, signature);
+        if (!verified) {
+            log.error("e签宝回调验签失败");
             throw new RuntimeException("e签宝回调验签失败");
+        }
         JsonObject nb = gson.fromJson(body, JsonObject.class);
         String action = nb.get("action").getAsString();
-        String flowId = nb.get("flowId").getAsString();
+        // e签宝V3回调使用signFlowId字段
+        String flowId = nb.has("signFlowId") ? nb.get("signFlowId").getAsString() : nb.get("flowId").getAsString();
         int signResult = nb.has("signResult") ? nb.get("signResult").getAsInt() : -1;
-        log.info("e签宝回调 action={} flowId={} signResult={}", action, flowId, signResult);
-        if (!"SIGN_FLOW_UPDATE".equals(action) || signResult != 2) return;
+        int signOrder = nb.has("signOrder") ? nb.get("signOrder").getAsInt() : 0;
+        log.info("e签宝回调 action={} flowId={} signResult={} signOrder={}", action, flowId, signResult, signOrder);
+        // 只处理签署完成回调，且必须是个人签署完成（signOrder=2）或整个流程完成
+        // signOrder=1 是企业自动盖章，不应触发账单生成
+        if (!"SIGN_MISSON_COMPLETE".equals(action) && !"SIGN_FLOW_UPDATE".equals(action)) return;
+        if (signResult != 2) return;
+        if (signOrder == 1) {
+            log.info("企业自动盖章完成（signOrder=1），等待个人签署，flowId={}", flowId);
+            return;
+        }
 
         HzContract contract = contractMapper.selectOne(new LambdaQueryWrapper<HzContract>().eq(HzContract::getEsignFlowId, flowId).last("LIMIT 1"));
         if (contract == null) { log.warn("e签宝回调未找到对应合同 flowId={}", flowId); return; }
@@ -293,23 +344,31 @@ public class EsignServiceImpl implements EsignService {
                 .eq(HzContract::getContractId, contract.getContractId())
                 .set(HzContract::getContractStatus, "2")); // 2=已签署
 
-        // 2. 生成账单（押金 + 租金）
+        // 2. 获取已签合同PDF下载链接
         try {
-            generateBills(contract);
-            log.info("签署回调：账单生成成功，contractId={}", contract.getContractId());
+            EsignHttpResponse fileResp = callApi("GET",
+                    "/v3/sign-flow/" + flowId + "/file-download-url", "");
+            JsonObject fileRoot = gson.fromJson(fileResp.getBody(), JsonObject.class);
+            if (fileRoot.get("code").getAsInt() == 0) {
+                String fileUrl = fileRoot.getAsJsonObject("data").get("fileDownloadUrl").getAsString();
+                contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                        .eq(HzContract::getContractId, contract.getContractId())
+                        .set(HzContract::getContractContent, fileUrl));
+                log.info("已签合同PDF下载链接已保存，contractId={}", contract.getContractId());
+            }
         } catch (Exception e) {
-            log.error("签署回调：生成账单失败，contractId={}", contract.getContractId(), e);
+            log.warn("获取已签合同PDF链接失败，不影响主流程：{}", e.getMessage());
         }
 
-        // 3. 生成入住记录
-        try {
-            generateCheckInRecord(contract);
-            log.info("签署回调：入住记录生成成功，contractId={}", contract.getContractId());
-        } catch (Exception e) {
-            log.error("签署回调：生成入住记录失败，contractId={}", contract.getContractId(), e);
-        }
+        // 3. 生成账单（押金 + 租金）— 失败则整个事务回滚
+        generateBills(contract);
+        log.info("签署回调：账单生成成功，contractId={}", contract.getContractId());
 
-        // 4. 推进预订单状态
+        // 4. 生成入住记录
+        generateCheckInRecord(contract);
+        log.info("签署回调：入住记录生成成功，contractId={}", contract.getContractId());
+
+        // 5. 推进预订单状态
         HzHouseOrder order = orderMapper.selectOne(new LambdaQueryWrapper<HzHouseOrder>()
                 .eq(HzHouseOrder::getContractId, contract.getContractId()).last("LIMIT 1"));
         if (order != null && "0".equals(order.getOrderStatus())) {
@@ -431,7 +490,10 @@ public class EsignServiceImpl implements EsignService {
     // ==================== 内部工具 ====================
 
     private EsignHttpResponse callApi(String method, String apiAddr, String jsonParm) throws EsignDemoException {
+        log.info("e签宝API调用: {} {} host={}", method, apiAddr, host);
         Map<String, String> header = EsignHttpHelper.signAndBuildSignAndJsonHeader(appId, appSecret, jsonParm, method, apiAddr, false);
-        return EsignHttpHelper.doCommHttp(host, apiAddr, EsignRequestType.valueOf(method.toUpperCase()), jsonParm, header, false);
+        EsignHttpResponse resp = EsignHttpHelper.doCommHttp(host, apiAddr, EsignRequestType.valueOf(method.toUpperCase()), jsonParm, header, false);
+        log.info("e签宝API响应: {} {} status={} body={}", method, apiAddr, resp.getStatus(), resp.getBody());
+        return resp;
     }
 }
