@@ -62,22 +62,52 @@
 					<text class="info-value">{{ item.deposit }}</text>
 				</view>
 
-				<!-- 待签署状态 - 显示去签署按钮 -->
-				<view class="button-group" v-if="item.status === 'pending'">
-					<view class="btn btn-sign" @click="goSign(item)">
-						<text class="btn-text-white">去签署</text>
+					<!-- 三步状态指示器 - 仅合约中显示 -->
+					<view class="steps-bar" v-if="item.status === 'signed'">
+						<view class="step-item done">
+							<view class="step-dot">✓</view>
+							<text class="step-label">合同已签</text>
+						</view>
+						<view class="step-line" :class="{ active: item.depositPaid }"></view>
+						<view class="step-item" :class="{ done: item.depositPaid }">
+							<view class="step-dot">{{ item.depositPaid ? '✓' : '2' }}</view>
+							<text class="step-label">押金已付</text>
+						</view>
+						<view class="step-line" :class="{ active: item.materialSubmitted }"></view>
+						<view class="step-item" :class="{ done: item.materialSubmitted }">
+							<view class="step-dot">{{ item.materialSubmitted ? '✓' : '3' }}</view>
+							<text class="step-label">资料已提交</text>
+						</view>
 					</view>
-				</view>
 
-				<!-- 按钮区域 - 合约中 -->
-				<view class="button-group" v-if="item.status === 'signed'">
-					<view class="btn btn-renew" @click="handleRenew(item)">
-						<text class="btn-text-blue">续租</text>
+					<!-- 操作按钮区域 -->
+					<!-- 待签署 -->
+					<view class="button-group" v-if="item.status === 'pending'">
+						<view class="btn btn-sign" @click="goSign(item)">
+							<text class="btn-text-white">去签署</text>
+						</view>
 					</view>
-					<view class="btn btn-pay" @click="handlePay(item)">
-						<text class="btn-text-white">租金缴纳</text>
+					<!-- 已签署但未付押金 -->
+					<view class="button-group" v-else-if="item.status === 'signed' && !item.depositPaid">
+						<view class="btn btn-pay" @click="handlePayDeposit(item)">
+							<text class="btn-text-white">支付押金 ¥{{ item.depositAmount }}</text>
+						</view>
 					</view>
-				</view>
+					<!-- 已付押金但未提交资料 -->
+					<view class="button-group" v-else-if="item.status === 'signed' && item.depositPaid && !item.materialSubmitted">
+						<view class="btn btn-pay" @click="handleSubmitMaterial(item)">
+							<text class="btn-text-white">提交资料</text>
+						</view>
+					</view>
+					<!-- 全部完成 -->
+					<view class="button-group" v-else-if="item.status === 'signed' && item.materialSubmitted">
+						<view class="btn btn-renew" @click="handleRenew(item)">
+							<text class="btn-text-blue">续租</text>
+						</view>
+						<view class="btn btn-pay" @click="handlePay(item)">
+							<text class="btn-text-white">租金缴纳</text>
+						</view>
+					</view>
 			</view>
 			
 			<!-- 空状态 -->
@@ -89,7 +119,7 @@
 </template>
 
 <script>
-	import { getMyContracts } from '@/api/contract.js'
+	import { getMyContracts, getDepositBill, payDeposit } from '@/api/contract.js'
 	import authCheck from '@/mixins/authCheck'
 
 	export default {
@@ -184,6 +214,53 @@
 					url: `/pages/affairs/bill?type=${this.housingType}`
 				})
 			},
+
+			// 支付押金
+			async handlePayDeposit(item) {
+				try {
+					uni.showLoading({ title: '加载中...' })
+					const billRes = await getDepositBill(item.contractId)
+					uni.hideLoading()
+					if (billRes.code === 200 && billRes.data) {
+						const bill = billRes.data
+						if (bill.billStatus === '1') {
+							uni.showToast({ title: '押金已支付', icon: 'success' })
+							this.loadContractList()
+							return
+						}
+						uni.showLoading({ title: '发起支付...' })
+						const payRes = await payDeposit({
+							billId: bill.billId,
+							payAmount: bill.unpaidAmount || bill.billAmount
+						})
+						uni.hideLoading()
+						if (payRes.code === 200) {
+							if (payRes.data && (payRes.data.mwebUrl || payRes.data.h5Url)) {
+								// #ifdef H5
+								window.location.href = payRes.data.mwebUrl || payRes.data.h5Url
+								// #endif
+							} else {
+								uni.showToast({ title: '支付发起成功', icon: 'success' })
+								setTimeout(() => this.loadContractList(), 2000)
+							}
+						} else {
+							uni.showToast({ title: payRes.msg || '支付失败', icon: 'none' })
+						}
+					} else {
+						uni.showToast({ title: billRes.msg || '未找到押金账单', icon: 'none' })
+					}
+				} catch (e) {
+					uni.hideLoading()
+					uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+				}
+			},
+
+			// 提交资料
+			handleSubmitMaterial(item) {
+				uni.navigateTo({
+					url: `/pages/upload/index?contractId=${item.contractId}`
+				})
+			},
 			
 			// 加载合同列表
 			async loadContractList() {
@@ -232,7 +309,11 @@
 					rent: `${item.rent_price}元/月`,
 					deposit: `${item.deposit}元`,
 					countdown: '',  // 待签约状态的倒计时暂时留空
-					end_date: item.end_date  // 保留原始日期，用于筛选当前/历史合同
+					end_date: item.end_date,  // 保留原始日期，用于筛选当前/历史合同
+						signed: ['2', '3', '4'].includes(item.contract_status),
+						depositPaid: item.deposit_paid === '1',
+						depositAmount: item.deposit || '0',
+						materialSubmitted: item.material_status === '1',
 				}
 			},
 
@@ -511,6 +592,63 @@
 	.empty-text {
 		color: #999999;
 		font-size: 28rpx;
+	}
+
+	/* 三步状态指示器 */
+	.steps-bar {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 24rpx 0 16rpx;
+		margin-top: 20rpx;
+		border-top: 1rpx solid #f0f0f0;
+	}
+
+	.step-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8rpx;
+	}
+
+	.step-dot {
+		width: 48rpx;
+		height: 48rpx;
+		border-radius: 50%;
+		background: #e0e0e0;
+		color: #999;
+		font-size: 24rpx;
+		font-weight: 600;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.step-item.done .step-dot {
+		background: #12a566;
+		color: #fff;
+	}
+
+	.step-label {
+		font-size: 22rpx;
+		color: #999;
+		font-family: "PingFang SC", sans-serif;
+	}
+
+	.step-item.done .step-label {
+		color: #12a566;
+	}
+
+	.step-line {
+		flex: 1;
+		height: 4rpx;
+		background: #e0e0e0;
+		margin: 0 16rpx;
+		margin-bottom: 28rpx;
+	}
+
+	.step-line.active {
+		background: #12a566;
 	}
 </style>
 
