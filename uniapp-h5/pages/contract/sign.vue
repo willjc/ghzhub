@@ -115,6 +115,7 @@
       </view>
       <view class="step-title">等待签署完成</view>
       <view class="step-desc">正在检测签署状态，请稍候...</view>
+      <button class="btn-primary" @click="manualCheckStatus">手动刷新状态</button>
       <button class="btn-secondary" @click="goBack">返回合同列表</button>
     </view>
 
@@ -124,8 +125,11 @@
         <text>&#x2713;</text>
       </view>
       <view class="step-title">签署完成</view>
-      <view class="step-desc">合同已签署成功</view>
-      <button class="btn-primary" @click="goBack">返回合同列表</button>
+      <view class="step-desc">合同已签署成功，正在跳转至押金缴费...</view>
+      <view class="done-actions">
+        <button class="btn-primary" @click="goToBill">立即缴纳押金</button>
+        <button class="btn-secondary" @click="goBack">返回合同列表</button>
+      </view>
     </view>
 
     <!-- 错误 -->
@@ -195,6 +199,23 @@ export default {
     this.projectId = options.projectId ? parseInt(options.projectId) : null
     this.contractId = options.contractId ? parseInt(options.contractId) : null
     this.rentMonths = options.rentMonths ? parseInt(options.rentMonths) : 12
+
+    // 检测是否从e签宝跳回（H5环境）
+    // #ifdef H5
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('esign_done') === '1') {
+      // 清除URL参数
+      window.history.replaceState({}, '', window.location.pathname + window.location.hash)
+      const savedContractId = uni.getStorageSync('esign_contractId')
+      if (savedContractId) {
+        this.contractId = parseInt(savedContractId)
+        this.loading = false
+        this.step = 'esign_waiting'
+        this.startPolling()
+        return
+      }
+    }
+    // #endif
 
     if (!this.roomId || !this.projectId) {
       this.step = 'error'
@@ -266,6 +287,8 @@ export default {
           })
           if (saveRes.code !== 200) throw new Error(saveRes.msg || '保存合同失败')
           this.contractId = saveRes.data.contractId
+          uni.setStorageSync('esign_contractId', this.contractId)
+          uni.setStorageSync('esign_userId', this.userId)
         }
 
         // 2. 调用 initSign 一体化接口
@@ -335,7 +358,7 @@ export default {
       if (!this.signUrl) return
       this.step = 'esign_waiting'
       // #ifdef H5
-      window.open(this.signUrl, '_blank')
+      window.location.href = this.signUrl
       // #endif
       // #ifndef H5
       plus.runtime.openURL(this.signUrl)
@@ -349,7 +372,7 @@ export default {
       let count = 0
       this.pollTimer = setInterval(async () => {
         count++
-        if (count >= 60) { this.stopPolling(); return }
+        if (count >= 360) { this.stopPolling(); return } // 30分钟超时
         try {
           const res = await get(`/h5/app/contract/user/${this.userId}`)
           if (res.code === 200 && res.data) {
@@ -358,6 +381,8 @@ export default {
             if (target && target.contractStatus === '2') {
               this.stopPolling()
               this.step = 'done'
+              // 3秒后自动跳转到账单页
+              setTimeout(() => { this.goToBill() }, 3000)
             }
           }
         } catch (e) { /* ignore */ }
@@ -365,6 +390,37 @@ export default {
     },
     stopPolling() {
       if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null }
+    },
+
+    // ========== 手动刷新状态 ==========
+    async manualCheckStatus() {
+      uni.showLoading({ title: '查询签署状态...' })
+      try {
+        const res = await get(`/h5/app/contract/user/${this.userId}`)
+        uni.hideLoading()
+        if (res.code === 200 && res.data) {
+          const list = Array.isArray(res.data) ? res.data : [res.data]
+          const target = list.find(c => c.contractId === this.contractId)
+          if (target && target.contractStatus === '2') {
+            this.stopPolling()
+            this.step = 'done'
+            setTimeout(() => { this.goToBill() }, 3000)
+          } else {
+            uni.showToast({ title: '签署尚未完成，请稍候', icon: 'none' })
+          }
+        }
+      } catch (e) {
+        uni.hideLoading()
+        uni.showToast({ title: '查询失败', icon: 'none' })
+      }
+    },
+
+    // ========== 跳转账单缴费 ==========
+    goToBill() {
+      this.stopPolling()
+      uni.removeStorageSync('esign_contractId')
+      uni.removeStorageSync('esign_userId')
+      uni.redirectTo({ url: '/pages/affairs/contract?esign_done=1' })
     },
 
     goBack() {
@@ -408,6 +464,7 @@ export default {
   border: 2rpx solid #4A90E2; border-radius: 50rpx; font-size: 32rpx;
 }
 .loading-text { font-size: 32rpx; color: #666; }
+.done-actions { width: 100%; }
 
 /* 合同确认页 */
 .preview-wrap {
