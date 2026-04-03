@@ -171,7 +171,7 @@
 				</view>
 
 				<!-- 房源卡片列表 -->
-				<view class="listing-cards">
+				<view class="listing-cards" style="position: relative;">
 					<view
 						class="listing-card"
 						v-for="(item, index) in listingData"
@@ -206,6 +206,13 @@
 							</view>
 						</view>
 					</view>
+					<!-- 未认证提示遮罩 -->
+					<view class="auth-mask" v-if="authStatus !== '2'" @click="showAuthTip">
+						<view class="auth-mask-content">
+							<text class="auth-mask-text">完成实名认证后查看房源</text>
+							<text class="auth-mask-btn">去认证 ></text>
+						</view>
+					</view>
 				</view>
 			</view>
 		</scroll-view>
@@ -217,7 +224,7 @@
 	import { getHouseListByProjectType } from '@/api/house'
 	import { getBannerList, getLatestNotice } from '@/api/config'
 	import { updateUserInfo } from '@/api/auth'
-	import { BASE_URL } from '@/utils/request'
+	import { BASE_URL, get } from '@/utils/request'
 	import config from '@/config/index'
 
 	export default {
@@ -265,7 +272,8 @@
 					{ name: '优惠券', icon: '/static/优惠券@2x.png', key: 'coupon' },
 					{ name: '我的消息', icon: '/static/我的消息@2x.png', key: 'message' }
 				],
-				listingData: [] // 项目列表数据（从API加载）
+				authStatus: '0', // 实名认证状态（0未认证 1认证中 2已认证）
+					listingData: [] // 项目列表数据（从API加载）
 			}
 		},
 		onLoad() {
@@ -299,6 +307,9 @@
 			// 加载最新通知
 			this.loadLatestNotice()
 
+			// 加载实名认证状态
+			this.loadAuthStatus()
+
 		},
 		methods: {
 			/**
@@ -306,6 +317,39 @@
 			 */
 			closeModal() {
 				this.showModal = false
+			},
+
+			/**
+			 * 加载实名认证状态
+			 */
+			async loadAuthStatus() {
+				const userInfo = uni.getStorageSync('userInfo')
+				if (!userInfo || !userInfo.userId) return
+				try {
+					const res = await get(`/h5/user/auth-status?userId=${userInfo.userId}`)
+					if (res.code === 200 && res.data) {
+						this.authStatus = res.data.authStatus || '0'
+					}
+				} catch (e) {
+					console.error('查询认证状态失败', e)
+				}
+			},
+
+			/**
+			 * 显示实名认证提示
+			 */
+			showAuthTip() {
+				uni.showModal({
+					title: '提示',
+					content: '浏览房源需要完成实名认证，是否前往认证？',
+					confirmText: '去认证',
+					cancelText: '稍后再说',
+					success: (res) => {
+						if (res.confirm) {
+							uni.navigateTo({ url: '/pages/my/profile' })
+						}
+					}
+				})
 			},
 
 			/**
@@ -569,6 +613,11 @@
 				})
 			},
 			handleIconClick(item) {
+				const authRequiredKeys = ['talent', 'guaranteed', 'market', 'map', 'home']
+				if (authRequiredKeys.includes(item.key) && this.authStatus !== '2') {
+					this.showAuthTip()
+					return
+				}
 				// 人才公寓跳转
 				if (item.key === 'talent') {
 					uni.navigateTo({
@@ -620,6 +669,10 @@
 				}
 			},
 			switchCategory(key) {
+				if (this.authStatus !== '2') {
+					this.showAuthTip()
+					return
+				}
 				this.activeCategory = key
 				// 切换分类时重新加载项目列表
 				this.loadProjectList()
@@ -651,6 +704,10 @@
 				}
 			},
 			goToDetail(item) {
+				if (this.authStatus !== '2') {
+					this.showAuthTip()
+					return
+				}
 				// 根据类型跳转到不同详情页
 				if (item.type === 'house') {
 					// 跳转到房源详情页
@@ -1567,6 +1624,38 @@ margin-right: 24rpx;
 		font-size: 32rpx;
 		font-weight: 500;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
+	}
+
+	.auth-mask {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(255, 255, 255, 0.85);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 10;
+		border-radius: 20rpx;
+	}
+
+	.auth-mask-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.auth-mask-text {
+		font-size: 28rpx;
+		color: #666666;
+		margin-bottom: 20rpx;
+	}
+
+	.auth-mask-btn {
+		font-size: 30rpx;
+		color: #4A90E2;
+		font-weight: 500;
 	}
 </style>
 
