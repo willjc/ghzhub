@@ -47,10 +47,25 @@
 				</view>
 
 				<!-- 学历 -->
-				<view class="form-row last-row">
+				<view class="form-row">
 					<text class="form-label">学历</text>
 					<view class="form-value-wrap">
 						<text class="form-value">{{ educationText }}</text>
+					</view>
+				</view>
+
+				<!-- 实名认证 -->
+				<view class="form-row" v-if="authStatus !== '2'" @click="goToAuth">
+					<text class="form-label">实名认证</text>
+					<view class="form-value-wrap">
+						<text class="form-value auth-value">去认证</text>
+						<image class="arrow-icon" src="/static/向右1@2x.png" mode="aspectFit"></image>
+					</view>
+				</view>
+				<view class="form-row last-row" v-else>
+					<text class="form-label">实名认证</text>
+					<view class="form-value-wrap">
+						<text class="form-value verified-text">已认证</text>
 					</view>
 				</view>
 			</view>
@@ -79,6 +94,7 @@
 
 <script>
 	import { getUserInfo, updateUser, uploadAvatar, getEducationLabel, getGenderLabel, maskIdCard } from '@/api/user'
+	import { post } from '@/utils/request'
 	import config from '@/config/index'
 	import authCheck from '@/mixins/authCheck'
 
@@ -93,6 +109,7 @@
 					idCard: '',
 					education: ''
 				},
+				authStatus: '0',
 				showGenderPicker: false,
 				genderPickerValue: [0],
 				genderOptions: [
@@ -131,6 +148,7 @@
 				getUserInfo(this.userId).then(res => {
 					if (res.code === 200 && res.data) {
 						this.userInfo = res.data
+						this.authStatus = res.data.authStatus || '0'
 					}
 				}).catch(err => {
 					console.error('获取用户信息失败:', err)
@@ -203,6 +221,34 @@
 				const gender = this.genderOptions[index].value
 				this.showGenderPicker = false
 				this.saveUserInfo({ gender })
+			},
+
+			// 实名认证
+			goToAuth() {
+				const userInfo = uni.getStorageSync('userInfo')
+				if (!userInfo || !userInfo.userId) return
+
+				uni.showLoading({ title: '获取认证链接...' })
+				post('/h5/esign/auth-url', {
+					userId: userInfo.userId,
+					realName: this.userInfo.realName || '',
+					idCard: this.userInfo.idCard || ''
+				}).then(res => {
+					uni.hideLoading()
+					if (res.code === 200 && res.data) {
+						if (res.data.needAuth && res.data.authUrl) {
+							window.location.href = res.data.authUrl
+						} else {
+							uni.showToast({ title: '已完成实名认证', icon: 'success' })
+							this.authStatus = '2'
+						}
+					} else {
+						uni.showToast({ title: res.msg || '获取认证链接失败', icon: 'none' })
+					}
+				}).catch(() => {
+					uni.hideLoading()
+					uni.showToast({ title: '网络异常', icon: 'none' })
+				})
 			},
 
 			// 保存用户信息
@@ -313,5 +359,11 @@
 		height: 24rpx;
 		flex-shrink: 0;
 	}
-</style>
 
+		.auth-value {
+			color: #4A90E2 !important;
+		}
+		.verified-text {
+			color: #12a566 !important;
+		}
+</style>

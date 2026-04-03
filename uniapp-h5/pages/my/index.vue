@@ -7,6 +7,14 @@
 				<view class="user-info">
 					<text class="nickname">{{ userInfo.nickname || '未设置昵称' }}</text>
 					<text class="phone">{{ maskedPhone }}</text>
+					<!-- 认证状态标签 -->
+					<view class="auth-tag" v-if="userInfo.authStatus === '2'">
+						<text class="auth-tag-text verified">已实名</text>
+					</view>
+					<view class="auth-tag" v-else @click="goToAuth">
+						<text class="auth-tag-text unverified">未实名认证</text>
+						<text class="auth-go">去认证 ></text>
+					</view>
 				</view>
 				<image class="arrow" src="/static/my/youjiantou@2x.png"></image>
 			</view>
@@ -93,6 +101,9 @@
 				uni.navigateTo({
 					url: '/pages/my/profile'
 				})
+			},
+			goToAuth() {
+				uni.navigateTo({ url: '/pages/my/profile' })
 			},
 			handleMenuClick(key) {
 				console.log('点击菜单:', key)
@@ -252,4 +263,28 @@
 		flex-shrink: 0;
 		margin-left: auto;
 	}
+
+		.auth-tag {
+			display: flex;
+			align-items: center;
+			margin-top: 8rpx;
+		}
+		.auth-tag-text {
+			font-size: 22rpx;
+			padding: 4rpx 16rpx;
+			border-radius: 20rpx;
+		}
+		.auth-tag-text.verified {
+			color: #12a566;
+			background: rgba(18, 165, 102, 0.1);
+		}
+		.auth-tag-text.unverified {
+			color: #e5252b;
+			background: rgba(229, 37, 43, 0.1);
+		}
+		.auth-go {
+			font-size: 22rpx;
+			color: #4A90E2;
+			margin-left: 12rpx;
+		}
 </style>
