@@ -111,6 +111,9 @@ public class HzUser extends BaseEntity {
     /** e签宝个人账号ID */
     private String esignPsnId;
 
+    /** 认证状态（0=未认证 1=已填写资料 2=已实名认证） */
+    private String authStatus;
+
     public Long getUserId() {
         return userId;
     }
@@ -309,6 +312,14 @@ public class HzUser extends BaseEntity {
 
     public void setEsignPsnId(String esignPsnId) {
         this.esignPsnId = esignPsnId;
+    }
+
+    public String getAuthStatus() {
+        return authStatus;
+    }
+
+    public void setAuthStatus(String authStatus) {
+        this.authStatus = authStatus;
     }
 
     @Override

@@ -9,7 +9,9 @@ import com.ruoyi.system.domain.*;
 import com.ruoyi.system.esign.*;
 import com.ruoyi.system.mapper.*;
 import com.ruoyi.system.service.EsignService;
+import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.service.IHzCheckInService;
+import com.ruoyi.system.domain.HzCheckIn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -65,12 +67,25 @@ public class EsignServiceImpl implements EsignService {
     // ==================== 实名认证 ====================
 
     @Override
-    public String getPsnAuthUrl(Long userId, String mobile, String redirectUrl) {
+    public String getPsnAuthUrl(Long userId, String mobile, String realName, String idCard, String redirectUrl) {
         HzUser user = userMapper.selectById(userId);
         if (user != null && user.getEsignPsnId() != null && !user.getEsignPsnId().isEmpty()) return null;
-        String jsonParm = "{\"psnAuthConfig\":{\"psnAccount\":\"" + mobile + "\",\"psnAuthPageConfig\":{\"psnEditableFields\":[\"name\",\"IDCardNum\",\"mobile\"]}},"
-                + "\"clientType\":\"ALL\",\"redirectConfig\":{\"redirectDelayTime\":\"3\",\"redirectUrl\":\"" + redirectUrl + "\"},"
-                + "\"repeatableAuth\":true}";
+
+        // 构建实名认证请求参数，预填充姓名和身份证号
+        StringBuilder jsonBuilder = new StringBuilder();
+        jsonBuilder.append("{\"psnAuthConfig\":{\"psnAccount\":\"").append(mobile).append("\"");
+        // 预填充姓名和身份证
+        if (realName != null && !realName.isEmpty()) {
+            jsonBuilder.append(",\"psnInfo\":{\"psnName\":\"").append(escapeJson(realName)).append("\"");
+            if (idCard != null && !idCard.isEmpty()) {
+                jsonBuilder.append(",\"psnIDCardType\":\"CRED_PSN_CH_IDCARD\",\"psnIDCardNum\":\"").append(escapeJson(idCard)).append("\"");
+            }
+            jsonBuilder.append("}");
+        }
+        jsonBuilder.append(",\"psnAuthPageConfig\":{\"psnEditableFields\":[\"mobile\"]}}"); // 只允许修改手机号
+        jsonBuilder.append(",\"clientType\":\"ALL\",\"redirectConfig\":{\"redirectDelayTime\":\"3\",\"redirectUrl\":\"").append(redirectUrl).append("\"}");
+        jsonBuilder.append(",\"repeatableAuth\":true}");
+        String jsonParm = jsonBuilder.toString();
         try {
             EsignHttpResponse resp = callApi("POST", "/v3/psn-auth-url", jsonParm);
             JsonObject root = gson.fromJson(resp.getBody(), JsonObject.class);
@@ -103,14 +118,27 @@ public class EsignServiceImpl implements EsignService {
     public String queryAndSavePsnId(Long userId, String mobile) {
         try {
             EsignHttpResponse resp = callApi("GET", "/v3/persons/identity-info?psnAccount=" + mobile, null);
-            JsonObject data = gson.fromJson(resp.getBody(), JsonObject.class).getAsJsonObject("data");
+            JsonObject root = gson.fromJson(resp.getBody(), JsonObject.class);
+            // 账号不存在（code=1435203）或data为空 → 用户未在e签宝注册，返回null
+            if (root.has("code") && root.get("code").getAsInt() != 0) {
+                log.info("e签宝查询psnId：用户未注册或未实名, mobile={}, code={}, msg={}",
+                        mobile, root.get("code"), root.get("message"));
+                return null;
+            }
+            JsonObject data = root.has("data") && !root.get("data").isJsonNull() ? root.getAsJsonObject("data") : null;
+            if (data == null) {
+                log.info("e签宝查询psnId：data为空, mobile={}", mobile);
+                return null;
+            }
             // realnameStatus: 0=未实名, 1=已实名(可能信息不全), 2=已实名
             String psnId = (data.has("psnId") && !data.get("psnId").isJsonNull()) ? data.get("psnId").getAsString() : null;
             if (psnId == null || psnId.isEmpty()) {
                 log.warn("e签宝查询psnId为空, mobile={}, realnameStatus={}", mobile, data.get("realnameStatus"));
                 return null;
             }
-            userMapper.update(null, new LambdaUpdateWrapper<HzUser>().eq(HzUser::getUserId, userId).set(HzUser::getEsignPsnId, psnId));
+            userMapper.update(null, new LambdaUpdateWrapper<HzUser>().eq(HzUser::getUserId, userId)
+                    .set(HzUser::getEsignPsnId, psnId)
+                    .set(HzUser::getAuthStatus, "2"));
             log.info("e签宝个人认证完成，userId={}, psnId={}", userId, psnId);
             return psnId;
         } catch (Exception e) {
@@ -311,6 +339,20 @@ public class EsignServiceImpl implements EsignService {
     // ==================== 回调处理 ====================
 
     @Override
+    public String getSignedPdfUrl(String flowId) throws Exception {
+        log.info("获取已签合同PDF链接，flowId={}", flowId);
+        EsignHttpResponse fileResp = callApi("GET",
+                "/v3/sign-flow/" + flowId + "/file-download-url", "");
+        JsonObject fileRoot = gson.fromJson(fileResp.getBody(), JsonObject.class);
+        if (fileRoot.get("code").getAsInt() == 0) {
+            String fileUrl = fileRoot.getAsJsonObject("data").getAsJsonArray("files").get(0).getAsJsonObject().get("downloadUrl").getAsString();
+            log.info("获取已签合同PDF链接成功，flowId={}", flowId);
+            return fileUrl;
+        }
+        throw new RuntimeException("获取签署文件失败：" + fileRoot.get("message").getAsString());
+    }
+
+    @Override
     @Transactional
     public void handleSignCallback(String timestamp, String requestQuery, String body, String signature) throws Exception {
         // 验签
@@ -350,7 +392,7 @@ public class EsignServiceImpl implements EsignService {
                     "/v3/sign-flow/" + flowId + "/file-download-url", "");
             JsonObject fileRoot = gson.fromJson(fileResp.getBody(), JsonObject.class);
             if (fileRoot.get("code").getAsInt() == 0) {
-                String fileUrl = fileRoot.getAsJsonObject("data").get("fileDownloadUrl").getAsString();
+                String fileUrl = fileRoot.getAsJsonObject("data").getAsJsonArray("files").get(0).getAsJsonObject().get("downloadUrl").getAsString();
                 contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
                         .eq(HzContract::getContractId, contract.getContractId())
                         .set(HzContract::getContractContent, fileUrl));
@@ -382,6 +424,14 @@ public class EsignServiceImpl implements EsignService {
     // ==================== 账单生成（从 HzContractAppController 搬迁）====================
 
     private void generateBills(HzContract contract) {
+        // 0. 检查是否已生成过账单（防止e签宝重复回调）
+        Long existCount = billMapper.selectCount(new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, contract.getContractId()));
+        if (existCount > 0) {
+            log.info("合同{}的账单已存在（{}条），跳过重复生成", contract.getContractId(), existCount);
+            return;
+        }
+
         // 1. 生成押金账单
         HzBill depositBill = new HzBill();
         depositBill.setBillNo("YJ" + DateUtils.dateTimeNow(DateUtils.YYYYMMDDHHMMSS));
@@ -450,6 +500,13 @@ public class EsignServiceImpl implements EsignService {
     // ==================== 入住记录生成（从 HzContractAppController 搬迁）====================
 
     private void generateCheckInRecord(HzContract contract) {
+        // 检查是否已存在入住记录（防止重复回调）
+        HzCheckIn existing = checkInService.selectCheckInByContractId(contract.getContractId());
+        if (existing != null) {
+            log.info("合同{}的入住记录已存在(recordId={})，跳过重复生成", contract.getContractId(), existing.getRecordId());
+            return;
+        }
+
         HzHouse house = houseMapper.selectById(contract.getHouseId());
         if (house == null) { log.warn("房源不存在，跳过入住记录生成，houseId={}", contract.getHouseId()); return; }
         HzProject project = projectMapper.selectById(house.getProjectId());

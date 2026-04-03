@@ -196,9 +196,13 @@ esign:
   # host: "https://openapi.esign.cn"
   # 签署完成后回调地址（公网可访问）
   notify-url: "https://toshiko-unpeaceful-dania.ngrok-free.dev/h5/esign/notify"
-  # 签署后跳回的页面（H5端）
-  redirect-url: "https://toshiko-unpeaceful-dania.ngrok-free.dev/h5/pages/contract/sign?esign_done=1"
+  # 签署后跳回的页面（后端中间页，自动跳转到前端H5）
+  redirect-url: "https://toshiko-unpeaceful-dania.ngrok-free.dev/h5/esign/sign-done"
   # 平台企业（甲方）在 e签宝 的 orgId
   org-id: "eeffbc60d8bd4c03a68126a32da9cd4e"
   # 文档模板 ID（在 e签宝 SaaS 后台配置）
   template-id: "a7e3e9e70d3543b3b221ec0770ed3666"
+  # 实名认证完成后跳回前端H5的地址
+  auth-redirect-url: "http://192.168.31.46:8091/#/pages/auth/verify?auth_done=1"
+  # 前端H5地址（签署完成跳转用）
+  frontend-url: "http://192.168.31.46:8091/#/pages/affairs/contract?esign_done=1"

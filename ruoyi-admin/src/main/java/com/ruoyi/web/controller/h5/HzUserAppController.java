@@ -13,6 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
@@ -48,6 +51,27 @@ public class HzUserAppController extends BaseController {
         }
 
         return success(user);
+    }
+
+    /**
+     * 获取当前用户认证状态
+     */
+    @GetMapping("/auth-status")
+    public AjaxResult getUserAuthStatus() {
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            return error("用户未登录");
+        }
+        HzUser user = hzUserService.selectHzUserById(userId);
+        if (user == null) {
+            return error("用户不存在");
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("authStatus", user.getAuthStatus() != null ? user.getAuthStatus() : "0");
+        result.put("realName", user.getRealName());
+        result.put("idCard", user.getIdCard());
+        result.put("esignPsnId", user.getEsignPsnId());
+        return success(result);
     }
 
     /**

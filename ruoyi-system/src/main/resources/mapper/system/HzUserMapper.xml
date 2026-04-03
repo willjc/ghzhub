@@ -31,13 +31,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"         column="update_by"        />
         <result property="updateTime"       column="update_time"      />
         <result property="remark"           column="remark"           />
+        <result property="esignPsnId"      column="esign_psn_id"    />
+        <result property="authStatus"      column="auth_status"     />
     </resultMap>
 
     <sql id="selectHzUserVo">
         SELECT user_id, phone, contact_phone, source_type, wechat_openid, wechat_unionid, zhaohao_user_id,
                nickname, avatar, real_name, gender, id_card, education, identity_type,
                work_unit, unit_contact, spouse_name, status,
-               last_login_time, last_login_ip, del_flag, create_by, create_time, update_by, update_time, remark
+               last_login_time, last_login_ip, del_flag, create_by, create_time, update_by, update_time, remark,
+               esign_psn_id, auth_status
         FROM hz_user
     </sql>
 
