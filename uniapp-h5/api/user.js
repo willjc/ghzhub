@@ -185,11 +185,20 @@ export function maskIdCard(idCard) {
   return idCard.substring(0, 6) + '********' + idCard.substring(idCard.length - 4)
 }
 
+/**
+ * 获取用户认证状态
+ * @param {Number} userId 用户ID
+ */
+export function getUserAuthStatus(userId) {
+  return get('/h5/user/auth-status', { userId })
+}
+
 export default {
   getUserInfo,
   uploadAvatar,
   uploadWorkProof,
   updateUser,
+  getUserAuthStatus,
   educationMap,
   genderMap,
   getEducationLabel,
