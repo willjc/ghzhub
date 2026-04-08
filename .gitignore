@@ -51,3 +51,25 @@ nbdist/
 
 # Git worktrees
 .worktrees/
+
+# macOS
+.DS_Store
+
+# Playwright MCP 临时快照
+.playwright-mcp/
+
+# e签宝 SDK Demo（参考代码，不入库）
+SaaSAPI_V3_Demo_JAVA/
+
+# 备份目录
+uniapp-h5-backup-*/
+
+# 运行时日志
+logs/
+
+# 截图目录
+jietu/
+qietu/
+
+# 文档/方案（本地参考文件）
+docs/superpowers/
