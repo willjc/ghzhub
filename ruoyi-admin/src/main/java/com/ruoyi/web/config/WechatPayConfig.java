@@ -2,7 +2,7 @@ package com.ruoyi.web.config;
 
 import com.wechat.pay.java.core.RSAAutoCertificateConfig;
 import com.wechat.pay.java.service.payments.h5.H5Service;
-import com.wechat.pay.java.service.payments.jsapi.JsapiService;
+import com.wechat.pay.java.service.payments.jsapi.JsapiServiceExtension;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -51,8 +51,8 @@ public class WechatPayConfig {
     }
 
     @Bean
-    public JsapiService jsapiService(RSAAutoCertificateConfig config) {
-        return new JsapiService.Builder().config(config).build();
+    public JsapiServiceExtension jsapiService(RSAAutoCertificateConfig config) {
+        return new JsapiServiceExtension.Builder().config(config).build();
     }
 
     @Bean

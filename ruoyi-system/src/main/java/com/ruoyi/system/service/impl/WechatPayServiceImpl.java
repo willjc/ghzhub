@@ -7,7 +7,7 @@ import com.wechat.pay.java.core.notification.RequestParam;
 import com.wechat.pay.java.service.payments.h5.H5Service;
 import com.wechat.pay.java.service.payments.h5.model.PrepayRequest;
 import com.wechat.pay.java.service.payments.h5.model.PrepayResponse;
-import com.wechat.pay.java.service.payments.jsapi.JsapiService;
+import com.wechat.pay.java.service.payments.jsapi.JsapiServiceExtension;
 import com.wechat.pay.java.service.payments.jsapi.model.Amount;
 import com.wechat.pay.java.service.payments.jsapi.model.Payer;
 import com.wechat.pay.java.service.payments.jsapi.model.PrepayWithRequestPaymentResponse;
@@ -37,11 +37,11 @@ public class WechatPayServiceImpl implements WechatPayService {
     @Value("${wechat.pay.mch-id}")
     private String mchId;
 
-    private final JsapiService jsapiService;
+    private final JsapiServiceExtension jsapiService;
     private final H5Service h5Service;
     private final RSAAutoCertificateConfig rsaConfig;
 
-    public WechatPayServiceImpl(JsapiService jsapiService,
+    public WechatPayServiceImpl(JsapiServiceExtension jsapiService,
                                 H5Service h5Service,
                                 RSAAutoCertificateConfig rsaConfig) {
         this.jsapiService = jsapiService;
