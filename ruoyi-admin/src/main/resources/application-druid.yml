@@ -9,7 +9,7 @@ spring:
                 # url: jdbc:mysql://localhost:3306/newgangzhu?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
                 # username: root
                 # password: 123456789w
-                url: jdbc:mysql://10.181.153.201:34268/ghz?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+                url: jdbc:mysql://36.133.39.148:33061/ghz?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
                 username: ghzuser
                 password: '!aNJ-7vTE+Tsddce'
             # 从库数据源
