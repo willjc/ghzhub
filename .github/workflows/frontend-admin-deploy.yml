@@ -35,13 +35,6 @@ jobs:
 
       - name: Deploy to Frontend Server
         run: |
-          # 备份旧版本（备份整个 index 目录内容）
-          ssh -i ~/.ssh/id_ed25519 -p 3322 \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.FRONTEND_HOST }} \
-            "[ -f ${{ secrets.FRONTEND_ADMIN_PATH }}/index.html ] && \
-             rm -rf ${{ secrets.FRONTEND_ADMIN_PATH }}-backup && \
-             cp -r ${{ secrets.FRONTEND_ADMIN_PATH }} ${{ secrets.FRONTEND_ADMIN_PATH }}-backup || true"
-
           # 上传新版本（dist/. 表示上传内容，不创建 dist 子目录）
           scp -i ~/.ssh/id_ed25519 -P 3322 -r \
             ruoyi-ui/dist/. \
