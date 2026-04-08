@@ -11,7 +11,7 @@ spring:
                 # password: 123456789w
                 url: jdbc:mysql://36.133.39.148:33061/ghz?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
                 username: ghzuser
-                password: '!aNJ-7vTE+Tsddce'
+                password: "!aNJ-7vTE+Tsddce"
             # 从库数据源
             slave:
                 # 从数据源开关/默认关闭
