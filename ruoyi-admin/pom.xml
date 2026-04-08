@@ -54,11 +54,20 @@
             <artifactId>ruoyi-generator</artifactId>
         </dependency>
 
-        <!-- 数郑网关SDK -->
+        <!-- 数郑网关SDK（本地JAR，存放在 ruoyi-admin/lib/） -->
         <dependency>
             <groupId>com.digital.szzz</groupId>
             <artifactId>szzz-open-gateway-sdk</artifactId>
             <version>1.0-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/szzz-open-gateway-sdk-1.0-SNAPSHOT.jar</systemPath>
+        </dependency>
+
+        <!-- fastjson 1.x（ZhengHaobanServiceImpl 使用了旧版API） -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.83</version>
         </dependency>
 
         <!-- Spring Security Crypto (提供Base64Utils，兼容SDK) -->
@@ -105,6 +114,7 @@
                 <version>3.5.4</version>
                 <configuration>
                     <addResources>true</addResources>
+                    <includeSystemScope>true</includeSystemScope>
                 </configuration>
                 <executions>
                     <execution>
