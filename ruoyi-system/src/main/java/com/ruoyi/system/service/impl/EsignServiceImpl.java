@@ -11,7 +11,6 @@ import com.ruoyi.system.mapper.*;
 import com.ruoyi.system.service.EsignService;
 import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.service.IHzCheckInService;
-import com.ruoyi.system.domain.HzCheckIn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -67,9 +66,13 @@ public class EsignServiceImpl implements EsignService {
     // ==================== 实名认证 ====================
 
     @Override
-    public String getPsnAuthUrl(Long userId, String mobile, String realName, String idCard, String redirectUrl) {
+    public String getPsnAuthUrl(Long userId, String mobile, String redirectUrl) {
         HzUser user = userMapper.selectById(userId);
         if (user != null && user.getEsignPsnId() != null && !user.getEsignPsnId().isEmpty()) return null;
+
+        // 从用户信息中获取姓名和身份证，预填充认证表单
+        String realName = user != null ? user.getRealName() : null;
+        String idCard = user != null ? user.getIdCard() : null;
 
         // 构建实名认证请求参数，预填充姓名和身份证号
         StringBuilder jsonBuilder = new StringBuilder();

@@ -15,6 +15,7 @@ import com.wechat.pay.java.service.payments.model.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -25,6 +26,7 @@ import java.util.Map;
  * 使用 wechatpay-java SDK 0.2.14
  */
 @Service
+@ConditionalOnProperty(prefix = "wechat.pay", name = "enabled", havingValue = "true")
 public class WechatPayServiceImpl implements WechatPayService {
 
     private static final Logger log = LoggerFactory.getLogger(WechatPayServiceImpl.class);

@@ -35,6 +35,12 @@
             <artifactId>ruoyi-common</artifactId>
         </dependency>
 
+        <!-- 业务模块（定时任务需要访问业务Service） -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-system</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>

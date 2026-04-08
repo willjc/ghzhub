@@ -176,8 +176,10 @@ zhenghaoban:
     module-id: ${ZHB_MODULE_ID:413780}
 
 # 微信支付配置
+# 开发/测试环境不配置证书时设 enabled: false，生产环境填好证书后改为 true
 wechat:
   pay:
+    enabled: false
     appid: "wx_your_appid"
     mch-id: "your_mch_id"
     api-v3-key: "your_api_v3_key_32chars"

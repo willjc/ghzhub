@@ -26,6 +26,9 @@ public interface EsignService {
     /** 获取签署链接 */
     String getSignUrl(String signFlowId, String mobile, String redirectUrl) throws Exception;
 
+    /** 获取已签合同PDF下载链接 */
+    String getSignedPdfUrl(String flowId) throws Exception;
+
     // ==================== 回调 ====================
 
     /** 处理 e签宝 签署完成回调 */

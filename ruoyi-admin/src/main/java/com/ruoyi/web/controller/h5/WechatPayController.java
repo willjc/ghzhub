@@ -10,6 +10,7 @@ import com.ruoyi.system.service.IHzHouseOrderService;
 import com.ruoyi.system.service.WechatPayService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/h5/pay/wechat")
+@ConditionalOnProperty(prefix = "wechat.pay", name = "enabled", havingValue = "true")
 public class WechatPayController extends BaseController {
 
     @Value("${wechat.pay.h5-notify-url}")

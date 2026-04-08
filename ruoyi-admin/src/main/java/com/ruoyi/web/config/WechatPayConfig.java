@@ -4,6 +4,7 @@ import com.wechat.pay.java.core.RSAAutoCertificateConfig;
 import com.wechat.pay.java.service.payments.h5.H5Service;
 import com.wechat.pay.java.service.payments.jsapi.JsapiService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ResourceLoader;
@@ -13,6 +14,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 @Configuration
+@ConditionalOnProperty(prefix = "wechat.pay", name = "enabled", havingValue = "true")
 public class WechatPayConfig {
 
     @Value("${wechat.pay.appid}")
