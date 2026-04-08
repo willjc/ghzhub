@@ -35,21 +35,22 @@ jobs:
 
       - name: Deploy to Frontend Server
         run: |
-          # 备份旧版本
+          # 备份旧版本（备份整个 index 目录内容）
           ssh -i ~/.ssh/id_ed25519 -p 3322 \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.FRONTEND_HOST }} \
-            "[ -d ${{ secrets.FRONTEND_ADMIN_PATH }}/dist ] && \
-             mv ${{ secrets.FRONTEND_ADMIN_PATH }}/dist ${{ secrets.FRONTEND_ADMIN_PATH }}/dist-backup || true"
+            "[ -f ${{ secrets.FRONTEND_ADMIN_PATH }}/index.html ] && \
+             rm -rf ${{ secrets.FRONTEND_ADMIN_PATH }}-backup && \
+             cp -r ${{ secrets.FRONTEND_ADMIN_PATH }} ${{ secrets.FRONTEND_ADMIN_PATH }}-backup || true"
 
-          # 上传新版本
+          # 上传新版本（dist/. 表示上传内容，不创建 dist 子目录）
           scp -i ~/.ssh/id_ed25519 -P 3322 -r \
-            ruoyi-ui/dist \
+            ruoyi-ui/dist/. \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.FRONTEND_HOST }}:${{ secrets.FRONTEND_ADMIN_PATH }}/
 
-          # 重载 OpenResty
+          # 重载 OpenResty（1Panel 的 OpenResty 跑在 Docker 容器里）
           ssh -i ~/.ssh/id_ed25519 -p 3322 \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.FRONTEND_HOST }} \
-            "sudo systemctl reload openresty && echo '管理后台部署成功'"
+            "docker exec \$(docker ps --filter 'name=openresty' --format '{{.Names}}' | head -1) nginx -s reload && echo '管理后台部署成功'"
 
       - name: Cleanup SSH
         if: always()
