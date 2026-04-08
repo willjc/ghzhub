@@ -1,8 +1,0 @@
-						appealId: appeal.appealId,
-						name: appeal.realName || appeal.nickname || '未知',  // 优先显示真实姓名
-						idCard: appeal.idCard || '***',  // 显示身份证号
-						phone: appeal.contactPhone || appeal.phone || '***',  // 优先显示联系电话
-						status: this.getAppealStatus(appeal.handleResult),
-						appealType: '学历',
-						handleResult: appeal.handleResult
-					}))
