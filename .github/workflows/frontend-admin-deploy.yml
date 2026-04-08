@@ -1,0 +1,58 @@
+name: Frontend Admin Deploy
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'ruoyi-ui/**'
+      - '.github/workflows/frontend-admin-deploy.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '16'
+          cache: 'npm'
+          cache-dependency-path: ruoyi-ui/package-lock.json
+
+      - name: Install & Build
+        run: |
+          cd ruoyi-ui
+          npm ci
+          npm run build:prod
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p 3322 ${{ secrets.FRONTEND_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to Frontend Server
+        run: |
+          # 备份旧版本
+          ssh -i ~/.ssh/id_ed25519 -p 3322 \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.FRONTEND_HOST }} \
+            "[ -d ${{ secrets.FRONTEND_ADMIN_PATH }}/dist ] && \
+             mv ${{ secrets.FRONTEND_ADMIN_PATH }}/dist ${{ secrets.FRONTEND_ADMIN_PATH }}/dist-backup || true"
+
+          # 上传新版本
+          scp -i ~/.ssh/id_ed25519 -P 3322 -r \
+            ruoyi-ui/dist \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.FRONTEND_HOST }}:${{ secrets.FRONTEND_ADMIN_PATH }}/
+
+          # 重载 OpenResty
+          ssh -i ~/.ssh/id_ed25519 -p 3322 \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.FRONTEND_HOST }} \
+            "sudo systemctl reload openresty && echo '管理后台部署成功'"
+
+      - name: Cleanup SSH
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519

@@ -118,60 +118,78 @@ chmod 600 ~/.ssh/authorized_keys
 | `DEPLOY_USER` | `deploy` |
 | `FRONTEND_HOST` | `36.133.39.148`（前端服务器 IP） |
 | `BACKEND_HOST` | `36.133.39.49`（后端服务器 IP） |
-| `FRONTEND_ADMIN_PATH` | `/www/wwwroot/ghz-admin` |
-| `FRONTEND_H5_PATH` | `/www/wwwroot/ghz-h5` |
+| `FRONTEND_ADMIN_PATH` | `/opt/1panel/www/sites/admin.caigon.cn/index` |
+| `FRONTEND_H5_PATH` | `/opt/1panel/www/sites/app.caigon.cn/index` |
 | `BACKEND_JAR_PATH` | `/www/wwwroot/ghz-backend` |
 
 ---
 
 ## 五、后端服务器配置（1Panel + Supervisor）
 
-### 5.1 在 1Panel 安装 JDK 和 Supervisor
+### 5.1 SSH 登录后端服务器，安装 JDK 17 和 Supervisor
+
+> 1Panel 2.x 的应用商店里没有独立的 JDK 和 Supervisor 应用。需要直接在服务器上用 apt 安装，然后在 1Panel 工具箱里接管。
+
+```bash
+# 登录后端服务器
+ssh -p 3322 root@36.133.39.49
+
+# 更新软件源
+sudo apt update
+
+# 安装 JDK 17
+sudo apt install -y openjdk-17-jdk
+
+# 确认安装成功及路径（记住这个路径，后面要用）
+java -version
+which java          # 通常是 /usr/bin/java
+readlink -f $(which java)  # 实际路径，如 /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+
+# 安装 Supervisor
+sudo apt install -y supervisor
+
+# 启动并设置开机自启
+sudo systemctl start supervisor
+sudo systemctl enable supervisor
+```
+
+### 5.2 在 1Panel 初始化进程守护
+
+Supervisor 安装好后，在 1Panel 面板里接管它：
 
 ```
-1Panel → 应用商店 → 搜索 "OpenJDK" → 安装 17
-1Panel → 应用商店 → 搜索 "Supervisor" → 安装
+1Panel → 工具箱 → 进程守护 → 点击「初始化」按钮
 ```
 
-### 5.2 创建应用目录
+初始化完成后，进程守护功能就可以在面板里使用了。
+
+### 5.3 创建应用目录
 
 ```bash
 sudo mkdir -p /www/wwwroot/ghz-backend/logs
 sudo chown -R deploy:deploy /www/wwwroot/ghz-backend
 ```
 
-### 5.3 在 1Panel 配置 Supervisor 进程
+### 5.4 在 1Panel 创建守护进程
 
 ```
-1Panel → 网站（或工具）→ Supervisor → 添加守护进程
+1Panel → 工具箱 → 进程守护 → 创建守护进程
 ```
 
-填入以下配置：
+填入以下信息：
 
-```ini
-[program:ghz-backend]
-command=/usr/local/sdkman/candidates/java/17/bin/java -Xms256m -Xmx512m -jar /www/wwwroot/ghz-backend/ruoyi-admin.jar --spring.profiles.active=prod
-directory=/www/wwwroot/ghz-backend
-user=deploy
-autostart=true
-autorestart=true
-startsecs=15
-stopwaitsecs=30
-stdout_logfile=/www/wwwroot/ghz-backend/logs/app.log
-stdout_logfile_maxbytes=50MB
-stdout_logfile_backups=5
-stderr_logfile=/www/wwwroot/ghz-backend/logs/app-error.log
-```
+| 字段 | 值 |
+|------|---|
+| 名称 | `ghz-backend` |
+| 运行目录 | `/www/wwwroot/ghz-backend` |
+| 启动命令 | `/usr/bin/java -Xms256m -Xmx512m -jar /www/wwwroot/ghz-backend/ruoyi-admin.jar --spring.profiles.active=prod` |
+| 用户 | `deploy` |
+| 自动启动 | 是 |
+| 异常重启 | 是 |
 
-> **JDK 路径说明**：1Panel 安装的 JDK 路径可能不同，通过 `which java` 或 `readlink -f $(which java)` 确认实际路径后填入。
+> **启动命令说明**：必须使用 java 的绝对路径（`/usr/bin/java`），不能只写 `java`，否则 Supervisor 可能找不到。路径以上一步 `readlink -f $(which java)` 的输出为准。
 
-配置完成后：
-
-```bash
-sudo supervisorctl reread
-sudo supervisorctl update
-sudo supervisorctl start ghz-backend
-```
+保存后点击**启动**，在列表里可以看到进程状态、查看日志、重启等操作。
 
 ---
 
@@ -183,14 +201,14 @@ sudo supervisorctl start ghz-backend
 1Panel → 网站 → 创建网站
   类型：静态网站
   域名：admin.caigon.cn
-  根目录：/www/wwwroot/ghz-admin
+  根目录：/opt/1panel/www/sites/admin.caigon.cn/index
 ```
 
 ```
 1Panel → 网站 → 创建网站
   类型：静态网站
   域名：app.caigon.cn
-  根目录：/www/wwwroot/ghz-h5
+  根目录：/opt/1panel/www/sites/app.caigon.cn/index
 ```
 
 还需要为 API 单独创建一个反向代理站点：
@@ -199,27 +217,24 @@ sudo supervisorctl start ghz-backend
 1Panel → 网站 → 创建网站
   类型：反向代理
   域名：api.caigon.cn
-  代理地址：http://36.133.39.49:8080
+  代理地址：http://36.133.39.49:8090
 ```
 
 ### 6.2 配置反向代理（接口转发到后端）
 
-在 1Panel 网站设置中：
+`admin.caigon.cn` 和 `app.caigon.cn` 只托管静态文件，**不需要配置反向代理**。
+API 请求由浏览器直接发给 `api.caigon.cn`，再由该站点转发到后端。
 
-```
-网站 → admin.caigon.cn → 配置 → 反向代理 → 添加
-  代理目录：/prod-api/
-  目标URL：http://36.133.39.49:8080/
-```
+`api.caigon.cn` 站点已在 6.1 中以「反向代理」类型创建，1Panel 会自动生成转发配置。
 
 完整的 OpenResty 配置参考：
 
 ```nginx
-# 管理后台
+# 管理后台（只托管静态文件）
 server {
     listen 80;
     server_name admin.caigon.cn;
-    root /www/wwwroot/ghz-admin/dist;
+    root /opt/1panel/www/sites/admin.caigon.cn/index/dist;
     index index.html;
 
     location / {
@@ -227,18 +242,18 @@ server {
     }
 
     location /prod-api/ {
-        proxy_pass http://36.133.39.49:8080/;
+        proxy_pass http://36.133.39.49:8090/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 }
 
-# H5 用户端
+# H5 用户端（只托管静态文件）
 server {
     listen 80;
     server_name app.caigon.cn;
-    root /www/wwwroot/ghz-h5;
+    root /opt/1panel/www/sites/app.caigon.cn/index;
     index index.html;
 
     location / {
@@ -246,13 +261,13 @@ server {
     }
 }
 
-# API 反向代理（单独站点）
+# API 反向代理（所有 API 请求由此转发到后端）
 server {
     listen 80;
     server_name api.caigon.cn;
 
     location / {
-        proxy_pass http://36.133.39.49:8080/;
+        proxy_pass http://36.133.39.49:8090/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -274,10 +289,10 @@ server {
 
 ```bash
 # 让 deploy 用户可以写入 1Panel 的网站目录
-sudo chown -R deploy:www-data /www/wwwroot/ghz-admin
-sudo chown -R deploy:www-data /www/wwwroot/ghz-h5
-sudo chmod -R 775 /www/wwwroot/ghz-admin
-sudo chmod -R 775 /www/wwwroot/ghz-h5
+sudo chown -R deploy:www-data /opt/1panel/www/sites/admin.caigon.cn/index
+sudo chown -R deploy:www-data /opt/1panel/www/sites/app.caigon.cn/index
+sudo chmod -R 775 /opt/1panel/www/sites/admin.caigon.cn/index
+sudo chmod -R 775 /opt/1panel/www/sites/app.caigon.cn/index
 ```
 
 ---
@@ -429,81 +444,40 @@ jobs:
         run: rm -f ~/.ssh/id_ed25519
 ```
 
-### 7.3 H5 用户端部署 — `.github/workflows/h5-deploy.yml`
+### 7.3 H5 用户端部署 — 本地脚本（非 CI/CD）
 
-```yaml
-name: H5 Frontend Deploy
+> H5 使用 HBuilderX 开发，HBuilderX 是 GUI 工具，无法在 GitHub Actions 中运行，因此 H5 不走 CI/CD，改为本地构建 + 一键脚本部署。
 
-on:
-  push:
-    branches: [ master ]
-    paths:
-      - 'uniapp-h5/**'
-      - '.github/workflows/h5-deploy.yml'
+**部署流程：**
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Install & Build H5
-        run: |
-          cd uniapp-h5
-          npm install
-          npx @dcloudio/uni-app-cli build:h5
-
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          # SSH 端口为 3322
-          ssh-keyscan -p 3322 ${{ secrets.FRONTEND_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Deploy H5
-        run: |
-          # 备份旧版本
-          ssh -i ~/.ssh/id_ed25519 -p 3322 \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.FRONTEND_HOST }} \
-            "[ -d ${{ secrets.FRONTEND_H5_PATH }} ] && \
-             rm -rf ${{ secrets.FRONTEND_H5_PATH }}-backup && \
-             cp -r ${{ secrets.FRONTEND_H5_PATH }} ${{ secrets.FRONTEND_H5_PATH }}-backup || true"
-
-          # 上传新版本
-          scp -i ~/.ssh/id_ed25519 -P 3322 -r \
-            uniapp-h5/unpackage/dist/build/web/. \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.FRONTEND_HOST }}:${{ secrets.FRONTEND_H5_PATH }}/
-
-          # 重载 OpenResty
-          ssh -i ~/.ssh/id_ed25519 -p 3322 \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.FRONTEND_HOST }} \
-            "sudo systemctl reload openresty && echo '✅ H5 部署成功'"
-
-      - name: Cleanup SSH
-        if: always()
-        run: rm -f ~/.ssh/id_ed25519
 ```
+HBuilderX → 发行 → 网站 PC Web（H5）
+                    │
+                    ▼
+      uniapp-h5/unpackage/dist/build/web/（本地产物）
+                    │
+                    ▼
+      bash uniapp-h5/deploy-h5.sh（上传到服务器）
+```
+
+脚本已创建在 `uniapp-h5/deploy-h5.sh`，每次发版执行一次即可：
+
+```bash
+# 在项目根目录执行
+bash uniapp-h5/deploy-h5.sh
+```
+
+> **前提**：本机 `~/.ssh/github_deploy` 私钥已生成，且对应公钥已放到前端服务器 deploy 用户的 `~/.ssh/authorized_keys` 中。
 
 ---
 
 ## 八、触发策略说明
 
-每个 workflow 通过 `paths` 过滤，只有对应目录有改动才触发。
-
-| 修改内容 | 触发的 Workflow |
-|---------|----------------|
-| `ruoyi-**` Java 代码、`pom.xml` | `backend-deploy` |
-| `ruoyi-ui/` Vue 管理后台 | `frontend-admin-deploy` |
-| `uniapp-h5/` H5 用户端 | `h5-deploy` |
-| 同时修改多处 | 并行触发多个 Workflow |
+| 修改内容 | 部署方式 |
+|---------|---------|
+| `ruoyi-**` Java 代码、`pom.xml` | GitHub Actions 自动触发 `backend-deploy` |
+| `ruoyi-ui/` Vue 管理后台 | GitHub Actions 自动触发 `frontend-admin-deploy` |
+| `uniapp-h5/` H5 用户端 | HBuilderX 本地构建，手动执行 `deploy-h5.sh` |
 
 ---
 
@@ -521,20 +495,27 @@ jobs:
 - [ ] 将 deploy 公钥加入 `~/.ssh/authorized_keys`
 - [ ] 配置 sudoers（允许 reload openresty）
 
-**后端服务器：**
+**后端服务器（36.133.39.49）：**
 
 - [ ] 安装 1Panel
-- [ ] 通过 1Panel 应用商店安装 OpenJDK 17
-- [ ] 通过 1Panel 应用商店安装 Supervisor
+- [ ] SSH 执行：`sudo apt install -y openjdk-17-jdk supervisor`
+- [ ] 1Panel → 工具箱 → 进程守护 → 初始化
+- [ ] 创建目录：`mkdir -p /www/wwwroot/ghz-backend/logs`
 - [ ] 手动上传第一个 JAR 包到 `/www/wwwroot/ghz-backend/`
-- [ ] 在 1Panel Supervisor 中配置并启动 `ghz-backend` 进程
+- [ ] 在 1Panel 进程守护中创建并启动 `ghz-backend` 进程
 - [ ] 将 deploy 公钥加入 `~/.ssh/authorized_keys`
 - [ ] 配置 sudoers（允许 supervisorctl restart）
 
 **GitHub：**
 
 - [ ] 在仓库 Settings → Secrets 中填入所有 Secret
-- [ ] 创建三个 workflow 文件并 push 到 master
+- [ ] 创建两个 workflow 文件并 push 到 master（`backend-deploy.yml`、`frontend-admin-deploy.yml`）
+
+**本机（H5 部署）：**
+
+- [ ] 生成 SSH 密钥：`ssh-keygen -t ed25519 -f ~/.ssh/github_deploy`
+- [ ] 将公钥放到前端服务器 deploy 用户的 `~/.ssh/authorized_keys`
+- [ ] HBuilderX 发布 H5 后执行：`bash uniapp-h5/deploy-h5.sh`
 
 ---
 
@@ -570,10 +551,10 @@ tail -100 /www/wwwroot/ghz-backend/logs/app-error.log
 
 ```bash
 # 确认目录权限
-ls -la /www/wwwroot/ghz-admin/
+ls -la /opt/1panel/www/sites/admin.caigon.cn/index/
 # OpenResty 在 Ubuntu 上以 www-data 运行
-sudo chown -R deploy:www-data /www/wwwroot/ghz-admin
-sudo chmod -R 775 /www/wwwroot/ghz-admin
+sudo chown -R deploy:www-data /opt/1panel/www/sites/admin.caigon.cn/index
+sudo chmod -R 775 /opt/1panel/www/sites/admin.caigon.cn/index
 ```
 
 **Q: GitHub Actions 免费额度够用吗？**
@@ -583,7 +564,7 @@ sudo chmod -R 775 /www/wwwroot/ghz-admin
 **Q: 如何在 1Panel 面板里实时看后端日志？**
 
 ```
-1Panel → 工具箱（或面板工具）→ Supervisor → ghz-backend → 查看日志
+1Panel → 工具箱 → 进程守护 → ghz-backend → 日志
 ```
 
 或直接 SSH 查看：

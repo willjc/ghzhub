@@ -23,13 +23,13 @@ const development = {
 
 // 生产环境配置
 const production = {
-  baseUrl: 'http://ghzapi.dayushaiwang.com',
-  uploadUrl: 'http://ghzapi.dayushaiwang.com',
-  staticUrl: 'http://ghzapi.dayushaiwang.com',
+  baseUrl: 'https://api.caigon.cn',
+  uploadUrl: 'https://api.caigon.cn',
+  staticUrl: 'https://api.caigon.cn',
   timeout: 30000,
 
   // 郑好办配置
-  zhbModuleId: '413780', // 郑好办应用ID��正式）
+  zhbModuleId: '413780', // 郑好办应用ID（正式）
 }
 
 // 测试环境配置（本地开发，后端8090端口）

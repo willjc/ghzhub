@@ -1,0 +1,73 @@
+name: Backend Deploy
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'ruoyi-**/**'
+      - 'pom.xml'
+      - '.github/workflows/backend-deploy.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn clean package -DskipTests -pl ruoyi-admin -am
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p 3322 ${{ secrets.BACKEND_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Upload JAR
+        run: |
+          scp -i ~/.ssh/id_ed25519 -P 3322 \
+            ruoyi-admin/target/ruoyi-admin.jar \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.BACKEND_HOST }}:${{ secrets.BACKEND_JAR_PATH }}/ruoyi-admin-new.jar
+
+      - name: Deploy & Restart via Supervisor
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -p 3322 \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.BACKEND_HOST }} << 'EOF'
+            set -e
+            cd ${{ secrets.BACKEND_JAR_PATH }}
+
+            # 备份旧版本
+            [ -f ruoyi-admin.jar ] && cp ruoyi-admin.jar ruoyi-admin-backup.jar
+
+            # 替换新版本
+            mv ruoyi-admin-new.jar ruoyi-admin.jar
+
+            # 通过 Supervisor 重启
+            sudo supervisorctl restart ghz-backend
+
+            # 等待启动并检查状态
+            sleep 20
+            STATUS=$(sudo supervisorctl status ghz-backend | awk '{print $2}')
+            if [ "$STATUS" != "RUNNING" ]; then
+              echo "启动失败（状态: $STATUS），自动回滚..."
+              [ -f ruoyi-admin-backup.jar ] && mv ruoyi-admin-backup.jar ruoyi-admin.jar
+              sudo supervisorctl restart ghz-backend
+              exit 1
+            fi
+
+            echo "后端部署成功，状态: $STATUS"
+          EOF
+
+      - name: Cleanup SSH
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519
