@@ -205,6 +205,6 @@ esign:
   # 文档模板 ID（在 e签宝 SaaS 后台配置）
   template-id: "a7e3e9e70d3543b3b221ec0770ed3666"
   # 实名认证完成后跳回前端H5的地址
-  auth-redirect-url: "http://192.168.31.46:8091/#/pages/auth/verify?auth_done=1"
+  auth-redirect-url: "https://app.caigon.cn/#/pages/auth/verify?auth_done=1"
   # 前端H5地址（签署完成跳转用）
-  frontend-url: "http://192.168.31.46:8091/#/pages/affairs/contract?esign_done=1"
+  frontend-url: "https://app.caigon.cn/#/pages/affairs/contract?esign_done=1"
