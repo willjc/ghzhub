@@ -34,8 +34,8 @@ scp -i "$SSH_KEY" -P "$SSH_PORT" -r \
   "$DIST_DIR/." \
   "$DEPLOY_USER@$FRONTEND_HOST:$REMOTE_PATH/"
 
-# 重载 OpenResty
-ssh -i "$SSH_KEY" -p "$SSH_PORT" "$DEPLOY_USER@$FRONTEND_HOST" \
-  "sudo systemctl reload openresty"
+# # 重载 OpenResty
+# ssh -i "$SSH_KEY" -p "$SSH_PORT" "$DEPLOY_USER@$FRONTEND_HOST" \
+#   "sudo systemctl reload openresty"
 
 echo "H5 部署成功！访问 https://app.caigon.cn 验证"
