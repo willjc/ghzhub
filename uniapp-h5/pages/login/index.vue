@@ -14,17 +14,19 @@
 		<view class="login-card">
 			<text class="card-title">欢迎登录</text>
 
-			<!-- 微信登录按钮 -->
-			<view class="login-btn wechat-btn" @click="handleWechatLogin">
-				<image class="btn-icon" src="/static/wechat-icon.png" mode="aspectFit"></image>
-				<text class="btn-text">微信登录</text>
-			</view>
+			<!-- #ifdef MP-WEIXIN -->
+			<!-- 微信小程序：授权手机号登录 -->
+			<button class="login-btn wechat-btn" open-type="getPhoneNumber" @getphonenumber="onGetPhoneNumber" :disabled="loading">
+				<text class="btn-text">{{ loading ? '登录中...' : '微信授权登录' }}</text>
+			</button>
+			<!-- #endif -->
 
-			<!-- 郑好办登录按钮 -->
-			<view class="login-btn zhenghaoban-btn" @click="handleZhenghabanLogin">
-				<image class="btn-icon" src="/static/zhenghaoban-icon.png" mode="aspectFit"></image>
-				<text class="btn-text">郑好办登录</text>
+			<!-- #ifdef H5 -->
+			<!-- H5环境：测试登录 -->
+			<view class="login-btn wechat-btn" @click="handleTestLogin">
+				<text class="btn-text">{{ loading ? '登录中...' : '测试登录' }}</text>
 			</view>
+			<!-- #endif -->
 
 			<text class="tips">登录即表示同意《用户协议》和《隐私政策》</text>
 		</view>
@@ -32,8 +34,13 @@
 </template>
 
 <script>
-	import { login, zhbLogin } from '@/api/auth'
-	import { userAuth, isInZhbApp } from '@/utils/alipay'
+	// #ifdef MP-WEIXIN
+	import { wxLogin } from '@/api/auth'
+	// #endif
+
+	// #ifdef H5
+	import { login } from '@/api/auth'
+	// #endif
 
 	export default {
 		data() {
@@ -42,27 +49,40 @@
 			}
 		},
 		methods: {
+			// #ifdef MP-WEIXIN
 			/**
-			 * 微信登录
+			 * 微信小程序：获取手机号回调
 			 */
-			async handleWechatLogin() {
+			async onGetPhoneNumber(e) {
 				if (this.loading) return
+
+				// 用户拒绝授权
+				if (e.detail.errMsg !== 'getPhoneNumber:ok') {
+					uni.showToast({
+						title: '需要授权手机号才能登录',
+						icon: 'none'
+					})
+					return
+				}
+
 				this.loading = true
 
 				try {
-					// 开发环境：使用测试账号
-					// 生产环境：需要对接微信小程序登录
-					const testData = {
-						loginType: 'wechat',
-						phone: '13800138001',
-						openId: 'wx_test_001',
-						nickname: '微信测试用户'
-					}
+					// 1. 调用wx.login获取code
+					const loginRes = await new Promise((resolve, reject) => {
+						wx.login({
+							success: resolve,
+							fail: reject
+						})
+					})
 
-					// 调用登录接口
-					const response = await login(testData)
+					// 2. 发送code和phoneCode到后端
+					const response = await wxLogin({
+						code: loginRes.code,
+						phoneCode: e.detail.code
+					})
 
-					// 保存Token、用户ID和用户信息
+					// 3. 存储登录信息
 					uni.setStorageSync('token', response.data.token)
 					uni.setStorageSync('userId', response.data.userInfo.userId)
 					uni.setStorageSync('userInfo', response.data.userInfo)
@@ -72,15 +92,61 @@
 						icon: 'success'
 					})
 
-					// 延迟跳转，让用户看到成功提示
+					// 4. 根据isInfoCompleted决定跳转
 					setTimeout(() => {
-						uni.reLaunch({
-							url: '/pages/index/index'
-						})
+						if (response.data.userInfo.isInfoCompleted === '1') {
+							uni.reLaunch({ url: '/pages/index/index' })
+						} else {
+							uni.redirectTo({ url: '/pages/my/complete-info' })
+						}
 					}, 1000)
 
 				} catch (error) {
 					console.error('微信登录失败:', error)
+					uni.showToast({
+						title: error.message || error.msg || '登录失败',
+						icon: 'none'
+					})
+				} finally {
+					this.loading = false
+				}
+			},
+			// #endif
+
+			// #ifdef H5
+			/**
+			 * H5环境：测试登录
+			 */
+			async handleTestLogin() {
+				if (this.loading) return
+				this.loading = true
+
+				try {
+					const testData = {
+						loginType: 'wechat',
+						phone: '13800138001',
+						openId: 'wx_test_001',
+						nickname: '测试用户'
+					}
+
+					const response = await login(testData)
+
+					uni.setStorageSync('token', response.data.token)
+					uni.setStorageSync('userId', response.data.userInfo.userId)
+					uni.setStorageSync('userInfo', response.data.userInfo)
+
+					uni.showToast({ title: '登录成功', icon: 'success' })
+
+					setTimeout(() => {
+						if (response.data.userInfo.isInfoCompleted === '1') {
+							uni.reLaunch({ url: '/pages/index/index' })
+						} else {
+							uni.redirectTo({ url: '/pages/my/complete-info' })
+						}
+					}, 1000)
+
+				} catch (error) {
+					console.error('登录失败:', error)
 					uni.showToast({
 						title: error.message || '登录失败',
 						icon: 'none'
@@ -88,79 +154,8 @@
 				} finally {
 					this.loading = false
 				}
-			},
-
-			/**
-			 * 郑好办登录
-			 */
-			async handleZhenghabanLogin() {
-				if (this.loading) return
-
-				// 检查是否在郑好办WebView中
-				if (!isInZhbApp()) {
-					uni.showToast({
-						title: '请在郑好办APP中打开',
-						icon: 'none',
-						duration: 2000
-					})
-					return
-				}
-
-				this.loading = true
-				uni.showLoading({ title: '授权中...' })
-
-				try {
-					// 调用郑好办授权JSAPI，获取authCode
-					const authCode = await userAuth({
-						moduleId: this.$config?.zhbModuleId || '1220', // 从配置读取moduleId
-						scope: 'userDetail' // 获取详细信息（含身份证号）
-					})
-
-					uni.hideLoading()
-
-					// 用授权码调用后端登录接口
-					uni.showLoading({ title: '登录中...' })
-					const response = await zhbLogin({ authCode })
-					uni.hideLoading()
-
-					// 保存Token、用户ID和用户信息
-					uni.setStorageSync('token', response.data.token)
-					uni.setStorageSync('userId', response.data.userInfo.userId)
-					uni.setStorageSync('userInfo', response.data.userInfo)
-
-					uni.showToast({
-						title: '登录成功',
-						icon: 'success'
-					})
-
-					// 延迟跳转
-					setTimeout(() => {
-						uni.reLaunch({
-							url: '/pages/index/index'
-						})
-					}, 1000)
-
-				} catch (error) {
-					uni.hideLoading()
-					console.error('郑好办登录失败:', error)
-
-					// 根据错误类型显示不同提示
-					let errorMsg = '登录失败'
-					if (error.message) {
-						errorMsg = error.message
-					} else if (error.errMsg) {
-						errorMsg = error.errMsg
-					}
-
-					uni.showToast({
-						title: errorMsg,
-						icon: 'none',
-						duration: 2000
-					})
-				} finally {
-					this.loading = false
-				}
 			}
+			// #endif
 		}
 	}
 </script>
@@ -252,6 +247,13 @@
 		justify-content: center;
 		margin-bottom: 30rpx;
 		transition: all 0.3s;
+		border: none;
+		padding: 0;
+		line-height: 96rpx;
+	}
+
+	.login-btn::after {
+		border: none;
 	}
 
 	.login-btn:active {
@@ -262,17 +264,6 @@
 	.wechat-btn {
 		background: linear-gradient(135deg, #09bb07 0%, #06a906 100%);
 		box-shadow: 0 8rpx 20rpx rgba(9,187,7,0.3);
-	}
-
-	.zhenghaoban-btn {
-		background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
-		box-shadow: 0 8rpx 20rpx rgba(74,144,226,0.3);
-	}
-
-	.btn-icon {
-		width: 40rpx;
-		height: 40rpx;
-		margin-right: 16rpx;
 	}
 
 	.btn-text {
