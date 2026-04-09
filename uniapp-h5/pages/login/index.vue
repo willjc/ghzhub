@@ -105,13 +105,9 @@
 						icon: 'success'
 					})
 
-					// 4. 根据isInfoCompleted决定跳转
+					// 4. 跳转首页（首页根据isInfoCompleted决定是否弹窗）
 					setTimeout(() => {
-						if (response.data.userInfo.isInfoCompleted === '1') {
-							uni.reLaunch({ url: '/pages/index/index' })
-						} else {
-							uni.redirectTo({ url: '/pages/my/complete-info' })
-						}
+						uni.reLaunch({ url: '/pages/index/index' })
 					}, 1000)
 
 				} catch (error) {

@@ -1,5 +1,76 @@
 <template>
 	<view class="page">
+		<!-- 个人信息弹窗 -->
+		<view class="modal-overlay" v-if="showModal" @click="closeModal">
+			<view class="modal-content" @click.stop>
+				<view class="modal-header">
+					<image class="modal-header-bg" src="/static/弹窗bg@2x.png" mode="aspectFill"></image>
+					<text class="modal-title">个人信息</text>
+				</view>
+				<view class="modal-body">
+					<view class="form-item">
+						<view class="form-label">
+							<text class="required-mark">*</text>
+							<text class="label-text">选择身份</text>
+						</view>
+						<view class="form-input-wrapper">
+							<picker class="form-input picker-input" :range="identityTypes" range-key="label" @change="onIdentityChange">
+								<view class="picker-input form-input">
+									<text :class="!formData.identity ? 'placeholder' : ''">{{ getIdentityLabel() || '请选择您的身份' }}</text>
+								</view>
+							</picker>
+						</view>
+					</view>
+					<view class="form-item">
+						<view class="form-label">
+							<text class="required-mark">*</text>
+							<text class="label-text">姓名</text>
+						</view>
+						<input class="form-input" placeholder="请输入姓名" v-model="formData.name" />
+					</view>
+					<view class="form-item">
+						<view class="form-label">
+							<text class="required-mark">*</text>
+							<text class="label-text">身份证号</text>
+						</view>
+						<input class="form-input" placeholder="请输入身份证号" v-model="formData.idCard" />
+					</view>
+					<view class="form-item">
+						<view class="form-label">
+							<text class="required-mark">*</text>
+							<text class="label-text">联系电话</text>
+						</view>
+						<input class="form-input" placeholder="请输入联系电话" v-model="formData.phone" type="number" maxlength="11" />
+					</view>
+					<view class="form-item">
+						<view class="form-label">
+							<text class="required-mark">*</text>
+							<text class="label-text">工作单位</text>
+						</view>
+						<input class="form-input" placeholder="请输入工作单位" v-model="formData.workUnit" />
+					</view>
+					<view class="form-item">
+						<view class="form-label">
+							<text class="required-mark">*</text>
+							<text class="label-text">单位联系电话</text>
+						</view>
+						<input class="form-input" placeholder="请输入单位联系电话" v-model="formData.workPhone" />
+					</view>
+					<view class="form-item">
+						<view class="form-label">
+							<text class="label-text">配偶</text>
+						</view>
+						<input class="form-input" placeholder="请输入有/无" v-model="formData.spouse" />
+					</view>
+					<view class="modal-footer">
+						<view class="confirm-btn" @click="handleConfirm">
+							<text class="confirm-btn-text">确定</text>
+						</view>
+					</view>
+				</view>
+			</view>
+		</view>
+
 		<!-- 滚动内容区域 -->
 		<scroll-view class="scroll-content" scroll-y>
 			<!-- Hero Banner -->
@@ -135,7 +206,8 @@
 	import { getProjectListByType } from '@/api/project'
 	import { getHouseListByProjectType } from '@/api/house'
 	import { getBannerList, getLatestNotice } from '@/api/config'
-import { BASE_URL, get } from '@/utils/request'
+	import { updateUserInfo } from '@/api/auth'
+	import { BASE_URL, get } from '@/utils/request'
 	import config from '@/config/index'
 
 	export default {
@@ -169,7 +241,22 @@ import { BASE_URL, get } from '@/utils/request'
 					{ name: '我的消息', icon: '/static/我的消息@2x.png', key: 'message' }
 				],
 				authStatus: '0', // 实名认证状态（0未认证 1认证中 2已认证）
-					listingData: [] // 项目列表数据（从API加载）
+				listingData: [], // 项目列表数据（从API加载）
+				showModal: false,
+				formData: {
+					identity: '',
+					name: '',
+					idCard: '',
+					phone: '',
+					workUnit: '',
+					workPhone: '',
+					spouse: ''
+				},
+				identityTypes: [
+					{ label: '在职人员', value: '1' },
+					{ label: '应届毕业生', value: '2' }
+				],
+				selectedIdentityIndex: -1
 			}
 		},
 		onLoad() {
@@ -186,8 +273,10 @@ import { BASE_URL, get } from '@/utils/request'
 			// 检查用户是否已填写个人信息
 			const userInfo = uni.getStorageSync('userInfo')
 			if (userInfo && userInfo.isInfoCompleted !== '1') {
-				uni.redirectTo({ url: '/pages/my/complete-info' })
-				return
+				this.showModal = true
+				this.formData.phone = userInfo.phone || ''
+			} else {
+				this.showModal = false
 			}
 
 			// 获取人才公寓项目列表
@@ -204,6 +293,54 @@ import { BASE_URL, get } from '@/utils/request'
 
 		},
 		methods: {
+			closeModal() {
+				// 不允许关闭弹窗（必须填写信息）
+			},
+			onIdentityChange(e) {
+				this.selectedIdentityIndex = e.detail.value
+				this.formData.identity = this.identityTypes[e.detail.value].value
+			},
+			getIdentityLabel() {
+				if (!this.formData.identity) return ''
+				const type = this.identityTypes.find(item => item.value === this.formData.identity)
+				return type ? type.label : ''
+			},
+			async handleConfirm() {
+				if (!this.formData.identity || !this.formData.name || !this.formData.idCard ||
+					!this.formData.phone || !this.formData.workUnit || !this.formData.workPhone) {
+					uni.showToast({ title: '请填写必填项', icon: 'none' })
+					return
+				}
+				try {
+					uni.showLoading({ title: '提交中...' })
+					const userInfo = uni.getStorageSync('userInfo') || {}
+					await updateUserInfo({
+						userId: userInfo.userId,
+						contactPhone: this.formData.phone,
+						identityType: this.formData.identity,
+						realName: this.formData.name,
+						idCard: this.formData.idCard,
+						workUnit: this.formData.workUnit,
+						unitContact: this.formData.workPhone,
+						spouseName: this.formData.spouse
+					})
+					uni.hideLoading()
+					userInfo.isInfoCompleted = '1'
+					userInfo.identityType = this.formData.identity
+					userInfo.realName = this.formData.name
+					userInfo.idCard = this.formData.idCard
+					userInfo.contactPhone = this.formData.phone
+					userInfo.workUnit = this.formData.workUnit
+					userInfo.unitContact = this.formData.workPhone
+					userInfo.spouseName = this.formData.spouse
+					uni.setStorageSync('userInfo', userInfo)
+					uni.showToast({ title: '提交成功', icon: 'success' })
+					setTimeout(() => { this.showModal = false }, 1000)
+				} catch (error) {
+					uni.hideLoading()
+					uni.showToast({ title: error.msg || '提交失败', icon: 'none' })
+				}
+			},
 			/**
 			 * 加载实名认证状态
 			 */
@@ -1201,6 +1338,125 @@ margin-right: 24rpx;
 	.auth-mask-btn {
 		font-size: 30rpx;
 		color: #4A90E2;
+		font-weight: 500;
+	}
+
+	/* 弹窗样式 */
+	.modal-overlay {
+		position: fixed;
+		top: 0; left: 0; right: 0; bottom: 0;
+		background-color: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 100;
+	}
+	.modal-content {
+		width: 640rpx;
+		height: 842rpx;
+		border-radius: 32rpx;
+		background: #ffffff;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		position: relative;
+	}
+	.modal-header {
+		width: 640rpx;
+		height: 186rpx;
+		border-radius: 32rpx 32rpx 0 0;
+		position: relative;
+		overflow: hidden;
+		display: flex;
+		justify-content: flex-start;
+		padding-left: 30rpx;
+	}
+	.modal-header-bg {
+		position: absolute;
+		top: 0; left: 0;
+		width: 100%; height: 100%;
+	}
+	.modal-title {
+		width: 144rpx;
+		height: 51rpx;
+		color: #000000;
+		font-size: 36rpx;
+		font-weight: 500;
+		padding-top: 42rpx;
+		padding-left: 10rpx;
+		line-height: 51rpx;
+		position: relative;
+		z-index: 1;
+	}
+	.modal-body {
+		flex: 1;
+		padding: 0rpx 36rpx 36rpx;
+		overflow-y: auto;
+		box-sizing: border-box;
+		margin-top: -60rpx;
+		position: relative;
+		z-index: 1;
+	}
+	.form-item {
+		display: flex;
+		margin-bottom: 30rpx;
+	}
+	.form-label {
+		width: 217rpx;
+		display: flex;
+		align-items: center;
+	}
+	.required-mark {
+		color: #ff0000;
+		font-size: 28rpx;
+		margin-right: 4rpx;
+	}
+	.label-text {
+		color: #333333;
+		font-size: 28rpx;
+	}
+	.form-input-wrapper {
+		position: relative;
+		display: flex;
+		align-items: center;
+		width: 340rpx;
+	}
+	.picker-input {
+		display: flex;
+		align-items: center;
+		width: 100%;
+		box-sizing: border-box;
+	}
+	.picker-input .placeholder {
+		color: #b3b3b3;
+	}
+	.form-input {
+		width: 340rpx;
+		height: 54rpx;
+		border-radius: 4rpx;
+		border: 1.4rpx solid #e1eaf2;
+		padding: 0 20rpx;
+		box-sizing: border-box;
+		font-size: 28rpx;
+		color: #333333;
+	}
+	.modal-footer {
+		margin-top: 40rpx;
+		display: flex;
+		justify-content: center;
+	}
+	.confirm-btn {
+		width: 550rpx;
+		height: 90rpx;
+		border-radius: 20rpx;
+		background: linear-gradient(270deg, #4fc7ff 0%, #0f73ff 100%);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.confirm-btn-text {
+		color: #ffffff;
+		font-size: 32rpx;
 		font-weight: 500;
 	}
 </style>

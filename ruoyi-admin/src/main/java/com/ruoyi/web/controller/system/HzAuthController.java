@@ -236,26 +236,38 @@ public class HzAuthController extends BaseController {
 
     /**
      * 更新用户信息
+     * 使用Map接参避免HzUser中Date字段的Jackson反序列化问题
      */
     @PutMapping("/updateInfo")
-    public AjaxResult updateUserInfo(@RequestBody HzUser user) {
-        // TODO: 从Token中解析userId（当前通过userId查询，前端需要传userId）
-        if (user.getUserId() == null) {
+    public AjaxResult updateUserInfo(@RequestBody Map<String, Object> params) {
+        Object userIdObj = params.get("userId");
+        if (userIdObj == null) {
             return error("用户ID不能为空");
+        }
+        Long userId;
+        try {
+            userId = Long.valueOf(userIdObj.toString());
+        } catch (NumberFormatException e) {
+            return error("用户ID格式不正确");
         }
 
         try {
-            // 根据userId查询用户
-            HzUser existUser = userService.getById(user.getUserId());
+            HzUser existUser = userService.getById(userId);
             if (existUser == null) {
                 return error("用户不存在");
             }
 
-            // 更新用户信息（保留原登录手机号，只更新其他字段）
-            user.setIsInfoCompleted("1"); // 标记为已完善
-            // 不修改登录手机号，由前端传入的phone字段作为联系电话
-            boolean result = userService.updateById(user);
+            // 只更新前端传入的业务字段，不触碰Date字段
+            if (params.containsKey("identityType"))  existUser.setIdentityType((String) params.get("identityType"));
+            if (params.containsKey("realName"))       existUser.setRealName((String) params.get("realName"));
+            if (params.containsKey("idCard"))         existUser.setIdCard((String) params.get("idCard"));
+            if (params.containsKey("contactPhone"))   existUser.setContactPhone((String) params.get("contactPhone"));
+            if (params.containsKey("workUnit"))       existUser.setWorkUnit((String) params.get("workUnit"));
+            if (params.containsKey("unitContact"))    existUser.setUnitContact((String) params.get("unitContact"));
+            if (params.containsKey("spouseName"))     existUser.setSpouseName((String) params.get("spouseName"));
+            existUser.setIsInfoCompleted("1");
 
+            boolean result = userService.updateById(existUser);
             if (result) {
                 return success("信息更新成功");
             } else {
