@@ -1,93 +1,5 @@
 <template>
 	<view class="page">
-		<!-- 个人信息弹窗 -->
-		<view class="modal-overlay" v-if="showModal" @click="closeModal">
-			<view class="modal-content" @click.stop>
-				<!-- 顶部背景 -->
-				<view class="modal-header">
-					<image class="modal-header-bg" src="/static/弹窗bg@2x.png" mode="aspectFill"></image>
-					<text class="modal-title">个人信息</text>
-				</view>
-				
-				<!-- 表单内容 -->
-				<view class="modal-body">
-					<!-- 选择身份 -->
-					<view class="form-item">
-						<view class="form-label">
-							<text class="required-mark">*</text>
-							<text class="label-text">选择身份</text>
-						</view>
-				<view class="form-input-wrapper">
-					<select class="form-input form-select" v-model="formData.identity">
-						<option value="" disabled>请选择您的身份</option>
-						<option value="1">在职人员</option>
-						<option value="2">应届毕业生</option>
-					</select>
-				</view>					</view>
-
-					<!-- 姓名 -->
-					<view class="form-item">
-						<view class="form-label">
-							<text class="required-mark">*</text>
-							<text class="label-text">姓名</text>
-						</view>
-						<input class="form-input" placeholder="请输入姓名" v-model="formData.name" />
-					</view>
-					
-					<!-- 身份证号 -->
-					<view class="form-item">
-						<view class="form-label">
-							<text class="required-mark">*</text>
-							<text class="label-text">身份证号</text>
-						</view>
-						<input class="form-input" placeholder="请输入身份证号" v-model="formData.idCard" />
-					</view>
-					
-				<!-- 联系电话 -->
-				<view class="form-item">
-					<view class="form-label">
-						<text class="required-mark">*</text>
-						<text class="label-text">联系电话</text>
-					</view>
-					<input class="form-input" placeholder="请输入联系电话" v-model="formData.phone" type="number" maxlength="11" />
-				</view>
-					
-					<!-- 工作单位 -->
-					<view class="form-item">
-						<view class="form-label">
-							<text class="required-mark">*</text>
-							<text class="label-text">工作单位</text>
-						</view>
-						<input class="form-input" placeholder="请输入工作单位" v-model="formData.workUnit" />
-					</view>
-					
-					<!-- 单位联系电话 -->
-					<view class="form-item">
-						<view class="form-label">
-							<text class="required-mark">*</text>
-							<text class="label-text">单位联系电话</text>
-						</view>
-						<input class="form-input" placeholder="请输入单位联系电话" v-model="formData.workPhone" />
-					</view>
-					
-					<!-- 配偶 -->
-					<view class="form-item">
-						<view class="form-label">
-							<text class="label-text">配偶</text>
-						</view>
-						<input class="form-input" placeholder="请输入有/无" v-model="formData.spouse" />
-					</view>
-					
-					<!-- 确定按钮 -->
-					<view class="modal-footer">
-						<view class="confirm-btn" @click="handleConfirm">
-							<text class="confirm-btn-text">确定</text>
-						</view>
-					</view>
-				</view>
-			</view>
-		</view>
-		
 		<!-- 滚动内容区域 -->
 		<scroll-view class="scroll-content" scroll-y>
 			<!-- Hero Banner -->
@@ -223,8 +135,7 @@
 	import { getProjectListByType } from '@/api/project'
 	import { getHouseListByProjectType } from '@/api/house'
 	import { getBannerList, getLatestNotice } from '@/api/config'
-	import { updateUserInfo } from '@/api/auth'
-	import { BASE_URL, get } from '@/utils/request'
+import { BASE_URL, get } from '@/utils/request'
 	import config from '@/config/index'
 
 	export default {
@@ -232,21 +143,6 @@
 			return {
 				noticeText: '', // 最新通知内容
 				latestNoticeId: null, // 最新通知ID（用于跳转）
-				showModal: false, // 弹窗显示状态
-				formData: { // 弹窗表单数据
-					identity: '',
-					name: '',
-					idCard: '',
-					phone: '', // 联系电话
-					workUnit: '',
-					workPhone: '',
-					spouse: ''
-				},
-				identityTypes: [ // 身份类型选项
-					{ label: '在职人员', value: '1' },
-					{ label: '应届毕业生', value: '2' }
-				],
-				selectedIdentityIndex: -1, // 选中的身份索引
 				currentBannerIndex: 0, // 当前轮播图索引
 				bannerList: [], // 轮播图列表（从API加载）
 				activeCategory: 'talent',
@@ -290,12 +186,8 @@
 			// 检查用户是否已填写个人信息
 			const userInfo = uni.getStorageSync('userInfo')
 			if (userInfo && userInfo.isInfoCompleted !== '1') {
-				// 首次登录且未填写信息，显示弹窗
-				this.showModal = true
-				// 联系电话默认为登录手机号
-				this.formData.phone = userInfo.phone
-			} else {
-				this.showModal = false
+				uni.redirectTo({ url: '/pages/my/complete-info' })
+				return
 			}
 
 			// 获取人才公寓项目列表
@@ -312,13 +204,6 @@
 
 		},
 		methods: {
-			/**
-			 * 关闭弹窗
-			 */
-			closeModal() {
-				this.showModal = false
-			},
-
 			/**
 			 * 加载实名认证状态
 			 */
@@ -350,98 +235,6 @@
 						}
 					}
 				})
-			},
-
-			/**
-			 * 选择身份类型
-			 */
-			onIdentityChange(e) {
-				const index = e.detail.value
-				this.selectedIdentityIndex = index
-				this.formData.identity = this.identityTypes[index].value
-			},
-
-			/**
-			 * 获取身份类型标签
-			 */
-			getIdentityLabel() {
-				if (!this.formData.identity) return ''
-				const type = this.identityTypes.find(item => item.value === this.formData.identity)
-				return type ? type.label : ''
-			},
-
-			/**
-			 * 确认提交表单
-			 */
-			async handleConfirm() {
-				// 验证表单
-				if (!this.formData.identity || !this.formData.name || !this.formData.idCard ||
-					!this.formData.phone || !this.formData.workUnit || !this.formData.workPhone) {
-					uni.showToast({
-						title: '请填写必填项',
-						icon: 'none'
-					})
-					return
-				}
-
-				try {
-					uni.showLoading({ title: '提交中...' })
-
-					// 获取用户信息
-					const userInfo = uni.getStorageSync('userInfo') || {}
-
-					// 调用后端API提交表单
-					await updateUserInfo({
-						userId: userInfo.userId, // 传递userId而不是phone
-						contactPhone: this.formData.phone, // 联系电话
-						identityType: this.formData.identity,
-						realName: this.formData.name,
-						idCard: this.formData.idCard,
-						workUnit: this.formData.workUnit,
-						unitContact: this.formData.workPhone,
-						spouseName: this.formData.spouse
-					})
-
-
-
-
-
-
-
-
-
-
-
-					uni.hideLoading()
-
-					// 更新本地用户信息
-					// userInfo已在上方声明
-					userInfo.isInfoCompleted = '1'
-					userInfo.identityType = this.formData.identity
-					userInfo.realName = this.formData.name
-					userInfo.idCard = this.formData.idCard
-				userInfo.contactPhone = this.formData.phone // 更新联系电话
-					userInfo.workUnit = this.formData.workUnit
-					userInfo.unitContact = this.formData.workPhone
-					userInfo.spouseName = this.formData.spouse
-					uni.setStorageSync('userInfo', userInfo)
-
-					uni.showToast({
-						title: '提交成功',
-						icon: 'success'
-					})
-
-					setTimeout(() => {
-						this.showModal = false
-					}, 1000)
-				} catch (error) {
-					uni.hideLoading()
-					console.error('提交表单失败:', error)
-					uni.showToast({
-						title: error.msg || '提交失败',
-						icon: 'none'
-					})
-				}
 			},
 
 			/**
@@ -1379,253 +1172,6 @@ margin-right: 24rpx;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
 	}
 
-	/* 弹窗样式 */
-	.modal-overlay {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-color: rgba(0, 0, 0, 0.5);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 100;
-	}
-
-	.modal-content {
-		width: 640rpx;
-		height: 842rpx;
-		border-radius: 32rpx;
-		opacity: 1;
-		background: #ffffff;
-		display: flex;
-		flex-direction: column;
-		overflow: hidden;
-		position: relative;
-	}
-
-	.modal-header {
-		width: 640rpx;
-		height: 186rpx;
-		border-radius: 32rpx 32rpx 0 0;
-		opacity: 1;
-		position: relative;
-		overflow: hidden;
-		display: flex;
-		justify-content: flex-start;
-		padding-left: 30rpx;
-	}
-
-	.modal-header-bg {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-	}
-
-	.modal-title {
-		width: 144rpx;
-		height: 51rpx;
-		opacity: 1;
-		color: #000000;
-		font-size: 36rpx;
-		font-weight: 500;
-		font-family: "PingFang SC", "苹方-简", sans-serif;
-		text-align: left;
-		padding-top: 42rpx;
-		padding-left: 10rpx;
-		line-height: 51rpx;
-		position: relative;
-		z-index: 1;
-	}
-
-	.modal-body {
-		flex: 1;
-		padding: 0rpx 36rpx 36rpx ;
-		overflow-y: auto;
-		box-sizing: border-box;
-		margin-top: -60rpx;
-		position: relative;
-		z-index: 1;
-	}
-
-	.form-item {
-		display: flex;
-		margin-bottom: 30rpx;
-	}
-
-	.form-label {
-		width: 217rpx;
-		display: flex;
-		align-items: center;
-		margin-bottom: 12rpx;
-	}
-
-	.required-mark {
-		width: 127rpx;
-		height: 40rpx;
-		opacity: 1;
-		color: #ff0000;
-		font-size: 28rpx;
-		font-weight: normal;
-		font-family: "PingFang SC", "苹方-简", sans-serif;
-		text-align: left;
-		line-height: 40rpx;
-		width: auto;
-		margin-right: 4rpx;
-	}
-
-	.label-text {
-		width: 217rpx;
-		height: 40rpx;
-		opacity: 1;
-		color: #333333;
-		font-size: 28rpx;
-		font-weight: normal;
-		font-family: "PingFang SC", "苹方-简", sans-serif;
-		text-align: left;
-		line-height: 40rpx;
-	}
-
-	.form-input-wrapper {
-		position: relative;
-		display: flex;
-		align-items: center;
-		width: 340rpx;
-		max-width: 340rpx;
-	}
-
-	/* Picker组件样式控制 */
-	.form-input-wrapper picker,
-	.form-input-wrapper .uni-picker {
-		width: 100%;
-		max-width: 340rpx;
-	}
-
-	/* H5环境下控制picker生成的select元素 */
-	.form-input-wrapper ::v-deep select {
-		max-width: 340rpx !important;
-		width: 340rpx !important;
-		box-sizing: border-box !important;
-	}
-
-	/* 控制下拉选项列表 */
-	.form-input-wrapper ::v-deep .uni-picker-dropdown,
-	.form-input-wrapper ::v-deep .uni-picker-list,
-	.form-input-wrapper ::v-deep .uni-picker-options {
-		max-width: 340rpx !important;
-		width: 340rpx !important;
-		box-sizing: border-box !important;
-	}
-
-	/* 控制每个下拉选项 */
-	.form-input-wrapper ::v-deep option {
-		max-width: 340rpx !important;
-		width: 100% !important;
-		overflow: hidden !important;
-		text-overflow: ellipsis !important;
-		white-space: nowrap !important;
-	}
-
-	.picker-input {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		width: 100%;
-		max-width: 100%;
-		box-sizing: border-box;
-		overflow: hidden;
-	}
-
-	.picker-input .placeholder {
-		color: #b3b3b3;
-	}
-
-	.form-input {
-		width: 340rpx;
-		height: 54rpx;
-		border-radius: 4rpx;
-		opacity: 1;
-		border: 1.4rpx solid #e1eaf2;
-		padding: 0 50rpx 0 20rpx;
-		box-sizing: border-box;
-		font-size: 28rpx;
-		color: #333333;
-		font-family: "PingFang SC", "苹方-简", sans-serif;
-	}
-
-	/* select下拉选择框样式 */
-	.form-select {
-		width: 340rpx !important;
-		max-width: 340rpx !important;
-		padding: 0 20rpx !important;
-		appearance: none;
-		-webkit-appearance: none;
-		-moz-appearance: none;
-		background-color: #ffffff;
-		cursor: pointer;
-	}
-
-	.form-select option {
-		color: #333333;
-		background-color: #ffffff;
-		max-width: 340rpx !important;
-	}
-
-	.picker-input.form-input {
-		width: 100%;
-		max-width: 340rpx;
-		padding-right: 50rpx;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.input-icon-wrapper {
-		position: absolute;
-		right: 12rpx;
-		width: 24rpx;
-		height: 24rpx;
-		opacity: 1;
-		background: #f1f5fa;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.input-icon {
-		width: 24rpx;
-		height: 24rpx;
-	}
-
-	.modal-footer {
-		margin-top: 40rpx;
-		display: flex;
-		justify-content: center;
-	}
-
-	.confirm-btn {
-		width: 550rpx;
-		height: 90rpx;
-		border-radius: 20rpx;
-		opacity: 1;
-		background: linear-gradient(270deg, #4fc7ff 0%, #0f73ff 100%);
-		backdrop-filter: blur(6rpx);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.confirm-btn-text {
-		color: #ffffff;
-		font-size: 32rpx;
-		font-weight: 500;
-		font-family: "PingFang SC", "苹方-简", sans-serif;
-	}
-
 	.auth-mask {
 		position: absolute;
 		top: 0;
@@ -1657,33 +1203,4 @@ margin-right: 24rpx;
 		color: #4A90E2;
 		font-weight: 500;
 	}
-</style>
-
-<!-- 全局样式：控制picker下拉菜单宽度 -->
-<style>
-/* 强制限制picker下拉菜单宽度，防止超出弹窗 */
-.uni-picker-container,
-.uni-picker-dropdown,
-uni-picker-view {
-	max-width: 340rpx !important;
-	width: 340rpx !important;
-	box-sizing: border-box !important;
-}
-
-/* H5环境下的select下拉菜单 */
-select {
-	max-width: 340rpx !important;
-	box-sizing: border-box !important;
-}
-
-/* 下拉选项 */
-select option {
-	max-width: 340rpx !important;
-	width: 100% !important;
-	overflow: hidden !important;
-	text-overflow: ellipsis !important;
-	white-space: nowrap !important;
-	box-sizing: border-box !important;
-	padding: 10rpx !important;
-}
 </style>
