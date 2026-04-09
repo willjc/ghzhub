@@ -56,6 +56,60 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 旧代码逐步重构为 MyBatis-Plus
 - 优先使用 `BaseMapper` 提供的 CRUD 方法,减少 XML 配置
 
+## 部署流程 (生产环境)
+
+### 后端自动部署
+
+代码推送到 GitHub 后，GitHub Actions 自动触发部署（只有 `ruoyi-**/**` 或 `pom.xml` 有改动才触发）。
+
+**自动流程：** `git push` → GitHub Actions → SSH 到服务器 → 执行 `server-deploy.sh` → 从 Gitee 拉代码 → Maven 编译 → 替换 JAR → supervisorctl 重启
+
+**查看部署结果：**
+```bash
+# GitHub Actions 日志
+https://github.com/willjc/ghzhub/actions
+
+# 服务器部署日志
+cat /www/wwwroot/ghz-backend/logs/deploy.log
+```
+
+**手动部署（CI失败时）：**
+```bash
+# SSH 到服务器后执行
+cd /www/wwwroot/ghz-source
+git pull origin master
+bash /www/wwwroot/ghz-source/server-deploy.sh
+```
+
+**重启服务（不重新部署）：**
+```bash
+sudo supervisorctl restart ghz-backend:
+sudo supervisorctl status
+```
+
+**注意事项：**
+- 服务器用 Gitee 拉代码（用 HTTPS，不用 SSH）：`https://gitee.com/xszhensheng/ghz.git`
+- supervisor 进程名：`ghz-backend:ghz-backend_00`，restart 时用 `ghz-backend:`（带冒号）
+- 首次在服务器 git pull 时需要：`git config --global --add safe.directory /www/wwwroot/ghz-source`
+- 部署脚本在项目根目录：`server-deploy.sh`
+
+### 用户端 H5 部署
+
+用 HBuilderX 构建后手动执行脚本（不走 CI）：
+```bash
+# 1. HBuilderX → 发行 → 网站-PC Web，输出到 uniapp-h5/unpackage/dist/build/web/
+# 2. 在项目根目录执行
+./uniapp-h5/deploy-h5.sh
+```
+
+**注意：** `deploy-h5.sh` 里 reload openresty 那行已注释（服务器没有 openresty）。静态文件上传后直接生效。
+
+### 管理后台前端自动部署
+
+推送 `ruoyi-ui/**` 改动后，GitHub Actions 自动构建并部署到管理后台服务器。
+
+---
+
 ## 常用命令
 
 ### 后端开发
