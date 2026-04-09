@@ -79,7 +79,11 @@ public class WechatMiniappService
         try
         {
             ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-            JsonNode jsonNode = objectMapper.readTree(response.getBody());
+            String body = response.getBody();
+            if (body == null || body.isEmpty()) {
+                throw new RuntimeException("微信登录失败: jscode2session返回空响应");
+            }
+            JsonNode jsonNode = objectMapper.readTree(body);
 
             // 检查错误码
             if (jsonNode.has("errcode") && jsonNode.get("errcode").asInt() != 0)
@@ -163,7 +167,13 @@ public class WechatMiniappService
             HttpEntity<Map<String, String>> httpEntity = new HttpEntity<>(requestBody, headers);
 
             ResponseEntity<String> response = restTemplate.postForEntity(url, httpEntity, String.class);
-            JsonNode jsonNode = objectMapper.readTree(response.getBody());
+            String responseBody = response.getBody();
+            log.info("微信getuserphonenumber响应: status={}, body={}", response.getStatusCode(), responseBody);
+            if (responseBody == null || responseBody.isEmpty()) {
+                log.error("微信getuserphonenumber返回空响应体, status={}", response.getStatusCode());
+                throw new RuntimeException("微信获取手机号失败: 接口返回空响应(status=" + response.getStatusCode() + ")");
+            }
+            JsonNode jsonNode = objectMapper.readTree(responseBody);
 
             // 检查错误码
             if (jsonNode.has("errcode") && jsonNode.get("errcode").asInt() != 0)
@@ -254,7 +264,11 @@ public class WechatMiniappService
         try
         {
             ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-            JsonNode jsonNode = objectMapper.readTree(response.getBody());
+            String tokenBody = response.getBody();
+            if (tokenBody == null || tokenBody.isEmpty()) {
+                throw new RuntimeException("微信获取access_token失败: 返回空响应");
+            }
+            JsonNode jsonNode = objectMapper.readTree(tokenBody);
 
             // 检查错误码
             if (jsonNode.has("errcode") && jsonNode.get("errcode").asInt() != 0)
