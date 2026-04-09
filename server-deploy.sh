@@ -8,7 +8,11 @@ cd /www/wwwroot/ghz-source
 echo ">>> 拉取代码..."
 git pull origin master
 
-# 2. 编译打包（跳过测试）
+# 2. 修复target目录权限（避免不同用户操作导致mvn clean失败）
+echo ">>> 修复target目录权限..."
+find /www/wwwroot/ghz-source -name "target" -type d -exec chmod -R 777 {} + 2>/dev/null || true
+
+# 3. 编译打包（跳过测试）
 echo ">>> 开始编译（约2-3分钟）..."
 mvn clean package -DskipTests -pl ruoyi-admin -am
 
