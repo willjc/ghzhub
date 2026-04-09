@@ -84,4 +84,14 @@ public interface IHzUserService extends IService<HzUser> {
      */
     HzUser loginOrRegisterByZhb(String zid, String phone, String displayName, String realName, String idCard, String avatarUrl);
 
+    /**
+     * 微信小程序用户登录或注册
+     *
+     * @param openid 微信openid
+     * @param unionid 微信unionid（可选，跨应用用户匹配用）
+     * @param phone 手机号（从微信获取）
+     * @return 用户信息
+     */
+    HzUser loginOrRegisterByWechat(String openid, String unionid, String phone);
+
 }

@@ -215,4 +215,72 @@ public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> impleme
         return user;
     }
 
+    /**
+     * 微信小程序用户登录或注册
+     *
+     * @param openid 微信openid
+     * @param unionid 微信unionid（可选，跨应用用户匹配用）
+     * @param phone 手机号（从微信获取）
+     * @return 用户信息
+     */
+    @Override
+    public HzUser loginOrRegisterByWechat(String openid, String unionid, String phone) {
+        // 1. 根据微信openid查询用户
+        LambdaQueryWrapper<HzUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(HzUser::getWechatOpenid, openid);
+        HzUser user = this.getOne(wrapper);
+
+        if (user != null) {
+            // 已有openid用户：更新登录时间，回填unionid
+            user.setLastLoginTime(new Date());
+            if (com.ruoyi.common.utils.StringUtils.isEmpty(user.getWechatUnionid()) && com.ruoyi.common.utils.StringUtils.isNotEmpty(unionid)) {
+                user.setWechatUnionid(unionid);
+            }
+            this.updateById(user);
+            return user;
+        }
+
+        // 2. openid未找到，根据手机号查询
+        LambdaQueryWrapper<HzUser> phoneWrapper = new LambdaQueryWrapper<>();
+        phoneWrapper.eq(HzUser::getPhone, phone);
+        HzUser phoneUser = this.getOne(phoneWrapper);
+
+        if (phoneUser != null) {
+            // 手机号已存在
+            if (com.ruoyi.common.utils.StringUtils.isNotEmpty(phoneUser.getWechatOpenid()) && !phoneUser.getWechatOpenid().equals(openid)) {
+                // 已绑定其他微信openid，拒绝
+                throw new RuntimeException("该手机号已被其他账号绑定");
+            }
+            // 手机号存在但未绑定openid，绑定openid和unionid
+            phoneUser.setWechatOpenid(openid);
+            if (com.ruoyi.common.utils.StringUtils.isNotEmpty(unionid)) {
+                phoneUser.setWechatUnionid(unionid);
+            }
+            phoneUser.setLastLoginTime(new Date());
+            phoneUser.setLoginType("wechat");
+            this.updateById(phoneUser);
+            return phoneUser;
+        }
+
+        // 3. 全新用户，创建
+        HzUser newUser = new HzUser();
+        newUser.setPhone(phone);
+        newUser.setWechatOpenid(openid);
+        if (com.ruoyi.common.utils.StringUtils.isNotEmpty(unionid)) {
+            newUser.setWechatUnionid(unionid);
+        }
+        newUser.setSourceType("1"); // 1=微信小程序
+        newUser.setLoginType("wechat");
+        newUser.setNickname("微信用户");
+        newUser.setStatus("0"); // 正常
+        newUser.setIsInfoCompleted("0"); // 未完善
+        newUser.setAuthStatus("0"); // 未认证
+        newUser.setDelFlag("0");
+        newUser.setCreateTime(new Date());
+        newUser.setLastLoginTime(new Date());
+        this.save(newUser);
+
+        return newUser;
+    }
+
 }
