@@ -56,6 +56,26 @@
 			}
 		},
 		{
+			"path": "pages/my/complete-info",
+			"style": {
+				"navigationBarTitleText": "完善个人信息",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/auth/verify",
+			"style": {
+				"navigationBarTitleText": "实名认证"
+			}
+		},
+		{
+			"path": "pages/auth/esign-webview",
+			"style": {
+				"navigationBarTitleText": "实名认证",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/talent/index",
 			"style": {
 				"navigationBarTitleText": "人才公寓"
