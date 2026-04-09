@@ -7,6 +7,7 @@ import com.ruoyi.system.domain.HzUserMessage;
 import com.ruoyi.system.domain.ZhbUserInfo;
 import com.ruoyi.system.service.IHzUserService;
 import com.ruoyi.system.service.IHzUserMessageService;
+import com.ruoyi.web.service.WechatMiniappService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +32,9 @@ public class HzAuthController extends BaseController {
 
     @Autowired
     private IZhengHaobanService zhengHaobanService;
+
+    @Autowired
+    private WechatMiniappService wechatMiniappService;
 
     /**
      * 用户登录（微信/郑好办）
@@ -141,6 +145,64 @@ public class HzAuthController extends BaseController {
             return success(data);
         } catch (Exception e) {
             logger.error("郑好办登录失败:", e);
+            return error("登录失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 微信小程序登录
+     * 前端传入wx.login()的code和getPhoneNumber的phoneCode
+     */
+    @PostMapping("/wxLogin")
+    public AjaxResult wxLogin(@RequestBody Map<String, String> params) {
+        String code = params.get("code");
+        String phoneCode = params.get("phoneCode");
+
+        // 参数验证
+        if (code == null || code.trim().isEmpty()) {
+            return error("微信登录code不能为空");
+        }
+        if (phoneCode == null || phoneCode.trim().isEmpty()) {
+            return error("手机号授权code不能为空");
+        }
+
+        try {
+            // 1. code换openid和unionid
+            String[] ids = wechatMiniappService.getOpenidAndUnionid(code);
+            String openid = ids[0];
+            String unionid = ids[1];
+
+            // 2. phoneCode换手机号
+            String phone = wechatMiniappService.getPhoneNumber(phoneCode);
+
+            // 3. 查找或创建用户
+            HzUser user = userService.loginOrRegisterByWechat(openid, unionid, phone);
+
+            // 4. 发送登录消息
+            sendLoginMessage(user);
+
+            // 5. 生成Token
+            String token = "hz_token_" + user.getUserId() + "_" + System.currentTimeMillis();
+
+            // 6. 构造返回数据
+            Map<String, Object> data = new HashMap<>();
+            data.put("token", token);
+
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("userId", user.getUserId());
+            userInfo.put("phone", user.getPhone());
+            userInfo.put("nickname", user.getNickname());
+            userInfo.put("realName", user.getRealName());
+            userInfo.put("idCard", user.getIdCard());
+            userInfo.put("loginType", user.getLoginType());
+            userInfo.put("isInfoCompleted", user.getIsInfoCompleted());
+            userInfo.put("authStatus", user.getAuthStatus() != null ? user.getAuthStatus() : "0");
+
+            data.put("userInfo", userInfo);
+
+            return success(data);
+        } catch (Exception e) {
+            logger.error("微信小程序登录失败:", e);
             return error("登录失败: " + e.getMessage());
         }
     }
