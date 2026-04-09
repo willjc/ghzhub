@@ -52,7 +52,7 @@
 			</view>
 			
 			<!-- 合住人信息卡片 -->
-			<view class="card" v-for="(item, index) in cohabitantList" :key="'cohabitant-' + index">
+			<view class="card" v-for="(item, index) in cohabitantList" :key="index">
 				<view class="card-header">
 					<view class="card-indicator"></view>
 					<text class="card-title">合住人信息</text>
