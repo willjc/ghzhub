@@ -22,9 +22,19 @@
 			<!-- #endif -->
 
 			<!-- #ifdef H5 -->
-			<!-- H5环境：测试登录 -->
-			<view class="login-btn wechat-btn" @click="handleTestLogin">
-				<text class="btn-text">{{ loading ? '登录中...' : '测试登录' }}</text>
+			<!-- H5环境：手机号登录 -->
+			<view class="phone-input-wrapper">
+				<input
+					class="phone-input"
+					v-model="phone"
+					type="number"
+					maxlength="11"
+					placeholder="请输入手机号"
+					placeholder-class="phone-placeholder"
+				/>
+			</view>
+			<view class="login-btn phone-btn" :class="{ disabled: loading }" @click="handlePhoneLogin">
+				<text class="btn-text">{{ loading ? '登录中...' : '登录' }}</text>
 			</view>
 			<!-- #endif -->
 
@@ -45,7 +55,10 @@
 	export default {
 		data() {
 			return {
-				loading: false
+				loading: false,
+				// #ifdef H5
+				phone: ''
+				// #endif
 			}
 		},
 		methods: {
@@ -115,21 +128,26 @@
 
 			// #ifdef H5
 			/**
-			 * H5环境：测试登录
+			 * H5环境：手机号登录
 			 */
-			async handleTestLogin() {
+			async handlePhoneLogin() {
 				if (this.loading) return
+
+				const phone = this.phone.trim()
+				if (!phone || phone.length !== 11) {
+					uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
+					return
+				}
+
 				this.loading = true
 
 				try {
-					const testData = {
+					const response = await login({
 						loginType: 'wechat',
-						phone: '13800138001',
-						openId: 'wx_test_001',
-						nickname: '测试用户'
-					}
-
-					const response = await login(testData)
+						phone: phone,
+						openId: 'h5_' + phone,
+						nickname: 'H5用户'
+					})
 
 					uni.setStorageSync('token', response.data.token)
 					uni.setStorageSync('userId', response.data.userInfo.userId)
@@ -146,9 +164,9 @@
 					}, 1000)
 
 				} catch (error) {
-					console.error('登录失败:', error)
+					console.error('H5登录失败:', error)
 					uni.showToast({
-						title: error.message || '登录失败',
+						title: error.message || error.msg || '登录失败',
 						icon: 'none'
 					})
 				} finally {
@@ -270,6 +288,35 @@
 		font-size: 32rpx;
 		font-weight: 500;
 		color: #ffffff;
+	}
+
+	.phone-input-wrapper {
+		width: 100%;
+		margin-bottom: 24rpx;
+	}
+
+	.phone-input {
+		width: 100%;
+		height: 96rpx;
+		background: #f5f6fc;
+		border-radius: 48rpx;
+		padding: 0 40rpx;
+		font-size: 30rpx;
+		color: #333333;
+		box-sizing: border-box;
+	}
+
+	.phone-placeholder {
+		color: #bbbbbb;
+	}
+
+	.phone-btn {
+		background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+		box-shadow: 0 8rpx 20rpx rgba(74,144,226,0.3);
+	}
+
+	.phone-btn.disabled {
+		opacity: 0.6;
 	}
 
 	.tips {
