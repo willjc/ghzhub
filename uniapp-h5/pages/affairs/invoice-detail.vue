@@ -197,8 +197,7 @@
 	/* 发票卡片 */
 	.invoice-card {
 		border-radius: 20rpx;
-		background: #ffffff url('/static/发票bg@2x.png') no-repeat top center;
-		background-size: 100% auto;
+		background: #ffffff;
 		overflow: hidden;
 		padding: 47rpx 36rpx 36rpx;
 		box-sizing: border-box;
