@@ -6,7 +6,7 @@
 				<!-- 申请状态 -->
 				<view class="info-row">
 					<text class="info-label">申请状态</text>
-					<text class="info-value" :class="getStatusClass(item.status)">{{ getStatusText(item.status) }}</text>
+					<text class="info-value" :class="statusClassMap[item.status] || ''">{{ getStatusText(item.status) }}</text>
 				</view>
 
 				<!-- 原房源信息 -->
@@ -59,7 +59,7 @@
 				<view class="info-section" v-if="item.approveOpinion || item.status === '2'">
 					<view class="info-row last-row">
 						<text class="info-label">审核意见</text>
-						<text class="info-value" :class="getStatusClass(item.status)">{{ item.approveOpinion || (item.status === '2' ? '申请已拒绝' : '-') }}</text>
+						<text class="info-value" :class="statusClassMap[item.status] || ''">{{ item.approveOpinion || (item.status === '2' ? '申请已拒绝' : '-') }}</text>
 					</view>
 				</view>
 			</view>
@@ -89,7 +89,13 @@
 				housingType: '',
 				tenantId: null,
 				loading: false,
-				exchangeList: []
+				exchangeList: [],
+
+				statusClassMap: {
+					'0': 'status-pending',
+					'1': 'status-approved',
+					'2': 'status-rejected'
+				}
 			}
 		},
 		onLoad(options) {
@@ -152,16 +158,6 @@
 					'2': '已拒绝'
 				}
 				return textMap[status] || '未知'
-			},
-
-			// 获取状态样式类
-			getStatusClass(status) {
-				const classMap = {
-					'0': 'status-pending',
-					'1': 'status-approved',
-					'2': 'status-rejected'
-				}
-				return classMap[status] || ''
 			},
 
 			// 申请调换

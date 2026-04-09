@@ -24,8 +24,8 @@
 					<view class="bill-card">
 						<view class="bill-header">
 							<text class="bill-title">账单期数：{{ bill.period }}</text>
-							<view class="bill-status" :class="getStatusClass(bill.status)">
-								<text class="status-text" :class="getStatusClass(bill.status)">{{ bill.statusText }}</text>
+							<view class="bill-status" :class="statusClassMap[bill.status] || ''">
+								<text class="status-text" :class="statusClassMap[bill.status] || ''">{{ bill.statusText }}</text>
 							</view>
 						</view>
 						<view class="bill-info">
@@ -140,7 +140,12 @@
 				historyBillList: [],
 
 				// 当前登录用户信息
-				userId: null
+				userId: null,
+
+				statusClassMap: {
+					'paid': 'status-paid',
+					'unpaid': 'status-unpaid'
+				}
 			}
 		},
 		computed: {
@@ -307,11 +312,7 @@
 			switchTab(tab) {
 				this.currentTab = tab
 			},
-			
-			getStatusClass(status) {
-				return status === 'paid' ? 'status-paid' : 'status-unpaid'
-			},
-			
+
 			toggleBill(index) {
 				if (this.currentTab === 'current') {
 					this.billList[index].selected = !this.billList[index].selected

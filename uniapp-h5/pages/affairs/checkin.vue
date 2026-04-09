@@ -17,7 +17,7 @@
 				<!-- 申请状态 -->
 				<view class="info-row">
 					<text class="info-label">申请状态</text>
-					<text class="info-value" :class="getStatusClass(item.status)">{{ item.statusText }}</text>
+					<text class="info-value" :class="statusClassMap[item.status] || ''">{{ item.statusText }}</text>
 				</view>
 				
 				<!-- 小区 -->
@@ -113,6 +113,15 @@
 				checkinBlockMsg: '',
 				checkinRemainSeconds: 0,
 				_checkinTimer: null,
+
+				statusClassMap: {
+					'pending': 'status-pending',
+					'approved': 'status-approved',
+					'rejected': 'status-rejected',
+					'cancelled': 'status-cancelled',
+					'confirm': 'status-confirm',
+					'confirmed': 'status-confirmed'
+				}
 			}
 		},
 		onLoad(options) {
@@ -213,19 +222,6 @@
 					return remark.substring(start, end).trim()
 				}
 				return ''
-			},
-
-			// 获取状态样式类
-			getStatusClass(status) {
-				const classMap = {
-					'pending': 'status-pending',
-					'approved': 'status-approved',
-					'rejected': 'status-rejected',
-					'cancelled': 'status-cancelled',
-					'confirm': 'status-confirm',
-					'confirmed': 'status-confirmed'
-				}
-				return classMap[status] || ''
 			},
 
 			// 取消申请

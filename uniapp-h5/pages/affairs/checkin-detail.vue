@@ -60,7 +60,7 @@
 				<view class="form-row">
 					<text class="form-label">审核状态</text>
 					<view class="form-value-wrap">
-						<text class="form-value" :class="getStatusClass(formData.status)">{{ formData.statusText }}</text>
+						<text class="form-value" :class="statusClassMap[formData.status] || ''">{{ formData.statusText }}</text>
 					</view>
 				</view>
 			</view>
@@ -121,7 +121,16 @@
 				},
 
 				equipmentList: [],
-				signatureUrl: ''
+				signatureUrl: '',
+
+				statusClassMap: {
+					'pending': 'status-pending',
+					'approved': 'status-approved',
+					'rejected': 'status-rejected',
+					'cancelled': 'status-cancelled',
+					'confirm': 'status-confirm',
+					'confirmed': 'status-confirmed'
+				}
 			}
 		},
 		onLoad(options) {
@@ -245,18 +254,6 @@
 				return baseUrl + (url.startsWith('/') ? url : '/' + url)
 			},
 
-			// 获取状态样式类
-			getStatusClass(status) {
-				const classMap = {
-					'pending': 'status-pending',
-					'approved': 'status-approved',
-					'rejected': 'status-rejected',
-					'cancelled': 'status-cancelled',
-					'confirm': 'status-confirm',
-					'confirmed': 'status-confirmed'
-				}
-				return classMap[status] || ''
-			}
 		}
 	}
 </script>

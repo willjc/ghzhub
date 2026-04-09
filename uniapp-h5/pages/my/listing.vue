@@ -18,7 +18,7 @@
 							<text class="tag" v-for="(tag, tagIndex) in item.tags" :key="tagIndex">{{ tag }}</text>
 						</view>
 						<text class="listing-detail">{{ item.detail }}</text>
-						<text class="listing-status" :class="getStatusClass(item.status)">{{ item.statusText }}</text>
+						<text class="listing-status" :class="statusClassMap[item.status] || ''">{{ item.statusText }}</text>
 					</view>
 				</view>
 			</view>
@@ -45,7 +45,17 @@ export default {
 	data() {
 		return {
 			listingData: [],
-			loading: false
+			loading: false,
+
+			statusClassMap: {
+				'renting': 'status-renting',
+				'checked_out': 'status-checked-out',
+				'pending': 'status-pending',
+				'reviewing': 'status-reviewing',
+				'confirming': 'status-confirming',
+				'rejected': 'status-rejected',
+				'unknown': 'status-unknown'
+			}
 		}
 	},
 	onLoad() {
@@ -92,20 +102,6 @@ export default {
 
 			// 后端返回的相对路径，拼接BASE_URL（从config读取）
 			return BASE_URL + url
-		},
-
-		// 获取状态样式类
-		getStatusClass(status) {
-			const classMap = {
-				'renting': 'status-renting',
-				'checked_out': 'status-checked-out',
-				'pending': 'status-pending',
-				'reviewing': 'status-reviewing',
-				'confirming': 'status-confirming',
-				'rejected': 'status-rejected',
-				'unknown': 'status-unknown'
-			}
-			return classMap[status] || ''
 		},
 
 		// 跳转详情

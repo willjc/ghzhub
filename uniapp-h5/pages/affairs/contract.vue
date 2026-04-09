@@ -29,7 +29,7 @@
 				<!-- 合同状态 -->
 				<view class="info-row">
 					<text class="info-label">合同状态</text>
-					<text class="info-value" :class="getStatusClass(item.status)">{{ item.statusText }}</text>
+					<text class="info-value" :class="statusClassMap[item.status] || ''">{{ item.statusText }}</text>
 				</view>
 				
 				<!-- 小区 -->
@@ -129,7 +129,13 @@
 				currentTab: 'current',
 				allContractList: [],  // 从API获取的所有合同
 				userId: null,  // 当前登录用户ID
-				highlightContractId: null  // 需要高亮显示的合同ID (从续租页面跳转时传入)
+				highlightContractId: null,  // 需要高亮显示的合同ID (从续租页面跳转时传入)
+
+				statusClassMap: {
+					'unsigned': 'status-unsigned',
+					'signed': 'status-signed',
+					'expired': 'status-expired'
+				}
 			}
 		},
 		computed: {
@@ -175,17 +181,7 @@
 			switchTab(tab) {
 				this.currentTab = tab
 			},
-			
-			// 获取状态样式类
-			getStatusClass(status) {
-				const classMap = {
-					'unsigned': 'status-unsigned',
-					'signed': 'status-signed',
-					'expired': 'status-expired'
-				}
-				return classMap[status] || ''
-			},
-			
+
 			// 去签署 (e签宝流程)
 			goSign(item) {
 				uni.navigateTo({

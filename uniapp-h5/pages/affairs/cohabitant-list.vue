@@ -6,7 +6,7 @@
 				<!-- 申请状态 -->
 				<view class="info-row">
 					<text class="info-label">申请状态</text>
-					<text class="info-value" :class="getStatusClass(item.status)">{{ item.statusText }}</text>
+					<text class="info-value" :class="statusClassMap[item.status] || ''">{{ item.statusText }}</text>
 				</view>
 
 				<!-- 合同编号 -->
@@ -76,7 +76,13 @@
 				housingType: '',
 				tenantId: null, // 从登录信息获取租户ID
 				loading: false,
-				cohabitantList: []
+				cohabitantList: [],
+
+				statusClassMap: {
+					'0': 'status-pending',
+					'1': 'status-approved',
+					'2': 'status-rejected'
+				}
 			}
 		},
 		onLoad(options) {
@@ -134,16 +140,6 @@
 				} finally {
 					this.loading = false
 				}
-			},
-
-			// 获取状态样式类
-			getStatusClass(status) {
-				const classMap = {
-					'0': 'status-pending',    // 审批中
-					'1': 'status-approved',   // 审批通过
-					'2': 'status-rejected'    // 审批拒绝
-				}
-				return classMap[status] || ''
 			},
 
 			// 格式化日期时间

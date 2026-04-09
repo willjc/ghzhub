@@ -33,7 +33,7 @@
 				<!-- 申诉结果 -->
 				<view class="info-row">
 					<text class="info-label">申诉结果</text>
-					<text class="info-value" :class="getStatusClass(item.status)">{{ item.statusText }}</text>
+					<text class="info-value" :class="statusClassMap[item.status] || ''">{{ item.statusText }}</text>
 				</view>
 				
 				<!-- 驳回原因 -->
@@ -71,7 +71,13 @@
 		data() {
 			return {
 				appealId: null,
-				recordList: []
+				recordList: [],
+
+				statusClassMap: {
+					'pending': 'status-pending',
+					'approved': 'status-approved',
+					'rejected': 'status-rejected'
+				}
 			}
 		},
 		onLoad(options) {
@@ -153,16 +159,6 @@
 					return relativePath
 				}
 				return config.baseUrl + (relativePath.startsWith('/') ? relativePath : '/' + relativePath)
-			},
-
-			// 获取状态样式类
-			getStatusClass(status) {
-				const classMap = {
-					'pending': 'status-pending',
-					'approved': 'status-approved',
-					'rejected': 'status-rejected'
-				}
-				return classMap[status] || ''
 			},
 
 			// 预览图片

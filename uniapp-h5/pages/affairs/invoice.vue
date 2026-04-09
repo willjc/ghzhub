@@ -21,7 +21,7 @@
 					</view>
 					<!-- 第三行：状态 -->
 					<view class="card-row">
-						<text class="invoice-status" :class="getStatusClass(item.status)">{{ item.statusText }}</text>
+						<text class="invoice-status" :class="statusClassMap[item.status] || ''">{{ item.statusText }}</text>
 						<view class="detail-btn" @click="handleDetail(item)">
 							<text class="detail-text">发票详情</text>
 						</view>
@@ -54,7 +54,12 @@
 			return {
 				housingType: '',
 				userId: null,
-				invoiceGroups: []
+				invoiceGroups: [],
+
+				statusClassMap: {
+					'1': 'status-pending',
+					'2': 'status-done'
+				}
 			}
 		},
 		onLoad(options) {
@@ -73,11 +78,6 @@
 			}
 		},
 		methods: {
-			// 获取状态样式类
-			getStatusClass(status) {
-				return status === '1' ? 'status-pending' : 'status-done' // 1=开票中, 2=已开票
-			},
-
 			// 获取发票类型文本
 			getInvoiceTypeText(type) {
 				return type === '1' ? '增值税电子普通发票' : '增值税专用发票'

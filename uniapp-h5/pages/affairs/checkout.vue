@@ -6,7 +6,7 @@
 				<!-- 申请状态 -->
 				<view class="info-row">
 					<text class="info-label">申请状态</text>
-					<text class="info-value" :class="getStatusClass(item.status)">{{ item.statusText }}</text>
+					<text class="info-value" :class="statusClassMap[item.status] || ''">{{ item.statusText }}</text>
 				</view>
 
 				<!-- 小区 -->
@@ -97,7 +97,17 @@
 				housingType: '',
 				tenantId: null,
 				loading: false,
-				checkoutList: []
+				checkoutList: [],
+
+				statusClassMap: {
+					'pending': 'status-pending',
+					'approved': 'status-approved',
+					'rejected': 'status-rejected',
+					'cancelled': 'status-cancelled',
+					'confirmed': 'status-confirmed',
+					'wait_confirm': 'status-wait-confirm',
+					'confirmed_done': 'status-confirmed-done'
+				}
 			}
 		},
 		onLoad(options) {
@@ -243,20 +253,6 @@
 					return remark.substring(start, end).trim()
 				}
 				return ''
-			},
-
-			// 获取状态样式类
-			getStatusClass(status) {
-				const classMap = {
-					'pending': 'status-pending',
-					'approved': 'status-approved',
-					'rejected': 'status-rejected',
-					'cancelled': 'status-cancelled',
-					'confirmed': 'status-confirmed',
-					'wait_confirm': 'status-wait-confirm',
-					'confirmed_done': 'status-confirmed-done'
-				}
-				return classMap[status] || ''
 			},
 
 			// 退租办理 - 跳转到退租办理页面

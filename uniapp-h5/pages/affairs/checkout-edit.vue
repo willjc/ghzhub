@@ -53,7 +53,7 @@
 				<view class="form-row">
 					<text class="form-label">审核状态</text>
 					<view class="form-value-wrap">
-						<text class="form-value" :class="getStatusClass(formData.status)">{{ formData.statusText }}</text>
+						<text class="form-value" :class="statusClassMap[formData.status] || ''">{{ formData.statusText }}</text>
 					</view>
 				</view>
 				
@@ -97,6 +97,13 @@
 					status: 'pending',
 					statusText: '审批中',
 					reason: '这里是退租原因，有原因和理由的文本展示，可换行大概30字左右'
+				},
+
+				statusClassMap: {
+					'pending': 'status-pending',
+					'approved': 'status-approved',
+					'rejected': 'status-rejected',
+					'cancelled': 'status-cancelled'
 				}
 			}
 		},
@@ -114,17 +121,6 @@
 			loadCheckoutDetail() {
 				// TODO: 调用API获取申请详情
 				console.log('加载退租申请详情，类型:', this.housingType, 'ID:', this.checkoutId)
-			},
-			
-			// 获取状态样式类
-			getStatusClass(status) {
-				const classMap = {
-					'pending': 'status-pending',
-					'approved': 'status-approved',
-					'rejected': 'status-rejected',
-					'cancelled': 'status-cancelled'
-				}
-				return classMap[status] || ''
 			},
 			
 			// 取消申请

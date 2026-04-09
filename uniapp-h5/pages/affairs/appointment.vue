@@ -9,7 +9,7 @@
 				<!-- 卡片头部 -->
 				<view class="card-header">
 					<text class="project-name">{{ item.projectName }}</text>
-					<text class="status-text" :class="getStatusClass(item.status)">{{ item.statusText }}</text>
+					<text class="status-text" :class="statusClassMap[item.status] || ''">{{ item.statusText }}</text>
 				</view>
 				
 				<!-- 信息列表 -->
@@ -69,7 +69,14 @@ export default {
 			housingType: '',
 			appointmentList: [],
 			loading: false,
-			userId: null  // 当前登录用户ID
+			userId: null,  // 当前登录用户ID
+
+			statusClassMap: {
+				'pending': 'status-pending',
+				'viewed': 'status-viewed',
+				'expired': 'status-expired',
+				'cancelled': 'status-cancelled'
+			}
 		}
 	},
 	onLoad(options) {
@@ -161,17 +168,6 @@ export default {
 
 			// timeSlot格式: 09:00-10:00
 			return `${month}月${day}日 ${timeSlot || ''}`
-		},
-
-		// 获取状态样式类
-		getStatusClass(status) {
-			const classMap = {
-				'pending': 'status-pending',
-				'viewed': 'status-viewed',
-				'expired': 'status-expired',
-				'cancelled': 'status-cancelled'
-			}
-			return classMap[status] || ''
 		},
 
 		// 取消预约
