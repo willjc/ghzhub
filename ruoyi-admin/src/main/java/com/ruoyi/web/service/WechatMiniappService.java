@@ -52,7 +52,16 @@ public class WechatMiniappService
     @Autowired
     private WechatMiniappConfig wechatConfig;
 
+    // 不抛4xx/5xx异常，让业务代码自行处理响应体中的errcode
     private final RestTemplate restTemplate = new RestTemplate();
+    {
+        restTemplate.setErrorHandler(new org.springframework.web.client.DefaultResponseErrorHandler() {
+            @Override
+            public boolean hasError(@org.springframework.lang.NonNull org.springframework.http.client.ClientHttpResponse response) {
+                return false;
+            }
+        });
+    }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
