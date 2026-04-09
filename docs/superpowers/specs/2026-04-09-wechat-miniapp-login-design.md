@@ -15,6 +15,20 @@ Replace the current H5 login page (test data + ZhengHaoBan) with WeChat Mini Pro
 - **e-Sign sandbox domain:** `https://hnj7439105666.smlh5.esign.cn` (webview whitelist for real-name auth)
 - **Production config:** `config/index.js` production env already points to `https://api.caigon.cn`
 
+### YAML Fix Required
+
+**`application.yml` has a duplicate `wechat:` key** — the `wechat.pay` block (line 186) silently overrides `wechat.miniapp` (line 179). Before implementation, merge them under a single `wechat:` root:
+
+```yaml
+wechat:
+  miniapp:
+    appid: "wx74efa287343d0fa2"
+    secret: "5bbac44092d17077e1924883929afcff"
+  pay:
+    enabled: false
+    # ... rest of pay config
+```
+
 ## User Flow
 
 ```
@@ -75,9 +89,9 @@ Check userInfo.isInfoCompleted:
 **Location:** `ruoyi-admin/src/main/java/com/ruoyi/web/service/WechatMiniappService.java`
 
 Responsibilities:
-- `getOpenid(String code)` — calls WeChat `https://api.weixin.qq.com/sns/jscode2session` with appid, secret, code; returns openid + session_key
-- `getPhoneNumber(String phoneCode)` — calls WeChat `https://api.weixin.qq.com/wxa/business/getuserphonenumber` with access_token + phoneCode; returns phone number
-- `getAccessToken()` — calls WeChat `https://api.weixin.qq.com/cgi-bin/token` to get access_token; cache in Redis with TTL (7200s default, refresh at 7000s)
+- `getOpenid(String code)` — calls WeChat `https://api.weixin.qq.com/sns/jscode2session` with appid, secret, code; returns openid (session_key is received but must NOT be stored in DB or returned to frontend)
+- `getPhoneNumber(String phoneCode)` — POST to `https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=XXX` with JSON body `{"code": phoneCode}`; returns phone number
+- `getAccessToken()` — calls WeChat `https://api.weixin.qq.com/cgi-bin/token` to get access_token; cache in Redis with TTL (7200s default, refresh at 7000s); on failure retry once, then throw exception
 
 **Config source:** reads `wechat.miniapp.appid` and `wechat.miniapp.secret` from application.yml (already configured).
 
@@ -103,8 +117,8 @@ public AjaxResult wxLogin(@RequestBody Map<String, String> params) {
     // 4. Generate token
     String token = "hz_token_" + user.getUserId() + "_" + System.currentTimeMillis();
     
-    // 5. Return token + userInfo
-    // (same structure as existing login endpoint)
+    // 5. Return token + userInfo (must include all fields the existing login returns:
+    //    userId, phone, nickname, realName, idCard, loginType, isInfoCompleted, authStatus)
 }
 ```
 
@@ -118,6 +132,7 @@ Logic:
 1. Query `hz_user` by `wechat_openid = openid`
 2. If found: update `last_login_time`, return user
 3. If not found: query by `phone` to check existing phone user
+   - If phone user exists with a **different** openid already set: **reject login** with error "该手机号已被其他账号绑定" (prevents silent account takeover)
    - If phone user exists with no openid: bind openid to existing user, update `last_login_time`
    - If no user at all: create new `hz_user` with `phone`, `wechat_openid=openid`, `source_type='1'`, `login_type='wechat'`, `is_info_completed='0'`, `auth_status='0'`
 4. Return user
@@ -231,9 +246,17 @@ Fill in the WeChat Mini Program appid:
 The current `window.location.href = res.data.authUrl` won't work in Mini Program.
 
 **Mini Program adaptation:**
-- Use `<web-view :src="authUrl">` component to open e-Sign authentication URL
-- Create a new page `pages/auth/esign-webview.vue` that wraps `<web-view>` for the e-Sign auth flow
+- Create a new page `pages/auth/esign-webview.vue` that wraps `<web-view :src="url">` for the e-Sign auth flow
 - The e-Sign sandbox domain `https://hnj7439105666.smlh5.esign.cn` is already in the webview whitelist
+- In `verify.vue`, for Mini Program: instead of `window.location.href`, use `uni.navigateTo({ url: '/pages/auth/esign-webview?url=' + encodeURIComponent(authUrl) })`
+
+**e-Sign callback handling in Mini Program:**
+- e-Sign redirects back to `auth-redirect-url` after completion. In Mini Program webview, when the `<web-view>` navigates to a URL matching our domain, the page needs to detect it.
+- Update `application.yml` `esign.auth-redirect-url` to a **non-hash** URL that the backend serves: `https://api.caigon.cn/h5/esign/auth-done` (a backend endpoint that returns an HTML page with `<script>` calling `wx.miniProgram.navigateBack()` or `wx.miniProgram.redirectTo()`)
+- The backend `auth-done` endpoint renders a simple HTML page that uses WeChat JS-SDK `wx.miniProgram.redirectTo({ url: '/pages/auth/verify?auth_done=1' })` to jump back to the native verify page
+- `verify.vue` then queries auth status as it already does when `auth_done=1`
+
+This approach works because `<web-view>` pages can communicate back to the Mini Program via `wx.miniProgram` API from within the webview.
 
 ### 7. API: New wxLogin function
 
@@ -306,3 +329,8 @@ hz_user table fields involved:
 - Push notifications via WeChat
 - WeChat subscription messages
 - Mini Program sharing / QR code
+
+## Known Limitations (Pre-existing)
+
+- **Token is not cryptographically signed.** The current `hz_token_userId_timestamp` pattern is inherited from the existing codebase. It is not validated server-side. A proper JWT or Redis-backed token system is recommended as a future improvement but is out of scope for this change.
+- **`/app/auth/updateInfo` accepts userId from request body** without server-side token validation. This is a pre-existing pattern; fixing it requires the token system improvement above.
