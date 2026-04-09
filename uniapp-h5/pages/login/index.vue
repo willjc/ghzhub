@@ -152,11 +152,7 @@
 					uni.showToast({ title: '登录成功', icon: 'success' })
 
 					setTimeout(() => {
-						if (response.data.userInfo.isInfoCompleted === '1') {
-							uni.reLaunch({ url: '/pages/index/index' })
-						} else {
-							uni.redirectTo({ url: '/pages/my/complete-info' })
-						}
+						uni.reLaunch({ url: '/pages/index/index' })
 					}, 1000)
 
 				} catch (error) {
