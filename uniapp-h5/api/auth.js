@@ -42,3 +42,13 @@ export function logout() {
 export function zhbLogin(data) {
 	return request.post('/app/auth/zhbLogin', data)
 }
+
+/**
+ * 微信小程序登录
+ * @param {Object} data - 登录数据
+ * @param {String} data.code - wx.login()返回的code
+ * @param {String} data.phoneCode - getPhoneNumber返回的code
+ */
+export function wxLogin(data) {
+	return request.post('/app/auth/wxLogin', data)
+}
