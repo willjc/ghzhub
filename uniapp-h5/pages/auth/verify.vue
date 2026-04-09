@@ -145,7 +145,14 @@
 							this.updateLocalUserInfo(res.data)
 							uni.showToast({ title: '已完成认证', icon: 'success' })
 						} else if (res.data.authUrl) {
-							window.location.href = res.data.authUrl
+							// #ifdef MP-WEIXIN
+						uni.navigateTo({
+							url: '/pages/auth/esign-webview?url=' + encodeURIComponent(res.data.authUrl)
+						})
+						// #endif
+						// #ifdef H5
+						window.location.href = res.data.authUrl
+						// #endif
 						}
 					} else {
 						uni.showToast({ title: res.msg || '获取认证链接失败', icon: 'none' })
