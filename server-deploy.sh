@@ -8,13 +8,9 @@ cd /www/wwwroot/ghz-source
 echo ">>> 拉取代码..."
 git pull origin master
 
-# 2. 清理target目录（当前用户能删的先删）
-echo ">>> 清理target目录..."
-find /www/wwwroot/ghz-source -name "target" -type d -exec rm -rf {} + 2>/dev/null || true
-
-# 3. 编译打包（跳过测试，clean失败不中断）
+# 2. 编译打包（跳过测试）
 echo ">>> 开始编译（约2-3分钟）..."
-mvn package -DskipTests -pl ruoyi-admin -am
+mvn clean package -DskipTests -pl ruoyi-admin -am
 
 # 3. 备份旧 JAR
 echo ">>> 备份旧版本..."
