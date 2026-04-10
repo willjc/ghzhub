@@ -9,11 +9,11 @@ import { get, post } from '@/utils/request'
  * @param {string} opts.redirectUrl 认证完成跳转地址（小程序传 wechat://back）
  */
 export function getAuthUrl(userId, { realName = '', idCard = '', redirectUrl = '' } = {}) {
-  const params = new URLSearchParams()
-  if (realName) params.append('realName', realName)
-  if (idCard) params.append('idCard', idCard)
-  if (redirectUrl) params.append('redirectUrl', redirectUrl)
-  const qs = params.toString()
+  const parts = []
+  if (realName) parts.push('realName=' + encodeURIComponent(realName))
+  if (idCard) parts.push('idCard=' + encodeURIComponent(idCard))
+  if (redirectUrl) parts.push('redirectUrl=' + encodeURIComponent(redirectUrl))
+  const qs = parts.join('&')
   return get(`/h5/esign/auth-url/${userId}${qs ? '?' + qs : ''}`)
 }
 
