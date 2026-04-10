@@ -61,6 +61,7 @@
 				authenticated: false,
 				submitting: false,
 				authDone: false,
+				fromEsignWebview: false,  // 标记是否跳转去了 esign-webview
 				form: {
 					realName: '',
 					idCard: ''
@@ -79,7 +80,7 @@
 			if (userInfo.realName) this.form.realName = userInfo.realName
 			if (userInfo.idCard) this.form.idCard = userInfo.idCard
 
-			// 如果从e签宝认证页面跳回来（auth_done=1），查询认证结果
+			// 如果从e签宝认证页面跳回来（H5 auth_done=1 参数），查询认证结果
 			if (options.auth_done === '1') {
 				this.authDone = true
 				this.checkAuthResult()
@@ -88,6 +89,15 @@
 
 			// 检查是否已认证
 			this.checkAuthStatus()
+		},
+		onShow() {
+			// #ifdef MP-WEIXIN
+			// 从 esign-webview 返回（wechat://back 触发），主动查询认证结果
+			if (this.fromEsignWebview) {
+				this.fromEsignWebview = false
+				this.checkAuthResult()
+			}
+			// #endif
 		},
 		methods: {
 			async checkAuthStatus() {
@@ -108,11 +118,16 @@
 					if (res.code === 200 && res.data && res.data.authenticated) {
 						this.authenticated = true
 						this.updateLocalUserInfo(res.data)
-						// 同步更新 localStorage 里的 authStatus，让其他页面返回时能读到最新状态
-						const userInfo = uni.getStorageSync('userInfo') || {}
-						userInfo.authStatus = '2'
-						uni.setStorageSync('userInfo', userInfo)
-						uni.showToast({ title: '认证成功', icon: 'success' })
+						uni.showToast({ title: '实名认证成功', icon: 'success', duration: 1500 })
+						// 认证成功后 1.5 秒返回上一页（让调用方感知认证已完成）
+						setTimeout(() => {
+							const pages = getCurrentPages()
+							if (pages.length > 1) {
+								uni.navigateBack()
+							} else {
+								uni.reLaunch({ url: '/pages/index/index' })
+							}
+						}, 1500)
 					} else {
 						this.authDone = false
 						uni.showToast({ title: '认证未完成，请重新认证', icon: 'none' })
@@ -156,6 +171,7 @@
 							uni.showToast({ title: '已完成认证', icon: 'success' })
 						} else if (res.data.authUrl) {
 							// #ifdef MP-WEIXIN
+							this.fromEsignWebview = true
 							uni.navigateTo({
 								url: '/pages/auth/esign-webview?url=' + encodeURIComponent(res.data.authUrl)
 							})
@@ -182,6 +198,8 @@
 					userInfo.isVerified = true
 					userInfo.authStatus = '2'
 					uni.setStorageSync('userInfo', userInfo)
+					// 额外单独存一份，防止登录时整体覆盖 userInfo 导致状态丢失
+					uni.setStorageSync('esign_auth_status', '2')
 				} catch (e) {
 					console.error('更新本地用户信息失败', e)
 				}

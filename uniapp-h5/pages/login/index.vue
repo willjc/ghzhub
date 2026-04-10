@@ -98,7 +98,13 @@
 					// 3. 存储登录信息
 					uni.setStorageSync('token', response.data.token)
 					uni.setStorageSync('userId', response.data.userInfo.userId)
-					uni.setStorageSync('userInfo', response.data.userInfo)
+					const userInfoToStore = response.data.userInfo
+					// 若 DB 返回 authStatus 为 '0' 但本地有已认证记录，以 DB 为准（DB 才是权威）
+					// 若 DB 返回 '2'，直接清除本地独立标记
+					if (userInfoToStore.authStatus === '2') {
+						uni.removeStorageSync('esign_auth_status')
+					}
+					uni.setStorageSync('userInfo', userInfoToStore)
 
 					uni.showToast({
 						title: '登录成功',
