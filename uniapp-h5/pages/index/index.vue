@@ -189,13 +189,6 @@
 							</view>
 						</view>
 					</view>
-					<!-- 未认证提示遮罩 -->
-					<view class="auth-mask" v-if="authStatus !== '2'" @click="showAuthTip">
-						<view class="auth-mask-content">
-							<text class="auth-mask-text">完成实名认证后查看房源</text>
-							<text class="auth-mask-btn">去认证 ></text>
-						</view>
-					</view>
 				</view>
 			</view>
 		</scroll-view>
@@ -240,7 +233,6 @@
 					{ name: '优惠券', icon: '/static/优惠券@2x.png', key: 'coupon' },
 					{ name: '我的消息', icon: '/static/我的消息@2x.png', key: 'message' }
 				],
-				authStatus: '0', // 实名认证状态（0未认证 1认证中 2已认证）
 				listingData: [], // 项目列表数据（从API加载）
 				showModal: false,
 				formData: {
@@ -287,9 +279,6 @@
 
 			// 加载最新通知
 			this.loadLatestNotice()
-
-			// 加载实名认证状态
-			this.loadAuthStatus()
 
 		},
 		methods: {
@@ -341,39 +330,6 @@
 					uni.showToast({ title: error.msg || '提交失败', icon: 'none' })
 				}
 			},
-			/**
-			 * 加载实名认证状态
-			 */
-			async loadAuthStatus() {
-				const userInfo = uni.getStorageSync('userInfo')
-				if (!userInfo || !userInfo.userId) return
-				try {
-					const res = await get(`/h5/user/auth-status?userId=${userInfo.userId}`)
-					if (res.code === 200 && res.data) {
-						this.authStatus = res.data.authStatus || '0'
-					}
-				} catch (e) {
-					console.error('查询认证状态失败', e)
-				}
-			},
-
-			/**
-			 * 显示实名认证提示
-			 */
-			showAuthTip() {
-				uni.showModal({
-					title: '提示',
-					content: '浏览房源需要完成实名认证，是否前往认证？',
-					confirmText: '去认证',
-					cancelText: '稍后再说',
-					success: (res) => {
-						if (res.confirm) {
-							uni.navigateTo({ url: '/subpkg/my/profile' })
-						}
-					}
-				})
-			},
-
 			/**
 			 * Banner轮播图切换事件
 			 */
@@ -544,10 +500,6 @@
 			},
 			handleIconClick(item) {
 				const authRequiredKeys = ['talent', 'guaranteed', 'market', 'map', 'home']
-				if (authRequiredKeys.includes(item.key) && this.authStatus !== '2') {
-					this.showAuthTip()
-					return
-				}
 				// 人才公寓跳转
 				if (item.key === 'talent') {
 					uni.navigateTo({
@@ -599,10 +551,6 @@
 				}
 			},
 			switchCategory(key) {
-				if (this.authStatus !== '2') {
-					this.showAuthTip()
-					return
-				}
 				this.activeCategory = key
 				// 切换分类时重新加载项目列表
 				this.loadProjectList()
@@ -634,10 +582,6 @@
 				}
 			},
 			goToDetail(item) {
-				if (this.authStatus !== '2') {
-					this.showAuthTip()
-					return
-				}
 				// 根据类型跳转到不同详情页
 				if (item.type === 'house') {
 					// 跳转到房源详情页
