@@ -144,52 +144,52 @@
 				} else if (key === 'appeal') {
 					// 资格申诉
 					uni.navigateTo({
-						url: `/pages/affairs/appeal?type=${type}`
+						url: `/subpkg/affairs/appeal?type=${type}`
 					})
 				} else if (key === 'checkin') {
 					// 入住办理
 					uni.navigateTo({
-						url: `/pages/affairs/checkin?type=${type}`
+						url: `/subpkg/affairs/checkin?type=${type}`
 					})
 				} else if (key === 'checkout') {
 					// 退租办理
 					uni.navigateTo({
-						url: `/pages/affairs/checkout?type=${type}`
+						url: `/subpkg/affairs/checkout?type=${type}`
 					})
 				} else if (key === 'renew') {
 					// 续租
 					uni.navigateTo({
-						url: `/pages/affairs/renew?type=${type}`
+						url: `/subpkg/affairs/renew?type=${type}`
 					})
 				} else if (key === 'bill') {
 					// 账单缴费
 					uni.navigateTo({
-						url: `/pages/affairs/bill?type=${type}`
+						url: `/subpkg/affairs/bill?type=${type}`
 					})
 				} else if (key === 'contract') {
 					// 我的合同
 					uni.navigateTo({
-						url: `/pages/affairs/contract?type=${type}`
+						url: `/subpkg/affairs/contract?type=${type}`
 					})
 				} else if (key === 'invoice') {
 					// 开票
 					uni.navigateTo({
-						url: `/pages/affairs/invoice?type=${type}`
+						url: `/subpkg/affairs/invoice?type=${type}`
 					})
 				} else if (key === 'appointment') {
 					// 我的预约
 					uni.navigateTo({
-						url: `/pages/affairs/appointment?type=${type}`
+						url: `/subpkg/affairs/appointment?type=${type}`
 					})
 				} else if (key === 'cohabitant') {
 					// 合住人申请 - 先跳转到列表页
 					uni.navigateTo({
-						url: `/pages/affairs/cohabitant-list?type=${type}`
+						url: `/subpkg/affairs/cohabitant-list?type=${type}`
 					})
 				} else if (key === 'exchange') {
 					// 调换房申请
 					uni.navigateTo({
-						url: `/pages/affairs/exchange?type=${type}`
+						url: `/subpkg/affairs/exchange?type=${type}`
 					})
 				}
 			}

@@ -171,6 +171,11 @@ public class WechatMiniappService
             log.info("微信getuserphonenumber响应: status={}, body={}", response.getStatusCode(), responseBody);
             if (responseBody == null || responseBody.isEmpty()) {
                 log.error("微信getuserphonenumber返回空响应体, status={}", response.getStatusCode());
+                // 412通常是access_token失效导致，清除缓存后交由上层重试
+                if (response.getStatusCode().value() == 412) {
+                    redisCache.deleteObject(CACHE_KEY_ACCESS_TOKEN);
+                    throw new RuntimeException("微信获取手机号失败[40001]: access_token无效(412)，已清除缓存");
+                }
                 throw new RuntimeException("微信获取手机号失败: 接口返回空响应(status=" + response.getStatusCode() + ")");
             }
             JsonNode jsonNode = objectMapper.readTree(responseBody);
@@ -240,13 +245,13 @@ public class WechatMiniappService
     {
         // 优先从Redis缓存获取
         String cachedToken = redisCache.getCacheObject(CACHE_KEY_ACCESS_TOKEN);
-        if (cachedToken != null)
+        if (cachedToken != null && !cachedToken.isEmpty())
         {
             log.debug("从Redis缓存获取access_token");
             return cachedToken;
         }
 
-        // 缓存未命中，调用微信API获取
+        // 缓存未命中或缓存值为空，调用微信API获取
         return fetchAndCacheAccessToken(true);
     }
 
@@ -286,7 +291,12 @@ public class WechatMiniappService
                 throw new RuntimeException("微信获取access_token失败: " + errMsg);
             }
 
-            String accessToken = jsonNode.get("access_token").asText();
+            String accessToken = jsonNode.has("access_token") ? jsonNode.get("access_token").asText() : null;
+            if (accessToken == null || accessToken.isEmpty())
+            {
+                log.error("微信返回access_token为空, 响应内容: {}", tokenBody);
+                throw new RuntimeException("微信获取access_token失败: 返回的access_token为空");
+            }
 
             // 缓存到Redis，7000秒（微信默认7200秒，提前刷新）
             redisCache.setCacheObject(CACHE_KEY_ACCESS_TOKEN, accessToken, ACCESS_TOKEN_CACHE_SECONDS, TimeUnit.SECONDS);

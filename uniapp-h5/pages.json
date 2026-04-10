@@ -30,244 +30,236 @@
 			"style": {
 				"navigationBarTitleText": "我的"
 			}
+		}
+	],
+	"subPackages": [
+		{
+			"root": "subpkg/my",
+			"name": "pkg-my",
+			"pages": [
+				{
+					"path": "profile",
+					"style": { "navigationBarTitleText": "账号资料" }
+				},
+				{
+					"path": "listing",
+					"style": { "navigationBarTitleText": "我的房源" }
+				},
+				{
+					"path": "maintenance",
+					"style": { "navigationBarTitleText": "信息维护" }
+				},
+				{
+					"path": "about",
+					"style": { "navigationBarTitleText": "关于我们" }
+				},
+				{
+					"path": "complete-info",
+					"style": {
+						"navigationBarTitleText": "完善个人信息",
+						"navigationStyle": "custom"
+					}
+				}
+			]
 		},
 		{
-			"path": "pages/my/profile",
-			"style": {
-				"navigationBarTitleText": "账号资料"
-			}
+			"root": "pages/auth",
+			"name": "pkg-auth",
+			"pages": [
+				{
+					"path": "verify",
+					"style": { "navigationBarTitleText": "实名认证" }
+				},
+				{
+					"path": "esign-webview",
+					"style": {
+						"navigationBarTitleText": "实名认证",
+						"navigationStyle": "custom"
+					}
+				}
+			]
 		},
 		{
-			"path": "pages/my/listing",
-			"style": {
-				"navigationBarTitleText": "我的房源"
-			}
+			"root": "subpkg/affairs",
+			"name": "pkg-affairs",
+			"pages": [
+				{ "path": "appeal", "style": { "navigationBarTitleText": "资格申诉" } },
+				{ "path": "appeal-submit", "style": { "navigationBarTitleText": "资格申诉" } },
+				{ "path": "appeal-record", "style": { "navigationBarTitleText": "申诉详情" } },
+				{ "path": "checkin", "style": { "navigationBarTitleText": "入住办理" } },
+				{ "path": "checkin-process", "style": { "navigationBarTitleText": "办理入住" } },
+				{ "path": "checkin-edit", "style": { "navigationBarTitleText": "修改申请" } },
+				{ "path": "checkin-confirm", "style": { "navigationBarTitleText": "入住确认" } },
+				{ "path": "checkin-detail", "style": { "navigationBarTitleText": "入住详情" } },
+				{ "path": "checkout", "style": { "navigationBarTitleText": "退租办理" } },
+				{ "path": "checkout-process", "style": { "navigationBarTitleText": "退租办理" } },
+				{ "path": "checkout-edit", "style": { "navigationBarTitleText": "修改申请" } },
+				{ "path": "checkout-confirm", "style": { "navigationBarTitleText": "退租确认" } },
+				{ "path": "checkout-detail", "style": { "navigationBarTitleText": "退租详情" } },
+				{ "path": "renew", "style": { "navigationBarTitleText": "续租" } },
+				{ "path": "bill", "style": { "navigationBarTitleText": "账单缴费" } },
+				{ "path": "contract", "style": { "navigationBarTitleText": "我的合同" } },
+				{ "path": "invoice", "style": { "navigationBarTitleText": "开票服务" } },
+				{ "path": "invoice-apply", "style": { "navigationBarTitleText": "开票服务" } },
+				{ "path": "invoice-form", "style": { "navigationBarTitleText": "开票服务" } },
+				{ "path": "invoice-detail", "style": { "navigationBarTitleText": "开票中" } },
+				{ "path": "invoice-completed", "style": { "navigationBarTitleText": "已开票" } },
+				{ "path": "invoice-order", "style": { "navigationBarTitleText": "开票详情" } },
+				{ "path": "appointment", "style": { "navigationBarTitleText": "我的预约" } },
+				{ "path": "cohabitant-list", "style": { "navigationBarTitleText": "合租户申请" } },
+				{ "path": "cohabitant", "style": { "navigationBarTitleText": "合住人申请表单" } },
+				{ "path": "exchange", "style": { "navigationBarTitleText": "调换房申请" } },
+				{ "path": "exchange-apply", "style": { "navigationBarTitleText": "调换房申请" } }
+			]
 		},
 		{
-			"path": "pages/my/maintenance",
-			"style": {
-				"navigationBarTitleText": "信息维护"
-			}
+			"root": "subpkg/service",
+			"name": "pkg-service",
+			"pages": [
+				{ "path": "complaint", "style": { "navigationBarTitleText": "投诉与建议" } },
+				{ "path": "complaint-submit", "style": { "navigationBarTitleText": "投诉与建议" } },
+				{ "path": "complaint-detail", "style": { "navigationBarTitleText": "投诉详情" } },
+				{ "path": "repair", "style": { "navigationBarTitleText": "物业报修" } },
+				{ "path": "repair-submit", "style": { "navigationBarTitleText": "报修申请" } },
+				{ "path": "repair-detail", "style": { "navigationBarTitleText": "报修详情" } },
+				{ "path": "enterprise", "style": { "navigationBarTitleText": "企业客户" } }
+			]
 		},
 		{
-			"path": "pages/my/about",
-			"style": {
-				"navigationBarTitleText": "关于我们"
-			}
+			"root": "pages/room",
+			"name": "pkg-room",
+			"pages": [
+				{ "path": "select", "style": { "navigationBarTitleText": "选择房源" } },
+				{ "path": "detail", "style": { "navigationBarTitleText": "房源详情" } },
+				{ "path": "images", "style": { "navigationBarTitleText": "房源图片" } },
+				{ "path": "vr", "style": { "navigationBarTitleText": "VR看房" } },
+				{ "path": "reserve", "style": { "navigationBarTitleText": "预约看房" } },
+				{ "path": "deposit", "style": { "navigationBarTitleText": "押金缴纳" } },
+				{ "path": "success", "style": { "navigationBarTitleText": "支付成功" } },
+				{ "path": "payResult", "style": { "navigationBarTitleText": "支付结果" } }
+			]
 		},
 		{
-			"path": "pages/my/complete-info",
-			"style": {
-				"navigationBarTitleText": "完善个人信息",
-				"navigationStyle": "custom"
-			}
+			"root": "pages/talent",
+			"name": "pkg-talent",
+			"pages": [
+				{ "path": "index", "style": { "navigationBarTitleText": "人才公寓" } }
+			]
 		},
 		{
-			"path": "pages/auth/verify",
-			"style": {
-				"navigationBarTitleText": "实名认证"
-			}
+			"root": "pages/coupon",
+			"name": "pkg-coupon",
+			"pages": [
+				{ "path": "index", "style": { "navigationBarTitleText": "优惠券" } }
+			]
 		},
 		{
-			"path": "pages/auth/esign-webview",
-			"style": {
-				"navigationBarTitleText": "实名认证",
-				"navigationStyle": "custom"
-			}
+			"root": "pages/house",
+			"name": "pkg-house",
+			"pages": [
+				{ "path": "all", "style": { "navigationBarTitleText": "所有房源" } }
+			]
 		},
 		{
-			"path": "pages/talent/index",
-			"style": {
-				"navigationBarTitleText": "人才公寓"
-			}
+			"root": "pages/rental",
+			"name": "pkg-rental",
+			"pages": [
+				{ "path": "index", "style": { "navigationBarTitleText": "保租房" } }
+			]
 		},
 		{
-			"path": "pages/coupon/index",
-			"style": {
-				"navigationBarTitleText": "优惠券"
-			}
+			"root": "pages/market",
+			"name": "pkg-market",
+			"pages": [
+				{ "path": "index", "style": { "navigationBarTitleText": "市场租赁" } }
+			]
 		},
 		{
-			"path": "pages/house/all",
-			"style": {
-				"navigationBarTitleText": "所有房源"
-			}
+			"root": "pages/map",
+			"name": "pkg-map",
+			"pages": [
+				{
+					"path": "index",
+					"style": {
+						"navigationBarTitleText": "地图找房",
+						"navigationBarBackgroundColor": "#ffffff"
+					}
+				}
+			]
 		},
 		{
-			"path": "pages/rental/index",
-			"style": {
-				"navigationBarTitleText": "保租房"
-			}
+			"root": "pages/project",
+			"name": "pkg-project",
+			"pages": [
+				{ "path": "detail", "style": { "navigationBarTitleText": "项目详情" } }
+			]
 		},
 		{
-			"path": "pages/market/index",
-			"style": {
-				"navigationBarTitleText": "市场租赁"
-			}
+			"root": "pages/upload",
+			"name": "pkg-upload",
+			"pages": [
+				{ "path": "index", "style": { "navigationBarTitleText": "材料上传" } }
+			]
 		},
 		{
-			"path": "pages/map/index",
-			"style": {
-				"navigationBarTitleText": "地图找房",
-				"navigationBarBackgroundColor": "#ffffff"
-			}
+			"root": "pages/message",
+			"name": "pkg-message",
+			"pages": [
+				{ "path": "index", "style": { "navigationBarTitleText": "我的消息" } },
+				{ "path": "detail", "style": { "navigationBarTitleText": "消息详情" } }
+			]
 		},
 		{
-			"path": "pages/upload/index",
-			"style": {
-				"navigationBarTitleText": "材料上传"
-			}
+			"root": "pages/notice",
+			"name": "pkg-notice",
+			"pages": [
+				{ "path": "list", "style": { "navigationBarTitleText": "通知公告" } },
+				{ "path": "detail", "style": { "navigationBarTitleText": "通知详情" } }
+			]
 		},
 		{
-			"path": "pages/message/index",
-			"style": {
-				"navigationBarTitleText": "我的消息"
-			}
+			"root": "pages/policy",
+			"name": "pkg-policy",
+			"pages": [
+				{ "path": "index", "style": { "navigationBarTitleText": "政策文件" } },
+				{ "path": "detail", "style": { "navigationBarTitleText": "政策详情" } }
+			]
 		},
 		{
-			"path": "pages/message/detail",
-			"style": {
-				"navigationBarTitleText": "消息详情"
-			}
+			"root": "pages/home",
+			"name": "pkg-home",
+			"pages": [
+				{ "path": "index", "style": { "navigationBarTitleText": "人才家园" } },
+				{ "path": "detail", "style": { "navigationBarTitleText": "活动详情" } }
+			]
 		},
 		{
-			"path": "pages/notice/list",
-			"style": {
-				"navigationBarTitleText": "通知公告"
-			}
+			"root": "pages/commitment",
+			"name": "pkg-commitment",
+			"pages": [
+				{ "path": "sign", "style": { "navigationBarTitleText": "承诺书签署" } }
+			]
 		},
 		{
-			"path": "pages/notice/detail",
-			"style": {
-				"navigationBarTitleText": "通知详情"
-			}
+			"root": "pages/contract",
+			"name": "pkg-contract",
+			"pages": [
+				{ "path": "sign", "style": { "navigationBarTitleText": "合同签订" } }
+			]
 		},
 		{
-			"path": "pages/policy/index",
-			"style": {
-				"navigationBarTitleText": "政策文件"
-			}
-		},
-		{
-			"path": "pages/policy/detail",
-			"style": {
-				"navigationBarTitleText": "政策详情"
-			}
-		},
-		{
-			"path": "pages/home/index",
-			"style": {
-				"navigationBarTitleText": "人才家园"
-			}
-		},
-		{
-			"path": "pages/home/detail",
-			"style": {
-				"navigationBarTitleText": "活动详情"
-			}
-		},
-		{
-			"path": "pages/project/detail",
-			"style": {
-				"navigationBarTitleText": "项目详情"
-			}
-		},
-		{
-			"path": "pages/room/select",
-			"style": {
-				"navigationBarTitleText": "选择房源"
-			}
-		},
-		{
-			"path": "pages/room/detail",
-			"style": {
-				"navigationBarTitleText": "房源详情"
-			}
-		},
-		{
-			"path": "pages/room/images",
-			"style": {
-				"navigationBarTitleText": "房源图片"
-			}
-		},
-		{
-			"path": "pages/room/vr",
-			"style": {
-				"navigationBarTitleText": "VR看房"
-			}
-		},
-		{
-			"path": "pages/room/reserve",
-			"style": {
-				"navigationBarTitleText": "预约看房"
-			}
-		},
-		{
-			"path": "pages/room/deposit",
-			"style": {
-				"navigationBarTitleText": "押金缴纳"
-			}
-		},
-		{
-			"path": "pages/room/success",
-			"style": {
-				"navigationBarTitleText": "支付成功"
-			}
-		},
-		{ "path": "pages/room/payResult", "style": { "navigationBarTitleText": "支付结果" } },
-		{
-			"path": "pages/commitment/sign",
-			"style": {
-				"navigationBarTitleText": "承诺书签署"
-			}
-		},
-		{
-			"path": "pages/contract/sign",
-			"style": {
-				"navigationBarTitleText": "合同签订"
-			}
-		},
-		{
-			"path": "pages/signature/index",
-			"style": {
-				"navigationBarTitleText": "签名",
-				"navigationStyle": "custom"
-			}
-		},
-		{ "path": "pages/affairs/appeal", "style": { "navigationBarTitleText": "资格申诉" } },
-		{ "path": "pages/affairs/appeal-submit", "style": { "navigationBarTitleText": "资格申诉" } },
-		{ "path": "pages/affairs/appeal-record", "style": { "navigationBarTitleText": "申诉详情" } },
-		{ "path": "pages/affairs/checkin", "style": { "navigationBarTitleText": "入住办理" } },
-		{ "path": "pages/affairs/checkin-process", "style": { "navigationBarTitleText": "办理入住" } },
-		{ "path": "pages/affairs/checkin-edit", "style": { "navigationBarTitleText": "修改申请" } },
-		{ "path": "pages/affairs/checkin-confirm", "style": { "navigationBarTitleText": "入住确认" } },
-		{ "path": "pages/affairs/checkin-detail", "style": { "navigationBarTitleText": "入住详情" } },
-		{ "path": "pages/affairs/checkout", "style": { "navigationBarTitleText": "退租办理" } },
-		{ "path": "pages/affairs/checkout-process", "style": { "navigationBarTitleText": "退租办理" } },
-		{ "path": "pages/affairs/checkout-edit", "style": { "navigationBarTitleText": "修改申请" } },
-		{ "path": "pages/affairs/checkout-confirm", "style": { "navigationBarTitleText": "退租确认" } },
-		{ "path": "pages/affairs/checkout-detail", "style": { "navigationBarTitleText": "退租详情" } },
-		{ "path": "pages/affairs/renew", "style": { "navigationBarTitleText": "续租" } },
-		{ "path": "pages/affairs/bill", "style": { "navigationBarTitleText": "账单缴费" } },
-		{ "path": "pages/affairs/contract", "style": { "navigationBarTitleText": "我的合同" } },
-		{ "path": "pages/affairs/invoice", "style": { "navigationBarTitleText": "开票服务" } },
-		{ "path": "pages/affairs/invoice-apply", "style": { "navigationBarTitleText": "开票服务" } },
-		{ "path": "pages/affairs/invoice-form", "style": { "navigationBarTitleText": "开票服务" } },
-		{ "path": "pages/affairs/invoice-detail", "style": { "navigationBarTitleText": "开票中" } },
-		{ "path": "pages/affairs/invoice-completed", "style": { "navigationBarTitleText": "已开票" } },
-		{ "path": "pages/affairs/invoice-order", "style": { "navigationBarTitleText": "开票详情" } },
-		{ "path": "pages/affairs/appointment", "style": { "navigationBarTitleText": "我的预约" } },
-		{ "path": "pages/affairs/cohabitant-list", "style": { "navigationBarTitleText": "合租户申请" } },
-		{ "path": "pages/affairs/cohabitant", "style": { "navigationBarTitleText": "合住人申请表单" } },
-		{ "path": "pages/affairs/exchange", "style": { "navigationBarTitleText": "调换房申请" } },
-		{ "path": "pages/affairs/exchange-apply", "style": { "navigationBarTitleText": "调换房申请" } },
-		{ "path": "pages/service/complaint", "style": { "navigationBarTitleText": "投诉与建议" } },
-		{ "path": "pages/service/complaint-submit", "style": { "navigationBarTitleText": "投诉与建议" } },
-		{ "path": "pages/service/complaint-detail", "style": { "navigationBarTitleText": "投诉详情" } },
-		{ "path": "pages/service/repair", "style": { "navigationBarTitleText": "物业报修" } },
-		{ "path": "pages/service/repair-submit", "style": { "navigationBarTitleText": "报修申请" } },
-		{ "path": "pages/service/repair-detail", "style": { "navigationBarTitleText": "报修详情" } },
-		{ "path": "pages/service/enterprise", "style": { "navigationBarTitleText": "企业客户" } }
+			"root": "pages/signature",
+			"name": "pkg-signature",
+			"pages": [
+				{
+					"path": "index",
+					"style": {
+						"navigationBarTitleText": "签名",
+						"navigationStyle": "custom"
+					}
+				}
+			]
+		}
 	],
 	"globalStyle": {
 		 "navigationStyle": "custom",

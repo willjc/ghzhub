@@ -420,7 +420,7 @@ export default {
       this.stopPolling()
       uni.removeStorageSync('esign_contractId')
       uni.removeStorageSync('esign_userId')
-      uni.redirectTo({ url: '/pages/affairs/contract?esign_done=1' })
+      uni.redirectTo({ url: '/subpkg/affairs/contract?esign_done=1' })
     },
 
     goBack() {

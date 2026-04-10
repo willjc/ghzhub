@@ -150,14 +150,14 @@ export default {
 		// 查看详情
 		handleViewDetail(item) {
 			uni.navigateTo({
-				url: '/pages/service/complaint-detail?id=' + item.complaintId
+				url: '/subpkg/service/complaint-detail?id=' + item.complaintId
 			})
 		},
 
 		// 发起投诉
 		handleSubmitComplaint() {
 			uni.navigateTo({
-				url: '/pages/service/complaint-submit'
+				url: '/subpkg/service/complaint-submit'
 			})
 		},
 

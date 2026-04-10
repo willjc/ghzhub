@@ -368,7 +368,7 @@
 					cancelText: '稍后再说',
 					success: (res) => {
 						if (res.confirm) {
-							uni.navigateTo({ url: '/pages/my/profile' })
+							uni.navigateTo({ url: '/subpkg/my/profile' })
 						}
 					}
 				})

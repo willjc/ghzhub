@@ -164,7 +164,7 @@
 					})
 					setTimeout(() => {
 						uni.redirectTo({
-							url: '/pages/affairs/appointment'
+							url: '/subpkg/affairs/appointment'
 						})
 					}, 1500)
 

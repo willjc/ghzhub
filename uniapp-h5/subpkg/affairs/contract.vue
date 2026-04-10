@@ -207,7 +207,7 @@
 			// 租金缴纳
 			handlePay(item) {
 				uni.navigateTo({
-					url: `/pages/affairs/bill?type=${this.housingType}`
+					url: `/subpkg/affairs/bill?type=${this.housingType}`
 				})
 			},
 

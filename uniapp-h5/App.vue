@@ -22,42 +22,42 @@
 		font-weight: normal;
 		font-style: normal;
 	}
-	
+
 	@font-face {
 		font-family: "PingFang SC";
 		src: url('/static/苹方字体/PingFang Light_0.ttf') format('truetype');
 		font-weight: 300;
 		font-style: normal;
 	}
-	
+
 	@font-face {
 		font-family: "PingFang SC";
 		src: url('/static/苹方字体/PingFang ExtraLight_0.ttf') format('truetype');
 		font-weight: 200;
 		font-style: normal;
 	}
-	
+
 	@font-face {
 		font-family: "PingFang SC";
 		src: url('/static/苹方字体/PingFang Medium_0.ttf') format('truetype');
 		font-weight: 500;
 		font-style: normal;
 	}
-	
+
 	@font-face {
 		font-family: "PingFang SC";
 		src: url('/static/苹方字体/PingFang Bold_0.ttf') format('truetype');
 		font-weight: 700;
 		font-style: normal;
 	}
-	
+
 	@font-face {
 		font-family: "PingFang SC";
 		src: url('/static/苹方字体/PingFang Heavy_0.ttf') format('truetype');
 		font-weight: 900;
 		font-style: normal;
 	}
-	
+
 	/* 全局字体设置 */
 	page {
 		font-family: "PingFang SC", "苹方-简", sans-serif;

@@ -159,7 +159,7 @@
 
 				const selectedBill = this.billList[this.selectedIndex]
 				uni.navigateTo({
-					url: `/pages/affairs/invoice-form?type=${this.housingType}&billId=${selectedBill.id}`
+					url: `/subpkg/affairs/invoice-form?type=${this.housingType}&billId=${selectedBill.id}`
 				})
 			},
 

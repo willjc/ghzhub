@@ -152,7 +152,7 @@
 			// 申请合租户
 			handleApply() {
 				uni.navigateTo({
-					url: `/pages/affairs/cohabitant?type=${this.housingType}`
+					url: `/subpkg/affairs/cohabitant?type=${this.housingType}`
 				})
 			}
 		}

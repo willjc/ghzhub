@@ -270,7 +270,7 @@
 							uni.navigateBack()
 						} else {
 							uni.redirectTo({
-								url: `/pages/affairs/checkin?type=${this.housingType}`
+								url: `/subpkg/affairs/checkin?type=${this.housingType}`
 							})
 						}
 					}, 1500)
@@ -363,7 +363,7 @@
 			// 查看协议
 			viewAgreement() {
 				uni.navigateTo({
-					url: '/pages/affairs/checkin-agreement'
+					url: '/subpkg/affairs/checkin-agreement'
 				})
 			},
 
@@ -477,7 +477,7 @@
 							uni.navigateBack()
 						} else {
 							uni.redirectTo({
-								url: `/pages/affairs/checkin?type=${this.housingType}`
+								url: `/subpkg/affairs/checkin?type=${this.housingType}`
 							})
 						}
 					}, 1500)

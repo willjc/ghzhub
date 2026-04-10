@@ -163,7 +163,7 @@
 			// 申请调换
 			handleApply() {
 				uni.navigateTo({
-					url: `/pages/affairs/exchange-apply?type=${this.housingType}`
+					url: `/subpkg/affairs/exchange-apply?type=${this.housingType}`
 				})
 			}
 		}

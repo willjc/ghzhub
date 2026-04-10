@@ -145,7 +145,7 @@
 			goToRecordDetail(appealId) {
 				if (appealId) {
 					uni.navigateTo({
-						url: '/pages/affairs/appeal-record?id=' + appealId
+						url: '/subpkg/affairs/appeal-record?id=' + appealId
 					})
 				} else {
 					uni.showToast({
@@ -174,14 +174,14 @@
 			handleAppeal(index) {
 				const item = this.qualificationList[index]
 				uni.navigateTo({
-					url: `/pages/affairs/appeal-submit?type=${this.housingType}&id=${index}`
+					url: `/subpkg/affairs/appeal-submit?type=${this.housingType}&id=${index}`
 				})
 			},
 
 			// 发起申诉
 			handleStartAppeal() {
 				uni.navigateTo({
-					url: '/pages/affairs/appeal-submit?type=' + this.housingType
+					url: '/subpkg/affairs/appeal-submit?type=' + this.housingType
 				})
 			}
 		}

@@ -266,7 +266,7 @@ export default {
 					// 延迟跳转到入驻详情页面
 					setTimeout(() => {
 						uni.redirectTo({
-							url: `/pages/affairs/checkin-detail?type=${this.housingType}&id=${this.recordId}`
+							url: `/subpkg/affairs/checkin-detail?type=${this.housingType}&id=${this.recordId}`
 						})
 					}, 1500)
 				} else {

@@ -99,11 +99,11 @@
 
 			goToProfile() {
 				uni.navigateTo({
-					url: '/pages/my/profile'
+					url: '/subpkg/my/profile'
 				})
 			},
 			goToAuth() {
-				uni.navigateTo({ url: '/pages/my/profile' })
+				uni.navigateTo({ url: '/subpkg/my/profile' })
 			},
 			handleMenuClick(key) {
 				console.log('点击菜单:', key)
@@ -113,19 +113,19 @@
 					})
 				} else if (key === 'listing') {
 					uni.navigateTo({
-						url: '/pages/my/listing'
+						url: '/subpkg/my/listing'
 					})
 				} else if (key === 'contract') {
 					uni.navigateTo({
-						url: '/pages/affairs/contract'
+						url: '/subpkg/affairs/contract'
 					})
 				} else if (key === 'appeal') {
 					uni.navigateTo({
-						url: '/pages/affairs/appeal'
+						url: '/subpkg/affairs/appeal'
 					})
 				} else if (key === 'maintenance') {
 					uni.navigateTo({
-						url: '/pages/my/maintenance'
+						url: '/subpkg/my/maintenance'
 					})
 				} else if (key === 'coupon') {
 					uni.navigateTo({
@@ -133,7 +133,7 @@
 					})
 				} else if (key === 'about') {
 					uni.navigateTo({
-						url: '/pages/my/about'
+						url: '/subpkg/my/about'
 					})
 				}
 			}

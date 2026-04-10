@@ -183,14 +183,14 @@ export default {
 		// 查看详情
 		handleViewDetail(item) {
 			uni.navigateTo({
-				url: '/pages/service/repair-detail?id=' + item.repairId
+				url: '/subpkg/service/repair-detail?id=' + item.repairId
 			})
 		},
 
 		// 报修申请
 		handleRepairApply() {
 			uni.navigateTo({
-				url: '/pages/service/repair-submit'
+				url: '/subpkg/service/repair-submit'
 			})
 		}
 	}

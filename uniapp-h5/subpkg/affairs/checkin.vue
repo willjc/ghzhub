@@ -273,7 +273,7 @@
 			handleEdit(index) {
 				const item = this.checkinList[index]
 				uni.redirectTo({
-					url: `/pages/affairs/checkin-process?type=${this.housingType}&id=${item.recordId}&mode=edit`
+					url: `/subpkg/affairs/checkin-process?type=${this.housingType}&id=${item.recordId}&mode=edit`
 				})
 			},
 
@@ -281,7 +281,7 @@
 			handleCheckin(index) {
 				const item = this.checkinList[index]
 				uni.redirectTo({
-					url: `/pages/affairs/checkin-process?type=${this.housingType}&id=${item.recordId}`
+					url: `/subpkg/affairs/checkin-process?type=${this.housingType}&id=${item.recordId}`
 				})
 			},
 
@@ -289,7 +289,7 @@
 			handleDetail(index) {
 				const item = this.checkinList[index]
 				uni.redirectTo({
-					url: `/pages/affairs/checkin-detail?type=${this.housingType}&id=${item.recordId}`
+					url: `/subpkg/affairs/checkin-detail?type=${this.housingType}&id=${item.recordId}`
 				})
 			},
 
@@ -297,7 +297,7 @@
 			handleConfirm(index) {
 				const item = this.checkinList[index]
 				uni.redirectTo({
-					url: `/pages/affairs/checkin-confirm?type=${this.housingType}&id=${item.recordId}`
+					url: `/subpkg/affairs/checkin-confirm?type=${this.housingType}&id=${item.recordId}`
 				})
 			},
 
@@ -305,7 +305,7 @@
 			handleCheckinDetail(index) {
 				const item = this.checkinList[index]
 				uni.redirectTo({
-					url: `/pages/affairs/checkin-detail?type=${this.housingType}&id=${item.recordId}`
+					url: `/subpkg/affairs/checkin-detail?type=${this.housingType}&id=${item.recordId}`
 				})
 			},
 

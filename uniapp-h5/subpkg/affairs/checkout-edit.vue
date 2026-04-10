@@ -1,32 +1,11 @@
 <template>
 	<view class="page">
 		<scroll-view class="scroll-content" scroll-y>
-			<!-- 入住信息卡片 -->
+			<!-- 退租信息卡片 -->
 			<view class="card">
 				<view class="card-header">
 					<view class="card-indicator"></view>
-					<text class="card-title">入住信息</text>
-				</view>
-				
-				<view class="form-row">
-					<text class="form-label">小区名称</text>
-					<view class="form-value-wrap">
-						<text class="form-value">{{ formData.community }}</text>
-					</view>
-				</view>
-				
-				<view class="form-row">
-					<text class="form-label">房间地址</text>
-					<view class="form-value-wrap">
-						<text class="form-value">{{ formData.room }}</text>
-					</view>
-				</view>
-				
-				<view class="form-row">
-					<text class="form-label">入住日期</text>
-					<view class="form-value-wrap">
-						<text class="form-value">{{ formData.checkinDate }}</text>
-					</view>
+					<text class="card-title">退租信息</text>
 				</view>
 				
 				<view class="form-row">
@@ -44,67 +23,44 @@
 				</view>
 				
 				<view class="form-row">
+					<text class="form-label">小区名称</text>
+					<view class="form-value-wrap">
+						<text class="form-value">{{ formData.community }}</text>
+					</view>
+				</view>
+				
+				<view class="form-row">
+					<text class="form-label">房间地址</text>
+					<view class="form-value-wrap">
+						<text class="form-value">{{ formData.room }}</text>
+					</view>
+				</view>
+				
+				<view class="form-row">
+					<text class="form-label">退租账期</text>
+					<view class="form-value-wrap">
+						<text class="form-value">{{ formData.rentPeriod }}</text>
+					</view>
+				</view>
+				
+				<view class="form-row">
+					<text class="form-label">退租日期</text>
+					<view class="form-value-wrap">
+						<text class="form-value">{{ formData.checkoutDate }}</text>
+					</view>
+				</view>
+				
+				<view class="form-row">
 					<text class="form-label">审核状态</text>
 					<view class="form-value-wrap">
-						<text class="form-value status-pending">{{ formData.statusText }}</text>
-					</view>
-				</view>
-			</view>
-			
-			<!-- 合住人信息卡片 -->
-			<view class="card" v-for="(item, index) in cohabitantList" :key="index">
-				<view class="card-header">
-					<view class="card-indicator"></view>
-					<text class="card-title">合住人信息</text>
-				</view>
-				
-				<view class="form-row">
-					<text class="form-label">姓名</text>
-					<view class="form-value-wrap">
-						<text class="form-value">{{ item.name }}</text>
+						<text class="form-value" :class="statusClassMap[formData.status] || ''">{{ formData.statusText }}</text>
 					</view>
 				</view>
 				
-				<view class="form-row">
-					<text class="form-label">关系</text>
+				<view class="form-row reason-row">
+					<text class="form-label">退租原因</text>
 					<view class="form-value-wrap">
-						<text class="form-value">{{ item.relation }}</text>
-					</view>
-				</view>
-				
-				<view class="form-row">
-					<text class="form-label">入住日期</text>
-					<view class="form-value-wrap">
-						<text class="form-value">{{ item.checkinDate }}</text>
-					</view>
-				</view>
-			</view>
-			
-			<!-- 紧急联系人卡片 -->
-			<view class="card">
-				<view class="card-header">
-					<view class="card-indicator"></view>
-					<text class="card-title">紧急联系人</text>
-				</view>
-				
-				<view class="form-row">
-					<text class="form-label">姓名</text>
-					<view class="form-value-wrap">
-						<text class="form-value">{{ emergencyContact.name }}</text>
-					</view>
-				</view>
-				
-				<view class="form-row">
-					<text class="form-label">关系</text>
-					<view class="form-value-wrap">
-						<text class="form-value">{{ emergencyContact.relation }}</text>
-					</view>
-				</view>
-				
-				<view class="form-row">
-					<text class="form-label">联系电话</text>
-					<view class="form-value-wrap">
-						<text class="form-value">{{ emergencyContact.phone }}</text>
+						<text class="form-value reason-text">{{ formData.reason }}</text>
 					</view>
 				</view>
 			</view>
@@ -129,30 +85,25 @@
 		data() {
 			return {
 				housingType: '',
-				checkinId: '',
+				checkoutId: '',
 				
 				formData: {
-					community: '美好人间',
-					room: '6号楼6单元606',
-					checkinDate: '2025年2月2日',
 					applicant: '张三',
 					applyTime: '2025年2月2日 12:12:12',
+					community: '美好人间',
+					room: '6号楼6单元606',
+					rentPeriod: '202512-16至2026-12-13',
+					checkoutDate: '2025年2月2日',
 					status: 'pending',
-					statusText: '审批中'
+					statusText: '审批中',
+					reason: '这里是退租原因，有原因和理由的文本展示，可换行大概30字左右'
 				},
-				
-				cohabitantList: [
-					{
-						name: '张三',
-						relation: '配偶',
-						checkinDate: '2025-12-12'
-					}
-				],
-				
-				emergencyContact: {
-					name: '张三',
-					relation: '配偶',
-					phone: '12345678901'
+
+				statusClassMap: {
+					'pending': 'status-pending',
+					'approved': 'status-approved',
+					'rejected': 'status-rejected',
+					'cancelled': 'status-cancelled'
 				}
 			}
 		},
@@ -161,15 +112,15 @@
 				this.housingType = options.type
 			}
 			if (options.id) {
-				this.checkinId = options.id
+				this.checkoutId = options.id
 			}
-			this.loadCheckinDetail()
+			this.loadCheckoutDetail()
 		},
 		methods: {
 			// 加载申请详情
-			loadCheckinDetail() {
+			loadCheckoutDetail() {
 				// TODO: 调用API获取申请详情
-				console.log('加载申请详情，类型:', this.housingType, 'ID:', this.checkinId)
+				console.log('加载退租申请详情，类型:', this.housingType, 'ID:', this.checkoutId)
 			},
 			
 			// 取消申请
@@ -201,7 +152,7 @@
 			// 修改信息
 			handleEdit() {
 				uni.navigateTo({
-					url: `/pages/affairs/checkin-process?type=${this.housingType}&id=${this.checkinId}&mode=edit`
+					url: `/subpkg/affairs/checkout-process?type=${this.housingType}&id=${this.checkoutId}&mode=edit`
 				})
 			}
 		}
@@ -260,18 +211,20 @@
 		margin-bottom: 28rpx;
 	}
 
+	.reason-row {
+		align-items: flex-start;
+	}
+
 	.form-label {
 		width: 166rpx;
 		color: #333333;
 		font-size: 28rpx;
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
-		
 	}
 
 	.form-value-wrap {
 		flex: 1;
-		
 	}
 
 	.form-value {
@@ -281,6 +234,11 @@
 		font-family: "PingFang SC", "苹方-简", sans-serif;
 	}
 
+	.reason-text {
+		line-height: 40rpx;
+	}
+
+	/* 状态颜色 */
 	.status-pending {
 		color: #ff8d1a;
 	}
@@ -291,6 +249,10 @@
 
 	.status-rejected {
 		color: #fa5740;
+	}
+
+	.status-cancelled {
+		color: #768394;
 	}
 
 	/* 底部按钮 */

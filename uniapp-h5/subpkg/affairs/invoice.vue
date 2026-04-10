@@ -101,8 +101,8 @@
 			// 查看发票详情
 			handleDetail(item) {
 				const pageUrl = item.applyStatus === '2'
-					? `/pages/affairs/invoice-completed?applyId=${item.applyId}`
-					: `/pages/affairs/invoice-detail?applyId=${item.applyId}`
+					? `/subpkg/affairs/invoice-completed?applyId=${item.applyId}`
+					: `/subpkg/affairs/invoice-detail?applyId=${item.applyId}`
 				uni.navigateTo({
 					url: pageUrl
 				})
@@ -111,7 +111,7 @@
 			// 申请开票
 			handleApply() {
 				uni.navigateTo({
-					url: `/pages/affairs/invoice-apply?type=${this.housingType}`
+					url: `/subpkg/affairs/invoice-apply?type=${this.housingType}`
 				})
 			},
 

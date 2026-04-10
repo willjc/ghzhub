@@ -179,7 +179,7 @@
 
 				// 跳转到我的合同页面，传递合同ID参数
 				uni.navigateTo({
-					url: `/pages/affairs/contract?type=${this.housingType}&contractId=${item.contractId}`
+					url: `/subpkg/affairs/contract?type=${this.housingType}&contractId=${item.contractId}`
 				})
 			}
 		}

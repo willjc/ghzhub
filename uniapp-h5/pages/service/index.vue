@@ -54,17 +54,17 @@
 				switch (key) {
 					case 'complaint':
 						uni.navigateTo({
-							url: '/pages/service/complaint'
+							url: '/subpkg/service/complaint'
 						})
 						break
 					case 'repair':
 						uni.navigateTo({
-							url: '/pages/service/repair'
+							url: '/subpkg/service/repair'
 						})
 						break
 					case 'enterprise':
 						uni.navigateTo({
-							url: '/pages/service/enterprise'
+							url: '/subpkg/service/enterprise'
 						})
 						break
 					default:

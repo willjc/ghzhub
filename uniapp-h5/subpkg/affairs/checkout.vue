@@ -261,7 +261,7 @@
 
 				if (item.recordId) {
 					uni.navigateTo({
-						url: `/pages/affairs/checkout-process?type=${this.housingType}&recordId=${item.recordId}`
+						url: `/subpkg/affairs/checkout-process?type=${this.housingType}&recordId=${item.recordId}`
 					})
 				}
 			},
@@ -306,7 +306,7 @@
 			handleEdit(index) {
 				const item = this.checkoutList[index]
 				uni.navigateTo({
-					url: `/pages/affairs/checkout-edit?type=${this.housingType}&applyId=${item.applyId}`
+					url: `/subpkg/affairs/checkout-edit?type=${this.housingType}&applyId=${item.applyId}`
 				})
 			},
 
@@ -314,7 +314,7 @@
 			handleConfirm(index) {
 				const item = this.checkoutList[index]
 				uni.navigateTo({
-					url: `/pages/affairs/checkout-confirm?type=${this.housingType}&applyId=${item.applyId}`
+					url: `/subpkg/affairs/checkout-confirm?type=${this.housingType}&applyId=${item.applyId}`
 				})
 			},
 
@@ -322,7 +322,7 @@
 			handleDetail(index) {
 				const item = this.checkoutList[index]
 				uni.navigateTo({
-					url: `/pages/affairs/checkout-detail?type=${this.housingType}&applyId=${item.applyId}`
+					url: `/subpkg/affairs/checkout-detail?type=${this.housingType}&applyId=${item.applyId}`
 				})
 			}
 		}
