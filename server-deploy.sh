@@ -24,17 +24,17 @@ cp ruoyi-admin/target/ruoyi-admin.jar /www/wwwroot/ghz-backend/ruoyi-admin.jar
 
 # 5. 重启服务（使用组名兼容 ghz-backend:ghz-backend_00 格式）
 echo ">>> 重启服务..."
-sudo supervisorctl restart ghz-backend
+sudo /usr/local/bin/ghz-restart.sh
 
 # 6. 等待启动并健康检查
 sleep 20
-STATUS=$(sudo supervisorctl status ghz-backend | grep ghz-backend | awk '{print $2}')
+STATUS=$(sudo supervisorctl status ghz-backend:ghz-backend_00 | awk '{print $2}')
 if [ "$STATUS" != "RUNNING" ]; then
     echo "启动失败（状态: $STATUS），开始回滚..."
     [ -f /www/wwwroot/ghz-backend/ruoyi-admin-backup.jar ] && \
         cp /www/wwwroot/ghz-backend/ruoyi-admin-backup.jar \
            /www/wwwroot/ghz-backend/ruoyi-admin.jar
-    sudo supervisorctl restart ghz-backend
+    sudo /usr/local/bin/ghz-restart.sh
     exit 1
 fi
 
