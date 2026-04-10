@@ -108,6 +108,10 @@
 					if (res.code === 200 && res.data && res.data.authenticated) {
 						this.authenticated = true
 						this.updateLocalUserInfo(res.data)
+						// 同步更新 localStorage 里的 authStatus，让其他页面返回时能读到最新状态
+						const userInfo = uni.getStorageSync('userInfo') || {}
+						userInfo.authStatus = '2'
+						uni.setStorageSync('userInfo', userInfo)
 						uni.showToast({ title: '认证成功', icon: 'success' })
 					} else {
 						this.authDone = false
@@ -133,11 +137,7 @@
 
 				this.submitting = true
 				try {
-					const res = await getAuthUrl({
-						userId: this.userId,
-						realName: this.form.realName.trim(),
-						idCard: this.form.idCard.trim()
-					})
+					const res = await getAuthUrl(this.userId)
 
 					if (res.code === 200 && res.data) {
 						if (!res.data.needAuth) {

@@ -54,9 +54,22 @@
             <text class="info-label">押金</text>
             <text class="info-value price">¥{{ deposit }}</text>
           </view>
+          <!-- 租期选择 -->
           <view class="info-row">
             <text class="info-label">租期</text>
-            <text class="info-value">{{ rentMonths }}个月</text>
+            <picker
+              class="rent-picker"
+              mode="selector"
+              :range="rentMonthsOptions"
+              :range-key="'label'"
+              :value="rentMonthsIndex"
+              @change="onRentMonthsChange"
+            >
+              <view class="rent-picker-inner">
+                <text class="rent-picker-text">{{ rentMonths }} 个月</text>
+                <text class="rent-picker-arrow">&#9660;</text>
+              </view>
+            </picker>
           </view>
           <view class="info-row">
             <text class="info-label">合同期限</text>
@@ -160,7 +173,9 @@ export default {
       roomId: null,
       projectId: null,
       contractId: null,
-      rentMonths: 12,
+      rentMonths: 6,
+      rentMonthsOptions: Array.from({ length: 24 }, (_, i) => ({ label: `${i + 1} 个月`, value: i + 1 })),
+      rentMonthsIndex: 5,
       // 合同数据
       templateId: null,
       projectName: '',
@@ -199,6 +214,7 @@ export default {
     this.projectId = options.projectId ? parseInt(options.projectId) : null
     this.contractId = options.contractId ? parseInt(options.contractId) : null
     this.rentMonths = options.rentMonths ? parseInt(options.rentMonths) : 12
+    this.rentMonthsIndex = this.rentMonths - 1
 
     // 检测是否从e签宝跳回（H5环境）
     // #ifdef H5
@@ -234,6 +250,19 @@ export default {
     this.stopPolling()
   },
   methods: {
+    onRentMonthsChange(e) {
+      this.rentMonthsIndex = e.detail.value
+      const m = this.rentMonthsOptions[this.rentMonthsIndex].value
+      this.rentMonths = m
+      // 重新计算结束日期
+      const start = new Date()
+      start.setDate(start.getDate() + 3)
+      this.startDate = start.toISOString().split('T')[0]
+      const end = new Date(start)
+      end.setMonth(end.getMonth() + m)
+      this.endDate = end.toISOString().split('T')[0]
+    },
+
     async init() {
       this.loading = true
       try {
@@ -357,11 +386,11 @@ export default {
     goEsign() {
       if (!this.signUrl) return
       this.step = 'esign_waiting'
+      // #ifdef MP-WEIXIN
+      uni.navigateTo({ url: '/pages/auth/esign-webview?url=' + encodeURIComponent(this.signUrl) })
+      // #endif
       // #ifdef H5
       window.location.href = this.signUrl
-      // #endif
-      // #ifndef H5
-      plus.runtime.openURL(this.signUrl)
       // #endif
       this.startPolling()
     },
@@ -495,8 +524,11 @@ export default {
   display: flex; justify-content: space-between; align-items: center;
   padding: 10rpx 0;
 }
-.info-label { font-size: 26rpx; color: #999; }
-.info-value { font-size: 26rpx; color: #333; font-weight: 500; }
+.info-label { font-size: 26rpx; color: #999; width: 140rpx; flex-shrink: 0; }
+.info-value {
+  font-size: 26rpx; color: #333; font-weight: 500;
+  text-align: right; flex: 1; padding-right: 4rpx;
+}
 .info-value.price { color: #e5252b; font-weight: 600; }
 
 /* 温馨提示 */
@@ -505,5 +537,21 @@ export default {
 
 .preview-footer {
   padding: 20rpx 30rpx; background: #fff; border-top: 1rpx solid #eee;
+}
+
+/* 租期下拉选择器 */
+.rent-picker {
+  flex: 1;
+}
+.rent-picker-inner {
+  display: flex; align-items: center; justify-content: flex-end;
+  padding: 8rpx 16rpx 8rpx 0;
+  gap: 8rpx;
+}
+.rent-picker-text {
+  font-size: 26rpx; color: #333; font-weight: 500;
+}
+.rent-picker-arrow {
+  font-size: 20rpx; color: #999;
 }
 </style>

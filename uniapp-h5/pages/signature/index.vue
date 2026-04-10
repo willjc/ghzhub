@@ -1,7 +1,7 @@
 <template>
 	<view class="signature-page">
 		<!-- 顶部导航栏 -->
-		<view class="navbar">
+		<view class="navbar" :style="{ paddingTop: statusBarHeight + 'px' }">
 			<view class="nav-left" @click="handleBack">
 				<text class="back-icon">←</text>
 				<text class="back-text">返回</text>
@@ -19,7 +19,18 @@
 
 		<!-- 签名画布区域 -->
 		<view class="canvas-wrapper" ref="canvasWrapper">
-			<!-- H5端直接使用原生canvas，不用uni-app的canvas组件 -->
+			<!-- H5端直接使用原生canvas -->
+			<!-- #ifdef MP-WEIXIN -->
+			<canvas
+				canvas-id="signatureCanvas"
+				id="signatureCanvas"
+				class="signature-canvas"
+				@touchstart="mpTouchStart"
+				@touchmove="mpTouchMove"
+				@touchend="mpTouchEnd"
+				disable-scroll="true"
+			></canvas>
+			<!-- #endif -->
 		</view>
 
 		<!-- 底部操作按钮 -->
@@ -63,10 +74,23 @@ export default {
 			isCheckInMode: false,
 			isCheckoutMode: false,
 			isCheckoutApplyMode: false,
-			submitting: false
+			submitting: false,
+			statusBarHeight: 0,
+			// 小程序端签名相关
+			mpCtx: null,
+			mpLastX: 0,
+			mpLastY: 0,
+			mpIsDrawing: false,
+			mpHasDrawn: false,
+			mpCanvasWidth: 0,
+			mpCanvasHeight: 0
 		}
 	},
 	onLoad(options) {
+		// 获取状态栏高度，用于自定义导航栏偏移
+		const systemInfo = uni.getSystemInfoSync()
+		this.statusBarHeight = systemInfo.statusBarHeight || 0
+
 		// 判断签名模式：
 		// 有 recordId 参数为入住确认模式
 		// 有 applyId 参数为退租确认模式
@@ -129,6 +153,13 @@ export default {
 			}, 300)
 		})
 		// #endif
+		// #ifdef MP-WEIXIN
+		this.$nextTick(() => {
+			setTimeout(() => {
+				this.initMpSignature()
+			}, 300)
+		})
+		// #endif
 	},
 	onUnload() {
 		if (this.signaturePad) {
@@ -177,11 +208,79 @@ export default {
 			// #endif
 		},
 
+		// ===== 小程序端签名实现 =====
+		// #ifdef MP-WEIXIN
+		initMpSignature() {
+			const query = uni.createSelectorQuery().in(this)
+			query.select('#signatureCanvas').boundingClientRect(rect => {
+				if (!rect) {
+					console.error('找不到 signatureCanvas')
+					return
+				}
+				this.mpCanvasWidth = rect.width
+				this.mpCanvasHeight = rect.height
+				this.mpCtx = uni.createCanvasContext('signatureCanvas', this)
+				this.mpCtx.setStrokeStyle('#000000')
+				this.mpCtx.setLineWidth(3)
+				this.mpCtx.setLineCap('round')
+				this.mpCtx.setLineJoin('round')
+				// 白色背景
+				this.mpCtx.setFillStyle('#ffffff')
+				this.mpCtx.fillRect(0, 0, this.mpCanvasWidth, this.mpCanvasHeight)
+				this.mpCtx.draw()
+				console.log('小程序签名板初始化完成, 尺寸:', this.mpCanvasWidth, this.mpCanvasHeight)
+			}).exec()
+		},
+		mpTouchStart(e) {
+			const touch = e.touches[0]
+			this.mpLastX = touch.x
+			this.mpLastY = touch.y
+			this.mpIsDrawing = true
+		},
+		mpTouchMove(e) {
+			if (!this.mpIsDrawing || !this.mpCtx) return
+			const touch = e.touches[0]
+			const x = touch.x
+			const y = touch.y
+			this.mpCtx.beginPath()
+			this.mpCtx.moveTo(this.mpLastX, this.mpLastY)
+			this.mpCtx.lineTo(x, y)
+			this.mpCtx.stroke()
+			this.mpCtx.draw(true)
+			this.mpLastX = x
+			this.mpLastY = y
+			this.mpHasDrawn = true
+		},
+		mpTouchEnd() {
+			this.mpIsDrawing = false
+		},
+		mpClear() {
+			if (!this.mpCtx) return
+			this.mpCtx.setFillStyle('#ffffff')
+			this.mpCtx.fillRect(0, 0, this.mpCanvasWidth, this.mpCanvasHeight)
+			this.mpCtx.draw()
+			this.mpHasDrawn = false
+		},
+		mpGetPNG() {
+			return new Promise((resolve, reject) => {
+				uni.canvasToTempFilePath({
+					canvasId: 'signatureCanvas',
+					fileType: 'png',
+					success: res => resolve(res.tempFilePath),
+					fail: err => reject(err)
+				}, this)
+			})
+		},
+		// #endif
+
 		handleClear() {
 			// #ifdef H5
 			if (this.signaturePad) {
 				this.signaturePad.clear()
 			}
+			// #endif
+			// #ifdef MP-WEIXIN
+			this.mpClear()
 			// #endif
 		},
 
@@ -193,37 +292,41 @@ export default {
 		},
 
 		async handleConfirm() {
+			if (this.submitting) return
+
 			// #ifdef H5
-			if (this.submitting) {
-				return
-			}
-
 			if (!this.signaturePad || this.signaturePad.isEmpty()) {
-				uni.showToast({
-					title: '请先签名',
-					icon: 'none'
-				})
+				uni.showToast({ title: '请先签名', icon: 'none' })
 				return
 			}
-
-			// 获取签名数据（base64格式）
 			const signatureData = this.signaturePad.getPNG()
+			await this._dispatchConfirm(signatureData)
+			// #endif
 
-			// 根据模式选择不同的处理方式
-			if (this.isCheckInMode) {
-				// 入住确认模式：直接调用API
-				await this.handleCheckInConfirm(signatureData)
-			} else if (this.isCheckoutMode) {
-				// 退租确认模式：直接调用API
-				await this.handleCheckoutConfirm(signatureData)
-			} else if (this.isCheckoutApplyMode) {
-				// 退租办理申请模式：提交退租申请
-				await this.handleCheckoutApply(signatureData)
-			} else {
-				// 承诺书签名模式：通过 eventChannel 返回数据
-				this.handleCommitmentSignature(signatureData)
+			// #ifdef MP-WEIXIN
+			if (!this.mpHasDrawn) {
+				uni.showToast({ title: '请先签名', icon: 'none' })
+				return
+			}
+			try {
+				const tempFilePath = await this.mpGetPNG()
+				await this._dispatchConfirm(tempFilePath)
+			} catch (e) {
+				uni.showToast({ title: '获取签名失败，请重试', icon: 'none' })
 			}
 			// #endif
+		},
+
+		async _dispatchConfirm(signatureData) {
+			if (this.isCheckInMode) {
+				await this.handleCheckInConfirm(signatureData)
+			} else if (this.isCheckoutMode) {
+				await this.handleCheckoutConfirm(signatureData)
+			} else if (this.isCheckoutApplyMode) {
+				await this.handleCheckoutApply(signatureData)
+			} else {
+				this.handleCommitmentSignature(signatureData)
+			}
 		},
 
 		// 入住确认模式处理
@@ -440,7 +543,7 @@ export default {
 
 /* 顶部导航栏 */
 .navbar {
-	height: 88rpx;
+	min-height: 88rpx;
 	background: #ffffff;
 	display: flex;
 	align-items: center;
@@ -514,6 +617,7 @@ export default {
 	height: 100%;
 	display: block;
 	background: #ffffff;
+	min-height: 400rpx;
 }
 
 /* 底部操作按钮 */

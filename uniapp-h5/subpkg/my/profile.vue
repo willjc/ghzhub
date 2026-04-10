@@ -137,10 +137,15 @@
 			}
 		},
 		onLoad() {
-			// 使用统一的登录检查
 			authCheck.checkLogin.call(this, {}, () => {
 				this.loadUserInfo()
 			})
+		},
+		onShow() {
+			// 从认证页返回时刷新数据（onLoad 不会重新触发）
+			if (this.userId) {
+				this.loadUserInfo()
+			}
 		},
 		methods: {
 			// 加载用户信息
@@ -249,6 +254,11 @@
 					uni.hideLoading()
 					uni.showToast({ title: '网络异常', icon: 'none' })
 				})
+			},
+
+			// 实名认证 - 跳转认证页
+			goToAuth() {
+				uni.navigateTo({ url: "/pages/auth/verify" })
 			},
 
 			// 保存用户信息
