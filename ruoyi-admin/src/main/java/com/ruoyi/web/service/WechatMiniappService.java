@@ -162,9 +162,14 @@ public class WechatMiniappService
             Map<String, String> requestBody = new HashMap<>();
             requestBody.put("code", phoneCode);
 
+            // Spring Boot 3.x RestTemplate 不自动添加 Content-Length，微信接口要求此字段，否则返回412
+            String jsonBody = objectMapper.writeValueAsString(requestBody);
+            byte[] bodyBytes = jsonBody.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<Map<String, String>> httpEntity = new HttpEntity<>(requestBody, headers);
+            headers.setContentLength(bodyBytes.length);
+            HttpEntity<byte[]> httpEntity = new HttpEntity<>(bodyBytes, headers);
 
             ResponseEntity<String> response = restTemplate.postForEntity(url, httpEntity, String.class);
             String responseBody = response.getBody();
