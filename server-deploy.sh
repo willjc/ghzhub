@@ -14,7 +14,7 @@ find /www/wwwroot/ghz-source -name "target" -type d -exec rm -rf {} + 2>/dev/nul
 
 # 3. 编译打包（跳过测试，clean失败不中断）
 echo ">>> 开始编译（约2-3分钟）..."
-mvn clean package -DskipTests -Dmaven.clean.failOnError=false -pl ruoyi-admin -am
+mvn package -DskipTests -pl ruoyi-admin -am
 
 # 3. 备份旧 JAR
 echo ">>> 备份旧版本..."
