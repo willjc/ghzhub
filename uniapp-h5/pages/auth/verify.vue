@@ -137,7 +137,17 @@
 
 				this.submitting = true
 				try {
-					const res = await getAuthUrl(this.userId)
+					// 小程序使用 wechat://back 让认证完成后自动返回小程序
+					let redirectUrl = ''
+					// #ifdef MP-WEIXIN
+					redirectUrl = 'wechat://back'
+					// #endif
+
+					const res = await getAuthUrl(this.userId, {
+						realName: this.form.realName.trim(),
+						idCard: this.form.idCard.trim(),
+						redirectUrl
+					})
 
 					if (res.code === 200 && res.data) {
 						if (!res.data.needAuth) {
@@ -146,13 +156,13 @@
 							uni.showToast({ title: '已完成认证', icon: 'success' })
 						} else if (res.data.authUrl) {
 							// #ifdef MP-WEIXIN
-						uni.navigateTo({
-							url: '/pages/auth/esign-webview?url=' + encodeURIComponent(res.data.authUrl)
-						})
-						// #endif
-						// #ifdef H5
-						window.location.href = res.data.authUrl
-						// #endif
+							uni.navigateTo({
+								url: '/pages/auth/esign-webview?url=' + encodeURIComponent(res.data.authUrl)
+							})
+							// #endif
+							// #ifdef H5
+							window.location.href = res.data.authUrl
+							// #endif
 						}
 					} else {
 						uni.showToast({ title: res.msg || '获取认证链接失败', icon: 'none' })

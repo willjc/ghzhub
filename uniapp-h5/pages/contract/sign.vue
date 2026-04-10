@@ -1,160 +1,185 @@
 <template>
-  <view class="container">
-    <!-- 加载中 -->
-    <view v-if="loading" class="loading-wrap">
-      <view class="loading-text">加载中...</view>
+  <view class="page">
+
+    <!-- ── 加载中 ── -->
+    <view v-if="loading" class="state-screen">
+      <view class="state-spinner">
+        <view class="spinner-ring"></view>
+      </view>
+      <text class="state-label">加载中...</text>
     </view>
 
-    <!-- 合同确认页面（显示摘要+个人信息） -->
-    <view v-else-if="step === 'preview'" class="preview-wrap">
-      <view class="preview-header">
-        <text class="preview-title">合同签署确认</text>
-        <text class="preview-sub">{{ projectName }}</text>
+    <!-- ── 合同确认预览 ── -->
+    <view v-else-if="step === 'preview'" class="preview-layout">
+
+      <!-- 顶部 Banner -->
+      <view class="banner">
+        <view class="banner-tag">电子合同</view>
+        <text class="banner-title">合同签署确认</text>
+        <text class="banner-project">{{ projectName }}</text>
       </view>
 
-      <scroll-view scroll-y class="preview-content">
+      <!-- 滚动内容 -->
+      <scroll-view scroll-y class="scroll-body">
+
         <!-- 租户信息 -->
-        <view class="info-section">
-          <view class="section-title">租户信息</view>
-          <view class="info-row">
-            <text class="info-label">姓名</text>
-            <text class="info-value">{{ tenantName }}</text>
+        <view class="card">
+          <view class="card-header">
+            <view class="card-dot"></view>
+            <text class="card-title">租户信息</text>
           </view>
-          <view class="info-row">
-            <text class="info-label">手机号</text>
-            <text class="info-value">{{ tenantPhone }}</text>
+          <view class="row">
+            <text class="row-label">姓名</text>
+            <text class="row-value">{{ tenantName }}</text>
           </view>
-          <view class="info-row">
-            <text class="info-label">身份证号</text>
-            <text class="info-value">{{ tenantIdCard || '未填写' }}</text>
+          <view class="row">
+            <text class="row-label">手机号</text>
+            <text class="row-value">{{ tenantPhone }}</text>
+          </view>
+          <view class="row">
+            <text class="row-label">身份证号</text>
+            <text class="row-value">{{ tenantIdCard || '未填写' }}</text>
           </view>
         </view>
 
         <!-- 房源信息 -->
-        <view class="info-section">
-          <view class="section-title">房源信息</view>
-          <view class="info-row">
-            <text class="info-label">项目</text>
-            <text class="info-value">{{ projectName }}</text>
+        <view class="card">
+          <view class="card-header">
+            <view class="card-dot"></view>
+            <text class="card-title">房源信息</text>
           </view>
-          <view class="info-row">
-            <text class="info-label">房间</text>
-            <text class="info-value">{{ houseCode }}</text>
+          <view class="row">
+            <text class="row-label">项目名称</text>
+            <text class="row-value">{{ projectName }}</text>
+          </view>
+          <view class="row">
+            <text class="row-label">房间号</text>
+            <text class="row-value room-no">{{ houseCode || '-' }}</text>
           </view>
         </view>
 
         <!-- 合同条款 -->
-        <view class="info-section">
-          <view class="section-title">合同条款</view>
-          <view class="info-row">
-            <text class="info-label">月租金</text>
-            <text class="info-value price">¥{{ rentPrice }}</text>
+        <view class="card">
+          <view class="card-header">
+            <view class="card-dot"></view>
+            <text class="card-title">合同条款</text>
           </view>
-          <view class="info-row">
-            <text class="info-label">押金</text>
-            <text class="info-value price">¥{{ deposit }}</text>
+          <view class="row">
+            <text class="row-label">月租金</text>
+            <text class="row-value price">¥ {{ rentPrice }}</text>
           </view>
-          <!-- 租期选择 -->
-          <view class="info-row">
-            <text class="info-label">租期</text>
+          <view class="row">
+            <text class="row-label">押金</text>
+            <text class="row-value price">¥ {{ deposit }}</text>
+          </view>
+          <view class="row row-picker">
+            <text class="row-label">租期</text>
             <picker
-              class="rent-picker"
               mode="selector"
               :range="rentMonthsOptions"
-              :range-key="'label'"
+              range-key="label"
               :value="rentMonthsIndex"
               @change="onRentMonthsChange"
             >
-              <view class="rent-picker-inner">
-                <text class="rent-picker-text">{{ rentMonths }} 个月</text>
-                <text class="rent-picker-arrow">&#9660;</text>
+              <view class="picker-btn">
+                <text class="picker-val">{{ rentMonths }} 个月</text>
+                <text class="picker-arrow">›</text>
               </view>
             </picker>
           </view>
-          <view class="info-row">
-            <text class="info-label">合同期限</text>
-            <text class="info-value">{{ startDate }} 至 {{ endDate }}</text>
+          <view class="row">
+            <text class="row-label">合同期限</text>
+            <text class="row-value date-range">{{ startDate }} — {{ endDate }}</text>
           </view>
         </view>
 
         <!-- 温馨提示 -->
-        <view class="info-section tips">
-          <text class="tips-text">点击"确认并签署"后，将跳转至 e签宝 平台完成电子合同签署。合同内容将以 e签宝 电子合同为准。</text>
+        <view class="notice-box">
+          
+          <text class="notice-text">点击「确认并签署」后将跳转至 e签宝 平台完成电子合同签署，合同内容以 e签宝 电子合同为准。</text>
         </view>
+
+        <view class="scroll-bottom-gap"></view>
       </scroll-view>
 
-      <view class="preview-footer">
-        <button class="btn-primary" :disabled="submitting" @click="handleConfirmSign">
-          {{ submitting ? '处理中...' : '确认并签署' }}
+      <!-- 底部签署按钮 -->
+      <view class="footer">
+        <button
+          class="btn-sign"
+          :class="{ disabled: submitting }"
+          :disabled="submitting"
+          @click="handleConfirmSign"
+        >
+          <text class="btn-sign-icon">✍</text>
+          <text>{{ submitting ? '处理中...' : '确认并签署' }}</text>
         </button>
       </view>
     </view>
 
-    <!-- e签宝实名认证 -->
-    <view v-else-if="step === 'auth'" class="step-wrap">
-      <view class="step-icon">
-        <text>&#x1f510;</text>
+    <!-- ── 需要实名认证 ── -->
+    <view v-else-if="step === 'auth'" class="state-screen">
+      <view class="state-circle auth">
+        <text class="state-emoji">🔐</text>
       </view>
-      <view class="step-title">需要实名认证</view>
-      <view class="step-desc">签署电子合同前，请先完成实名认证</view>
-      <button class="btn-primary" @click="goAuth">前往认证</button>
+      <text class="state-title">需要实名认证</text>
+      <text class="state-desc">签署电子合同前，请先完成实名认证</text>
+      <button class="btn-main" @click="goAuth">前往认证</button>
     </view>
 
-    <!-- 等待认证 -->
-    <view v-else-if="step === 'auth_waiting'" class="step-wrap">
-      <view class="step-icon">
-        <text>&#x23f3;</text>
-      </view>
-      <view class="step-title">等待认证完成</view>
-      <view class="step-desc">请在外部页面完成实名认证后返回</view>
-      <button class="btn-primary" @click="checkAuthAndSign">我已完成认证</button>
-      <button class="btn-secondary" @click="goAuth">重新认证</button>
+    <!-- ── 等待认证 ── -->
+    <view v-else-if="step === 'auth_waiting'" class="state-screen">
+      <!-- <view class="state-circle waiting">
+        <text class="state-emoji">⏳</text>
+      </view> -->
+      <text class="state-title">等待认证完成</text>
+      <text class="state-desc">请在外部页面完成实名认证后返回</text>
+      <button class="btn-main" @click="checkAuthAndSign">我已完成认证</button>
+      <button class="btn-ghost" @click="goAuth">重新认证</button>
     </view>
 
-    <!-- e签宝签署 -->
-    <view v-else-if="step === 'esign'" class="step-wrap">
-      <view class="step-icon">
-        <text>&#x1f4dd;</text>
-      </view>
-      <view class="step-title">电子签署</view>
-      <view class="step-desc">合同已生成，请前往 e签宝完成电子签署</view>
-      <button class="btn-primary" @click="goEsign">前往 e签宝签署</button>
+    <!-- ── e签宝签署 ── -->
+    <view v-else-if="step === 'esign'" class="state-screen">
+      <!-- <view class="state-circle sign">
+        <text class="state-emoji">📝</text>
+      </view> -->
+      <text class="state-title">前往电子签署</text>
+      <text class="state-desc">合同已生成，请前往 e签宝 完成电子签署</text>
+      <button class="btn-main" @click="goEsign">前往 e签宝 签署</button>
     </view>
 
-    <!-- 等待e签宝签署完成 -->
-    <view v-else-if="step === 'esign_waiting'" class="step-wrap">
-      <view class="step-icon">
-        <text>&#x23f3;</text>
-      </view>
-      <view class="step-title">等待签署完成</view>
-      <view class="step-desc">正在检测签署状态，请稍候...</view>
-      <button class="btn-primary" @click="manualCheckStatus">手动刷新状态</button>
-      <button class="btn-secondary" @click="goBack">返回合同列表</button>
+    <!-- ── 等待签署完成 ── -->
+    <view v-else-if="step === 'esign_waiting'" class="state-screen">
+      <!-- <view class="state-circle waiting">
+        <text class="state-emoji">⏳</text>
+      </view> -->
+      <text class="state-title">等待签署完成</text>
+      <text class="state-desc">正在检测签署状态，请稍候...</text>
+      <button class="btn-main" @click="manualCheckStatus">刷新签署状态</button>
+      <button class="btn-ghost" @click="goBack">返回合同列表</button>
     </view>
 
-    <!-- 完成 -->
-    <view v-else-if="step === 'done'" class="step-wrap">
-      <view class="step-icon success">
-        <text>&#x2713;</text>
+    <!-- ── 签署完成 ── -->
+    <view v-else-if="step === 'done'" class="state-screen">
+      <view class="state-circle success">
+        <text class="state-emoji">✅</text>
       </view>
-      <view class="step-title">签署完成</view>
-      <view class="step-desc">合同已签署成功，正在跳转至押金缴费...</view>
-      <view class="done-actions">
-        <button class="btn-primary" @click="goToBill">立即缴纳押金</button>
-        <button class="btn-secondary" @click="goBack">返回合同列表</button>
-      </view>
+      <text class="state-title">签署成功</text>
+      <text class="state-desc">合同已签署成功，正在跳转至押金缴费...</text>
+      <button class="btn-main" @click="goToBill">立即缴纳押金</button>
+      <button class="btn-ghost" @click="goBack">返回合同列表</button>
     </view>
 
-    <!-- 错误 -->
-    <view v-else-if="step === 'error'" class="step-wrap">
-      <view class="step-icon error">
-        <text>&#x2717;</text>
+    <!-- ── 操作失败 ── -->
+    <view v-else-if="step === 'error'" class="state-screen">
+      <view class="state-circle error">
+        <text class="state-emoji">❌</text>
       </view>
-      <view class="step-title">操作失败</view>
-      <view class="step-desc">{{ errorMsg }}</view>
-      <button class="btn-primary" @click="init">重试</button>
-      <button class="btn-secondary" @click="goBack">返回</button>
+      <text class="state-title">操作失败</text>
+      <text class="state-desc">{{ errorMsg }}</text>
+      <button class="btn-main" @click="init">重试</button>
+      <button class="btn-ghost" @click="goBack">返回</button>
     </view>
+
   </view>
 </template>
 
@@ -173,9 +198,9 @@ export default {
       roomId: null,
       projectId: null,
       contractId: null,
-      rentMonths: 6,
+      rentMonths: 12,
       rentMonthsOptions: Array.from({ length: 24 }, (_, i) => ({ label: `${i + 1} 个月`, value: i + 1 })),
-      rentMonthsIndex: 5,
+      rentMonthsIndex: 11,
       // 合同数据
       templateId: null,
       projectName: '',
@@ -194,7 +219,8 @@ export default {
       signUrl: '',
       errorMsg: '',
       pollTimer: null,
-      submitting: false
+      submitting: false,
+      fromEsignWebview: false  // 标记是否跳转去了 esign-webview，用于 onShow 检测返回
     }
   },
   onLoad(options) {
@@ -215,12 +241,14 @@ export default {
     this.contractId = options.contractId ? parseInt(options.contractId) : null
     this.rentMonths = options.rentMonths ? parseInt(options.rentMonths) : 12
     this.rentMonthsIndex = this.rentMonths - 1
+    if (options.houseCode) {
+      this.houseCode = decodeURIComponent(options.houseCode)
+    }
 
     // 检测是否从e签宝跳回（H5环境）
     // #ifdef H5
     const urlParams = new URLSearchParams(window.location.search)
     if (urlParams.get('esign_done') === '1') {
-      // 清除URL参数
       window.history.replaceState({}, '', window.location.pathname + window.location.hash)
       const savedContractId = uni.getStorageSync('esign_contractId')
       if (savedContractId) {
@@ -242,6 +270,19 @@ export default {
     this.init()
   },
   onShow() {
+    // #ifdef MP-WEIXIN
+    // 从 esign-webview（认证页/签署页）返回时检查状态
+    if (this.fromEsignWebview) {
+      this.fromEsignWebview = false
+      if (this.step === 'auth_waiting') {
+        this.checkAuthAndSign()
+      } else if (this.step === 'esign_waiting') {
+        this.manualCheckStatus()
+      }
+      return
+    }
+    // #endif
+    // H5 端：从实名认证外部页面返回后自动检查
     if (this.step === 'auth_waiting') {
       this.checkAuthAndSign()
     }
@@ -254,7 +295,6 @@ export default {
       this.rentMonthsIndex = e.detail.value
       const m = this.rentMonthsOptions[this.rentMonthsIndex].value
       this.rentMonths = m
-      // 重新计算结束日期
       const start = new Date()
       start.setDate(start.getDate() + 3)
       this.startDate = start.toISOString().split('T')[0]
@@ -266,12 +306,10 @@ export default {
     async init() {
       this.loading = true
       try {
-        // 如果已有 contractId，直接走 e签宝流程
         if (this.contractId) {
           await this.callInitSign()
           return
         }
-        // 获取合同数据（用于显示摘要）
         const res = await generateContract({
           houseId: this.roomId,
           rentMonths: this.rentMonths
@@ -283,8 +321,10 @@ export default {
         this.deposit = res.data.deposit || '0'
         this.endDate = res.data.endDate || ''
         this.projectName = res.data.projectName || ''
-        this.houseCode = res.data.houseCode || ''
-        // 生效日期 = 当前日期 + 3天
+        // URL 参数优先；API 返回作为备用
+        if (!this.houseCode) {
+          this.houseCode = res.data.houseCode || res.data.roomNo || res.data.roomNumber || res.data.houseNo || ''
+        }
         const start = new Date()
         start.setDate(start.getDate() + 3)
         this.startDate = start.toISOString().split('T')[0]
@@ -297,13 +337,11 @@ export default {
       }
     },
 
-    // ========== 点击"确认并签署" ==========
     async handleConfirmSign() {
       if (this.submitting) return
       this.submitting = true
       uni.showLoading({ title: '正在发起签署...' })
       try {
-        // 1. 保存合同（获取 contractId）
         if (!this.contractId) {
           const saveRes = await signContract({
             houseId: this.roomId,
@@ -319,8 +357,6 @@ export default {
           uni.setStorageSync('esign_contractId', this.contractId)
           uni.setStorageSync('esign_userId', this.userId)
         }
-
-        // 2. 调用 initSign 一体化接口
         await this.callInitSign()
       } catch (e) {
         this.step = 'error'
@@ -331,13 +367,15 @@ export default {
       }
     },
 
-    // ========== 调用 initSign 接口 ==========
     async callInitSign() {
       this.loading = true
       try {
-        const res = await initSign(this.contractId, this.userId)
+        let platform = 'h5'
+        // #ifdef MP-WEIXIN
+        platform = 'mp'
+        // #endif
+        const res = await initSign(this.contractId, this.userId, platform)
         if (res.code !== 200) throw new Error(res.msg || '发起签署失败')
-
         if (res.data.needAuth) {
           this.authUrl = res.data.authUrl
           this.step = 'auth'
@@ -353,17 +391,20 @@ export default {
       }
     },
 
-    // ========== 实名认证流程 ==========
     goAuth() {
       if (!this.authUrl) return
+      this.fromEsignWebview = true
       this.step = 'auth_waiting'
+      // #ifdef MP-WEIXIN
+      uni.navigateTo({
+        url: '/pages/auth/esign-webview?url=' + encodeURIComponent(this.authUrl)
+      })
+      // #endif
       // #ifdef H5
       window.open(this.authUrl, '_blank')
       // #endif
-      // #ifndef H5
-      plus.runtime.openURL(this.authUrl)
-      // #endif
     },
+
     async checkAuthAndSign() {
       uni.showLoading({ title: '查询认证状态...' })
       try {
@@ -382,26 +423,27 @@ export default {
       }
     },
 
-    // ========== e签宝签署 ==========
     goEsign() {
       if (!this.signUrl) return
       this.step = 'esign_waiting'
       // #ifdef MP-WEIXIN
-      uni.navigateTo({ url: '/pages/auth/esign-webview?url=' + encodeURIComponent(this.signUrl) })
+      this.fromEsignWebview = true
+      uni.navigateTo({
+        url: '/pages/auth/esign-webview?url=' + encodeURIComponent(this.signUrl)
+      })
       // #endif
       // #ifdef H5
       window.location.href = this.signUrl
-      // #endif
       this.startPolling()
+      // #endif
     },
 
-    // ========== 轮询签署状态 ==========
     startPolling() {
       this.stopPolling()
       let count = 0
       this.pollTimer = setInterval(async () => {
         count++
-        if (count >= 360) { this.stopPolling(); return } // 30分钟超时
+        if (count >= 360) { this.stopPolling(); return }
         try {
           const res = await get(`/h5/app/contract/user/${this.userId}`)
           if (res.code === 200 && res.data) {
@@ -410,18 +452,17 @@ export default {
             if (target && target.contractStatus === '2') {
               this.stopPolling()
               this.step = 'done'
-              // 3秒后自动跳转到账单页
               setTimeout(() => { this.goToBill() }, 3000)
             }
           }
         } catch (e) { /* ignore */ }
       }, 5000)
     },
+
     stopPolling() {
       if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null }
     },
 
-    // ========== 手动刷新状态 ==========
     async manualCheckStatus() {
       uni.showLoading({ title: '查询签署状态...' })
       try {
@@ -444,7 +485,6 @@ export default {
       }
     },
 
-    // ========== 跳转账单缴费 ==========
     goToBill() {
       this.stopPolling()
       uni.removeStorageSync('esign_contractId')
@@ -461,97 +501,287 @@ export default {
 </script>
 
 <style scoped>
-.container {
+/* ─── 全局 ─── */
+.page {
   min-height: 100vh;
-  background: #f5f6fc;
+  background: #F0F3F9;
   display: flex;
   flex-direction: column;
+  font-family: "PingFang SC", "苹方-简", sans-serif;
 }
-.loading-wrap, .step-wrap {
+
+/* ─── 加载 / 状态页面 ─── */
+.state-screen {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   padding: 80rpx 60rpx;
+  min-height: 100vh;
+}
+
+/* 加载圈 */
+.state-spinner {
+  width: 100rpx;
+  height: 100rpx;
+  margin-bottom: 32rpx;
+}
+.spinner-ring {
+  width: 100rpx;
+  height: 100rpx;
+  border: 6rpx solid #E0E6F0;
+  border-top-color: #2B6CB0;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 状态圆圈 */
+.state-circle {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 36rpx;
+}
+.state-circle.auth    { background: #EBF4FF; }
+.state-circle.waiting { background: #FFF7E6; }
+.state-circle.sign    { background: #EBF4FF; }
+.state-circle.success { background: #E6F9F0; }
+.state-circle.error   { background: #FDECEA; }
+.state-emoji { font-size: 60rpx; }
+
+.state-label { font-size: 30rpx; color: #8A96A8; }
+.state-title {
+  font-size: 38rpx;
+  font-weight: 700;
+  color: #1A2340;
+  margin-bottom: 16rpx;
+  text-align: center;
+}
+.state-desc {
+  font-size: 28rpx;
+  color: #7A8599;
+  text-align: center;
+  line-height: 1.7;
+  margin-bottom: 56rpx;
+  padding: 0 20rpx;
+}
+
+/* 按钮 */
+.btn-main {
+  width: 100%;
+  height: 96rpx;
+  background: linear-gradient(135deg, #2563EB, #1E40AF);
+  color: #fff;
+  border-radius: 16rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  border: none;
+  margin-bottom: 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(37, 99, 235, 0.30);
+}
+.btn-ghost {
+  width: 100%;
+  height: 96rpx;
   background: #fff;
-  border-radius: 24rpx;
-  margin: 40rpx;
-  width: calc(100% - 80rpx);
-  box-sizing: border-box;
-}
-.step-icon { font-size: 100rpx; margin-bottom: 32rpx; }
-.step-icon.success { color: #07c160; }
-.step-icon.error { color: #e5252b; }
-.step-title { font-size: 36rpx; font-weight: 600; color: #1a1a1a; margin-bottom: 16rpx; }
-.step-desc { font-size: 28rpx; color: #666; text-align: center; margin-bottom: 48rpx; line-height: 1.6; }
-.btn-primary {
-  width: 100%; height: 90rpx; background: #4A90E2; color: #fff;
-  border-radius: 50rpx; font-size: 32rpx; border: none; margin-bottom: 24rpx;
-}
-.btn-primary[disabled] { opacity: 0.6; }
-.btn-secondary {
-  width: 100%; height: 90rpx; background: #fff; color: #4A90E2;
-  border: 2rpx solid #4A90E2; border-radius: 50rpx; font-size: 32rpx;
-}
-.loading-text { font-size: 32rpx; color: #666; }
-.done-actions { width: 100%; }
-
-/* 合同确认页 */
-.preview-wrap {
-  flex: 1; display: flex; flex-direction: column; min-height: 100vh;
-}
-.preview-header {
-  padding: 30rpx; background: #fff; border-bottom: 1rpx solid #eee;
-  display: flex; flex-direction: column; align-items: center;
-}
-.preview-title { font-size: 36rpx; font-weight: 600; color: #1a1a1a; }
-.preview-sub { font-size: 26rpx; color: #999; margin-top: 8rpx; }
-.preview-content {
-  flex: 1; padding: 20rpx 30rpx; background: #f5f6fc;
-  max-height: calc(100vh - 260rpx);
+  color: #2563EB;
+  border: 2rpx solid #BFDBFE;
+  border-radius: 16rpx;
+  font-size: 32rpx;
+  font-weight: 500;
 }
 
-/* 信息卡片 */
-.info-section {
-  background: #fff; border-radius: 16rpx; padding: 24rpx 30rpx;
+/* ─── 预览布局 ─── */
+.preview-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Banner 头部 */
+.banner {
+  background: linear-gradient(145deg, #1E3A8A 0%, #2563EB 60%, #3B82F6 100%);
+  padding: 48rpx 40rpx 52rpx;
+  display: flex;
+  flex-direction: column;
+}
+.banner-tag {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.18);
+  color: #BFDBFE;
+  font-size: 22rpx;
+  font-weight: 500;
+  letter-spacing: 2rpx;
+  padding: 6rpx 18rpx;
+  border-radius: 50rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.25);
   margin-bottom: 20rpx;
 }
-.section-title {
-  font-size: 30rpx; font-weight: 600; color: #1a1a1a;
-  padding-bottom: 16rpx; border-bottom: 1rpx solid #f0f0f0;
-  margin-bottom: 12rpx;
+.banner-title {
+  font-size: 42rpx;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 10rpx;
 }
-.info-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10rpx 0;
-}
-.info-label { font-size: 26rpx; color: #999; width: 140rpx; flex-shrink: 0; }
-.info-value {
-  font-size: 26rpx; color: #333; font-weight: 500;
-  text-align: right; flex: 1; padding-right: 4rpx;
-}
-.info-value.price { color: #e5252b; font-weight: 600; }
-
-/* 温馨提示 */
-.tips { background: #fff8e6; }
-.tips-text { font-size: 24rpx; color: #b8860b; line-height: 1.6; }
-
-.preview-footer {
-  padding: 20rpx 30rpx; background: #fff; border-top: 1rpx solid #eee;
+.banner-project {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.70);
+  line-height: 1.5;
 }
 
-/* 租期下拉选择器 */
-.rent-picker {
+/* 滚动内容 */
+.scroll-body {
+  flex: 1;
+  padding: 28rpx 28rpx 0;
+  max-height: calc(100vh - 280rpx);
+  box-sizing: border-box;
+  width: 100%;
+}
+.scroll-bottom-gap { height: 32rpx; }
+
+/* 信息卡片 */
+.card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 32rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(30, 58, 138, 0.06);
+  box-sizing: border-box;
+  width: 100%;
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #F0F3FA;
+}
+.card-dot {
+  width: 8rpx;
+  height: 32rpx;
+  background: linear-gradient(180deg, #2563EB, #3B82F6);
+  border-radius: 4rpx;
+  margin-right: 16rpx;
+}
+.card-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1A2340;
+}
+
+/* 信息行 */
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #F7F8FC;
+}
+.row:last-child { border-bottom: none; }
+
+.row-label {
+  font-size: 28rpx;
+  color: #8A96A8;
+  flex-shrink: 0;
+  width: 160rpx;
+}
+.row-value {
+  font-size: 28rpx;
+  color: #1A2340;
+  font-weight: 500;
+  flex: 1;
+  text-align: right;
+  padding-right: 0;
+}
+.row-value.price {
+  color: #DC2626;
+  font-weight: 700;
+  font-size: 30rpx;
+}
+.row-value.room-no {
+  color: #2563EB;
+  font-weight: 700;
+}
+.row-value.date-range {
+  font-size: 26rpx;
+  color: #4A5568;
+}
+
+/* 租期选择器行 */
+.row-picker {
+  align-items: center;
+}
+.picker-btn {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  background: #F0F5FF;
+  border: 1rpx solid #BFDBFE;
+  border-radius: 12rpx;
+  padding: 10rpx 20rpx 10rpx 24rpx;
+}
+.picker-val {
+  font-size: 28rpx;
+  color: #2563EB;
+  font-weight: 600;
+}
+.picker-arrow {
+  font-size: 32rpx;
+  color: #60A5FA;
+  font-weight: 300;
+  margin-top: -2rpx;
+}
+
+/* 提示框 */
+.notice-box {
+  background: #FFFBEB;
+  border: 1rpx solid #FCD34D;
+  border-radius: 16rpx;
+  padding: 24rpx 28rpx;
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  margin-bottom: 0;
+  box-sizing: border-box;
+  width: 100%;
+}
+.notice-icon { font-size: 32rpx; flex-shrink: 0; margin-top: 2rpx; }
+.notice-text {
+  font-size: 26rpx;
+  color: #92400E;
+  line-height: 1.7;
   flex: 1;
 }
-.rent-picker-inner {
-  display: flex; align-items: center; justify-content: flex-end;
-  padding: 8rpx 16rpx 8rpx 0;
-  gap: 8rpx;
+
+/* 底部按钮区 */
+.footer {
+  padding: 24rpx 28rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1rpx solid #EEF1F8;
+  box-shadow: 0 -4rpx 20rpx rgba(30, 58, 138, 0.06);
 }
-.rent-picker-text {
-  font-size: 26rpx; color: #333; font-weight: 500;
+.btn-sign {
+  width: 100%;
+  height: 100rpx;
+  background: linear-gradient(135deg, #2563EB, #1E40AF);
+  color: #fff;
+  border-radius: 20rpx;
+  font-size: 34rpx;
+  font-weight: 700;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  box-shadow: 0 10rpx 28rpx rgba(37, 99, 235, 0.35);
+  letter-spacing: 2rpx;
 }
-.rent-picker-arrow {
-  font-size: 20rpx; color: #999;
-}
+.btn-sign.disabled { opacity: 0.55; }
+.btn-sign-icon { font-size: 34rpx; }
 </style>
