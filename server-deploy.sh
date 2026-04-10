@@ -28,7 +28,7 @@ sudo /usr/local/bin/ghz-restart.sh
 
 # 6. 等待启动并健康检查
 sleep 20
-STATUS=$(sudo supervisorctl status ghz-backend:ghz-backend_00 | awk '{print $2}')
+STATUS=$(sudo /usr/local/bin/ghz-status.sh | awk '{print $2}')
 if [ "$STATUS" != "RUNNING" ]; then
     echo "启动失败（状态: $STATUS），开始回滚..."
     [ -f /www/wwwroot/ghz-backend/ruoyi-admin-backup.jar ] && \
