@@ -36,6 +36,12 @@ public interface EsignService {
     /** 获取已签合同PDF下载链接 */
     String getSignedPdfUrl(String flowId) throws Exception;
 
+    /**
+     * 主动查询 e签宝 签署流状态，若已完成则触发与回调相同的后续逻辑（更新合同、生成账单等）
+     * @return true=已完成, false=未完成
+     */
+    boolean checkAndFinalizeSignFlow(Long contractId) throws Exception;
+
     // ==================== 回调 ====================
 
     /** 处理 e签宝 签署完成回调 */

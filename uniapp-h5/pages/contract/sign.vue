@@ -185,7 +185,7 @@
 
 <script>
 import { generateContract, signContract } from '@/api/contract'
-import { getAuthStatus, initSign } from '@/api/esign'
+import { getAuthStatus, initSign, checkSign } from '@/api/esign'
 import { get } from '@/utils/request'
 
 export default {
@@ -277,7 +277,7 @@ export default {
       if (this.step === 'auth_waiting') {
         this.checkAuthAndSign()
       } else if (this.step === 'esign_waiting') {
-        this.manualCheckStatus()
+        this.pollAfterReturn()  // 带延迟重试，等 e签宝 处理完
       }
       return
     }
@@ -463,21 +463,50 @@ export default {
       if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null }
     },
 
-    async manualCheckStatus() {
-      uni.showLoading({ title: '查询签署状态...' })
-      try {
-        const res = await get(`/h5/app/contract/user/${this.userId}`)
-        uni.hideLoading()
-        if (res.code === 200 && res.data) {
-          const list = Array.isArray(res.data) ? res.data : [res.data]
-          const target = list.find(c => c.contractId === this.contractId)
-          if (target && target.contractStatus === '2') {
+    // ========== 从 esign-webview 返回后：延迟重试直查 e签宝 ==========
+    pollAfterReturn() {
+      let attempts = 0
+      const maxAttempts = 5
+      const tryCheck = async () => {
+        attempts++
+        uni.showLoading({ title: `确认签署结果(${attempts}/${maxAttempts})...` })
+        try {
+          const res = await checkSign(this.contractId)
+          uni.hideLoading()
+          if (res.code === 200 && res.data && res.data.signed) {
             this.stopPolling()
             this.step = 'done'
-            setTimeout(() => { this.goToBill() }, 3000)
-          } else {
-            uni.showToast({ title: '签署尚未完成，请稍候', icon: 'none' })
+            setTimeout(() => { this.goToBill() }, 2000)
+            return
           }
+        } catch (e) {
+          uni.hideLoading()
+        }
+        if (attempts < maxAttempts) {
+          setTimeout(tryCheck, 3000)
+        } else {
+          uni.showToast({ title: '请点击"刷新签署状态"按钮重试', icon: 'none', duration: 3000 })
+        }
+      }
+      setTimeout(tryCheck, 2000) // 先等 2 秒让 e签宝 处理
+    },
+
+    // ========== 手动刷新按钮：直查 e签宝 ==========
+    async manualCheckStatus() {
+      if (!this.contractId) {
+        uni.showToast({ title: '合同信息丢失，请返回重试', icon: 'none' })
+        return
+      }
+      uni.showLoading({ title: '查询签署状态...' })
+      try {
+        const res = await checkSign(this.contractId)
+        uni.hideLoading()
+        if (res.code === 200 && res.data && res.data.signed) {
+          this.stopPolling()
+          this.step = 'done'
+          setTimeout(() => { this.goToBill() }, 2000)
+        } else {
+          uni.showToast({ title: '签署尚未完成，请稍候再试', icon: 'none' })
         }
       } catch (e) {
         uni.hideLoading()

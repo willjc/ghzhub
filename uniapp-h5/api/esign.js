@@ -36,8 +36,9 @@ export function initSign(contractId, userId, platform = 'h5') {
 }
 
 /**
- * 获取e签宝签署URL（兼容旧入口）
+ * 主动查询签署状态（直接问 e签宝，不依赖回调）
+ * @param {number} contractId 合同ID
  */
-export function getSignUrl(contractId, userId) {
-  return get(`/h5/esign/sign-url/${contractId}?userId=${userId}`)
+export function checkSign(contractId) {
+  return get(`/h5/esign/check-sign/${contractId}`)
 }

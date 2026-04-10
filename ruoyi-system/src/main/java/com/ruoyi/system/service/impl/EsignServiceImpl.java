@@ -342,6 +342,80 @@ public class EsignServiceImpl implements EsignService {
         return gson.fromJson(resp.getBody(), JsonObject.class).getAsJsonObject("data").get("url").getAsString();
     }
 
+    // ==================== 主动查询签署状态（不依赖回调）====================
+
+    @Override
+    @Transactional
+    public boolean checkAndFinalizeSignFlow(Long contractId) throws Exception {
+        HzContract contract = contractMapper.selectById(contractId);
+        if (contract == null) throw new RuntimeException("合同不存在: " + contractId);
+
+        // 已签署，直接返回
+        if ("2".equals(contract.getContractStatus())) {
+            log.info("合同已签署，无需再查 contractId={}", contractId);
+            return true;
+        }
+
+        String signFlowId = contract.getEsignFlowId();
+        if (signFlowId == null || signFlowId.isEmpty()) {
+            log.warn("合同尚未创建签署流 contractId={}", contractId);
+            return false;
+        }
+
+        // 直接查 e签宝 签署流状态
+        EsignHttpResponse resp = callApi("GET", "/v3/sign-flow/" + signFlowId, null);
+        JsonObject root = gson.fromJson(resp.getBody(), JsonObject.class);
+        if (root.get("code").getAsInt() != 0) {
+            log.warn("查询签署流状态失败 signFlowId={}, resp={}", signFlowId, resp.getBody());
+            return false;
+        }
+
+        JsonObject data = root.getAsJsonObject("data");
+        String flowStatus = data != null && data.has("signFlowStatus")
+                ? data.get("signFlowStatus").getAsString() : "";
+        log.info("e签宝签署流状态 signFlowId={}, status={}", signFlowId, flowStatus);
+
+        if (!"FINISH".equals(flowStatus)) {
+            return false;
+        }
+
+        // 签署完成，执行与回调相同的后续逻辑
+        contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                .eq(HzContract::getContractId, contractId)
+                .set(HzContract::getContractStatus, "2"));
+
+        // 获取 PDF 下载链接
+        try {
+            EsignHttpResponse fileResp = callApi("GET",
+                    "/v3/sign-flow/" + signFlowId + "/file-download-url", "");
+            JsonObject fileRoot = gson.fromJson(fileResp.getBody(), JsonObject.class);
+            if (fileRoot.get("code").getAsInt() == 0) {
+                String fileUrl = fileRoot.getAsJsonObject("data")
+                        .getAsJsonArray("files").get(0).getAsJsonObject()
+                        .get("downloadUrl").getAsString();
+                contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                        .eq(HzContract::getContractId, contractId)
+                        .set(HzContract::getContractContent, fileUrl));
+            }
+        } catch (Exception e) {
+            log.warn("获取已签PDF链接失败（不影响主流程）: {}", e.getMessage());
+        }
+
+        generateBills(contract);
+        generateCheckInRecord(contract);
+
+        HzHouseOrder order = orderMapper.selectOne(new LambdaQueryWrapper<HzHouseOrder>()
+                .eq(HzHouseOrder::getContractId, contractId).last("LIMIT 1"));
+        if (order != null && "0".equals(order.getOrderStatus())) {
+            orderMapper.update(null, new LambdaUpdateWrapper<HzHouseOrder>()
+                    .eq(HzHouseOrder::getOrderNo, order.getOrderNo())
+                    .set(HzHouseOrder::getOrderStatus, "1"));
+        }
+
+        log.info("主动查询签署完成，已更新合同/账单/入住记录 contractId={}", contractId);
+        return true;
+    }
+
     // ==================== 回调处理 ====================
 
     @Override
