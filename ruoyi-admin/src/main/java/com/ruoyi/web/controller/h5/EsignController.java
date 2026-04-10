@@ -28,9 +28,14 @@ public class EsignController extends BaseController {
 
     /**
      * 获取实名认证URL
+     * @param realName   真实姓名（前端表单填写，优先使用）
+     * @param idCard     身份证号（前端表单填写，优先使用）
+     * @param redirectUrl 认证完成后跳转地址（小程序传 wechat://back）
      */
     @GetMapping("/auth-url/{userId}")
     public AjaxResult getAuthUrl(@PathVariable Long userId,
+                                 @RequestParam(required = false) String realName,
+                                 @RequestParam(required = false) String idCard,
                                  @RequestParam(required = false) String redirectUrl) {
         HzUser user = userMapper.selectById(userId);
         if (user == null) return error("用户信息不存在，请先完善个人信息");
@@ -39,8 +44,17 @@ public class EsignController extends BaseController {
             r.put("needAuth", false);
             return success(r);
         }
-        String callbackUrl = redirectUrl != null ? redirectUrl : this.redirectUrl;
-        String authUrl = esignService.getPsnAuthUrl(user.getUserId(), user.getPhone(), callbackUrl);
+        // 如果传入了 realName/idCard，保存到用户表（后续模板填充等流程使用）
+        if (realName != null && !realName.isBlank()) {
+            userMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<HzUser>()
+                    .eq(HzUser::getUserId, userId).set(HzUser::getRealName, realName));
+        }
+        if (idCard != null && !idCard.isBlank()) {
+            userMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<HzUser>()
+                    .eq(HzUser::getUserId, userId).set(HzUser::getIdCard, idCard));
+        }
+        String callbackUrl = (redirectUrl != null && !redirectUrl.isBlank()) ? redirectUrl : this.redirectUrl;
+        String authUrl = esignService.getPsnAuthUrl(userId, user.getPhone(), realName, idCard, callbackUrl);
         Map<String, Object> r = new HashMap<>();
         r.put("needAuth", true);
         r.put("authUrl", authUrl);
@@ -71,22 +85,31 @@ public class EsignController extends BaseController {
 
     /**
      * 一体化签署接口：模板填充→创建签署流→返回签署URL
-     * POST /h5/esign/init-sign
+     * @param params.platform "mp" = 小程序（使用 wechat://back），其他 = H5
      */
     @PostMapping("/init-sign")
-    public AjaxResult initSign(@RequestBody Map<String, Long> params) {
-        Long contractId = params.get("contractId");
-        Long userId = params.get("userId");
+    public AjaxResult initSign(@RequestBody Map<String, Object> params) {
+        Long contractId = params.containsKey("contractId")
+                ? Long.valueOf(params.get("contractId").toString()) : null;
+        Long userId = params.containsKey("userId")
+                ? Long.valueOf(params.get("userId").toString()) : null;
+        String platform = params.containsKey("platform") ? params.get("platform").toString() : "h5";
+
         if (contractId == null || userId == null) return error("参数不完整");
 
         HzUser user = userMapper.selectById(userId);
         if (user == null) return error("用户信息不存在");
 
+        // 小程序使用 wechat://back，H5 使用配置的 redirectUrl
+        String signRedirectUrl = "mp".equals(platform) ? "wechat://back" : redirectUrl;
+
         // 1. 检查实名认证
         String psnId = user.getEsignPsnId();
         if (psnId == null || psnId.isEmpty()) {
             // 未认证 → 返回认证链接
-            String authUrl = esignService.getPsnAuthUrl(user.getUserId(), user.getPhone(), redirectUrl);
+            String authRedirectUrl = "mp".equals(platform) ? "wechat://back" : redirectUrl;
+            String authUrl = esignService.getPsnAuthUrl(
+                    user.getUserId(), user.getPhone(), null, null, authRedirectUrl);
             Map<String, Object> r = new HashMap<>();
             r.put("needAuth", true);
             r.put("authUrl", authUrl);
@@ -95,7 +118,7 @@ public class EsignController extends BaseController {
 
         // 2. 一体化：模板填充→创建签署流→返回签署URL
         try {
-            String signUrl = esignService.initSign(contractId, psnId);
+            String signUrl = esignService.initSign(contractId, psnId, signRedirectUrl);
             Map<String, Object> r = new HashMap<>();
             r.put("needAuth", false);
             r.put("signUrl", signUrl);
@@ -107,7 +130,7 @@ public class EsignController extends BaseController {
     }
 
     /**
-     * 获取合同签署URL（兼容旧入口）
+     * 获取合同签署URL（兼容旧入口，H5 端使用）
      */
     @GetMapping("/sign-url/{contractId}")
     public AjaxResult getSignUrl(@PathVariable Long contractId, @RequestParam Long userId) {
@@ -129,7 +152,7 @@ public class EsignController extends BaseController {
                 r.put("signUrl", signUrl);
                 return success(r);
             }
-            String signUrl = esignService.initSign(contractId, psnId);
+            String signUrl = esignService.initSign(contractId, psnId, redirectUrl);
             Map<String, String> r = new HashMap<>();
             r.put("signUrl", signUrl);
             return success(r);

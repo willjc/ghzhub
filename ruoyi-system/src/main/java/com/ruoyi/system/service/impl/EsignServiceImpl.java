@@ -66,22 +66,24 @@ public class EsignServiceImpl implements EsignService {
     // ==================== 实名认证 ====================
 
     @Override
-    public String getPsnAuthUrl(Long userId, String mobile, String redirectUrl) {
+    public String getPsnAuthUrl(Long userId, String mobile, String realName, String idCard, String redirectUrl) {
         HzUser user = userMapper.selectById(userId);
         if (user != null && user.getEsignPsnId() != null && !user.getEsignPsnId().isEmpty()) return null;
 
-        // 从用户信息中获取姓名和身份证，预填充认证表单
-        String realName = user != null ? user.getRealName() : null;
-        String idCard = user != null ? user.getIdCard() : null;
+        // 优先使用传入参数；为空则从 DB 读取
+        String finalRealName = (realName != null && !realName.isBlank()) ? realName
+                : (user != null ? user.getRealName() : null);
+        String finalIdCard = (idCard != null && !idCard.isBlank()) ? idCard
+                : (user != null ? user.getIdCard() : null);
 
         // 构建实名认证请求参数，预填充姓名和身份证号
         StringBuilder jsonBuilder = new StringBuilder();
         jsonBuilder.append("{\"psnAuthConfig\":{\"psnAccount\":\"").append(mobile).append("\"");
         // 预填充姓名和身份证
-        if (realName != null && !realName.isEmpty()) {
-            jsonBuilder.append(",\"psnInfo\":{\"psnName\":\"").append(escapeJson(realName)).append("\"");
-            if (idCard != null && !idCard.isEmpty()) {
-                jsonBuilder.append(",\"psnIDCardType\":\"CRED_PSN_CH_IDCARD\",\"psnIDCardNum\":\"").append(escapeJson(idCard)).append("\"");
+        if (finalRealName != null && !finalRealName.isEmpty()) {
+            jsonBuilder.append(",\"psnInfo\":{\"psnName\":\"").append(escapeJson(finalRealName)).append("\"");
+            if (finalIdCard != null && !finalIdCard.isEmpty()) {
+                jsonBuilder.append(",\"psnIDCardType\":\"CRED_PSN_CH_IDCARD\",\"psnIDCardNum\":\"").append(escapeJson(finalIdCard)).append("\"");
             }
             jsonBuilder.append("}");
         }
@@ -205,7 +207,7 @@ public class EsignServiceImpl implements EsignService {
     }
 
     @Override
-    public String initSign(Long contractId, String psnId) throws Exception {
+    public String initSign(Long contractId, String psnId, String redirectUrl) throws Exception {
         // 1. 模板填充生成文件
         String fileId = createFileByTemplate(contractId);
 
