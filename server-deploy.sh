@@ -8,13 +8,13 @@ cd /www/wwwroot/ghz-source
 echo ">>> 拉取代码..."
 git pull origin master
 
-# 2. 删除target目录（彻底解决不同用户构建导致的权限问题）
+# 2. 清理target目录（当前用户能删的先删）
 echo ">>> 清理target目录..."
-sudo find /www/wwwroot/ghz-source -name "target" -type d -exec rm -rf {} + 2>/dev/null || true
+find /www/wwwroot/ghz-source -name "target" -type d -exec rm -rf {} + 2>/dev/null || true
 
-# 3. 编译打包（跳过测试）
+# 3. 编译打包（跳过测试，clean失败不中断）
 echo ">>> 开始编译（约2-3分钟）..."
-mvn clean package -DskipTests -pl ruoyi-admin -am
+mvn clean package -DskipTests -Dmaven.clean.failOnError=false -pl ruoyi-admin -am
 
 # 3. 备份旧 JAR
 echo ">>> 备份旧版本..."
