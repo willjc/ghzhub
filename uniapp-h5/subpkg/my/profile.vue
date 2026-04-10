@@ -73,7 +73,7 @@
 
 		<!-- 性别选择器 -->
 		<view class="picker-mask" v-if="showGenderPicker" @click="showGenderPicker = false"></view>
-		<view class="picker-popup" :class="{ 'show': showGenderPicker }">
+		<view class="picker-popup" v-if="showGenderPicker" :class="{ 'show': showGenderPicker }">
 			<view class="picker-header">
 				<text class="picker-cancel" @click="showGenderPicker = false">取消</text>
 				<text class="picker-title">选择性别</text>

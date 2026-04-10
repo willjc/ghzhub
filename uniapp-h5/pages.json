@@ -262,7 +262,6 @@
 		}
 	],
 	"globalStyle": {
-		 "navigationStyle": "custom",
 		"navigationBarTextStyle": "black",
 		"navigationBarTitleText": "港好住",
 		"navigationBarBackgroundColor": "#ffffff",
