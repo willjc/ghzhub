@@ -283,11 +283,8 @@ public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> impleme
             this.save(newUser);
         } catch (org.springframework.dao.DuplicateKeyException e) {
             // 手机号已存在（通常是后台软删除后重新登录）
-            // 用 baseMapper 绕过 @TableLogic 过滤，查出被软删除的记录并复活
-            HzUser deleted = this.baseMapper.selectOne(
-                    new LambdaQueryWrapper<HzUser>()
-                            .eq(HzUser::getPhone, phone)
-                            .last("LIMIT 1"));
+            // 用原生 SQL 绕过 @TableLogic 过滤，查出被软删除的记录并复活
+            HzUser deleted = hzUserMapper.selectByPhoneIgnoreLogicDelete(phone);
             if (deleted != null) {
                 deleted.setDelFlag("0");
                 deleted.setStatus("0");
