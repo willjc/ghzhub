@@ -278,7 +278,30 @@ public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> impleme
         newUser.setDelFlag("0");
         newUser.setCreateTime(new Date());
         newUser.setLastLoginTime(new Date());
-        this.save(newUser);
+
+        try {
+            this.save(newUser);
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            // 手机号已存在（通常是后台软删除后重新登录）
+            // 用 baseMapper 绕过 @TableLogic 过滤，查出被软删除的记录并复活
+            HzUser deleted = this.baseMapper.selectOne(
+                    new LambdaQueryWrapper<HzUser>()
+                            .eq(HzUser::getPhone, phone)
+                            .last("LIMIT 1"));
+            if (deleted != null) {
+                deleted.setDelFlag("0");
+                deleted.setStatus("0");
+                deleted.setWechatOpenid(openid);
+                if (com.ruoyi.common.utils.StringUtils.isNotEmpty(unionid)) {
+                    deleted.setWechatUnionid(unionid);
+                }
+                deleted.setLoginType("wechat");
+                deleted.setLastLoginTime(new Date());
+                this.updateById(deleted);
+                return deleted;
+            }
+            throw new RuntimeException("登录失败：手机号已注册，请联系管理员");
+        }
 
         return newUser;
     }
