@@ -66,11 +66,8 @@ public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> impleme
      */
     @Override
     public int deleteHzUserById(Long userId) {
-        // 逻辑删除
-        LambdaUpdateWrapper<HzUser> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.eq(HzUser::getUserId, userId)
-                .set(HzUser::getDelFlag, "2");
-        return hzUserMapper.update(null, updateWrapper);
+        // 物理删除，彻底清除记录（含手机号唯一索引）
+        return hzUserMapper.physicalDeleteById(userId);
     }
 
     /**

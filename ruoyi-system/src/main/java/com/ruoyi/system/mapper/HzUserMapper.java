@@ -2,6 +2,7 @@ package com.ruoyi.system.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.ruoyi.system.domain.HzUser;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -30,5 +31,11 @@ public interface HzUserMapper extends BaseMapper<HzUser> {
      */
     @Select("SELECT * FROM hz_user WHERE phone = #{phone} LIMIT 1")
     HzUser selectByPhoneIgnoreLogicDelete(@Param("phone") String phone);
+
+    /**
+     * 物理删除用户（绕过 @TableLogic，直接 DELETE）
+     */
+    @Delete("DELETE FROM hz_user WHERE user_id = #{userId}")
+    int physicalDeleteById(@Param("userId") Long userId);
 
 }
