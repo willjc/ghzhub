@@ -114,6 +114,9 @@ public class HzUser extends BaseEntity {
     /** 认证状态（0=未认证 1=已填写资料 2=已实名认证） */
     private String authStatus;
 
+    /** 实名认证时间 */
+    private java.util.Date authTime;
+
     public Long getUserId() {
         return userId;
     }
@@ -320,6 +323,14 @@ public class HzUser extends BaseEntity {
 
     public void setAuthStatus(String authStatus) {
         this.authStatus = authStatus;
+    }
+
+    public java.util.Date getAuthTime() {
+        return authTime;
+    }
+
+    public void setAuthTime(java.util.Date authTime) {
+        this.authTime = authTime;
     }
 
     @Override

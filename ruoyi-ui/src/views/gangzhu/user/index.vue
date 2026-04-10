@@ -215,6 +215,15 @@
           <el-tag v-if="userData.status === '0'" type="success" size="small">正常</el-tag>
           <el-tag v-else type="danger" size="small">停用</el-tag>
         </el-descriptions-item>
+        <el-descriptions-item label="实名认证状态">
+          <el-tag v-if="userData.authStatus === '2'" type="success" size="small">已实名认证</el-tag>
+          <el-tag v-else-if="userData.authStatus === '1'" type="warning" size="small">已填写资料</el-tag>
+          <el-tag v-else type="info" size="small">未认证</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="认证时间">
+          <span v-if="userData.authTime">{{ parseTime(userData.authTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else style="color: #909399">-</span>
+        </el-descriptions-item>
         <el-descriptions-item label="头像" :span="2">
           <el-image
             v-if="userData.avatar"

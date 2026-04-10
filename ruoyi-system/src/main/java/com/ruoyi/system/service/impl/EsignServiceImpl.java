@@ -143,7 +143,8 @@ public class EsignServiceImpl implements EsignService {
             }
             userMapper.update(null, new LambdaUpdateWrapper<HzUser>().eq(HzUser::getUserId, userId)
                     .set(HzUser::getEsignPsnId, psnId)
-                    .set(HzUser::getAuthStatus, "2"));
+                    .set(HzUser::getAuthStatus, "2")
+                    .set(HzUser::getAuthTime, new java.util.Date()));
             log.info("e签宝个人认证完成，userId={}, psnId={}", userId, psnId);
             return psnId;
         } catch (Exception e) {
