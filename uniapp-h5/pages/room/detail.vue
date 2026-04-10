@@ -285,8 +285,10 @@ import config from '@/config/index'
 				})
 			},
 			selectRoom() {
+				const { buildingNo, unitNo, roomNo } = this.roomInfo
+				const houseCode = [buildingNo, unitNo, roomNo].filter(Boolean).join('-')
 				uni.navigateTo({
-					url: `/pages/contract/sign?roomId=${this.roomId}&projectId=${this.projectId}`
+					url: `/pages/contract/sign?roomId=${this.roomId}&projectId=${this.projectId}&houseCode=${encodeURIComponent(houseCode)}`
 				})
 			},
 			async loadRoomDetail() {
