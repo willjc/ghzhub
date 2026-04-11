@@ -524,7 +524,7 @@ export default {
 
     goBack() {
       this.stopPolling()
-      uni.navigateBack()
+      uni.redirectTo({ url: '/subpkg/affairs/contract' })
     }
   }
 }
