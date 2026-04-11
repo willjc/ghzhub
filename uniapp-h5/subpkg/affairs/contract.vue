@@ -206,13 +206,33 @@
 					uni.showToast({ title: '合同尚未生成，请稍后再试', icon: 'none' })
 					return
 				}
-				// #ifdef MP-WEIXIN
-				uni.navigateTo({
-					url: '/pages/auth/esign-webview?url=' + encodeURIComponent(item.contractContent)
-				})
-				// #endif
 				// #ifdef H5
 				window.open(item.contractContent, '_blank')
+				// #endif
+				// #ifdef MP-WEIXIN
+				uni.showLoading({ title: '加载中...' })
+				uni.downloadFile({
+					url: item.contractContent,
+					success: (res) => {
+						uni.hideLoading()
+						if (res.statusCode === 200) {
+							uni.openDocument({
+								filePath: res.tempFilePath,
+								fileType: 'pdf',
+								showMenu: true,
+								fail: () => {
+									uni.showToast({ title: '打开失败，请稍后重试', icon: 'none' })
+								}
+							})
+						} else {
+							uni.showToast({ title: '下载失败：' + res.statusCode, icon: 'none' })
+						}
+					},
+					fail: () => {
+						uni.hideLoading()
+						uni.showToast({ title: '下载失败，请检查网络', icon: 'none' })
+					}
+				})
 				// #endif
 			},
 
