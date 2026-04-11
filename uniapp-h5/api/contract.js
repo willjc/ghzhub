@@ -64,3 +64,11 @@ export function payDeposit(data) {
 export function getContractDetail(contractId) {
   return request.get(`/h5/app/contract/detail/${contractId}`)
 }
+
+/**
+ * 获取合同 PDF 最新下载链接（实时向 e签宝 刷新，避免存库链接过期 403）
+ * @param {Number} contractId 合同ID
+ */
+export function getContractPdfUrl(contractId) {
+  return request.get(`/h5/app/contract/${contractId}/pdf-url`)
+}

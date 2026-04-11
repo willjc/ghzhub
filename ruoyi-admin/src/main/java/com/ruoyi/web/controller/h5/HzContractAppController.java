@@ -8,6 +8,7 @@ import com.ruoyi.common.config.RuoYiConfig;
 import com.ruoyi.system.domain.*;
 import com.ruoyi.system.domain.vo.BatchPreferenceVo;
 import com.ruoyi.system.mapper.*;
+import com.ruoyi.system.service.EsignService;
 import com.ruoyi.system.service.IHzCheckInService;
 import com.ruoyi.system.service.IHzContractService;
 import com.ruoyi.system.service.IHzDocumentService;
@@ -73,6 +74,9 @@ public class HzContractAppController extends BaseController {
 
     @Autowired
     private IHzDocumentService documentService;
+
+    @Autowired
+    private EsignService esignService;
 
     /**
      * 根据用户ID获取合同列表
@@ -952,5 +956,32 @@ public class HzContractAppController extends BaseController {
         checkInService.insertCheckIn(checkIn);
 
         logger.info("合同 {} 生成入驻记录成功：recordId={}", contract.getContractNo(), checkIn.getRecordId());
+    }
+
+    /**
+     * 获取合同 PDF 下载链接（实时向 e签宝 刷新，避免存库链接过期 403）
+     */
+    @GetMapping("/{contractId}/pdf-url")
+    public AjaxResult getContractPdfUrl(@PathVariable Long contractId) {
+        HzContract contract = contractMapper.selectById(contractId);
+        if (contract == null) return error("合同不存在");
+
+        String flowId = contract.getEsignFlowId();
+        if (flowId == null || flowId.isEmpty()) {
+            // 无 flowId：合同内容本身就是 URL（旧模式），直接返回
+            String content = contract.getContractContent();
+            if (content != null && content.startsWith("http")) {
+                return success(content);
+            }
+            return error("合同尚未完成电子签署");
+        }
+
+        try {
+            String freshUrl = esignService.getSignedPdfUrl(flowId);
+            return success(freshUrl);
+        } catch (Exception e) {
+            logger.error("获取合同 PDF 链接失败，contractId={}, flowId={}", contractId, flowId, e);
+            return error("获取 PDF 链接失败：" + e.getMessage());
+        }
     }
 }

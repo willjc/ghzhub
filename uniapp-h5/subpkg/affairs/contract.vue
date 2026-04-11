@@ -155,7 +155,7 @@
 </template>
 
 <script>
-	import { getMyContracts } from '@/api/contract.js'
+	import { getMyContracts, getContractPdfUrl } from '@/api/contract.js'
 	import authCheck from '@/mixins/authCheck'
 
 	export default {
@@ -224,19 +224,36 @@
 				this.currentTab = tab
 			},
 
-			// 查看已签合同PDF
-			openContractPdf(item) {
-				if (!item.contractContent) {
+			// 查看已签合同PDF（先刷新 e签宝 临时链接，再下载）
+			async openContractPdf(item) {
+				if (!item.contractContent && !item.contractId) {
 					uni.showToast({ title: '合同尚未生成，请稍后再试', icon: 'none' })
 					return
 				}
+				uni.showLoading({ title: '获取链接...' })
+				let pdfUrl = ''
+				try {
+					const res = await getContractPdfUrl(item.contractId)
+					if (res.code === 200 && res.data) {
+						pdfUrl = res.data
+					} else {
+						uni.hideLoading()
+						uni.showToast({ title: res.msg || '获取链接失败', icon: 'none' })
+						return
+					}
+				} catch (e) {
+					uni.hideLoading()
+					uni.showToast({ title: '获取链接失败，请重试', icon: 'none' })
+					return
+				}
 				// #ifdef H5
-				window.open(item.contractContent, '_blank')
+				uni.hideLoading()
+				window.open(pdfUrl, '_blank')
 				// #endif
 				// #ifdef MP-WEIXIN
-				uni.showLoading({ title: '加载中...' })
+				uni.showLoading({ title: '下载中...' })
 				uni.downloadFile({
-					url: item.contractContent,
+					url: pdfUrl,
 					success: (res) => {
 						uni.hideLoading()
 						if (res.statusCode === 200) {
