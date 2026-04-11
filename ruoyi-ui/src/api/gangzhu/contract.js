@@ -51,3 +51,28 @@ export function approveContract(data) {
     data: data
   })
 }
+
+// 查询合同缴费记录
+export function getContractBills(contractId) {
+  return request({
+    url: '/system/contract/' + contractId + '/bills',
+    method: 'get'
+  })
+}
+
+// 查询合同用户资料
+export function getContractDocuments(contractId) {
+  return request({
+    url: '/system/contract/' + contractId + '/documents',
+    method: 'get'
+  })
+}
+
+// 审核用户资料（管理端代理调用 h5 接口）
+export function auditDocument(data) {
+  return request({
+    url: '/h5/document/audit',
+    method: 'put',
+    data: data
+  })
+}

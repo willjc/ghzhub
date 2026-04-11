@@ -284,7 +284,11 @@
     </el-dialog>
 
     <!-- 合同详情对话框 -->
-    <el-dialog title="合同详情" :visible.sync="detailOpen" width="1000px" append-to-body>
+    <el-dialog title="合同详情" :visible.sync="detailOpen" width="1100px" append-to-body>
+      <el-tabs v-model="detailActiveTab" type="border-card">
+
+      <!-- Tab 1：合同信息 -->
+      <el-tab-pane label="合同信息" name="info">
       <!-- 标题区域 -->
       <div class="contract-detail-header">
         <div class="contract-no">
@@ -474,6 +478,79 @@
         </div>
         <div class="contract-content" v-html="detailForm.contractContent"></div>
       </div>
+      </el-tab-pane>
+
+      <!-- Tab 2：缴费记录 -->
+      <el-tab-pane label="缴费记录" name="bills">
+        <el-table :data="contractBills" border size="mini" style="width:100%">
+          <el-table-column label="账单类型"   prop="billTypeText"   width="80" align="center" />
+          <el-table-column label="账单号"     prop="billNo"         min-width="160" show-overflow-tooltip />
+          <el-table-column label="账期"       prop="billPeriod"     width="90"  align="center" />
+          <el-table-column label="账单金额"   prop="billAmount"     width="100" align="right" />
+          <el-table-column label="已缴金额"   prop="paidAmount"     width="100" align="right" />
+          <el-table-column label="状态"       width="90"            align="center">
+            <template slot-scope="{ row }">
+              <el-tag
+                :type="row.billStatus==='1'?'success':(row.billStatus==='3'?'danger':'warning')"
+                size="mini">{{ row.billStatusText }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="支付时间"   prop="payTime"        width="160" />
+          <el-table-column label="支付方式"   prop="payMethod"      width="80"  align="center" />
+          <el-table-column label="微信订单号" prop="transactionNo"  min-width="200" show-overflow-tooltip />
+          <el-table-column label="到期日"     prop="dueDate"        width="100" align="center" />
+        </el-table>
+        <div v-if="contractBills.length === 0" style="text-align:center;color:#999;padding:30px 0;">暂无缴费记录</div>
+      </el-tab-pane>
+
+      <!-- Tab 3：用户资料 -->
+      <el-tab-pane label="用户资料" name="docs">
+        <el-table :data="contractDocs" border size="mini" style="width:100%">
+          <el-table-column label="资料类型" width="100" align="center">
+            <template slot-scope="{ row }">{{ docTypeText(row.documentType) }}</template>
+          </el-table-column>
+          <el-table-column label="图片" width="120" align="center">
+            <template slot-scope="{ row }">
+              <el-image
+                v-if="row.documentUrl"
+                :src="getImageUrl(row.documentUrl)"
+                style="width:80px;height:60px;cursor:pointer"
+                :preview-src-list="[getImageUrl(row.documentUrl)]"
+                fit="cover"
+              />
+              <span v-else style="color:#ccc">未上传</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="审核状态" width="90" align="center">
+            <template slot-scope="{ row }">
+              <el-tag
+                :type="row.auditStatus==='1'?'success':(row.auditStatus==='2'?'danger':'warning')"
+                size="mini">
+                {{ row.auditStatus==='0'?'待审核':(row.auditStatus==='1'?'已通过':'已拒绝') }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="上传时间" prop="createTime" width="160" />
+          <el-table-column label="审核意见" prop="auditOpinion" min-width="120" show-overflow-tooltip />
+          <el-table-column label="操作" width="160" align="center" fixed="right">
+            <template slot-scope="{ row }">
+              <el-button
+                v-if="row.auditStatus === '0'"
+                size="mini" type="success"
+                @click="auditDoc(row, '1')"
+              >通过</el-button>
+              <el-button
+                v-if="row.auditStatus === '0'"
+                size="mini" type="danger"
+                @click="auditDoc(row, '2')"
+              >拒绝</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <div v-if="contractDocs.length === 0" style="text-align:center;color:#999;padding:30px 0;">暂无上传资料</div>
+      </el-tab-pane>
+
+      </el-tabs>
 
       <div slot="footer" class="dialog-footer">
         <el-button @click="detailOpen = false">关 闭</el-button>
@@ -520,7 +597,8 @@
 </template>
 
 <script>
-import { listContract, getContract, addContract, updateContract, delContract, approveContract } from "@/api/gangzhu/contract";
+import { listContract, getContract, addContract, updateContract, delContract, approveContract,
+         getContractBills, getContractDocuments, auditDocument } from "@/api/gangzhu/contract";
 
 export default {
   name: "Contract",
@@ -535,8 +613,12 @@ export default {
       contractList: [],
       title: "",
       open: false,
-      detailOpen: false,  // 详情弹窗
-      detailForm: {},     // 详情数据
+      detailOpen: false,       // 详情弹窗
+      detailForm: {},          // 详情数据
+      detailActiveTab: 'info', // 详情弹窗当前 Tab
+      contractBills: [],       // 缴费记录
+      contractDocs: [],        // 用户资料
+      currentDetailContractId: null, // 当前查看的合同 ID
       approveOpen: false, // 审核弹窗
       approveForm: {},    // 审核表单
       approveRules: {
@@ -591,10 +673,54 @@ export default {
     /** 查看合同详情 */
     handleDetail(row) {
       const contractId = row.contractId;
+      this.currentDetailContractId = contractId;
+      this.detailActiveTab = 'info';
+      this.contractBills = [];
+      this.contractDocs = [];
       getContract(contractId).then(response => {
         this.detailForm = response.data;
         this.detailOpen = true;
       });
+      // 并发拉取账单和资料
+      getContractBills(contractId).then(res => {
+        this.contractBills = (res.data && res.data.bills) ? res.data.bills : [];
+      }).catch(() => {});
+      getContractDocuments(contractId).then(res => {
+        this.contractDocs = Array.isArray(res.data) ? res.data : [];
+      }).catch(() => {});
+    },
+    /** 资料类型文字 */
+    docTypeText(type) {
+      const map = { '1': '身份证', '2': '学历证明', '3': '工作证明', '4': '收入证明', '5': '人才证书' };
+      return map[type] || '其他';
+    },
+    /** 审核用户资料 */
+    auditDoc(doc, status) {
+      const doAudit = (opinion) => {
+        auditDocument({
+          documentId: doc.documentId,
+          auditStatus: status,
+          auditOpinion: opinion || '审核通过'
+        }).then(res => {
+          if (res.code === 200) {
+            this.$message.success('审核完成');
+            // 刷新资料列表
+            getContractDocuments(this.currentDetailContractId).then(r => {
+              this.contractDocs = Array.isArray(r.data) ? r.data : [];
+            });
+          } else {
+            this.$message.error(res.msg || '审核失败');
+          }
+        });
+      };
+      if (status === '2') {
+        this.$prompt('请输入拒绝原因', '审核拒绝', {
+          inputPattern: /.+/,
+          inputErrorMessage: '原因不能为空'
+        }).then(({ value }) => doAudit(value)).catch(() => {});
+      } else {
+        doAudit('');
+      }
     },
     /** 审核合同 */
     handleApprove(row) {
