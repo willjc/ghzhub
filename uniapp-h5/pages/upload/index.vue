@@ -326,29 +326,53 @@ export default {
 			return `${h}时${m}分${s}秒`
 		},
 		async handleEducationUpload() {
-			try {
-				const res = await uni.chooseImage({ count: 1, sizeType: ['compressed'], sourceType: ['album', 'camera'] })
-				if (res && res.tempFilePaths && res.tempFilePaths.length > 0) {
-					const uploadRes = await this.uploadFile(res.tempFilePaths[0], '2')
-					if (uploadRes.code === 200) {
-						this.educationFile = uploadRes.data.filePath || uploadRes.data.fileName
-						this.educationUploaded = true
+			uni.chooseImage({
+				count: 1,
+				sizeType: ['compressed'],
+				sourceType: ['album', 'camera'],
+				success: async (res) => {
+					try {
+						uni.showLoading({ title: '上传中...' })
+						const uploadRes = await this.uploadFile(res.tempFilePaths[0], '2')
+						uni.hideLoading()
+						if (uploadRes && uploadRes.code === 200) {
+							this.educationFile = res.tempFilePaths[0]
+							this.educationUploaded = true
+							uni.showToast({ title: '学历证明上传成功', icon: 'success' })
+						} else {
+							const msg = (uploadRes && uploadRes.msg) ? uploadRes.msg : '上传失败，请重试'
+							uni.showToast({ title: msg, icon: 'none' })
+						}
+					} catch (e) {
+						uni.hideLoading()
+						console.error('学历证明上传失败:', e)
+						uni.showToast({ title: '上传失败，请检查网络', icon: 'none' })
 					}
 				}
-			} catch (e) {
-				console.error('学历证明上传失败', e)
-			}
+			})
 		},
 		async uploadFile(filePath, documentType) {
 			return new Promise((resolve) => {
+				const token = uni.getStorageSync('token') || ''
 				uni.uploadFile({
 					url: config.baseUrl + '/h5/document/upload',
 					filePath,
 					name: 'file',
 					formData: { documentType, tenantId: this.userId },
-					header: { Authorization: uni.getStorageSync('token') || '' },
-					success: (res) => resolve(JSON.parse(res.data)),
-					fail: () => resolve({ code: 500 })
+					header: {
+						'Authorization': token ? ('Bearer ' + token) : ''
+					},
+					success: (res) => {
+						try {
+							resolve(JSON.parse(res.data))
+						} catch (e) {
+							resolve({ code: 500, msg: '解析响应失败' })
+						}
+					},
+					fail: (err) => {
+						console.error('uploadFile fail:', err)
+						resolve({ code: 500, msg: '网络请求失败' })
+					}
 				})
 			})
 		},
