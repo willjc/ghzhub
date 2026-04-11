@@ -136,6 +136,13 @@
             v-hasPermi="['gangzhu:contract:query']"
           >详情</el-button>
           <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-document"
+            @click="handleViewPdf(scope.row)"
+            v-hasPermi="['gangzhu:contract:query']"
+          >查看合同</el-button>
+          <el-button
             v-if="scope.row.contractStatus === '0'"
             size="mini"
             type="text"
@@ -470,8 +477,20 @@
         </div>
       </div>
 
-      <!-- 合同内容 -->
-      <div class="detail-section" v-if="detailForm.contractContent">
+      <!-- 电子合同 PDF（e签宝签署后的链接） -->
+      <div class="detail-section" v-if="detailForm.contractContent && detailForm.contractContent.startsWith('http')">
+        <div class="section-title">
+          <i class="el-icon-document-copy"></i>
+          <span>电子合同</span>
+        </div>
+        <div class="attachment-area">
+          <el-button type="primary" size="small" icon="el-icon-view"
+            @click="handleViewPdf(detailForm)">查看 PDF</el-button>
+          <span style="color:#999;font-size:12px;margin-left:8px;">链接实时刷新，点击后在新标签页打开</span>
+        </div>
+      </div>
+      <!-- 合同内容（非 URL 的老数据，保留展示） -->
+      <div class="detail-section" v-else-if="detailForm.contractContent && !detailForm.contractContent.startsWith('http')">
         <div class="section-title">
           <i class="el-icon-document-copy"></i>
           <span>合同内容</span>
@@ -598,7 +617,7 @@
 
 <script>
 import { listContract, getContract, addContract, updateContract, delContract, approveContract,
-         getContractBills, getContractDocuments, auditDocument } from "@/api/gangzhu/contract";
+         getContractBills, getContractDocuments, auditDocument, getContractPdfUrl } from "@/api/gangzhu/contract";
 
 export default {
   name: "Contract",
@@ -670,6 +689,20 @@ export default {
     this.getList();
   },
   methods: {
+    /** 查看合同 PDF（调接口获取实时链接，新标签打开） */
+    handleViewPdf(row) {
+      const contractId = row.contractId;
+      this.$message({ message: '正在获取合同链接...', type: 'info', duration: 1500 });
+      getContractPdfUrl(contractId).then(res => {
+        if (res.code === 200 && res.data) {
+          window.open(res.data, '_blank');
+        } else {
+          this.$message.error(res.msg || '该合同暂无电子 PDF');
+        }
+      }).catch(() => {
+        this.$message.error('获取链接失败，请重试');
+      });
+    },
     /** 查看合同详情 */
     handleDetail(row) {
       const contractId = row.contractId;
