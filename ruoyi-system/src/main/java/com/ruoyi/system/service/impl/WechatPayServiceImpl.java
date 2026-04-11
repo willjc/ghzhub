@@ -1,7 +1,7 @@
 package com.ruoyi.system.service.impl;
 
 import com.ruoyi.system.service.WechatPayService;
-import com.wechat.pay.java.core.RSAAutoCertificateConfig;
+import com.wechat.pay.java.core.RSAPublicKeyConfig;
 import com.wechat.pay.java.core.notification.NotificationParser;
 import com.wechat.pay.java.core.notification.RequestParam;
 import com.wechat.pay.java.service.payments.h5.H5Service;
@@ -39,11 +39,11 @@ public class WechatPayServiceImpl implements WechatPayService {
 
     private final JsapiServiceExtension jsapiService;
     private final H5Service h5Service;
-    private final RSAAutoCertificateConfig rsaConfig;
+    private final RSAPublicKeyConfig rsaConfig;
 
     public WechatPayServiceImpl(JsapiServiceExtension jsapiService,
                                 H5Service h5Service,
-                                RSAAutoCertificateConfig rsaConfig) {
+                                RSAPublicKeyConfig rsaConfig) {
         this.jsapiService = jsapiService;
         this.h5Service = h5Service;
         this.rsaConfig = rsaConfig;
@@ -127,7 +127,7 @@ public class WechatPayServiceImpl implements WechatPayService {
                 .body(new String(requestBody, "UTF-8"))
                 .build();
 
-        // NotificationParser 构造传入 RSAAutoCertificateConfig，SDK 自动验签+解密
+        // NotificationParser 构造传入 RSAPublicKeyConfig，SDK 自动验签+解密
         NotificationParser parser = new NotificationParser(rsaConfig);
 
         // 解析为 Transaction 对象（SDK 0.2.14 的通用解析方法）
