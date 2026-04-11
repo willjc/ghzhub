@@ -10,6 +10,7 @@ import com.ruoyi.system.domain.vo.BatchPreferenceVo;
 import com.ruoyi.system.mapper.*;
 import com.ruoyi.system.service.IHzCheckInService;
 import com.ruoyi.system.service.IHzContractService;
+import com.ruoyi.system.service.IHzDocumentService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -70,6 +71,9 @@ public class HzContractAppController extends BaseController {
     @Autowired
     private HzBatchHouseMapper batchHouseMapper;
 
+    @Autowired
+    private IHzDocumentService documentService;
+
     /**
      * 根据用户ID获取合同列表
      * @param userId 用户ID
@@ -91,8 +95,19 @@ public class HzContractAppController extends BaseController {
                         .last("LIMIT 1"));
                 contract.put("deposit_paid", depositBill != null && "1".equals(depositBill.getBillStatus()) ? "1" : "0");
             }
-            // 资料状态默认未提交（后续对接资料上传模块时补充）
-            contract.put("material_status", "0");
+            // 动态查询资料审核状态：0=未提交, 1=审核中, 2=已通过
+            Object tenantIdObj = contract.get("tenant_id");
+            String materialStatus = "0";
+            if (tenantIdObj != null) {
+                Long tId = Long.parseLong(tenantIdObj.toString());
+                List<com.ruoyi.system.domain.HzDocument> docs = documentService.selectDocumentListByTenantId(tId);
+                if (docs != null && !docs.isEmpty()) {
+                    boolean allApproved = docs.stream().allMatch(d -> "1".equals(d.getAuditStatus()));
+                    boolean anyPending  = docs.stream().anyMatch(d -> "0".equals(d.getAuditStatus()));
+                    materialStatus = allApproved ? "2" : (anyPending ? "1" : "0");
+                }
+            }
+            contract.put("material_status", materialStatus);
         }
         return success(contracts);
     }
@@ -131,7 +146,15 @@ public class HzContractAppController extends BaseController {
             data.put("depositBillId", depositBill.getBillId());
             data.put("depositAmount", depositBill.getUnpaidAmount() != null ? depositBill.getUnpaidAmount() : depositBill.getBillAmount());
         }
-        data.put("materialStatus", "0");
+        // 动态查询资料审核状态：0=未提交, 1=审核中, 2=已通过
+        List<com.ruoyi.system.domain.HzDocument> docs2 = documentService.selectDocumentListByTenantId(contract.getTenantId());
+        String matStatus2 = "0";
+        if (docs2 != null && !docs2.isEmpty()) {
+            boolean allApproved = docs2.stream().allMatch(d -> "1".equals(d.getAuditStatus()));
+            boolean anyPending  = docs2.stream().anyMatch(d -> "0".equals(d.getAuditStatus()));
+            matStatus2 = allApproved ? "2" : (anyPending ? "1" : "0");
+        }
+        data.put("materialStatus", matStatus2);
 
         return success(data);
     }
