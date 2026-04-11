@@ -236,6 +236,11 @@ public class HzContractAppController extends BaseController {
         String endDate = end.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
         // 8. 替换合同模版变量
+        // 押金优先使用房源自身的押金，若房源未配置则回退到合同模版的押金
+        BigDecimal depositAmount = (house.getDeposit() != null && house.getDeposit().compareTo(BigDecimal.ZERO) > 0)
+                ? house.getDeposit()
+                : (template.getDepositAmount() != null ? template.getDepositAmount() : BigDecimal.ZERO);
+
         String contractContent = template.getTemplateContent();
         contractContent = contractContent.replace("${tenantName}", tenant.getTenantName())
                 .replace("${tenantIdCard}", tenant.getIdCard())
@@ -243,8 +248,8 @@ public class HzContractAppController extends BaseController {
                 .replace("${houseAddress}", houseAddress)
                 .replace("${rentPrice}", house.getRentPrice().toString())
                 .replace("${rentPriceUpper}", convertToUpperCase(house.getRentPrice()))
-                .replace("${deposit}", template.getDepositAmount().toString())
-                .replace("${depositUpper}", convertToUpperCase(template.getDepositAmount()))
+                .replace("${deposit}", depositAmount.toString())
+                .replace("${depositUpper}", convertToUpperCase(depositAmount))
                 .replace("${startDate}", startDateStr)
                 .replace("${endDate}", endDate);
 
@@ -253,9 +258,9 @@ public class HzContractAppController extends BaseController {
         result.put("contractContent", contractContent);
         result.put("templateId", template.getTemplateId());
         result.put("rentPrice", house.getRentPrice());
-        result.put("deposit", template.getDepositAmount());
+        result.put("deposit", depositAmount);
         result.put("totalRent", house.getRentPrice().multiply(new BigDecimal(rentMonths)));
-        result.put("totalAmount", house.getRentPrice().multiply(new BigDecimal(rentMonths)).add(template.getDepositAmount()));
+        result.put("totalAmount", house.getRentPrice().multiply(new BigDecimal(rentMonths)).add(depositAmount));
         result.put("endDate", endDate);
         result.put("projectName", project.getProjectName());
         result.put("houseAddress", houseAddress);

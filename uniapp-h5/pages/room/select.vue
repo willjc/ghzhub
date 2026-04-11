@@ -59,12 +59,13 @@
 							<text class="floor-text" :class="{ active: selectedFloor === floor.floor }">{{ floor.floor }}F</text>
 						</view>
 					</view>
-					<view class="table-col room-col">
+					<!-- 只显示已选楼层的房间 -->
+					<view class="table-col room-col" v-if="selectedFloor === floor.floor">
 						<view class="room-list">
-							<view 
-								class="room-item" 
+							<view
+								class="room-item"
 								:class="{ active: selectedRoom === room.id, disabled: !room.available }"
-								v-for="room in floor.rooms" 
+								v-for="room in floor.rooms"
 								:key="room.id"
 								@click="selectRoom(room)"
 							>
@@ -72,6 +73,7 @@
 							</view>
 						</view>
 					</view>
+					<view class="table-col room-col" v-else></view>
 				</view>
 			</view>
 		</view>
@@ -291,6 +293,10 @@ import { getHouseList } from '@/api/house'
 
 					if (response.code === 200) {
 						this.floorList = response.data || []
+						// 自动选中第一个楼层
+						if (this.floorList.length > 0 && !this.selectedFloor) {
+							this.selectedFloor = this.floorList[0].floor
+						}
 					} else {
 						uni.showToast({
 							title: response.msg || '获取房源列表失败',
