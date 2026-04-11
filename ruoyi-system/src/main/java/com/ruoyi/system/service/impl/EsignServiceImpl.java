@@ -280,6 +280,25 @@ public class EsignServiceImpl implements EsignService {
             + "]";
     }
 
+    /**
+     * 按 e签宝文档规则处理 Query 参数：
+     * 对 key 按 ASCII 升序排序，然后拼接对应的 value（不含 key=）
+     * 例如 "b=2&a=1" → 排序后 a,b → 拼接 value "12"
+     */
+    private String sortQueryValues(String queryString) {
+        if (queryString == null || queryString.isEmpty()) return "";
+        java.util.TreeMap<String, String> map = new java.util.TreeMap<>();
+        for (String pair : queryString.split("&")) {
+            int idx = pair.indexOf('=');
+            if (idx > 0) {
+                map.put(pair.substring(0, idx), pair.substring(idx + 1));
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String v : map.values()) sb.append(v);
+        return sb.toString();
+    }
+
     private String escapeJson(String str) {
         if (str == null) return "";
         return str.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
@@ -435,20 +454,16 @@ public class EsignServiceImpl implements EsignService {
     @Override
     @Transactional
     public void handleSignCallback(String timestamp, String requestQuery, String body, String signature) throws Exception {
-        // timestamp 为 null 时（header 名不匹配），统一转为空串，防止拼成 "null..."
         String ts = timestamp != null ? timestamp : "";
-        String qs = requestQuery != null ? requestQuery : "";
 
-        // 方式1: ts + requestQuery + body（标准）
-        boolean verified = EsignEncryption.callBackCheck(ts, qs, body, appSecret, signature);
+        // e签宝文档：Query 参数按 key ASCII 升序排序后，拼接 value（不含 key=）
+        // 若无 query 参数（通常如此），sortedQueryValues 为空串
+        String sortedQueryValues = sortQueryValues(requestQuery);
+
+        boolean verified = EsignEncryption.callBackCheck(ts, sortedQueryValues, body, appSecret, signature);
         if (!verified) {
-            log.warn("验签方式1失败(ts+query+body)，尝试 ts+body");
-            // 方式2: ts + body（不含 requestQuery）
-            verified = EsignEncryption.callBackCheck(ts, "", body, appSecret, signature);
-        }
-        if (!verified) {
-            log.error("e签宝回调验签失败: timestamp={}, signature={}, queryLen={}, bodyLen={}",
-                    ts, signature, qs.length(), body.length());
+            log.error("e签宝回调验签失败: timestamp={}, signature={}, sortedQuery={}, bodyLen={}",
+                    ts, signature, sortedQueryValues, body.length());
             throw new RuntimeException("e签宝回调验签失败");
         }
         log.info("e签宝回调验签通过");
@@ -510,76 +525,6 @@ public class EsignServiceImpl implements EsignService {
                     .set(HzHouseOrder::getOrderStatus, "1")); // 1=待付押金
             log.info("预订单推进至待付押金 orderNo={}", order.getOrderNo());
         }
-    }
-
-    // ==================== 主动查询签署状态 ====================
-
-    @Override
-    @Transactional
-    public boolean checkAndFinalizeSignFlow(Long contractId) throws Exception {
-        HzContract contract = contractMapper.selectById(contractId);
-        if (contract == null) throw new RuntimeException("合同不存在: " + contractId);
-
-        // 已完成，直接返回
-        if ("2".equals(contract.getContractStatus())) {
-            log.info("合同已签署，无需重复处理，contractId={}", contractId);
-            return true;
-        }
-
-        String signFlowId = contract.getEsignFlowId();
-        if (signFlowId == null || signFlowId.isEmpty()) {
-            log.warn("合同尚未创建签署流，contractId={}", contractId);
-            return false;
-        }
-
-        // 调用 e签宝 查询签署流状态
-        EsignHttpResponse resp = callApi("GET", "/v3/sign-flow/" + signFlowId, null);
-        JsonObject root = gson.fromJson(resp.getBody(), JsonObject.class);
-        if (root.get("code").getAsInt() != 0) {
-            log.warn("查询签署流状态失败: {}", resp.getBody());
-            return false;
-        }
-
-        JsonObject data = root.getAsJsonObject("data");
-        // signFlowStatus: 0=草稿 1=签署中 2=已完成 3=已撤销 4=已过期 5=已拒签
-        int status = data.has("signFlowStatus") ? data.get("signFlowStatus").getAsInt() : -1;
-        log.info("主动查询签署流状态: contractId={}, signFlowId={}, status={}", contractId, signFlowId, status);
-
-        if (status != 2) return false;
-
-        // 签署已完成，执行与回调相同的收尾逻辑
-        contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
-                .eq(HzContract::getContractId, contractId)
-                .set(HzContract::getContractStatus, "2"));
-
-        // 获取已签 PDF
-        try {
-            EsignHttpResponse fileResp = callApi("GET", "/v3/sign-flow/" + signFlowId + "/file-download-url", "");
-            JsonObject fileRoot = gson.fromJson(fileResp.getBody(), JsonObject.class);
-            if (fileRoot.get("code").getAsInt() == 0) {
-                String fileUrl = fileRoot.getAsJsonObject("data").getAsJsonArray("files")
-                        .get(0).getAsJsonObject().get("downloadUrl").getAsString();
-                contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
-                        .eq(HzContract::getContractId, contractId)
-                        .set(HzContract::getContractContent, fileUrl));
-            }
-        } catch (Exception e) {
-            log.warn("主动查询：获取已签PDF失败，不影响主流程: {}", e.getMessage());
-        }
-
-        generateBills(contract);
-        generateCheckInRecord(contract);
-
-        HzHouseOrder order = orderMapper.selectOne(new LambdaQueryWrapper<HzHouseOrder>()
-                .eq(HzHouseOrder::getContractId, contractId).last("LIMIT 1"));
-        if (order != null && "0".equals(order.getOrderStatus())) {
-            orderMapper.update(null, new LambdaUpdateWrapper<HzHouseOrder>()
-                    .eq(HzHouseOrder::getOrderNo, order.getOrderNo())
-                    .set(HzHouseOrder::getOrderStatus, "1"));
-        }
-
-        log.info("主动查询：合同签署收尾完成，contractId={}", contractId);
-        return true;
     }
 
     // ==================== 账单生成（从 HzContractAppController 搬迁）====================

@@ -181,9 +181,11 @@ public class EsignController extends BaseController {
             logger.info("e签宝回调 headers: {}", headerLog);
             logger.info("e签宝回调 body: {}", body);
 
-            String timestamp = request.getHeader("X-Tsign-Open-Timestamp");
-            if (timestamp == null) timestamp = request.getHeader("X-Tsign-Open-Sign-Timestamp");
-            String signature = request.getHeader("X-Tsign-Open-Sign");
+            // e签宝 V3 回调实际 header 名（TIMESTAMP/SIGNATURE 全大写）
+            String timestamp = request.getHeader("X-Tsign-Open-TIMESTAMP");
+            if (timestamp == null) timestamp = request.getHeader("X-Tsign-Open-Timestamp"); // 兼容
+            String signature = request.getHeader("X-Tsign-Open-SIGNATURE");
+            if (signature == null) signature = request.getHeader("X-Tsign-Open-Sign"); // 兼容旧名
             String requestQuery = request.getQueryString() != null ? request.getQueryString() : "";
 
             logger.info("e签宝回调参数: timestamp={}, signature={}, requestQuery={}", timestamp, signature, requestQuery);
