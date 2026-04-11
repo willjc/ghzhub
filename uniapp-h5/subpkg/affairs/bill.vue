@@ -313,6 +313,7 @@
 
 				return {
 					id: bill.billId,
+					billNo: bill.billNo,        // 微信支付按 billNo 查账单
 					billType: bill.billType,
 					period: period,
 					status: status,

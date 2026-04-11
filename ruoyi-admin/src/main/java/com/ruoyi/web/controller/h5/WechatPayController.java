@@ -59,11 +59,15 @@ public class WechatPayController extends BaseController {
             return error("账单号不能为空");
         }
 
+        // 先按 billNo 查，查不到再按 billId（纯数字时）兜底
         LambdaQueryWrapper<HzBill> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzBill::getBillNo, billNo)
                .eq(HzBill::getDelFlag, "0")
                .last("LIMIT 1");
         HzBill bill = billMapper.selectOne(wrapper);
+        if (bill == null && billNo.matches("\\d+")) {
+            bill = billMapper.selectById(Long.parseLong(billNo));
+        }
         if (bill == null) return error("账单不存在");
         if ("1".equals(bill.getBillStatus())) return error("账单已支付");
 
