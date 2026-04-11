@@ -165,6 +165,71 @@ public class WechatPayController extends BaseController {
     }
 
     /**
+     * 主动向微信查单并同步账单状态（回调未到达时的兜底接口）
+     * 前端支付成功后可主动调用，确保账单状态与微信一致
+     */
+    @PostMapping("/sync/{billNo}")
+    public AjaxResult syncPayResult(@PathVariable String billNo) {
+        // 1. 从数据库查账单
+        LambdaQueryWrapper<HzBill> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(HzBill::getBillNo, billNo)
+               .eq(HzBill::getDelFlag, "0")
+               .last("LIMIT 1");
+        HzBill bill = billMapper.selectOne(wrapper);
+        if (bill == null && billNo.matches("\\d+")) {
+            bill = billMapper.selectById(Long.parseLong(billNo));
+        }
+        if (bill == null) return error("账单不存在");
+
+        // 已支付无需同步
+        if ("1".equals(bill.getBillStatus())) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("paid", true);
+            data.put("billStatus", "1");
+            return success(data);
+        }
+
+        // 2. 向微信主动查单
+        try {
+            Map<String, Object> wxResult = wechatPayService.queryByOutTradeNo(
+                    bill.getBillNo() != null ? bill.getBillNo() : String.valueOf(bill.getBillId()));
+            String tradeState = (String) wxResult.get("trade_state");
+            String transactionId = (String) wxResult.get("transaction_id");
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("tradeState", tradeState);
+
+            if ("SUCCESS".equals(tradeState)) {
+                // 3. 微信已支付，更新本地账单
+                bill.setBillStatus("1");
+                bill.setPaidAmount(bill.getBillAmount());
+                bill.setUnpaidAmount(BigDecimal.ZERO);
+                bill.setPayTime(DateUtils.getTime());
+                bill.setPayMethod("wechat");
+                bill.setTransactionNo(transactionId);
+                billMapper.updateById(bill);
+
+                // 押金账单额外通知订单服务
+                if ("1".equals(bill.getBillType()) && bill.getOrderNo() != null) {
+                    houseOrderService.onDepositPaid(bill.getOrderNo());
+                }
+
+                logger.info("主动查单同步成功，billNo={}", billNo);
+                data.put("paid", true);
+                data.put("billStatus", "1");
+            } else {
+                data.put("paid", false);
+                data.put("billStatus", bill.getBillStatus());
+            }
+            return success(data);
+
+        } catch (Exception e) {
+            logger.error("主动查单失败，billNo={}", billNo, e);
+            return error("查单失败：" + e.getMessage());
+        }
+    }
+
+    /**
      * 前端轮询支付结果
      */
     @GetMapping("/query/{billNo}")

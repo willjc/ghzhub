@@ -11,6 +11,7 @@ import com.wechat.pay.java.service.payments.jsapi.JsapiServiceExtension;
 import com.wechat.pay.java.service.payments.jsapi.model.Amount;
 import com.wechat.pay.java.service.payments.jsapi.model.Payer;
 import com.wechat.pay.java.service.payments.jsapi.model.PrepayWithRequestPaymentResponse;
+import com.wechat.pay.java.service.payments.jsapi.model.QueryOrderByOutTradeNoRequest;
 import com.wechat.pay.java.service.payments.model.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,6 +110,26 @@ public class WechatPayServiceImpl implements WechatPayService {
 
         PrepayResponse response = h5Service.prepay(request);
         return response.getH5Url();
+    }
+
+    /**
+     * 主动向微信查单，用于回调未到达时的兜底同步
+     */
+    @Override
+    public Map<String, Object> queryByOutTradeNo(String outTradeNo) throws Exception {
+        QueryOrderByOutTradeNoRequest request = new QueryOrderByOutTradeNoRequest();
+        request.setMchid(mchId);
+        request.setOutTradeNo(outTradeNo);
+
+        Transaction transaction = jsapiService.queryOrderByOutTradeNo(request);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("out_trade_no", transaction.getOutTradeNo());
+        result.put("transaction_id", transaction.getTransactionId());
+        result.put("trade_state", transaction.getTradeState() != null
+                ? transaction.getTradeState().name() : null);
+        result.put("success_time", transaction.getSuccessTime());
+        return result;
     }
 
     /**

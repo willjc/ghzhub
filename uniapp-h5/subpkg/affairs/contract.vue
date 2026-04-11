@@ -189,6 +189,12 @@
 				this.loadContractList()
 			})
 		},
+		// 从账单页/上传页返回时，重新拉合同数据以刷新押金状态
+		onShow() {
+			if (this.userId) {
+				this.loadContractList()
+			}
+		},
 		methods: {
 			switchTab(tab) {
 				this.currentTab = tab

@@ -370,6 +370,32 @@
 			/**
 			 * 去结算 - 调用微信支付
 			 */
+			/**
+			 * 支付成功后轮询服务端，等待微信回调或主动查单同步账单状态
+			 * 最多重试 5 次，每次间隔 2s；成功则刷新列表，超时也刷新
+			 */
+			async pollSyncBill(billNo, maxRetry = 5) {
+				const { post } = require('@/utils/request')
+				for (let i = 0; i < maxRetry; i++) {
+					await new Promise(r => setTimeout(r, 2000))
+					try {
+						const res = await post(`/h5/pay/wechat/sync/${billNo}`)
+						if (res.code === 200 && res.data && res.data.paid) {
+							uni.hideToast()
+							uni.showToast({ title: '支付成功', icon: 'success' })
+							await this.loadBillList()
+							return
+						}
+					} catch (e) {
+						console.warn('轮询查单失败', e)
+					}
+				}
+				// 超时仍未确认，也刷新列表（可能回调稍后才到）
+				uni.hideToast()
+				uni.showToast({ title: '支付已完成，账单将稍后更新', icon: 'none', duration: 3000 })
+				await this.loadBillList()
+			},
+
 			/** 点击被锁定的租金账单时给出引导提示 */
 			onLockedBillTap(bill) {
 				if (!this.depositPaid) {
@@ -426,10 +452,9 @@
 						signType:  p.signType || 'RSA',
 						paySign:   p.paySign,
 						success: () => {
-							uni.showToast({ title: '支付成功', icon: 'success' })
-							setTimeout(() => {
-								this.loadBillList()  // 刷新账单列表
-							}, 1500)
+							// 支付授权成功，向服务端轮询确认账单状态（回调可能有延迟）
+							uni.showToast({ title: '支付处理中...', icon: 'loading', duration: 10000 })
+							this.pollSyncBill(bill.billNo || String(bill.id))
 						},
 						fail: (err) => {
 							const msg = err.errMsg || ''
