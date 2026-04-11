@@ -4,9 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.system.domain.HzBill;
+import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzDocument;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzHouseOrder;
+import com.ruoyi.system.mapper.HzBillMapper;
+import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.mapper.HzDocumentMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzHouseOrderMapper;
@@ -41,6 +45,12 @@ public class HzHouseOrderServiceImpl
 
     @Autowired
     private HzDocumentMapper documentMapper;
+
+    @Autowired
+    private HzContractMapper contractMapper;
+
+    @Autowired
+    private HzBillMapper billMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -151,23 +161,65 @@ public class HzHouseOrderServiceImpl
     @Override
     public Map<String, Object> checkinCheck(Long tenantId) {
         Map<String, Object> result = new HashMap<>();
-        HzHouseOrder order = getOne(new LambdaQueryWrapper<HzHouseOrder>()
-                .eq(HzHouseOrder::getTenantId, tenantId)
-                .eq(HzHouseOrder::getOrderStatus, "2")
-                .eq(HzHouseOrder::getIsBatchAlloc, "0")
-                .eq(HzHouseOrder::getDelFlag, "0")
+
+        // 1. 查找该用户最新的已签署合同
+        HzContract contract = contractMapper.selectOne(
+            new LambdaQueryWrapper<HzContract>()
+                .eq(HzContract::getTenantId, tenantId)
+                .in(HzContract::getContractStatus, "2", "3")
+                .eq(HzContract::getDelFlag, "0")
+                .orderByDesc(HzContract::getCreateTime)
                 .last("LIMIT 1"));
-        if (order == null) {
-            result.put("canCheckin", true);
-        } else {
-            long now = System.currentTimeMillis();
-            long remain = order.getDocUploadExpireTime() != null
-                    ? Math.max(0L, (order.getDocUploadExpireTime().getTime() - now) / 1000)
-                    : 0L;
+
+        if (contract == null) {
             result.put("canCheckin", false);
-            result.put("remainSeconds", remain);
-            result.put("orderNo", order.getOrderNo());
+            result.put("depositPaid", false);
+            result.put("materialApproved", false);
+            result.put("firstRentPaid", false);
+            result.put("blockMsg", "未找到有效合同");
+            return result;
         }
+
+        // 2. 检查押金是否已缴
+        HzBill depositBill = billMapper.selectOne(
+            new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, contract.getContractId())
+                .eq(HzBill::getBillType, "1")
+                .eq(HzBill::getDelFlag, "0")
+                .last("LIMIT 1"));
+        boolean depositPaid = depositBill != null && "1".equals(depositBill.getBillStatus());
+
+        // 3. 检查资料是否已审核通过（至少一条通过）
+        List<HzDocument> docs = documentMapper.selectList(
+            new LambdaQueryWrapper<HzDocument>()
+                .eq(HzDocument::getTenantId, tenantId)
+                .eq(HzDocument::getDelFlag, "0"));
+        boolean materialApproved = docs != null && docs.stream()
+                .anyMatch(d -> "1".equals(d.getAuditStatus()));
+
+        // 4. 检查第一期房租是否已缴
+        HzBill firstRentBill = billMapper.selectOne(
+            new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, contract.getContractId())
+                .eq(HzBill::getBillType, "2")
+                .eq(HzBill::getDelFlag, "0")
+                .orderByAsc(HzBill::getBillDate)
+                .last("LIMIT 1"));
+        boolean firstRentPaid = firstRentBill != null && "1".equals(firstRentBill.getBillStatus());
+
+        boolean canCheckin = depositPaid && materialApproved && firstRentPaid;
+
+        String blockMsg = "";
+        if (!depositPaid)        blockMsg = "请先缴纳押金";
+        else if (!materialApproved) blockMsg = "请等待资料审核通过";
+        else if (!firstRentPaid) blockMsg = "请先缴纳首期房租";
+
+        result.put("canCheckin",       canCheckin);
+        result.put("depositPaid",      depositPaid);
+        result.put("materialApproved", materialApproved);
+        result.put("firstRentPaid",    firstRentPaid);
+        result.put("blockMsg",         blockMsg);
+        result.put("contractId",       contract.getContractId());
         return result;
     }
 

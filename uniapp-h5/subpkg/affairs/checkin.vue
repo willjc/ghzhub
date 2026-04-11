@@ -3,8 +3,14 @@
 		<!-- 入住前置检查警告 -->
 		<view v-if="!canCheckin" style="background:#fff7e6;border:1rpx solid #ffd591;border-radius:12rpx;padding:20rpx 24rpx;margin:20rpx 24rpx;display:flex;align-items:center;justify-content:space-between;">
 			<text style="font-size:24rpx;color:#d46b08;flex:1;line-height:36rpx;">{{ checkinBlockMsg }}</text>
-			<view @click="goUpload" style="background:#fa8c16;border-radius:8rpx;padding:10rpx 20rpx;margin-left:16rpx;flex-shrink:0;">
+			<view v-if="!depositPaid" @click="goToBill" style="background:#fa8c16;border-radius:8rpx;padding:10rpx 20rpx;margin-left:16rpx;flex-shrink:0;">
+				<text style="font-size:24rpx;color:#fff;">去缴押金</text>
+			</view>
+			<view v-else-if="!materialApproved" @click="goUpload" style="background:#fa8c16;border-radius:8rpx;padding:10rpx 20rpx;margin-left:16rpx;flex-shrink:0;">
 				<text style="font-size:24rpx;color:#fff;">去上传资料</text>
+			</view>
+			<view v-else-if="!firstRentPaid" @click="goToBill" style="background:#fa8c16;border-radius:8rpx;padding:10rpx 20rpx;margin-left:16rpx;flex-shrink:0;">
+				<text style="font-size:24rpx;color:#fff;">去缴房租</text>
 			</view>
 		</view>
 
@@ -52,8 +58,12 @@
 				
 				<!-- 按钮区域 - 待办理 (status=0) -->
 				<view class="button-group" v-if="item.statusCode === '0'">
-					<view class="btn btn-checkin" @click="handleCheckin(index)">
-						<text class="btn-text-white">办理入住</text>
+					<view
+						class="btn"
+						:class="canCheckin ? 'btn-checkin' : 'btn-disabled'"
+						@click="canCheckin ? handleCheckin(index) : showBlockReason()"
+					>
+						<text class="btn-text-white">{{ canCheckin ? '办理入住' : '条件未满足' }}</text>
 					</view>
 				</view>
 
@@ -110,6 +120,9 @@
 				loading: false,
 				checkinList: [],
 				canCheckin: true,
+				depositPaid: false,
+				materialApproved: false,
+				firstRentPaid: false,
 				checkinBlockMsg: '',
 				checkinRemainSeconds: 0,
 				_checkinTimer: null,
@@ -309,21 +322,25 @@
 				})
 			},
 
-			// 入住前置检查
+			// 入住前置检查（三重校验：押金+资料审核+首期房租）
 			async checkCheckinCondition() {
 				try {
 					const res = await checkinCheck(this.userId)
-					if (res.code === 200) {
-						this.canCheckin = res.data.canCheckin
-						if (!this.canCheckin) {
-							this.checkinRemainSeconds = res.data.remainSeconds || 0
-							this.checkinBlockMsg = `您有资料尚未上传，需在 ${this.formatCountdownCheckin(this.checkinRemainSeconds)} 内完成上传方可办理入住`
-							this.startCheckinCountdown()
-						}
+					if (res.code === 200 && res.data) {
+						const d = res.data
+						this.depositPaid      = d.depositPaid      || false
+						this.materialApproved = d.materialApproved || false
+						this.firstRentPaid    = d.firstRentPaid    || false
+						this.canCheckin       = d.canCheckin       || false
+						this.checkinBlockMsg  = d.blockMsg         || ''
 					}
 				} catch (e) {
 					console.error('入住前置检查失败', e)
+					uni.showToast({ title: '状态检查失败，请刷新重试', icon: 'none' })
 				}
+			},
+			goToBill() {
+				uni.navigateTo({ url: '/subpkg/affairs/bill' })
 			},
 			startCheckinCountdown() {
 				if (this._checkinTimer) clearInterval(this._checkinTimer)
@@ -341,6 +358,9 @@
 			},
 			goUpload() {
 				uni.navigateTo({ url: '/pages/upload/index' })
+			},
+			showBlockReason() {
+				uni.showToast({ title: this.checkinBlockMsg || '请先满足入住条件', icon: 'none', duration: 2500 })
 			},
 		}
 	}
@@ -469,6 +489,10 @@
 
 	.btn-checkin {
 		background: #1281ff;
+	}
+
+	.btn-disabled {
+		background: #cccccc;
 	}
 
 	.btn-detail {
