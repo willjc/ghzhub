@@ -202,25 +202,7 @@ public class EsignController extends BaseController {
     }
 
     /**
-     * 主动查询 e签宝 签署流是否完成（前端轮询用）
-     */
-    @GetMapping("/check-sign/{contractId}")
-    public AjaxResult checkSign(@PathVariable Long contractId, @RequestParam Long userId) {
-        try {
-            boolean done = esignService.checkAndFinalizeSignFlow(contractId);
-            Map<String, Object> r = new HashMap<>();
-            r.put("signed", done);
-            return success(r);
-        } catch (Exception e) {
-            logger.error("主动查询签署状态失败 contractId={}", contractId, e);
-            return error("查询失败：" + e.getMessage());
-        }
-    }
-
-    // ==================== 调试接口 ====================
-
-    /**
-     * 主动查询签署状态（前端刷新用）
+     * 主动查询签署状态（前端轮询用）
      * 直接查 e签宝，无需等回调；若已完成则触发账单/入住生成
      */
     @GetMapping("/check-sign/{contractId}")
