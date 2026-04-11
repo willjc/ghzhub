@@ -512,10 +512,10 @@
           <el-table-column label="图片" width="120" align="center">
             <template slot-scope="{ row }">
               <el-image
-                v-if="row.documentUrl"
-                :src="getImageUrl(row.documentUrl)"
+                v-if="row.filePath"
+                :src="getImageUrl(row.filePath)"
                 style="width:80px;height:60px;cursor:pointer"
-                :preview-src-list="[getImageUrl(row.documentUrl)]"
+                :preview-src-list="[getImageUrl(row.filePath)]"
                 fit="cover"
               />
               <span v-else style="color:#ccc">未上传</span>

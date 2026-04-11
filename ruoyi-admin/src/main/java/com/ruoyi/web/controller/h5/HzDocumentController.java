@@ -10,6 +10,10 @@ import com.ruoyi.system.service.IHzTenantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import com.ruoyi.common.config.RuoYiConfig;
+import com.ruoyi.common.utils.file.FileUploadUtils;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,22 +79,47 @@ public class HzDocumentController extends BaseController {
     }
 
     /**
-     * 上传资料
+     * 上传资料（接受 multipart/form-data）
+     * @param file         图片/文件
+     * @param documentType 资料类型：1身份证 2学历证明 3工作证明 4收入证明 5人才证书
+     * @param tenantId     H5用户ID（由前端从 localStorage 传入）
      */
     @PostMapping("/upload")
-    public AjaxResult upload(@RequestBody HzDocument document) {
-        // TODO: 从登录态获取userId
-        Long userId = 1L;
-        HzTenant tenant = tenantService.selectTenantByUserId(userId);
-        if (tenant == null) {
-            return error("请先完善租户信息");
+    public AjaxResult upload(
+            MultipartFile file,
+            @RequestParam(required = false) String documentType,
+            @RequestParam(required = false) Long tenantId) {
+        if (file == null || file.isEmpty()) {
+            return error("请选择要上传的文件");
         }
+        if (tenantId == null) {
+            return error("用户未登录");
+        }
+        try {
+            // 保存文件，返回相对路径 /profile/upload/...
+            String filePath = FileUploadUtils.upload(RuoYiConfig.getUploadPath(), file);
 
-        // 设置租户ID
-        document.setTenantId(tenant.getTenantId());
+            HzDocument document = new HzDocument();
+            document.setTenantId(tenantId);
+            document.setDocumentType(documentType);
+            document.setDocumentName(file.getOriginalFilename());
+            document.setFilePath(filePath);
+            document.setFileSize(file.getSize());
+            document.setAuditStatus("0");  // 待审核
+            document.setDelFlag("0");
 
-        int result = documentService.insertDocument(document);
-        return result > 0 ? success() : error("上传失败");
+            int result = documentService.insertDocument(document);
+            if (result > 0) {
+                Map<String, Object> data = new HashMap<>();
+                data.put("documentId", document.getDocumentId());
+                data.put("filePath", filePath);
+                return success(data);
+            }
+            return error("保存失败");
+        } catch (Exception e) {
+            logger.error("上传资料失败", e);
+            return error("上传失败：" + e.getMessage());
+        }
     }
 
     /**
