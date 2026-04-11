@@ -23,11 +23,11 @@
 						mode="aspectFit"
 						:style="bill.locked ? 'opacity:0.3' : ''"
 					></image>
-					<view class="bill-card" :style="bill.locked ? 'opacity:0.45' : ''"  >
+					<view class="bill-card" style="position: relative;">
 						<view class="bill-header">
 							<text class="bill-title">账单期数：{{ bill.period }}</text>
 							<view class="bill-status" :class="bill.locked ? 'status-locked' : (statusClassMap[bill.status] || '')">
-								<text class="status-text" :class="bill.locked ? 'status-locked' : (statusClassMap[bill.status] || '')">{{ bill.locked ? '需先付押金' : bill.statusText }}</text>
+								<text class="status-text" :class="bill.locked ? 'status-locked' : (statusClassMap[bill.status] || '')">{{ bill.locked ? (!depositPaid ? '需先缴押金' : '需先上传资料') : bill.statusText }}</text>
 							</view>
 						</view>
 						<view class="bill-info">
@@ -45,6 +45,10 @@
 						<view class="bill-info">
 							<text class="bill-label">账单周期：</text>
 							<text class="bill-value">{{ bill.dateRange }}</text>
+						</view>
+						<!-- 遮罩：押金未缴或资料未提交时覆盖整张账单卡片 -->
+						<view class="bill-lock-mask" v-if="bill.locked" @click.stop="onLockedBillTap(bill)">
+							<text class="bill-lock-tip">{{ !depositPaid ? '请先缴纳押金' : '请先上传入住资料' }}</text>
 						</view>
 					</view>
 				</view>
@@ -124,6 +128,7 @@
 
 <script>
 	import { getBillListByUserId } from '@/api/bill.js'
+	import { get } from '@/utils/request'
 	import authCheck from '@/mixins/authCheck'
 
 	export default {
@@ -147,7 +152,8 @@
 				// 从合同页传入的参数
 				contractId: null,   // 限定查某合同的账单
 				filterBillType: null, // '1'=只看押金
-				depositPaid: true,   // 押金是否已付（false时租金不可选）
+				depositPaid: true,        // 押金是否已付（从账单数据自动检测）
+				materialSubmitted: true,  // 资料是否已提交（从接口检测）
 
 				statusClassMap: {
 					'paid': 'status-paid',
@@ -200,20 +206,35 @@
 
 				try {
 					this.loading = true
-					uni.showLoading({
-						title: '加载中...'
-					})
+					uni.showLoading({ title: '加载中...' })
 
-					console.log('开始加载账单，用户ID:', this.userId)
-
-					// 调用API获取所有账单
-					const response = await getBillListByUserId(this.userId)
+					// 并发拉取账单 + 资料提交状态
+					const [billRes, docRes] = await Promise.all([
+						getBillListByUserId(this.userId),
+						get(`/h5/document/status/${this.userId}`).catch(() => null)
+					])
 
 					uni.hideLoading()
 
-					if (response.code === 200 && response.data) {
-						const bills = response.data
-						console.log('获取到账单数据:', bills.length, '条')
+					// 处理资料状态
+					if (docRes && docRes.code === 200 && docRes.data) {
+						this.materialSubmitted = !!docRes.data.submitted
+					} else {
+						this.materialSubmitted = false
+					}
+
+					if (billRes.code === 200 && billRes.data) {
+						const bills = billRes.data
+
+						// 从账单数据自动检测押金是否已缴：
+						// 存在 billType=1 且 billStatus=1（已支付）则视为已缴押金
+						const depositBill = bills.find(b => b.billType === '1')
+						if (depositBill) {
+							this.depositPaid = depositBill.billStatus === '1'
+						} else {
+							// 无押金账单（e签宝回调未触发等），URL 参数优先，否则默认未缴
+							this.depositPaid = false
+						}
 
 						// 映射并过滤
 						let mappedBills = bills.map(bill => this.mapBillToFrontEnd(bill))
@@ -225,22 +246,13 @@
 
 						this.billList = mappedBills.filter(bill => bill.status === 'unpaid')
 						this.historyBillList = mappedBills.filter(bill => bill.status === 'paid')
-
-						console.log('当前账单:', this.billList.length, '条')
-						console.log('历史账单:', this.historyBillList.length, '条')
 					} else {
-						uni.showToast({
-							title: response.msg || '加载失败',
-							icon: 'none'
-						})
+						uni.showToast({ title: billRes.msg || '加载失败', icon: 'none' })
 					}
 				} catch (error) {
 					uni.hideLoading()
 					console.error('加载账单失败:', error)
-					uni.showToast({
-						title: '加载失败，请重试',
-						icon: 'none'
-					})
+					uni.showToast({ title: '加载失败，请重试', icon: 'none' })
 				} finally {
 					this.loading = false
 				}
@@ -318,8 +330,8 @@
 					period: period,
 					status: status,
 					statusText: statusText,
-					// 押金未付时，租金账单锁定（灰色不可选）
-					locked: !this.depositPaid && bill.billType === '2',
+					// 押金未缴或资料未提交时，租金账单锁定（不可选）
+					locked: bill.billType === '2' && (!this.depositPaid || !this.materialSubmitted),
 					community: bill.projectName || '港好住',
 					room: fullRoomNo || '-',
 					amount: parseFloat(bill.billAmount),
@@ -358,6 +370,15 @@
 			/**
 			 * 去结算 - 调用微信支付
 			 */
+			/** 点击被锁定的租金账单时给出引导提示 */
+			onLockedBillTap(bill) {
+				if (!this.depositPaid) {
+					uni.showToast({ title: '请先缴纳押金后再缴纳租金', icon: 'none', duration: 2000 })
+				} else if (!this.materialSubmitted) {
+					uni.showToast({ title: '请先上传入住资料后再缴纳租金', icon: 'none', duration: 2000 })
+				}
+			},
+
 			async checkout() {
 				const selectedBills = this.billList.filter(b => b.selected && !b.locked)
 				if (selectedBills.length === 0) {
@@ -553,6 +574,30 @@
 	}
 	.status-text.status-locked {
 		color: #aaaaaa;
+	}
+
+	/* 锁定遮罩层 */
+	.bill-lock-mask {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		border-radius: 20rpx;
+		background: rgba(255, 255, 255, 0.75);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 10;
+	}
+	.bill-lock-tip {
+		font-size: 28rpx;
+		color: #666666;
+		font-weight: 500;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+		background: rgba(0, 0, 0, 0.06);
+		padding: 14rpx 32rpx;
+		border-radius: 40rpx;
 	}
 	
 	.status-text {

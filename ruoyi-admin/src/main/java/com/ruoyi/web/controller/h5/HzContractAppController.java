@@ -398,9 +398,15 @@ public class HzContractAppController extends BaseController {
                 contract.setFreeRentPeriods(0);
             }
 
-            // 获取模版押金
+            // 获取合同模板，押金优先使用房源自身配置，若未配置则回退到模板默认值
             HzContractTemplate template = templateMapper.selectById(templateId);
-            contract.setDeposit(template.getDepositAmount());
+            if (template == null) {
+                return error("合同模板不存在");
+            }
+            BigDecimal houseDeposit = (house.getDeposit() != null && house.getDeposit().compareTo(BigDecimal.ZERO) > 0)
+                    ? house.getDeposit()
+                    : (template.getDepositAmount() != null ? template.getDepositAmount() : BigDecimal.ZERO);
+            contract.setDeposit(houseDeposit);
 
             contract.setStartDate(startDate);  // 使用自动计算的生效日期（签字日期+3天）
             contract.setEndDate(endDate);
@@ -544,9 +550,15 @@ public class HzContractAppController extends BaseController {
             contract.setHouseAddress(houseAddress);
             contract.setRentPrice(house.getRentPrice());
 
-            // 获取模版押金
+            // 获取合同模板，押金优先使用房源自身配置，若未配置则回退到模板默认值
             HzContractTemplate template = templateMapper.selectById(templateId);
-            contract.setDeposit(template.getDepositAmount());
+            if (template == null) {
+                return error("合同模板不存在");
+            }
+            BigDecimal renewDeposit = (house.getDeposit() != null && house.getDeposit().compareTo(BigDecimal.ZERO) > 0)
+                    ? house.getDeposit()
+                    : (template.getDepositAmount() != null ? template.getDepositAmount() : BigDecimal.ZERO);
+            contract.setDeposit(renewDeposit);
 
             contract.setStartDate(startDate);  // 使用自动计算的生效日期（签字日期+3天）
             contract.setEndDate(endDate);

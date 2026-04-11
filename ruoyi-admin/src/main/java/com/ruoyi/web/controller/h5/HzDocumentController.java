@@ -10,7 +10,9 @@ import com.ruoyi.system.service.IHzTenantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * H5端资料文档Controller
@@ -121,6 +123,30 @@ public class HzDocumentController extends BaseController {
 
         int result = documentService.deleteDocumentById(documentId);
         return result > 0 ? success() : error("删除失败");
+    }
+
+    /**
+     * 查询指定用户的资料提交状态（账单页用于判断是否允许缴租）
+     * @param userId H5用户ID（hz_user.user_id）
+     * @return submitted: 是否已提交资料；count: 已提交数量；approved: 是否已有审核通过的资料
+     */
+    @GetMapping("/status/{userId}")
+    public AjaxResult getDocumentStatus(@PathVariable Long userId) {
+        HzTenant tenant = tenantService.selectTenantByUserId(userId);
+        Map<String, Object> result = new HashMap<>();
+        if (tenant == null) {
+            result.put("submitted", false);
+            result.put("count", 0);
+            result.put("approved", false);
+            return success(result);
+        }
+        List<HzDocument> docs = documentService.selectDocumentListByTenantId(tenant.getTenantId());
+        int count = docs != null ? docs.size() : 0;
+        boolean approved = docs != null && docs.stream().anyMatch(d -> "1".equals(d.getAuditStatus()));
+        result.put("submitted", count > 0);
+        result.put("count", count);
+        result.put("approved", approved);
+        return success(result);
     }
 
     /**
