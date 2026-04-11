@@ -20,6 +20,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -982,6 +983,72 @@ public class HzContractAppController extends BaseController {
         } catch (Exception e) {
             logger.error("获取合同 PDF 链接失败，contractId={}, flowId={}", contractId, flowId, e);
             return error("获取 PDF 链接失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 代理下载合同 PDF（小程序专用）
+     * 避免小程序直接访问 e签宝 CDN 域名不在白名单的问题
+     */
+    @GetMapping("/{contractId}/download-pdf")
+    public void downloadContractPdf(@PathVariable Long contractId, HttpServletResponse response) throws Exception {
+        HzContract contract = contractMapper.selectById(contractId);
+        if (contract == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "合同不存在");
+            return;
+        }
+
+        // 获取实时 PDF URL
+        String pdfUrl = null;
+        String flowId = contract.getEsignFlowId();
+        if (flowId != null && !flowId.isEmpty()) {
+            pdfUrl = esignService.getSignedPdfUrl(flowId);
+        } else {
+            String content = contract.getContractContent();
+            if (content != null && content.startsWith("http")) {
+                pdfUrl = content;
+            }
+        }
+
+        if (pdfUrl == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "合同尚未完成电子签署");
+            return;
+        }
+
+        // 从 e签宝 CDN 下载并代理转发给客户端
+        java.net.URL url = new java.net.URL(pdfUrl);
+        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+        conn.setConnectTimeout(10000);
+        conn.setReadTimeout(30000);
+        conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+        conn.connect();
+
+        int status = conn.getResponseCode();
+        if (status != java.net.HttpURLConnection.HTTP_OK) {
+            conn.disconnect();
+            response.sendError(status, "获取合同文件失败");
+            return;
+        }
+
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition", "attachment; filename=contract.pdf");
+        response.setHeader("Access-Control-Allow-Origin", "*");
+
+        String contentLength = conn.getHeaderField("Content-Length");
+        if (contentLength != null) {
+            response.setHeader("Content-Length", contentLength);
+        }
+
+        try (java.io.InputStream in = conn.getInputStream();
+             java.io.OutputStream out = response.getOutputStream()) {
+            byte[] buffer = new byte[8192];
+            int len;
+            while ((len = in.read(buffer)) != -1) {
+                out.write(buffer, 0, len);
+            }
+            out.flush();
+        } finally {
+            conn.disconnect();
         }
     }
 }
