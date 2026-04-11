@@ -57,9 +57,21 @@
 				</view>
 				
 				<!-- 押金 -->
-				<view class="info-row last-row">
+				<view class="info-row">
 					<text class="info-label">押金</text>
 					<text class="info-value">{{ item.deposit }}</text>
+				</view>
+
+				<!-- 合同详情按钮 -->
+				<view class="info-row last-row" v-if="item.contractContent">
+					<text class="info-label">电子合同</text>
+					<view class="btn-contract-detail" @click="openContractPdf(item)">
+						<text class="btn-contract-detail-text">查看合同 ›</text>
+					</view>
+				</view>
+				<view class="info-row last-row" v-else>
+					<text class="info-label">电子合同</text>
+					<text class="info-value" style="color:#bbb;">待生成</text>
 				</view>
 
 					<!-- 三步状态指示器 - 仅合约中显示 -->
@@ -90,7 +102,7 @@
 					<!-- 已签署但未付押金 -->
 					<view class="button-group" v-else-if="item.status === 'signed' && !item.depositPaid">
 						<view class="btn btn-pay" @click="handlePayDeposit(item)">
-							<text class="btn-text-white">支付押金 ¥{{ item.depositAmount }}</text>
+							<text class="btn-text-white">支付押金</text>
 						</view>
 					</view>
 					<!-- 已付押金但未提交资料 -->
@@ -182,6 +194,22 @@
 				this.currentTab = tab
 			},
 
+			// 查看已签合同PDF
+			openContractPdf(item) {
+				if (!item.contractContent) {
+					uni.showToast({ title: '合同尚未生成，请稍后再试', icon: 'none' })
+					return
+				}
+				// #ifdef MP-WEIXIN
+				uni.navigateTo({
+					url: '/pages/auth/esign-webview?url=' + encodeURIComponent(item.contractContent)
+				})
+				// #endif
+				// #ifdef H5
+				window.open(item.contractContent, '_blank')
+				// #endif
+			},
+
 			// 去签署 (e签宝流程)
 			goSign(item) {
 				uni.navigateTo({
@@ -227,7 +255,7 @@
 						uni.showLoading({ title: '发起支付...' })
 						const payRes = await payDeposit({
 							billId: bill.billId,
-							payAmount: bill.unpaidAmount || bill.billAmount
+							payAmount: bill.amount  // 后端返回字段名为 amount
 						})
 						uni.hideLoading()
 						if (payRes.code === 200) {
@@ -310,6 +338,7 @@
 						depositPaid: item.deposit_paid === '1',
 						depositAmount: item.deposit || '0',
 						materialSubmitted: item.material_status === '1',
+						contractContent: item.contract_content || '',  // 已签合同PDF链接
 				}
 			},
 
@@ -575,6 +604,17 @@
 		font-size: 28rpx;
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
+	}
+
+	/* 合同详情按钮 */
+	.btn-contract-detail {
+		padding: 6rpx 20rpx;
+		border: 1rpx solid #1281ff;
+		border-radius: 30rpx;
+	}
+	.btn-contract-detail-text {
+		color: #1281ff;
+		font-size: 26rpx;
 	}
 
 	/* 空状态 */

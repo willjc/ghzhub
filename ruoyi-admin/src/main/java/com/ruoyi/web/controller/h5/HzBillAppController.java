@@ -64,6 +64,9 @@ public class HzBillAppController extends BaseController {
     @PostMapping("/pay")
     public AjaxResult payBill(@RequestBody Map<String, Object> params) {
         try {
+            if (params.get("billId") == null || params.get("payAmount") == null) {
+                return error("参数不完整：billId 和 payAmount 不能为空");
+            }
             Long billId = Long.parseLong(params.get("billId").toString());
             BigDecimal payAmount = new BigDecimal(params.get("payAmount").toString());
 
