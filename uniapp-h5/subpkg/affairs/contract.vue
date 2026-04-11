@@ -74,21 +74,33 @@
 					<text class="info-value" style="color:#bbb;">待生成</text>
 				</view>
 
-					<!-- 三步状态指示器 - 仅合约中显示 -->
+					<!-- 4步状态指示器 - 仅合约中显示 -->
 					<view class="steps-bar" v-if="item.status === 'signed'">
+						<!-- Step1: 合同已签 -->
 						<view class="step-item done">
 							<view class="step-dot">✓</view>
 							<text class="step-label">合同已签</text>
+							<text class="step-date" v-if="item.signedDate">{{ item.signedDate.slice(0,10) }}</text>
 						</view>
 						<view class="step-line" :class="{ active: item.depositPaid }"></view>
+						<!-- Step2: 押金已缴 -->
 						<view class="step-item" :class="{ done: item.depositPaid }">
 							<view class="step-dot">{{ item.depositPaid ? '✓' : '2' }}</view>
-							<text class="step-label">押金已付</text>
+							<text class="step-label">押金已缴</text>
 						</view>
 						<view class="step-line" :class="{ active: item.materialSubmitted }"></view>
-						<view class="step-item" :class="{ done: item.materialSubmitted }">
-							<view class="step-dot">{{ item.materialSubmitted ? '✓' : '3' }}</view>
-							<text class="step-label">资料已提交</text>
+						<!-- Step3: 资料审核 -->
+						<view class="step-item" :class="{ done: item.materialApproved, 'step-pending': item.materialSubmitted && !item.materialApproved }">
+							<view class="step-dot" :class="{ 'step-dot-pending': item.materialSubmitted && !item.materialApproved }">
+								{{ item.materialApproved ? '✓' : (item.materialSubmitted ? '⏳' : '3') }}
+							</view>
+							<text class="step-label">{{ item.materialApproved ? '资料已审' : (item.materialSubmitted ? '审核中' : '提交资料') }}</text>
+						</view>
+						<view class="step-line" :class="{ active: item.firstRentPaid }"></view>
+						<!-- Step4: 合约中 -->
+						<view class="step-item" :class="{ done: item.firstRentPaid }">
+							<view class="step-dot">{{ item.firstRentPaid ? '✓' : '4' }}</view>
+							<text class="step-label">合约中</text>
 						</view>
 					</view>
 
@@ -105,14 +117,26 @@
 							<text class="btn-text-white">支付押金</text>
 						</view>
 					</view>
-					<!-- 已付押金但未提交资料 -->
+					<!-- 押金已缴但未提交资料 -->
 					<view class="button-group" v-else-if="item.status === 'signed' && item.depositPaid && !item.materialSubmitted">
 						<view class="btn btn-pay" @click="handleSubmitMaterial(item)">
 							<text class="btn-text-white">提交资料</text>
 						</view>
 					</view>
-					<!-- 全部完成 -->
-					<view class="button-group" v-else-if="item.status === 'signed' && item.materialSubmitted">
+					<!-- 资料审核中 -->
+					<view class="button-group" v-else-if="item.status === 'signed' && item.materialSubmitted && !item.materialApproved">
+						<view class="btn btn-disabled-state">
+							<text class="btn-text-gray">资料审核中</text>
+						</view>
+					</view>
+					<!-- 审核通过但未缴首期房租 -->
+					<view class="button-group" v-else-if="item.status === 'signed' && item.materialApproved && !item.firstRentPaid">
+						<view class="btn btn-pay" @click="handlePay(item)">
+							<text class="btn-text-white">缴纳房租</text>
+						</view>
+					</view>
+					<!-- 全部完成：合约中 -->
+					<view class="button-group" v-else-if="item.status === 'signed' && item.firstRentPaid">
 						<view class="btn btn-renew" @click="handleRenew(item)">
 							<text class="btn-text-blue">续租</text>
 						</view>
@@ -314,26 +338,35 @@
 			mapContractData(item) {
 				const status = this.getContractStatus(item)
 
+				const signed           = ['2','3','4'].includes(item.contract_status)
+				const depositPaid      = item.deposit_paid === '1'
+				const materialStatus   = item.material_status || '0' // 0未提交 1审核中 2已通过
+				const materialSubmitted = materialStatus !== '0'
+				const materialApproved  = materialStatus === '2'
+				const firstRentPaid    = item.first_rent_paid === '1'
+
 				return {
-					contractId: item.contract_id,
-					house_id: item.house_id,        // 保留原始house_id,用于续租
-					project_id: item.project_id,    // 保留原始project_id,用于续租
-					status: status.code,
-					statusText: status.text,
-					community: item.project_name || '未知小区',
-					room: `${item.building_name || ''}${item.unit_name || ''}${item.house_no || ''}`,
-					rentPeriod: this.formatRentPeriod(item.start_date, item.end_date),
-					rent: `${item.rent_price}元/月`,
-					deposit: `${item.deposit}元`,
-					countdown: '',  // 待签约状态的倒计时暂时留空
-					end_date: item.end_date,  // 保留原始日期，用于筛选当前/历史合同
-						signed: ['2', '3', '4'].includes(item.contract_status),
-						depositPaid: item.deposit_paid === '1',
-						depositAmount: item.deposit || '0',
-						materialSubmitted: item.material_status === '1',
-						contractContent: item.contract_content || '',
-						// PDF URL 判断：回调成功后才会写入 https:// 开头的链接
-						hasPdf: item.contract_content && item.contract_content.startsWith('http'),
+					contractId:       item.contract_id,
+					house_id:         item.house_id,
+					project_id:       item.project_id,
+					status:           status.code,
+					statusText:       status.text,
+					community:        item.project_name || '未知小区',
+					room:             `${item.building_name || ''}${item.unit_name || ''}${item.house_no || ''}`,
+					rentPeriod:       this.formatRentPeriod(item.start_date, item.end_date),
+					rent:             `${item.rent_price}元/月`,
+					deposit:          `${item.deposit}元`,
+					depositAmount:    item.deposit || '0',
+					end_date:         item.end_date,
+					signedDate:       item.signed_date || item.update_time || '',
+					signed,
+					depositPaid,
+					materialStatus,
+					materialSubmitted,
+					materialApproved,
+					firstRentPaid,
+					contractContent:  item.contract_content || '',
+					hasPdf: item.contract_content && item.contract_content.startsWith('http'),
 				}
 			},
 
@@ -680,6 +713,38 @@
 
 	.step-line.active {
 		background: #12a566;
+	}
+
+	/* 签约日期 */
+	.step-date {
+		font-size: 18rpx;
+		color: #aaaaaa;
+		margin-top: 4rpx;
+		display: block;
+		text-align: center;
+	}
+
+	/* 审核中状态 - 黄色 */
+	.step-dot-pending {
+		background: #faad14 !important;
+		border-color: #faad14 !important;
+		color: #fff !important;
+		font-size: 20rpx !important;
+	}
+	.step-pending .step-label {
+		color: #faad14;
+	}
+
+	/* 审核中按钮 */
+	.btn-disabled-state {
+		background: #f5f5f5;
+		border: 1rpx solid #d9d9d9;
+	}
+	.btn-text-gray {
+		color: #999999;
+		font-size: 28rpx;
+		font-weight: 500;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
 	}
 </style>
 

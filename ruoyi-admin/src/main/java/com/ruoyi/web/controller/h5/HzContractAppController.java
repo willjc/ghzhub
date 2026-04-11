@@ -94,6 +94,18 @@ public class HzContractAppController extends BaseController {
                         .eq(HzBill::getBillType, "1")
                         .last("LIMIT 1"));
                 contract.put("deposit_paid", depositBill != null && "1".equals(depositBill.getBillStatus()) ? "1" : "0");
+
+                // 查询第一期租金是否已缴
+                HzBill firstRent = billMapper.selectOne(new LambdaQueryWrapper<HzBill>()
+                        .eq(HzBill::getContractId, contractId)
+                        .eq(HzBill::getBillType, "2")
+                        .eq(HzBill::getDelFlag, "0")
+                        .orderByAsc(HzBill::getBillDate)
+                        .last("LIMIT 1"));
+                contract.put("first_rent_paid", firstRent != null && "1".equals(firstRent.getBillStatus()) ? "1" : "0");
+
+                // 签约时间用 update_time 近似（合同状态变更为已签署时更新）
+                contract.put("signed_date", contract.get("update_time"));
             }
             // 动态查询资料审核状态：0=未提交, 1=审核中, 2=已通过
             Object tenantIdObj = contract.get("tenant_id");
