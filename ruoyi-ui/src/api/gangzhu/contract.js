@@ -76,3 +76,11 @@ export function auditDocument(data) {
     data: data
   })
 }
+
+// 获取合同 PDF 查看链接（管理端，实时刷新 e签宝 链接）
+export function getContractPdfUrl(contractId) {
+  return request({
+    url: '/system/contract/' + contractId + '/pdf-url',
+    method: 'get'
+  })
+}
