@@ -149,13 +149,12 @@
 
     <!-- ── 等待签署完成 ── -->
     <view v-else-if="step === 'esign_waiting'" class="state-screen">
-      <!-- <view class="state-circle waiting">
-        <text class="state-emoji">⏳</text>
-      </view> -->
-      <text class="state-title">等待签署完成</text>
-      <text class="state-desc">正在检测签署状态，请稍候...</text>
-      <button class="btn-main" @click="manualCheckStatus">刷新签署状态</button>
-      <button class="btn-ghost" @click="goBack">返回合同列表</button>
+      <view class="waiting-spinner">
+        <view class="spinner-ring"></view>
+      </view>
+      <text class="state-title">正在确认签署结果</text>
+      <text class="state-desc">系统正在与 e签宝 同步签署状态，请稍候...{{ pollCountDisplay }}</text>
+      <button class="btn-ghost" style="margin-top: 40rpx;" @click="goBack">返回合同列表</button>
     </view>
 
     <!-- ── 签署完成 ── -->
@@ -186,7 +185,6 @@
 <script>
 import { generateContract, signContract } from '@/api/contract'
 import { getAuthStatus, initSign, checkSign } from '@/api/esign'
-import { get } from '@/utils/request'
 
 export default {
   data() {
@@ -219,6 +217,7 @@ export default {
       signUrl: '',
       errorMsg: '',
       pollTimer: null,
+      pollCount: 0,
       submitting: false,
       fromEsignWebview: false  // 标记是否跳转去了 esign-webview，用于 onShow 检测返回
     }
@@ -289,6 +288,12 @@ export default {
   },
   onUnload() {
     this.stopPolling()
+  },
+  computed: {
+    pollCountDisplay() {
+      if (this.pollCount === 0) return ''
+      return `（已等待 ${this.pollCount * 5} 秒）`
+    }
   },
   methods: {
     onRentMonthsChange(e) {
@@ -440,20 +445,16 @@ export default {
 
     startPolling() {
       this.stopPolling()
-      let count = 0
+      this.pollCount = 0
       this.pollTimer = setInterval(async () => {
-        count++
-        if (count >= 360) { this.stopPolling(); return }
+        this.pollCount++
+        if (this.pollCount >= 72) { this.stopPolling(); return } // 最多等 6 分钟
         try {
-          const res = await get(`/h5/app/contract/user/${this.userId}`)
-          if (res.code === 200 && res.data) {
-            const list = Array.isArray(res.data) ? res.data : [res.data]
-            const target = list.find(c => c.contractId === this.contractId)
-            if (target && target.contractStatus === '2') {
-              this.stopPolling()
-              this.step = 'done'
-              setTimeout(() => { this.goToBill() }, 3000)
-            }
+          const res = await checkSign(this.contractId)
+          if (res.code === 200 && res.data && res.data.signed) {
+            this.stopPolling()
+            this.step = 'done'
+            setTimeout(() => { this.goToBill() }, 2000)
           }
         } catch (e) { /* ignore */ }
       }, 5000)
@@ -555,6 +556,17 @@ export default {
   width: 100rpx;
   height: 100rpx;
   margin-bottom: 32rpx;
+}
+/* 签署等待圈（更大） */
+.waiting-spinner {
+  width: 140rpx;
+  height: 140rpx;
+  margin-bottom: 40rpx;
+}
+.waiting-spinner .spinner-ring {
+  width: 140rpx;
+  height: 140rpx;
+  border-width: 8rpx;
 }
 .spinner-ring {
   width: 100rpx;

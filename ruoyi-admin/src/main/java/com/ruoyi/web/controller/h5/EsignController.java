@@ -171,10 +171,23 @@ public class EsignController extends BaseController {
     public ResponseEntity<Map<String, Object>> esignNotify(HttpServletRequest request, @RequestBody String body) {
         Map<String, Object> resp = new HashMap<>();
         try {
+            // 打印全部请求头，便于排查验签 header 名称
+            StringBuilder headerLog = new StringBuilder();
+            java.util.Enumeration<String> names = request.getHeaderNames();
+            while (names != null && names.hasMoreElements()) {
+                String n = names.nextElement();
+                headerLog.append(n).append("=").append(request.getHeader(n)).append("; ");
+            }
+            logger.info("e签宝回调 headers: {}", headerLog);
+            logger.info("e签宝回调 body: {}", body);
+
             String timestamp = request.getHeader("X-Tsign-Open-Timestamp");
             if (timestamp == null) timestamp = request.getHeader("X-Tsign-Open-Sign-Timestamp");
             String signature = request.getHeader("X-Tsign-Open-Sign");
             String requestQuery = request.getQueryString() != null ? request.getQueryString() : "";
+
+            logger.info("e签宝回调参数: timestamp={}, signature={}, requestQuery={}", timestamp, signature, requestQuery);
+
             esignService.handleSignCallback(timestamp, requestQuery, body, signature);
             resp.put("code", "0");
             return ResponseEntity.ok(resp);
@@ -183,6 +196,22 @@ public class EsignController extends BaseController {
             resp.put("code", "-1");
             resp.put("message", e.getMessage());
             return ResponseEntity.status(500).body(resp);
+        }
+    }
+
+    /**
+     * 主动查询 e签宝 签署流是否完成（前端轮询用）
+     */
+    @GetMapping("/check-sign/{contractId}")
+    public AjaxResult checkSign(@PathVariable Long contractId, @RequestParam Long userId) {
+        try {
+            boolean done = esignService.checkAndFinalizeSignFlow(contractId);
+            Map<String, Object> r = new HashMap<>();
+            r.put("signed", done);
+            return success(r);
+        } catch (Exception e) {
+            logger.error("主动查询签署状态失败 contractId={}", contractId, e);
+            return error("查询失败：" + e.getMessage());
         }
     }
 
