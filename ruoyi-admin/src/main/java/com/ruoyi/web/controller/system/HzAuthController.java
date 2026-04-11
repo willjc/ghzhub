@@ -197,6 +197,7 @@ public class HzAuthController extends BaseController {
             userInfo.put("loginType", user.getLoginType());
             userInfo.put("isInfoCompleted", user.getIsInfoCompleted());
             userInfo.put("authStatus", user.getAuthStatus() != null ? user.getAuthStatus() : "0");
+            userInfo.put("wechatOpenid", user.getWechatOpenid()); // JSAPI 支付需要
 
             data.put("userInfo", userInfo);
 

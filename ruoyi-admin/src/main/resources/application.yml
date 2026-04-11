@@ -183,13 +183,13 @@ wechat:
   # 微信支付配置
   # 开发/测试环境不配置证书时设 enabled: false，生产环境填好证书后改为 true
   pay:
-    enabled: false
-    appid: "wx_your_appid"
-    mch-id: "your_mch_id"
-    api-v3-key: "your_api_v3_key_32chars"
-    private-key-path: "classpath:certs/apiclient_key.pem"
-    cert-serial-no: "your_cert_serial_no"
-    notify-domain: "https://your-domain.com"
+    enabled: false          # 填好下面三项后改为 true 即可开启
+    appid: "wx74efa287343d0fa2"
+    mch-id: "1106404234"
+    api-v3-key: ""          # 32位，商户平台→账户中心→API安全→设置APIv3密钥
+    private-key-path: "file:/www/wwwroot/ghz-source/certs/apiclient_key.pem"
+    cert-serial-no: ""      # 商户平台→账户中心→API安全→API证书→查看证书序列号
+    notify-domain: "https://app.caigon.cn"
     h5-notify-url: "${wechat.pay.notify-domain}/h5/pay/wechat/notify"
 
 # e签宝配置

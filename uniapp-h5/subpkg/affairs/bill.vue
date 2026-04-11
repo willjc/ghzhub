@@ -123,7 +123,7 @@
 </template>
 
 <script>
-	import { getBillListByUserId, payBillBatch } from '@/api/bill.js'
+	import { getBillListByUserId } from '@/api/bill.js'
 	import authCheck from '@/mixins/authCheck'
 
 	export default {
@@ -355,63 +355,74 @@
 			},
 			
 			/**
-			 * 去结算 - 批量支付账单
+			 * 去结算 - 调用微信支付
 			 */
 			async checkout() {
-				if (this.selectedCount === 0) {
-					uni.showToast({
-						title: '请选择要支付的账单',
-						icon: 'none'
-					})
+				const selectedBills = this.billList.filter(b => b.selected && !b.locked)
+				if (selectedBills.length === 0) {
+					uni.showToast({ title: '请选择要支付的账单', icon: 'none' })
 					return
 				}
 
+				// JSAPI 支付需要 openid
+				const userInfo = uni.getStorageSync('userInfo') || {}
+				const openid = userInfo.wechatOpenid
+				if (!openid) {
+					uni.showToast({ title: '无法获取 openid，请重新登录', icon: 'none' })
+					return
+				}
+
+				// 当前只支持逐笔支付，先付第一张（多选批量后续优化）
+				const bill = selectedBills[0]
+
 				try {
-					uni.showLoading({
-						title: '支付中...'
+					uni.showLoading({ title: '发起支付...' })
+
+					// 1. 向后端请求预支付参数
+					const { post } = require('@/utils/request')
+					const res = await post('/h5/pay/wechat/prepay', {
+						billNo: bill.billNo || String(bill.id),
+						payType: 'jsapi',
+						openid
 					})
-
-					// 获取选中且未锁定的账单
-					const selectedBills = this.billList.filter(bill => bill.selected && !bill.locked)
-					const billIds = selectedBills.map(bill => bill.id)
-
-					console.log('支付账单:', billIds)
-
-					// 调用批量支付API
-					const response = await payBillBatch({
-						billIds: billIds,
-						payAmount: this.totalAmount
-					})
-
 					uni.hideLoading()
 
-					if (response.code === 200) {
-						uni.showToast({
-							title: '支付成功',
-							icon: 'success',
-							duration: 2000
-						})
-
-						// 延迟跳转到支付成功页面
-						setTimeout(() => {
-							uni.redirectTo({
-								url: `/pages/room/success?amount=${this.finalAmount}`
-							})
-						}, 1500)
-					} else {
-						uni.showToast({
-							title: response.msg || '支付失败',
-							icon: 'none',
-							duration: 2000
-						})
+					if (res.code !== 200) {
+						uni.showToast({ title: res.msg || '发起支付失败', icon: 'none' })
+						return
 					}
-				} catch (error) {
-					uni.hideLoading()
-					console.error('支付失败:', error)
-					uni.showToast({
-						title: '支付失败，请重试',
-						icon: 'none'
+
+					const p = res.data
+
+					// 2. 调起微信支付收银台
+					// #ifdef MP-WEIXIN
+					uni.requestPayment({
+						provider: 'wxpay',
+						timeStamp: p.timeStamp,
+						nonceStr:  p.nonceStr,
+						package:   p.package,
+						signType:  p.signType || 'RSA',
+						paySign:   p.paySign,
+						success: () => {
+							uni.showToast({ title: '支付成功', icon: 'success' })
+							setTimeout(() => {
+								this.loadBillList()  // 刷新账单列表
+							}, 1500)
+						},
+						fail: (err) => {
+							const msg = err.errMsg || ''
+							uni.showToast({
+								title: msg.includes('cancel') ? '已取消支付' : '支付失败，请重试',
+								icon: 'none'
+							})
+						}
 					})
+					// #endif
+
+				} catch (e) {
+					uni.hideLoading()
+					console.error('支付失败:', e)
+					uni.showToast({ title: '支付失败，请重试', icon: 'none' })
 				}
 			}
 		}
