@@ -262,22 +262,80 @@ public class EsignServiceImpl implements EsignService {
 
     /**
      * 构建模板填充数据 — 将合同+租户数据映射到 e签宝 模板控件
-     * 控件 ID 来自模板详情（已通过 API 验证）
+     * 控件 ID 来自模板详情 API（GET /system/contract/esign-template）
+     * 部署后调用该接口获取 components 列表，将 TODO_*_ID 替换为真实 componentId
      */
     private String buildTemplateComponents(HzContract contract, HzUser user) {
-        String tenantName = user.getRealName() != null ? user.getRealName() : (user.getNickname() != null ? user.getNickname() : "");
-        String idCard = user.getIdCard() != null ? user.getIdCard() : "";
-        String phone = user.getPhone() != null ? user.getPhone() : "";
-        String rentPrice = contract.getRentPrice() != null ? contract.getRentPrice().toString() : "0";
-        String deposit = contract.getDeposit() != null ? contract.getDeposit().toString() : "0";
+        // ── 已确认控件 ID ──────────────────────────────────────────────
+        String tenantName     = user.getRealName() != null ? user.getRealName()
+                              : (user.getNickname() != null ? user.getNickname() : "");
+        String idCard         = user.getIdCard()  != null ? user.getIdCard()  : "";
+        String phone          = user.getPhone()   != null ? user.getPhone()   : "";
+        String rentPrice      = contract.getRentPrice() != null ? contract.getRentPrice().toString() : "0";
+        String deposit        = contract.getDeposit()   != null ? contract.getDeposit().toString()   : "0";
+
+        // ── 新增字段（控件 ID 待部署后通过 GET /system/contract/esign-template 查询填入）
+        String houseAddress   = contract.getHouseAddress() != null ? contract.getHouseAddress() : "";
+        String houseCode      = contract.getHouseCode()    != null ? contract.getHouseCode()    : "";
+        String area           = contract.getArea()         != null ? contract.getArea().stripTrailingZeros().toPlainString() : "";
+        String startDate      = contract.getStartDate()    != null ? contract.getStartDate()    : "";
+        String endDate        = contract.getEndDate()      != null ? contract.getEndDate()      : "";
+        String rentPriceUpper = contract.getRentPrice()    != null ? toChineseUpper(contract.getRentPrice()) : "";
 
         return "[\n"
-            + "  {\"componentId\": \"564553c91f36457b95542f661c7de7d2\", \"componentValue\": \"" + escapeJson(tenantName) + "\"},\n"
-            + "  {\"componentId\": \"ba2d50d300394daba46764c3f7ca5aec\", \"componentValue\": \"" + escapeJson(idCard) + "\"},\n"
-            + "  {\"componentId\": \"520eaa1e2b634c0592937bd216a74cf5\", \"componentValue\": \"" + escapeJson(phone) + "\"},\n"
-            + "  {\"componentId\": \"d2a93cfe598449c49fac10a5c8d58f08\", \"componentValue\": \"" + rentPrice + "\"},\n"
-            + "  {\"componentId\": \"ef7ed4f368094d19a52d45369994e7e7\", \"componentValue\": \"" + deposit + "\"}\n"
+            // 已确认
+            + "  {\"componentId\": \"564553c91f36457b95542f661c7de7d2\", \"componentValue\": \"" + escapeJson(tenantName)     + "\"},\n"
+            + "  {\"componentId\": \"ba2d50d300394daba46764c3f7ca5aec\", \"componentValue\": \"" + escapeJson(idCard)         + "\"},\n"
+            + "  {\"componentId\": \"520eaa1e2b634c0592937bd216a74cf5\", \"componentValue\": \"" + escapeJson(phone)          + "\"},\n"
+            + "  {\"componentId\": \"d2a93cfe598449c49fac10a5c8d58f08\", \"componentValue\": \"" + rentPrice                 + "\"},\n"
+            + "  {\"componentId\": \"ef7ed4f368094d19a52d45369994e7e7\", \"componentValue\": \"" + deposit                   + "\"},\n"
+            // TODO: 部署后调 GET /system/contract/esign-template 获取真实 componentId 替换下列占位符
+            + "  {\"componentId\": \"TODO_HOUSE_ADDRESS_ID\", \"componentValue\": \"" + escapeJson(houseAddress)  + "\"},\n"
+            + "  {\"componentId\": \"TODO_HOUSE_CODE_ID\",    \"componentValue\": \"" + escapeJson(houseCode)     + "\"},\n"
+            + "  {\"componentId\": \"TODO_AREA_ID\",          \"componentValue\": \"" + escapeJson(area)          + "\"},\n"
+            + "  {\"componentId\": \"TODO_START_DATE_ID\",    \"componentValue\": \"" + escapeJson(startDate)     + "\"},\n"
+            + "  {\"componentId\": \"TODO_END_DATE_ID\",      \"componentValue\": \"" + escapeJson(endDate)       + "\"},\n"
+            + "  {\"componentId\": \"TODO_RENT_UPPER_ID\",    \"componentValue\": \"" + escapeJson(rentPriceUpper)+ "\"}\n"
             + "]";
+    }
+
+    /**
+     * 数字金额转人民币大写（拷贝自 HzContractAppController.convertToUpperCase）
+     */
+    private String toChineseUpper(java.math.BigDecimal amount) {
+        if (amount == null || amount.compareTo(java.math.BigDecimal.ZERO) == 0) return "零元整";
+        String[] units = {"", "拾", "佰", "仟", "万", "拾", "佰", "仟", "亿"};
+        String[] nums  = {"零", "壹", "贰", "叁", "肆", "伍", "陆", "柒", "捌", "玖"};
+        long fen = amount.multiply(new java.math.BigDecimal(100)).longValue();
+        long yuan = fen / 100, jiao = (fen % 100) / 10, fenUnit = fen % 10;
+        if (yuan == 0 && jiao == 0 && fenUnit == 0) return "零元整";
+        StringBuilder sb = new StringBuilder();
+        if (yuan > 0) {
+            String yuanStr = String.valueOf(yuan);
+            int len = yuanStr.length();
+            boolean zeroFlag = false;
+            for (int i = 0; i < len; i++) {
+                int num = yuanStr.charAt(i) - '0';
+                int pos = len - i - 1;
+                if (num == 0) {
+                    if (!zeroFlag && pos > 0 && pos != 4 && pos != 8) zeroFlag = true;
+                    if (pos == 4 || pos == 8) { sb.append(units[pos]); zeroFlag = false; }
+                } else {
+                    if (zeroFlag) { sb.append(nums[0]); zeroFlag = false; }
+                    sb.append(nums[num]).append(units[pos]);
+                }
+            }
+            sb.append("元");
+        } else {
+            sb.append("零元");
+        }
+        if (jiao == 0 && fenUnit == 0) {
+            sb.append("整");
+        } else {
+            if (jiao > 0) sb.append(nums[(int) jiao]).append("角");
+            if (fenUnit > 0) { if (jiao == 0) sb.append("零"); sb.append(nums[(int) fenUnit]).append("分"); }
+        }
+        return sb.toString();
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.ruoyi.web.controller.system;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.constant.HttpStatus;
@@ -10,14 +11,22 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.core.page.TableSupport;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
+import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzDocument;
+import com.ruoyi.system.mapper.HzBillMapper;
+import com.ruoyi.system.service.EsignService;
 import com.ruoyi.system.service.IHzContractService;
+import com.ruoyi.system.service.IHzDocumentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 合同管理Controller
@@ -30,6 +39,15 @@ public class HzContractController extends BaseController
 {
     @Autowired
     private IHzContractService contractService;
+
+    @Autowired
+    private HzBillMapper billMapper;
+
+    @Autowired
+    private IHzDocumentService documentService;
+
+    @Autowired
+    private EsignService esignService;
 
     /**
      * 查询合同列表
@@ -154,5 +172,99 @@ public class HzContractController extends BaseController
         }
 
         return toAjax(contractService.updateContract(existContract));
+    }
+
+    // ==================== 合同详情扩展接口 ====================
+
+    /**
+     * 查询 e签宝 合同模板所有控件定义（管理端调试用，用于核对传参是否完整）
+     */
+    @GetMapping("/esign-template")
+    @PreAuthorize("@ss.hasPermi('gangzhu:contract:query')")
+    public AjaxResult getEsignTemplateComponents() {
+        try {
+            return success(esignService.queryTemplateDetail());
+        } catch (Exception e) {
+            return error("查询模板失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 合同详情 - 账单与缴费记录（管理端专用）
+     */
+    @GetMapping("/{contractId}/bills")
+    @PreAuthorize("@ss.hasPermi('gangzhu:contract:query')")
+    public AjaxResult getContractBills(@PathVariable Long contractId) {
+        HzContract contract = contractService.selectContractById(contractId);
+        if (contract == null) return error("合同不存在");
+
+        List<HzBill> bills = billMapper.selectList(
+            new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, contractId)
+                .eq(HzBill::getDelFlag, "0")
+                .orderByAsc(HzBill::getBillType)
+                .orderByAsc(HzBill::getBillDate)
+        );
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("contractId",  contractId);
+        result.put("tenantName",  contract.getTenantName());
+        result.put("tenantPhone", contract.getTenantPhone());
+        result.put("tenantIdCard",contract.getTenantIdCard());
+        result.put("bills", bills.stream().map(b -> {
+            Map<String, Object> item = new HashMap<>();
+            item.put("billId",        b.getBillId());
+            item.put("billNo",        b.getBillNo());
+            item.put("billType",      b.getBillType());
+            item.put("billTypeText",  billTypeText(b.getBillType()));
+            item.put("billAmount",    b.getBillAmount());
+            item.put("paidAmount",    b.getPaidAmount());
+            item.put("unpaidAmount",  b.getUnpaidAmount());
+            item.put("billStatus",    b.getBillStatus());
+            item.put("billStatusText",billStatusText(b.getBillStatus()));
+            item.put("payTime",       b.getPayTime());
+            item.put("payMethod",     b.getPayMethod());
+            item.put("transactionNo", b.getTransactionNo());
+            item.put("billDate",      b.getBillDate());
+            item.put("dueDate",       b.getDueDate());
+            item.put("billPeriod",    b.getBillPeriod());
+            return item;
+        }).collect(Collectors.toList()));
+        return success(result);
+    }
+
+    /**
+     * 合同详情 - 用户上传资料列表（管理端专用）
+     */
+    @GetMapping("/{contractId}/documents")
+    @PreAuthorize("@ss.hasPermi('gangzhu:contract:query')")
+    public AjaxResult getContractDocuments(@PathVariable Long contractId) {
+        HzContract contract = contractService.selectContractById(contractId);
+        if (contract == null) return error("合同不存在");
+        List<HzDocument> docs = documentService.selectDocumentListByTenantId(contract.getTenantId());
+        return success(docs);
+    }
+
+    private String billTypeText(String type) {
+        if (type == null) return "";
+        switch (type) {
+            case "1": return "押金";
+            case "2": return "租金";
+            case "3": return "水费";
+            case "4": return "电费";
+            default:  return "其他";
+        }
+    }
+
+    private String billStatusText(String status) {
+        if (status == null) return "";
+        switch (status) {
+            case "0": return "待支付";
+            case "1": return "已支付";
+            case "2": return "部分支付";
+            case "3": return "已逾期";
+            case "4": return "已关闭";
+            default:  return "未知";
+        }
     }
 }
