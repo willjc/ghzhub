@@ -281,7 +281,7 @@ public class HzContractController extends BaseController
         if (flowId != null && !flowId.isEmpty()) {
             try {
                 String freshUrl = esignService.getSignedPdfUrl(flowId);
-                return success(freshUrl);
+                return AjaxResult.success(freshUrl);
             } catch (Exception e) {
                 logger.error("获取合同PDF链接失败，contractId={}, flowId={}", contractId, flowId, e);
                 return error("获取 PDF 链接失败：" + e.getMessage());
@@ -291,7 +291,7 @@ public class HzContractController extends BaseController
         // 无 flowId：尝试 contractContent 是否本身为 URL（旧数据）
         String content = contract.getContractContent();
         if (content != null && content.startsWith("http")) {
-            return success(content);
+            return AjaxResult.success(content);
         }
 
         return error("该合同暂无电子 PDF");

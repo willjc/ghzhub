@@ -977,14 +977,14 @@ public class HzContractAppController extends BaseController {
             // 无 flowId：合同内容本身就是 URL（旧模式），直接返回
             String content = contract.getContractContent();
             if (content != null && content.startsWith("http")) {
-                return success(content);
+                return AjaxResult.success(content);
             }
             return error("合同尚未完成电子签署");
         }
 
         try {
             String freshUrl = esignService.getSignedPdfUrl(flowId);
-            return success(freshUrl);
+            return AjaxResult.success(freshUrl);
         } catch (Exception e) {
             logger.error("获取合同 PDF 链接失败，contractId={}, flowId={}", contractId, flowId, e);
             return error("获取 PDF 链接失败：" + e.getMessage());
