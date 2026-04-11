@@ -156,6 +156,7 @@
 
 <script>
 	import { getMyContracts, getContractPdfUrl } from '@/api/contract.js'
+	import config from '@/config/index'
 	import authCheck from '@/mixins/authCheck'
 
 	export default {
@@ -253,11 +254,15 @@
 				// #endif
 
 				// #ifdef MP-WEIXIN
-				// 小程序：先尝试 downloadFile + openDocument；
-				// 若下载失败则回退到 web-view 预览
-				uni.showLoading({ title: '加载中...' })
+				// 小程序：通过后端代理接口下载 PDF，避免 e签宝 CDN 域名不在白名单问题
+				const token = uni.getStorageSync('token') || ''
+				const proxyUrl = config.baseUrl + `/h5/app/contract/${item.contractId}/download-pdf`
+				uni.showLoading({ title: '加载合同...' })
 				uni.downloadFile({
-					url: pdfUrl,
+					url: proxyUrl,
+					header: {
+						'Authorization': token ? `Bearer ${token}` : ''
+					},
 					success: (dlRes) => {
 						uni.hideLoading()
 						if (dlRes.statusCode === 200) {
@@ -265,26 +270,19 @@
 								filePath: dlRes.tempFilePath,
 								fileType: 'pdf',
 								showMenu: true,
-								fail: () => {
-									// openDocument 失败，降级用 web-view 打开
-									uni.navigateTo({
-										url: '/pages/auth/esign-webview?url=' + encodeURIComponent(pdfUrl)
-									})
+								fail: (err) => {
+									console.error('openDocument 失败', err)
+									uni.showToast({ title: '无法打开PDF，请稍后重试', icon: 'none' })
 								}
 							})
 						} else {
-							// 非 200，降级用 web-view
-							uni.navigateTo({
-								url: '/pages/auth/esign-webview?url=' + encodeURIComponent(pdfUrl)
-							})
+							uni.showToast({ title: '下载失败(状态码:' + dlRes.statusCode + ')，请重试', icon: 'none' })
 						}
 					},
-					fail: () => {
+					fail: (err) => {
 						uni.hideLoading()
-						// 下载失败，降级用 web-view
-						uni.navigateTo({
-							url: '/pages/auth/esign-webview?url=' + encodeURIComponent(pdfUrl)
-						})
+						console.error('downloadFile 失败', err)
+						uni.showToast({ title: '网络错误，请检查网络后重试', icon: 'none' })
 					}
 				})
 				// #endif
