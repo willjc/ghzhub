@@ -267,4 +267,33 @@ public class HzContractController extends BaseController
             default:  return "未知";
         }
     }
+
+    /**
+     * 获取合同电子 PDF 查看链接（管理端专用，实时刷新 e签宝 临时链接）
+     */
+    @GetMapping("/{contractId}/pdf-url")
+    @PreAuthorize("@ss.hasPermi('gangzhu:contract:query')")
+    public AjaxResult getContractPdfUrl(@PathVariable Long contractId) {
+        HzContract contract = contractService.selectContractById(contractId);
+        if (contract == null) return error("合同不存在");
+
+        String flowId = contract.getEsignFlowId();
+        if (flowId != null && !flowId.isEmpty()) {
+            try {
+                String freshUrl = esignService.getSignedPdfUrl(flowId);
+                return success(freshUrl);
+            } catch (Exception e) {
+                logger.error("获取合同PDF链接失败，contractId={}, flowId={}", contractId, flowId, e);
+                return error("获取 PDF 链接失败：" + e.getMessage());
+            }
+        }
+
+        // 无 flowId：尝试 contractContent 是否本身为 URL（旧数据）
+        String content = contract.getContractContent();
+        if (content != null && content.startsWith("http")) {
+            return success(content);
+        }
+
+        return error("该合同暂无电子 PDF");
+    }
 }
