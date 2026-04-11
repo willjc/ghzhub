@@ -108,6 +108,7 @@ public class WechatPayController extends BaseController {
         Map<String, String> resp = new HashMap<>();
         try {
             byte[] body = request.getInputStream().readAllBytes();
+            logger.info("【微信回调】收到通知，body长度={}", body.length);
 
             Map<String, String> headers = new HashMap<>();
             Enumeration<String> headerNames = request.getHeaderNames();
@@ -115,15 +116,18 @@ public class WechatPayController extends BaseController {
                 String name = headerNames.nextElement();
                 headers.put(name, request.getHeader(name));
             }
+            logger.info("【微信回调】Wechatpay-Serial={}, Wechatpay-Timestamp={}",
+                    headers.get("wechatpay-serial"), headers.get("wechatpay-timestamp"));
 
             Map<String, Object> notifyData = wechatPayService.parseNotify(body, headers);
+            logger.info("【微信回调】验签+解密成功，notifyData={}", notifyData);
 
             String tradeState    = (String) notifyData.get("trade_state");
             String outTradeNo    = (String) notifyData.get("out_trade_no");
             String transactionId = (String) notifyData.get("transaction_id");
 
             if (!"SUCCESS".equals(tradeState)) {
-                logger.warn("微信支付未成功，tradeState={}, outTradeNo={}", tradeState, outTradeNo);
+                logger.warn("【微信回调】支付未成功，tradeState={}, outTradeNo={}", tradeState, outTradeNo);
                 resp.put("code", "SUCCESS");
                 resp.put("message", "成功");
                 return ResponseEntity.ok(resp);
@@ -135,7 +139,17 @@ public class WechatPayController extends BaseController {
                    .last("LIMIT 1");
             HzBill bill = billMapper.selectOne(wrapper);
 
-            if (bill != null && !"1".equals(bill.getBillStatus())) {
+            if (bill == null) {
+                logger.error("【微信回调】按 billNo={} 查不到账单，请检查 out_trade_no 是否与 hz_bill.bill_no 一致", outTradeNo);
+                // 仍返回 SUCCESS 防止微信无限重试
+                resp.put("code", "SUCCESS");
+                resp.put("message", "成功");
+                return ResponseEntity.ok(resp);
+            }
+
+            if ("1".equals(bill.getBillStatus())) {
+                logger.info("【微信回调】账单已支付（幂等），outTradeNo={}", outTradeNo);
+            } else {
                 bill.setBillStatus("1");
                 bill.setPaidAmount(bill.getBillAmount());
                 bill.setUnpaidAmount(BigDecimal.ZERO);
@@ -143,13 +157,17 @@ public class WechatPayController extends BaseController {
                 bill.setPayMethod("wechat");
                 bill.setTransactionNo(transactionId);
                 billMapper.updateById(bill);
+                logger.info("【微信回调】账单状态已更新为已支付，billId={}, outTradeNo={}", bill.getBillId(), outTradeNo);
 
-                // 如果是押金账单（billType=1），通知订单服务
-                if ("1".equals(bill.getBillType()) && bill.getOrderNo() != null) {
-                    houseOrderService.onDepositPaid(bill.getOrderNo());
+                // 押金账单 → 触发订单状态推进 + 房源状态更新
+                if ("1".equals(bill.getBillType())) {
+                    if (bill.getOrderNo() != null) {
+                        houseOrderService.onDepositPaid(bill.getOrderNo());
+                        logger.info("【微信回调】押金账单已触发 onDepositPaid，orderNo={}", bill.getOrderNo());
+                    } else {
+                        logger.warn("【微信回调】押金账单 billId={} 没有 orderNo，跳过订单状态推进（直签合同无订单属正常）", bill.getBillId());
+                    }
                 }
-
-                logger.info("微信支付回调处理成功，outTradeNo={}", outTradeNo);
             }
 
             resp.put("code", "SUCCESS");
@@ -157,7 +175,7 @@ public class WechatPayController extends BaseController {
             return ResponseEntity.ok(resp);
 
         } catch (Exception e) {
-            logger.error("微信支付回调处理失败", e);
+            logger.error("【微信回调】处理失败，原因：{}", e.getMessage(), e);
             resp.put("code", "FAIL");
             resp.put("message", "处理失败");
             return ResponseEntity.status(500).body(resp);

@@ -193,6 +193,14 @@ public class HzHouseOrderServiceImpl
         }
         order.setUpdateTime(new Date());
         updateById(order);
+
+        // 押金缴清后，房源状态从「已预订(1)」更新为「已出租(2)」
+        if (order.getHouseId() != null) {
+            houseMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<HzHouse>()
+                    .eq(HzHouse::getHouseId, order.getHouseId())
+                    .eq(HzHouse::getHouseStatus, "1")  // 只在「已预订」状态下才更新，防止误改
+                    .set(HzHouse::getHouseStatus, "2")); // 2=已出租
+        }
     }
 
     @Override

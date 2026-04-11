@@ -539,6 +539,12 @@ public class EsignServiceImpl implements EsignService {
         }
 
         // 1. 生成押金账单
+        // 查询关联预订单，将 orderNo 写入押金账单，微信支付回调时依赖此字段更新订单状态
+        HzHouseOrder relatedOrder = orderMapper.selectOne(new LambdaQueryWrapper<HzHouseOrder>()
+                .eq(HzHouseOrder::getContractId, contract.getContractId())
+                .eq(HzHouseOrder::getDelFlag, "0")
+                .last("LIMIT 1"));
+
         HzBill depositBill = new HzBill();
         depositBill.setBillNo("YJ" + DateUtils.dateTimeNow(DateUtils.YYYYMMDDHHMMSS));
         depositBill.setContractId(contract.getContractId());
@@ -556,6 +562,10 @@ public class EsignServiceImpl implements EsignService {
         depositBill.setLateFee(BigDecimal.ZERO);
         depositBill.setBillStatus("0");  // 0=待支付
         depositBill.setDelFlag("0");
+        // 关联预订单号，微信回调时通过此字段触发 onDepositPaid
+        if (relatedOrder != null) {
+            depositBill.setOrderNo(relatedOrder.getOrderNo());
+        }
         billMapper.insert(depositBill);
 
         // 2. 生成租金账单
