@@ -224,9 +224,9 @@
 				this.currentTab = tab
 			},
 
-			// 查看已签合同PDF（先刷新 e签宝 临时链接，再下载）
+			// 查看已签合同PDF（实时刷新 e签宝 临时链接）
 			async openContractPdf(item) {
-				if (!item.contractContent && !item.contractId) {
+				if (!item.contractId) {
 					uni.showToast({ title: '合同尚未生成，请稍后再试', icon: 'none' })
 					return
 				}
@@ -234,10 +234,10 @@
 				let pdfUrl = ''
 				try {
 					const res = await getContractPdfUrl(item.contractId)
+					uni.hideLoading()
 					if (res.code === 200 && res.data) {
 						pdfUrl = res.data
 					} else {
-						uni.hideLoading()
 						uni.showToast({ title: res.msg || '获取链接失败', icon: 'none' })
 						return
 					}
@@ -246,32 +246,45 @@
 					uni.showToast({ title: '获取链接失败，请重试', icon: 'none' })
 					return
 				}
+
 				// #ifdef H5
-				uni.hideLoading()
-				window.open(pdfUrl, '_blank')
+				// H5：直接跳转到 PDF 链接，微信浏览器会触发预览或下载
+				window.location.href = pdfUrl
 				// #endif
+
 				// #ifdef MP-WEIXIN
-				uni.showLoading({ title: '下载中...' })
+				// 小程序：先尝试 downloadFile + openDocument；
+				// 若下载失败则回退到 web-view 预览
+				uni.showLoading({ title: '加载中...' })
 				uni.downloadFile({
 					url: pdfUrl,
-					success: (res) => {
+					success: (dlRes) => {
 						uni.hideLoading()
-						if (res.statusCode === 200) {
+						if (dlRes.statusCode === 200) {
 							uni.openDocument({
-								filePath: res.tempFilePath,
+								filePath: dlRes.tempFilePath,
 								fileType: 'pdf',
 								showMenu: true,
 								fail: () => {
-									uni.showToast({ title: '打开失败，请稍后重试', icon: 'none' })
+									// openDocument 失败，降级用 web-view 打开
+									uni.navigateTo({
+										url: '/pages/auth/esign-webview?url=' + encodeURIComponent(pdfUrl)
+									})
 								}
 							})
 						} else {
-							uni.showToast({ title: '下载失败：' + res.statusCode, icon: 'none' })
+							// 非 200，降级用 web-view
+							uni.navigateTo({
+								url: '/pages/auth/esign-webview?url=' + encodeURIComponent(pdfUrl)
+							})
 						}
 					},
 					fail: () => {
 						uni.hideLoading()
-						uni.showToast({ title: '下载失败，请检查网络', icon: 'none' })
+						// 下载失败，降级用 web-view
+						uni.navigateTo({
+							url: '/pages/auth/esign-webview?url=' + encodeURIComponent(pdfUrl)
+						})
 					}
 				})
 				// #endif
