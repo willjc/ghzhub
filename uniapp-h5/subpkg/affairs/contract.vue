@@ -63,7 +63,7 @@
 				</view>
 
 				<!-- 合同详情按钮 -->
-				<view class="info-row last-row" v-if="item.contractContent">
+				<view class="info-row last-row" v-if="item.hasPdf">
 					<text class="info-label">电子合同</text>
 					<view class="btn-contract-detail" @click="openContractPdf(item)">
 						<text class="btn-contract-detail-text">查看合同 ›</text>
@@ -131,7 +131,7 @@
 </template>
 
 <script>
-	import { getMyContracts, getDepositBill, payDeposit } from '@/api/contract.js'
+	import { getMyContracts } from '@/api/contract.js'
 	import authCheck from '@/mixins/authCheck'
 
 	export default {
@@ -239,44 +239,11 @@
 				})
 			},
 
-			// 支付押金
-			async handlePayDeposit(item) {
-				try {
-					uni.showLoading({ title: '加载中...' })
-					const billRes = await getDepositBill(item.contractId)
-					uni.hideLoading()
-					if (billRes.code === 200 && billRes.data) {
-						const bill = billRes.data
-						if (bill.billStatus === '1') {
-							uni.showToast({ title: '押金已支付', icon: 'success' })
-							this.loadContractList()
-							return
-						}
-						uni.showLoading({ title: '发起支付...' })
-						const payRes = await payDeposit({
-							billId: bill.billId,
-							payAmount: bill.amount  // 后端返回字段名为 amount
-						})
-						uni.hideLoading()
-						if (payRes.code === 200) {
-							if (payRes.data && (payRes.data.mwebUrl || payRes.data.h5Url)) {
-								// #ifdef H5
-								window.location.href = payRes.data.mwebUrl || payRes.data.h5Url
-								// #endif
-							} else {
-								uni.showToast({ title: '支付发起成功', icon: 'success' })
-								setTimeout(() => this.loadContractList(), 2000)
-							}
-						} else {
-							uni.showToast({ title: payRes.msg || '支付失败', icon: 'none' })
-						}
-					} else {
-						uni.showToast({ title: billRes.msg || '未找到押金账单', icon: 'none' })
-					}
-				} catch (e) {
-					uni.hideLoading()
-					uni.showToast({ title: e.message || '操作失败', icon: 'none' })
-				}
+			// 支付押金 → 跳转账单页，只展示押金账单
+			handlePayDeposit(item) {
+				uni.navigateTo({
+					url: `/subpkg/affairs/bill?contractId=${item.contractId}&billType=1&depositPaid=0`
+				})
 			},
 
 			// 提交资料
@@ -338,7 +305,9 @@
 						depositPaid: item.deposit_paid === '1',
 						depositAmount: item.deposit || '0',
 						materialSubmitted: item.material_status === '1',
-						contractContent: item.contract_content || '',  // 已签合同PDF链接
+						contractContent: item.contract_content || '',
+						// PDF URL 判断：回调成功后才会写入 https:// 开头的链接
+						hasPdf: item.contract_content && item.contract_content.startsWith('http'),
 				}
 			},
 

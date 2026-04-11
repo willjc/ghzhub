@@ -15,17 +15,19 @@
 		<!-- 账单列表 -->
 		<scroll-view class="scroll-content" scroll-y>
 			<view class="bill-list">
-				<view class="bill-item" v-for="(bill, index) in currentBillList" :key="bill.id" @click="toggleBill(index)">
-					<image 
-						class="bill-checkbox" 
-						:src="bill.selected ? '/static/fangyaun/选中@2x.png' : '/static/fangyaun/未选中@2x.png'" 
+				<view class="bill-item" v-for="(bill, index) in currentBillList" :key="bill.id"
+					@click="!bill.locked && toggleBill(index)">
+					<image
+						class="bill-checkbox"
+						:src="bill.locked ? '/static/fangyaun/未选中@2x.png' : (bill.selected ? '/static/fangyaun/选中@2x.png' : '/static/fangyaun/未选中@2x.png')"
 						mode="aspectFit"
+						:style="bill.locked ? 'opacity:0.3' : ''"
 					></image>
-					<view class="bill-card">
+					<view class="bill-card" :style="bill.locked ? 'opacity:0.45' : ''"  >
 						<view class="bill-header">
 							<text class="bill-title">账单期数：{{ bill.period }}</text>
-							<view class="bill-status" :class="statusClassMap[bill.status] || ''">
-								<text class="status-text" :class="statusClassMap[bill.status] || ''">{{ bill.statusText }}</text>
+							<view class="bill-status" :class="bill.locked ? 'status-locked' : (statusClassMap[bill.status] || '')">
+								<text class="status-text" :class="bill.locked ? 'status-locked' : (statusClassMap[bill.status] || '')">{{ bill.locked ? '需先付押金' : bill.statusText }}</text>
 							</view>
 						</view>
 						<view class="bill-info">
@@ -142,9 +144,15 @@
 				// 当前登录用户信息
 				userId: null,
 
+				// 从合同页传入的参数
+				contractId: null,   // 限定查某合同的账单
+				filterBillType: null, // '1'=只看押金
+				depositPaid: true,   // 押金是否已付（false时租金不可选）
+
 				statusClassMap: {
 					'paid': 'status-paid',
-					'unpaid': 'status-unpaid'
+					'unpaid': 'status-unpaid',
+					'locked': 'status-locked'
 				}
 			}
 		},
@@ -171,9 +179,12 @@
 		onLoad(options) {
 			// 使用统一的登录检查
 			authCheck.checkLogin.call(this, options, (options) => {
-				if (options.type) {
-					this.housingType = options.type
-				}
+				if (options.type) this.housingType = options.type
+				// 从合同页跳来时携带的参数
+				if (options.contractId) this.contractId = parseInt(options.contractId)
+				if (options.billType) this.filterBillType = options.billType
+				// depositPaid=0 表示押金未付，租金账单灰色不可选
+				this.depositPaid = options.depositPaid !== '0'
 				this.loadBillList()
 			})
 		},
@@ -204,10 +215,14 @@
 						const bills = response.data
 						console.log('获取到账单数据:', bills.length, '条')
 
-						// 将数据库账单映射为前端格式
-						const mappedBills = bills.map(bill => this.mapBillToFrontEnd(bill))
+						// 映射并过滤
+						let mappedBills = bills.map(bill => this.mapBillToFrontEnd(bill))
 
-						// 根据支付状态分组
+						// 从合同页跳来时，只显示指定类型账单
+						if (this.filterBillType) {
+							mappedBills = mappedBills.filter(b => b.billType === this.filterBillType)
+						}
+
 						this.billList = mappedBills.filter(bill => bill.status === 'unpaid')
 						this.historyBillList = mappedBills.filter(bill => bill.status === 'paid')
 
@@ -298,14 +313,17 @@
 
 				return {
 					id: bill.billId,
+					billType: bill.billType,
 					period: period,
 					status: status,
 					statusText: statusText,
-					community: bill.projectName || '港好住', // 项目名称作为小区名
-					room: fullRoomNo || '-', // 完整房间号
+					// 押金未付时，租金账单锁定（灰色不可选）
+					locked: !this.depositPaid && bill.billType === '2',
+					community: bill.projectName || '港好住',
+					room: fullRoomNo || '-',
 					amount: parseFloat(bill.billAmount),
 					dateRange: dateRange,
-					selected: false // 默认不选中
+					selected: false
 				}
 			},
 
@@ -353,8 +371,8 @@
 						title: '支付中...'
 					})
 
-					// 获取选中的账单ID
-					const selectedBills = this.billList.filter(bill => bill.selected)
+					// 获取选中且未锁定的账单
+					const selectedBills = this.billList.filter(bill => bill.selected && !bill.locked)
 					const billIds = selectedBills.map(bill => bill.id)
 
 					console.log('支付账单:', billIds)
@@ -515,6 +533,14 @@
 	
 	.bill-status.status-paid {
 		background: rgba(18, 165, 102, 0.1);
+	}
+
+	.bill-status.status-locked {
+		background: rgba(150, 150, 150, 0.1);
+		width: 160rpx;
+	}
+	.status-text.status-locked {
+		color: #aaaaaa;
 	}
 	
 	.status-text {
