@@ -241,7 +241,7 @@ public class HzContractController extends BaseController
     public AjaxResult getContractDocuments(@PathVariable Long contractId) {
         HzContract contract = contractService.selectContractById(contractId);
         if (contract == null) return error("合同不存在");
-        List<HzDocument> docs = documentService.selectDocumentListByTenantId(contract.getTenantId());
+        List<HzDocument> docs = documentService.selectDocumentListByContractId(contractId);
         return success(docs);
     }
 
