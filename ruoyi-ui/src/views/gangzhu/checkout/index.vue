@@ -152,8 +152,8 @@
             <el-form-item label="租户签名">
               <el-image
                 style="width: 200px; height: 100px; border: 1px solid #dcdfe6; border-radius: 4px;"
-                :src="currentForm.tenantSignature && currentForm.tenantSignature.startsWith('data:image') ? currentForm.tenantSignature : 'data:image/png;base64,' + currentForm.tenantSignature"
-                :preview-src-list="[currentForm.tenantSignature && currentForm.tenantSignature.startsWith('data:image') ? currentForm.tenantSignature : 'data:image/png;base64,' + currentForm.tenantSignature]"
+                :src="getImageUrl(currentForm.tenantSignature)"
+                :preview-src-list="[getImageUrl(currentForm.tenantSignature)]"
                 fit="contain"
               />
             </el-form-item>
@@ -580,8 +580,8 @@
         <el-descriptions-item label="租户签字" :span="2">
           <el-image v-if="recordForm.tenantSignature"
                     style="width: 200px; height: 100px;"
-                    :src="recordForm.tenantSignature && recordForm.tenantSignature.startsWith('data:image') ? recordForm.tenantSignature : 'data:image/png;base64,' + recordForm.tenantSignature"
-                    :preview-src-list="[recordForm.tenantSignature && recordForm.tenantSignature.startsWith('data:image') ? recordForm.tenantSignature : 'data:image/png;base64,' + recordForm.tenantSignature]" />
+                    :src="getImageUrl(recordForm.tenantSignature)"
+                    :preview-src-list="[getImageUrl(recordForm.tenantSignature)]" />
           <span v-else>-</span>
         </el-descriptions-item>
       </el-descriptions>
@@ -724,6 +724,13 @@ export default {
     }
   },
   methods: {
+    getImageUrl(url) {
+      if (!url) return '';
+      if (url.startsWith('http://') || url.startsWith('https://')) return url;
+      const baseUrl = process.env.VUE_APP_BASE_API;
+      if (url.indexOf(baseUrl) !== -1) return url;
+      return baseUrl + (url.startsWith('/') ? url : '/' + url);
+    },
     getList() {
       this.loading = true;
       listCheckout(this.queryParams).then(response => {
