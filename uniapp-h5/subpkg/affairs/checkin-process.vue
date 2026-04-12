@@ -72,7 +72,7 @@
 				<view class="form-row">
 					<text class="form-label"><text class="required">*</text>姓名</text>
 					<view class="form-value-wrap">
-						<input class="form-input" type="text" v-model="formData.emergencyName" placeholder="请输入合住人姓名" placeholder-class="placeholder" />
+						<input class="form-input" type="text" v-model="formData.emergencyName" placeholder="请输入紧急联系人姓名" placeholder-class="placeholder" />
 					</view>
 				</view>
 				
@@ -92,13 +92,7 @@
 				</view>
 			</view>
 			
-			<!-- 协议勾选 -->
-			<view class="agreement-row" @click="toggleAgreement">
-				<image class="agreement-icon" :src="agreed ? '/static/fangyaun/选中@2x.png' : '/static/fangyaun/未选中@2x.png'"></image>
-				<text class="agreement-text">我已阅读并同意</text>
-				<text class="agreement-link" @click.stop="viewAgreement">《入住公约》</text>
-			</view>
-		</scroll-view>
+			</scroll-view>
 		
 		<!-- 底部申请按钮 -->
 		<view class="bottom-btn-container">
@@ -166,7 +160,6 @@
 				housingType: '',
 				recordId: '',
 				loading: false,
-				agreed: false,
 
 				// 入住单详情
 				checkinDetail: null,
@@ -314,11 +307,21 @@
 				this.datePickerValue = e.detail.value
 			},
 
-			// 确认日期
+			// 确认日期（不允许选今天之前的日期）
 			confirmDate() {
 				const year = this.years[this.datePickerValue[0]]
 				const month = this.months[this.datePickerValue[1]]
 				const day = this.days[this.datePickerValue[2]]
+
+				// 不允许选今天之前的日期
+				const today = new Date()
+				today.setHours(0, 0, 0, 0)
+				const selected = new Date(year, month - 1, day)
+				if (selected < today) {
+					uni.showToast({ title: '入住日期不能早于今天', icon: 'none' })
+					return
+				}
+
 				const dateStr = `${year}年${month}月${day}日`
 
 				if (this.currentDateField === 'checkinDate') {
@@ -355,18 +358,6 @@
 				this.showRelationPickerPopup = false
 			},
 
-			// 切换协议勾选
-			toggleAgreement() {
-				this.agreed = !this.agreed
-			},
-
-			// 查看协议
-			viewAgreement() {
-				uni.navigateTo({
-					url: '/subpkg/affairs/checkin-agreement'
-				})
-			},
-
 			// 提交申请
 			async handleSubmit() {
 				// 表单验证
@@ -397,14 +388,6 @@
 				if (!this.formData.emergencyPhone) {
 					uni.showToast({
 						title: '请输入紧急联系人联系方式',
-						icon: 'none'
-					})
-					return
-				}
-
-				if (!this.agreed) {
-					uni.showToast({
-						title: '请阅读并同意入住公约',
 						icon: 'none'
 					})
 					return
