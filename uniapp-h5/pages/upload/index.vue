@@ -102,7 +102,7 @@
 						<text class="upload-tip">（毕业证或在读证明）</text>
 					</view>
 					<view class="upload-area" @click="handleEducationUpload">
-						<image v-if="educationFile" :src="getImageUrl(educationFile)" mode="aspectFill" class="uploaded-image"></image>
+						<image v-if="educationFile" :src="educationFile" mode="aspectFill" class="uploaded-image"></image>
 						<view v-else class="upload-placeholder">
 							<image class="upload-icon" src="/static/上传@2x.png"></image>
 							<text class="upload-text">点击上传</text>
