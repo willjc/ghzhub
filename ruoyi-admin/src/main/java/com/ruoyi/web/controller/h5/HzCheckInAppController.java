@@ -12,6 +12,10 @@ import com.ruoyi.system.mapper.HzUserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import com.ruoyi.system.domain.HzCoTenant;
+import com.ruoyi.system.service.IHzCoTenantService;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.math.BigDecimal;
@@ -40,6 +44,9 @@ public class HzCheckInAppController extends BaseController {
 
     @Autowired
     private HzCheckInMapper checkInMapper;
+
+    @Autowired
+    private IHzCoTenantService coTenantService;
 
     /**
      * 获取用户的房源列表（用于用户端"我的房源"页面）
@@ -275,6 +282,31 @@ public class HzCheckInAppController extends BaseController {
             int result = checkInService.updateCheckIn(checkIn);
 
             if (result > 0) {
+                // 同步写入 hz_co_tenant 表（若有合住人信息）
+                String roommateJson = checkIn.getRoommateInfo();
+                if (roommateJson != null && !roommateJson.isEmpty()) {
+                    try {
+                        Gson gson = new Gson();
+                        java.lang.reflect.Type listType = new TypeToken<List<Map<String, Object>>>(){}.getType();
+                        List<Map<String, Object>> roommates = gson.fromJson(roommateJson, listType);
+                        if (roommates != null) {
+                            for (Map<String, Object> rm : roommates) {
+                                String name = rm.get("name") != null ? rm.get("name").toString() : "";
+                                if (name.isEmpty()) continue; // 没有姓名则跳过
+                                HzCoTenant coTenant = new HzCoTenant();
+                                coTenant.setContractId(checkIn.getContractId());
+                                coTenant.setTenantName(name);
+                                coTenant.setRelationship(rm.get("relation") != null ? rm.get("relation").toString() : "");
+                                coTenant.setStatus("0"); // 待审核
+                                coTenant.setCreateBy(checkIn.getTenantNickname() != null ? checkIn.getTenantNickname() : "");
+                                coTenant.setCreateTime(DateUtils.getNowDate());
+                                coTenantService.insertCoTenant(coTenant);
+                            }
+                        }
+                    } catch (Exception ex) {
+                        logger.warn("同步合住人到hz_co_tenant失败（不影响主流程）: {}", ex.getMessage());
+                    }
+                }
                 return success("入住办理提交成功，等待管理员审核");
             } else {
                 return error("提交失败");
