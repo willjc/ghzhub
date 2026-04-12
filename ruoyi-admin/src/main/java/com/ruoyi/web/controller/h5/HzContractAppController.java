@@ -118,11 +118,12 @@ public class HzContractAppController extends BaseController {
                 contract.put("signed_date", contract.get("update_time"));
             }
             // 动态查询资料审核状态：0=未提交, 1=审核中, 2=已通过
-            Object tenantIdObj = contract.get("tenant_id");
+            // 按合同维度查，每个合同独立判断，不跨合同共享
+            Object _contractIdObj = contract.get("contract_id");
             String materialStatus = "0";
-            if (tenantIdObj != null) {
-                Long tId = Long.parseLong(tenantIdObj.toString());
-                List<com.ruoyi.system.domain.HzDocument> docs = documentService.selectDocumentListByTenantId(tId);
+            if (_contractIdObj != null) {
+                Long cId = Long.parseLong(_contractIdObj.toString());
+                List<com.ruoyi.system.domain.HzDocument> docs = documentService.selectDocumentListByContractId(cId);
                 if (docs != null && !docs.isEmpty()) {
                     boolean allApproved = docs.stream().allMatch(d -> "1".equals(d.getAuditStatus()));
                     boolean anyPending  = docs.stream().anyMatch(d -> "0".equals(d.getAuditStatus()));

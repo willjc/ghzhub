@@ -88,7 +88,8 @@ public class HzDocumentController extends BaseController {
     public AjaxResult upload(
             MultipartFile file,
             @RequestParam(required = false) String documentType,
-            @RequestParam(required = false) Long tenantId) {
+            @RequestParam(required = false) Long tenantId,
+            @RequestParam(required = false) Long contractId) {
         if (file == null || file.isEmpty()) {
             return error("请选择要上传的文件");
         }
@@ -108,6 +109,9 @@ public class HzDocumentController extends BaseController {
             document.setAuditStatus("0");  // 待审核
             document.setDelFlag("0");
             document.setCreateTime(new java.util.Date());
+            if (contractId != null) {
+                document.setContractId(contractId);
+            }
 
             int result = documentService.insertDocument(document);
             if (result > 0) {

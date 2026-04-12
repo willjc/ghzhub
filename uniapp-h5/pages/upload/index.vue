@@ -130,7 +130,8 @@ import authCheck from '@/mixins/authCheck'
 export default {
 	data() {
 		return {
-			userId: null, // 当前用户ID（临时存储，后期从token获取）
+			userId: null,
+			contractId: null, // 从合同页跳转时传入，上传资料时关联合同
 			formData: {
 				identity: '',      // 人员身份
 				name: '',          // 姓名
@@ -151,6 +152,9 @@ export default {
 	onLoad(options) {
 		// 使用统一的登录检查
 		authCheck.checkLogin.call(this, options, () => {
+			if (options.contractId) {
+				this.contractId = options.contractId
+			}
 			this.loadUserInfo()
 			this.loadPendingOrders()
 		})
@@ -358,7 +362,7 @@ export default {
 					url: config.baseUrl + '/h5/document/upload',
 					filePath,
 					name: 'file',
-					formData: { documentType, tenantId: this.userId },
+					formData: { documentType, tenantId: this.userId, contractId: this.contractId },
 					header: {
 						'Authorization': token ? ('Bearer ' + token) : ''
 					},

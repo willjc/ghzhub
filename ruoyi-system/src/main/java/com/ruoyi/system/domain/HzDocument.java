@@ -25,6 +25,10 @@ public class HzDocument extends BaseEntity {
     @TableField("tenant_id")
     private Long tenantId;
 
+    /** 关联合同ID */
+    @TableField("contract_id")
+    private Long contractId;
+
     /** 文档类型(1:身份证 2:学历证明 3:工作证明 4:收入证明 5:人才证书 6:其他) */
     @TableField("document_type")
     private String documentType;
@@ -79,6 +83,14 @@ public class HzDocument extends BaseEntity {
 
     public Long getTenantId() {
         return tenantId;
+    }
+
+    public void setContractId(Long contractId) {
+        this.contractId = contractId;
+    }
+
+    public Long getContractId() {
+        return contractId;
     }
 
     public void setDocumentType(String documentType) {

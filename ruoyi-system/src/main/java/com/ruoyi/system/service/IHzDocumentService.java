@@ -29,6 +29,14 @@ public interface IHzDocumentService {
     public List<HzDocument> selectDocumentListByTenantId(Long tenantId);
 
     /**
+     * 根据合同ID查询资料文档列表
+     *
+     * @param contractId 合同ID
+     * @return 资料文档列表
+     */
+    public List<HzDocument> selectDocumentListByContractId(Long contractId);
+
+    /**
      * 根据租户ID和文档类型查询资料文档
      *
      * @param tenantId 租户ID

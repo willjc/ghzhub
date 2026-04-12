@@ -36,6 +36,15 @@ public class HzDocumentServiceImpl extends ServiceImpl<HzDocumentMapper, HzDocum
     }
 
     @Override
+    public List<HzDocument> selectDocumentListByContractId(Long contractId) {
+        LambdaQueryWrapper<HzDocument> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(HzDocument::getContractId, contractId)
+               .eq(HzDocument::getDelFlag, "0")
+               .orderByDesc(HzDocument::getCreateTime);
+        return this.list(wrapper);
+    }
+
+    @Override
     public List<HzDocument> selectDocumentListByTenantIdAndType(Long tenantId, String documentType) {
         LambdaQueryWrapper<HzDocument> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzDocument::getTenantId, tenantId)
