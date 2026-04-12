@@ -177,7 +177,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 AND b.bill_status = #{billStatus}
             </if>
         </where>
-        ORDER BY b.bill_date DESC
+        ORDER BY b.bill_date ASC
     </select>
 
 </mapper>
