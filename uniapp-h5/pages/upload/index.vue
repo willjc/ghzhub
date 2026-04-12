@@ -80,7 +80,7 @@
 
 					<!-- 上传区域 -->
 					<view class="upload-area" @click="handleUpload">
-						<image v-if="uploadedFile" class="uploaded-image" :src="uploadedFile" mode="aspectFill"></image>
+						<image v-if="workFile" class="uploaded-image" :src="workFile" mode="aspectFill"></image>
 						<view v-else class="upload-placeholder">
 							<image class="upload-icon" src="/static/上传@2x.png"></image>
 							<text class="upload-text">点击上传</text>
@@ -122,7 +122,7 @@
 </template>
 
 <script>
-import { getUserInfo, uploadWorkProof } from '@/api/user'
+import { getUserInfo } from '@/api/user'
 import { getPendingUploadOrders } from '@/api/order'
 import config from '@/config/index'
 import authCheck from '@/mixins/authCheck'
@@ -133,19 +133,20 @@ export default {
 			userId: null,
 			contractId: null, // 从合同页跳转时传入，上传资料时关联合同
 			formData: {
-				identity: '',      // 人员身份
-				name: '',          // 姓名
-				idCard: '',        // 身份证号
-				phone: '',         // 联系电话
-				workUnit: '',      // 工作单位
-				unitPhone: '',     // 单位联系电话
-				spouse: ''         // 配偶
+				identity: '',
+				name: '',
+				idCard: '',
+				phone: '',
+				workUnit: '',
+				unitPhone: '',
+				spouse: ''
 			},
-			uploadedFile: '',
+			// 工作证明：只存本地临时路径，不立即上传
+			workFile: null,        // 本地临时路径（用于预览和提交时上传）
+			// 学历证明：只存本地临时路径，不立即上传
+			educationFile: null,   // 本地临时路径（用于预览和提交时上传）
 			loading: false,
 			pendingOrders: [],
-			educationFile: null,
-			educationUploaded: false,
 			_countdownTimer: null,
 		}
 	},
@@ -189,7 +190,7 @@ export default {
 
 					// 如果已有工作证明附件，显示
 					if (user.workProofAttachment) {
-						this.uploadedFile = this.getImageUrl(user.workProofAttachment)
+						this.workFile = this.getImageUrl(user.workProofAttachment)
 					}
 				} else {
 					uni.showToast({
@@ -233,75 +234,82 @@ export default {
 			return baseUrl + (url.startsWith('/') ? url : '/' + url)
 		},
 
+		// 工作证明：只选图，不上传，仅本地预览
 		handleUpload() {
 			uni.chooseImage({
 				count: 1,
 				sizeType: ['compressed'],
 				sourceType: ['album', 'camera'],
-				success: async (res) => {
-					try {
-						this.uploadedFile = res.tempFilePaths[0]
-
-						// 立即上传到服务器
-						uni.showLoading({ title: '上传中...' })
-						const uploadRes = await uploadWorkProof(res.tempFilePaths[0], this.userId)
-
-						uni.hideLoading()
-
-						if (uploadRes.code === 200 || uploadRes.fileName) {
-							uni.showToast({
-								title: '上传成功',
-								icon: 'success'
-							})
-							// 更新显示的图片为服务器路径
-							if (uploadRes.fileName) {
-								this.uploadedFile = this.getImageUrl(uploadRes.fileName)
-							}
-						}
-					} catch (err) {
-						uni.hideLoading()
-						console.error('上传失败:', err)
-					}
+				success: (res) => {
+					this.workFile = res.tempFilePaths[0]
 				},
 				fail: (err) => {
 					console.error('选择图片失败:', err)
-					uni.showToast({
-						title: '选择图片失败',
-						icon: 'none'
-					})
+					uni.showToast({ title: '选择图片失败', icon: 'none' })
 				}
 			})
 		},
 		downloadTemplate() {
-			// 下载模版逻辑
-			console.log('下载工作证明模版')
-			uni.showToast({
-				title: '模版下载功能待实现',
-				icon: 'none'
+			uni.showToast({ title: '模版下载功能待实现', icon: 'none' })
+		},
+		// 学历证明：只选图，不上传，仅本地预览
+		handleEducationUpload() {
+			uni.chooseImage({
+				count: 1,
+				sizeType: ['compressed'],
+				sourceType: ['album', 'camera'],
+				success: (res) => {
+					this.educationFile = res.tempFilePaths[0]
+				},
+				fail: (err) => {
+					console.error('选择图片失败:', err)
+					uni.showToast({ title: '选择图片失败', icon: 'none' })
+				}
 			})
 		},
-		handleSubmit() {
-			if (!this.uploadedFile) {
-				uni.showToast({
-					title: '请上传工作证明',
-					icon: 'none'
-				})
+		// 提交材料：两个文件都选好后，点击才上传入库
+		async handleSubmit() {
+			if (!this.workFile) {
+				uni.showToast({ title: '请上传工作证明', icon: 'none' })
 				return
 			}
 			if (!this.educationFile) {
 				uni.showToast({ title: '请上传学历证明', icon: 'none' })
 				return
 			}
-			// 提交逻辑（文件已在handleUpload中上传到服务器）
-			uni.showToast({
-				title: '提交成功',
-				icon: 'success'
-			})
-			setTimeout(() => {
-				uni.switchTab({
-					url: '/pages/index/index'
-				})
-			}, 1500)
+			if (!this.contractId) {
+				uni.showToast({ title: '缺少合同信息，请返回合同页重新进入', icon: 'none' })
+				return
+			}
+
+			try {
+				uni.showLoading({ title: '提交中...' })
+
+				// 依次上传工作证明（type=3）和学历证明（type=2）
+				const workRes = await this.uploadFile(this.workFile, '3')
+				if (!workRes || workRes.code !== 200) {
+					uni.hideLoading()
+					uni.showToast({ title: workRes?.msg || '工作证明上传失败', icon: 'none' })
+					return
+				}
+
+				const eduRes = await this.uploadFile(this.educationFile, '2')
+				if (!eduRes || eduRes.code !== 200) {
+					uni.hideLoading()
+					uni.showToast({ title: eduRes?.msg || '学历证明上传失败', icon: 'none' })
+					return
+				}
+
+				uni.hideLoading()
+				uni.showToast({ title: '提交成功', icon: 'success' })
+				setTimeout(() => {
+					uni.navigateBack()
+				}, 1500)
+			} catch (e) {
+				uni.hideLoading()
+				console.error('提交失败:', e)
+				uni.showToast({ title: '提交失败，请重试', icon: 'none' })
+			}
 		},
 		async loadPendingOrders() {
 			try {
@@ -328,32 +336,6 @@ export default {
 			const m = Math.floor((seconds % 3600) / 60)
 			const s = seconds % 60
 			return `${h}时${m}分${s}秒`
-		},
-		async handleEducationUpload() {
-			uni.chooseImage({
-				count: 1,
-				sizeType: ['compressed'],
-				sourceType: ['album', 'camera'],
-				success: async (res) => {
-					try {
-						uni.showLoading({ title: '上传中...' })
-						const uploadRes = await this.uploadFile(res.tempFilePaths[0], '2')
-						uni.hideLoading()
-						if (uploadRes && uploadRes.code === 200) {
-							this.educationFile = res.tempFilePaths[0]
-							this.educationUploaded = true
-							uni.showToast({ title: '学历证明上传成功', icon: 'success' })
-						} else {
-							const msg = (uploadRes && uploadRes.msg) ? uploadRes.msg : '上传失败，请重试'
-							uni.showToast({ title: msg, icon: 'none' })
-						}
-					} catch (e) {
-						uni.hideLoading()
-						console.error('学历证明上传失败:', e)
-						uni.showToast({ title: '上传失败，请检查网络', icon: 'none' })
-					}
-				}
-			})
 		},
 		async uploadFile(filePath, documentType) {
 			return new Promise((resolve) => {
