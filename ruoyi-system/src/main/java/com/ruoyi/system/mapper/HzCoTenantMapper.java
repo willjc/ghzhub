@@ -88,4 +88,21 @@ public interface HzCoTenantMapper extends BaseMapper<HzCoTenant> {
             "ORDER BY t.create_time DESC" +
             "</script>")
     List<HzCoTenant> selectCoTenantListWithRelations(HzCoTenant coTenant);
+
+    /**
+     * 根据租户ID（hz_contract.tenant_id）查询合租户列表
+     */
+    @Select("SELECT " +
+            "  t.co_tenant_id, t.contract_id, t.tenant_name, t.id_card, t.phone, " +
+            "  t.relationship, t.status, " +
+            "  t.create_by, t.create_time AS applyTime, t.update_by, t.update_time, t.remark, t.del_flag, " +
+            "  c.contract_no AS contractNo, " +
+            "  c.house_address AS roomAddress, " +
+            "  c.tenant_name AS mainTenantName, " +
+            "  c.tenant_phone AS mainTenantPhone " +
+            "FROM hz_co_tenant t " +
+            "LEFT JOIN hz_contract c ON t.contract_id = c.contract_id " +
+            "WHERE t.del_flag = '0' AND c.tenant_id = #{tenantId} AND c.del_flag = '0' " +
+            "ORDER BY t.create_time DESC")
+    List<HzCoTenant> selectCoTenantListByTenantId(@Param("tenantId") Long tenantId);
 }

@@ -29,10 +29,7 @@ public class HzCoTenantServiceImpl extends ServiceImpl<HzCoTenantMapper, HzCoTen
 
     @Override
     public List<HzCoTenant> selectCoTenantListByTenantId(Long tenantId) {
-        HzCoTenant query = new HzCoTenant();
-        // TODO: 通过 tenantId 先查询关联的合同，然后查询合租户
-        // 目前简单查询所有记录
-        return baseMapper.selectCoTenantListWithRelations(query);
+        return baseMapper.selectCoTenantListByTenantId(tenantId);
     }
 
     @Override
