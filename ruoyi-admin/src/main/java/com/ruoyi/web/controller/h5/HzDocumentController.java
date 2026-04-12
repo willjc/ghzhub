@@ -107,6 +107,7 @@ public class HzDocumentController extends BaseController {
             document.setFileSize(file.getSize());
             document.setAuditStatus("0");  // 待审核
             document.setDelFlag("0");
+            document.setCreateTime(new java.util.Date());
 
             int result = documentService.insertDocument(document);
             if (result > 0) {
@@ -161,15 +162,9 @@ public class HzDocumentController extends BaseController {
      */
     @GetMapping("/status/{userId}")
     public AjaxResult getDocumentStatus(@PathVariable Long userId) {
-        HzTenant tenant = tenantService.selectTenantByUserId(userId);
+        // hz_document.tenant_id 直接存储 hz_user.user_id，不经过 hz_tenant
         Map<String, Object> result = new HashMap<>();
-        if (tenant == null) {
-            result.put("submitted", false);
-            result.put("count", 0);
-            result.put("approved", false);
-            return success(result);
-        }
-        List<HzDocument> docs = documentService.selectDocumentListByTenantId(tenant.getTenantId());
+        List<HzDocument> docs = documentService.selectDocumentListByTenantId(userId);
         int count = docs != null ? docs.size() : 0;
         boolean approved = docs != null && docs.stream().anyMatch(d -> "1".equals(d.getAuditStatus()));
         result.put("submitted", count > 0);
