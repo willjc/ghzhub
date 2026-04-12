@@ -48,9 +48,9 @@
 <script>
 // #ifdef H5
 import SmoothSignature from 'smooth-signature'
+// #endif
 import { submitCheckInConfirm } from '@/api/checkin.js'
 import { submitCheckoutConfirm, submitCheckoutApply } from '@/api/checkout.js'
-// #endif
 
 export default {
 	data() {
