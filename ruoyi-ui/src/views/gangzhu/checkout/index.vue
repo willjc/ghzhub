@@ -147,7 +147,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row v-if="currentForm.tenantSignature">
+        <el-row v-if="getImageUrl(currentForm.tenantSignature)">
           <el-col :span="24">
             <el-form-item label="租户签名">
               <el-image
@@ -578,7 +578,7 @@
           {{ recordForm.refundTime || '-' }}
         </el-descriptions-item>
         <el-descriptions-item label="租户签字" :span="2">
-          <el-image v-if="recordForm.tenantSignature"
+          <el-image v-if="getImageUrl(recordForm.tenantSignature)"
                     style="width: 200px; height: 100px;"
                     :src="getImageUrl(recordForm.tenantSignature)"
                     :preview-src-list="[getImageUrl(recordForm.tenantSignature)]" />
@@ -726,6 +726,8 @@ export default {
   methods: {
     getImageUrl(url) {
       if (!url) return '';
+      // 微信小程序临时路径（http://tmp/...），会话结束后即失效，无法在浏览器中访问
+      if (url.startsWith('http://tmp/')) return '';
       if (url.startsWith('http://') || url.startsWith('https://')) return url;
       const baseUrl = process.env.VUE_APP_BASE_API;
       if (url.indexOf(baseUrl) !== -1) return url;
