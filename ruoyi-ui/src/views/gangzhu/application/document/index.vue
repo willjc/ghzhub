@@ -453,18 +453,31 @@ export default {
   line-height: 1.8;
 }
 
+/* Quill 生成的 <p> 标签需要显式加间距，否则 Element UI 的 reset 会归零 */
+.detail-content >>> p {
+  margin-bottom: 0.8em;
+  min-height: 1em;
+}
+
+.detail-content >>> h1,
 .detail-content >>> h2,
 .detail-content >>> h3 {
-  margin-top: 15px;
-  margin-bottom: 10px;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-weight: bold;
 }
 
 .detail-content >>> ol,
 .detail-content >>> ul {
   padding-left: 30px;
+  margin-bottom: 0.8em;
 }
 
 .detail-content >>> li {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+}
+
+.detail-content >>> strong {
+  font-weight: bold;
 }
 </style>
