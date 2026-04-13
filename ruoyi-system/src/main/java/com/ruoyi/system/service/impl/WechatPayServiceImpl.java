@@ -13,6 +13,10 @@ import com.wechat.pay.java.service.payments.jsapi.model.Payer;
 import com.wechat.pay.java.service.payments.jsapi.model.PrepayWithRequestPaymentResponse;
 import com.wechat.pay.java.service.payments.jsapi.model.QueryOrderByOutTradeNoRequest;
 import com.wechat.pay.java.service.payments.model.Transaction;
+import com.wechat.pay.java.service.refund.RefundService;
+import com.wechat.pay.java.service.refund.model.AmountReq;
+import com.wechat.pay.java.service.refund.model.CreateRequest;
+import com.wechat.pay.java.service.refund.model.Refund;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,13 +45,16 @@ public class WechatPayServiceImpl implements WechatPayService {
     private final JsapiServiceExtension jsapiService;
     private final H5Service h5Service;
     private final RSAPublicKeyConfig rsaConfig;
+    private final RefundService refundService;
 
     public WechatPayServiceImpl(JsapiServiceExtension jsapiService,
                                 H5Service h5Service,
-                                RSAPublicKeyConfig rsaConfig) {
+                                RSAPublicKeyConfig rsaConfig,
+                                RefundService refundService) {
         this.jsapiService = jsapiService;
         this.h5Service = h5Service;
         this.rsaConfig = rsaConfig;
+        this.refundService = refundService;
     }
 
     @Override
@@ -167,6 +174,35 @@ public class WechatPayServiceImpl implements WechatPayService {
                 ? transaction.getTradeState().name() : null);
         result.put("trade_state_desc", transaction.getTradeStateDesc());
         result.put("success_time", transaction.getSuccessTime());
+        return result;
+    }
+
+    /**
+     * 申请微信退款（原路退款）
+     */
+    @Override
+    public Map<String, Object> wechatRefund(String transactionId, String outRefundNo,
+                                            int refundFen, int totalFen, String reason) {
+        CreateRequest request = new CreateRequest();
+        request.setTransactionId(transactionId);
+        request.setOutRefundNo(outRefundNo);
+        request.setReason(reason);
+
+        AmountReq amount = new AmountReq();
+        amount.setRefund((long) refundFen);
+        amount.setTotal((long) totalFen);
+        amount.setCurrency("CNY");
+        request.setAmount(amount);
+
+        Refund refund = refundService.create(request);
+
+        log.info("微信退款申请成功，outRefundNo={}, refundId={}, status={}",
+                outRefundNo, refund.getRefundId(), refund.getStatus());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("refund_id", refund.getRefundId());
+        result.put("out_refund_no", refund.getOutRefundNo());
+        result.put("status", refund.getStatus() != null ? refund.getStatus().name() : null);
         return result;
     }
 }

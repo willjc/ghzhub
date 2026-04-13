@@ -64,11 +64,20 @@
           <el-button
             size="mini"
             type="text"
+            icon="el-icon-money"
+            style="color: #07c160;"
+            @click="handleWechatRefund(scope.row)"
+            v-if="scope.row.refundStatus === '0'"
+            v-hasPermi="['gangzhu:refund:payment']"
+          >微信退款</el-button>
+          <el-button
+            size="mini"
+            type="text"
             icon="el-icon-edit"
             @click="handlePaymentInfo(scope.row)"
             v-if="scope.row.refundStatus === '0'"
             v-hasPermi="['gangzhu:refund:payment']"
-          >提交付款信息</el-button>
+          >其他方式</el-button>
           <el-button
             size="mini"
             type="text"
@@ -181,7 +190,7 @@
 </template>
 
 <script>
-import { listRefund, getRefund, submitPayment, delRefund } from "@/api/gangzhu/refund";
+import { listRefund, getRefund, submitPayment, wechatRefund, delRefund } from "@/api/gangzhu/refund";
 
 export default {
   name: "Refund",
@@ -248,6 +257,22 @@ export default {
         this.detailForm = response.data || {};
         this.detailOpen = true;
       });
+    },
+    // 微信原路退款
+    handleWechatRefund(row) {
+      this.$modal.confirm(
+        `确认通过微信原路退款 ¥${row.refundAmount} 元给租户吗？\n退款后状态将自动更新为"已退还"，操作不可撤销。`
+      ).then(() => {
+        const loading = this.$loading({ lock: true, text: '退款处理中...', background: 'rgba(0,0,0,0.7)' });
+        wechatRefund(row.refundId).then(res => {
+          loading.close();
+          this.$modal.msgSuccess(res.msg || '微信退款申请成功，预计2分钟内到账');
+          this.getList();
+        }).catch(err => {
+          loading.close();
+          // 后端 error() 返回的错误信息已由 request 拦截器弹出，此处无需额外提示
+        });
+      }).catch(() => {});
     },
     // 提交付款信息
     handlePaymentInfo(row) {

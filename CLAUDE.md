@@ -30,18 +30,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 数据库配置
 
-**开发环境数据库连接信息**：
-- **数据库名**: newgangzhu
-- **主机**: localhost
-- **端口**: 3306
-- **用户名**: root
-- **密码**: 123456789w
-- **连接URL**: jdbc:mysql://localhost:3306/newgangzhu?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
-
-**说明**：
-- 使用 MySQL MCP 工具时，直接连接到此数据库
-- 数据库共有 **86个表**（系统表19个 + Quartz表11个 + 业务表54个 + 其他2个）
+**境数据库连接信息**：
 - 配置文件位置：`ruoyi-admin/src/main/resources/application-druid.yml`
+
 
 ## 核心开发原则 (必须遵守)
 

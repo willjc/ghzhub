@@ -3,6 +3,7 @@ package com.ruoyi.web.config;
 import com.wechat.pay.java.core.RSAPublicKeyConfig;
 import com.wechat.pay.java.service.payments.h5.H5Service;
 import com.wechat.pay.java.service.payments.jsapi.JsapiServiceExtension;
+import com.wechat.pay.java.service.refund.RefundService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -75,5 +76,10 @@ public class WechatPayConfig {
     @Bean
     public H5Service h5Service(RSAPublicKeyConfig config) {
         return new H5Service.Builder().config(config).build();
+    }
+
+    @Bean
+    public RefundService refundService(RSAPublicKeyConfig config) {
+        return new RefundService.Builder().config(config).build();
     }
 }

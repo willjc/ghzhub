@@ -26,4 +26,17 @@ public interface WechatPayService {
      * 返回 trade_state（SUCCESS/NOTPAY/CLOSED 等）和 transaction_id
      */
     Map<String, Object> queryByOutTradeNo(String outTradeNo) throws Exception;
+
+    /**
+     * 申请微信退款（原路退款）
+     *
+     * @param transactionId 原支付微信交易号
+     * @param outRefundNo   商户退款单号（唯一）
+     * @param refundFen     退款金额（分）
+     * @param totalFen      原订单金额（分）
+     * @param reason        退款原因
+     * @return 退款结果，含 refund_id、status、out_refund_no
+     */
+    Map<String, Object> wechatRefund(String transactionId, String outRefundNo,
+                                     int refundFen, int totalFen, String reason);
 }

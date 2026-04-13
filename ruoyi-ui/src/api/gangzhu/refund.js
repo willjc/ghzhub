@@ -60,3 +60,11 @@ export function submitPayment(data) {
     data: data
   })
 }
+
+// 微信原路退款
+export function wechatRefund(refundId) {
+  return request({
+    url: '/gangzhu/refund/wechat/' + refundId,
+    method: 'post'
+  })
+}
