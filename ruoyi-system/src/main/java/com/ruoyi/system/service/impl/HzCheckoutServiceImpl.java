@@ -499,11 +499,17 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
             }
         }
 
-        // 4. 更新申请状态为已完成
+        // 4. 更新退租申请状态为已完成
         LambdaUpdateWrapper<HzCheckoutApply> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(HzCheckoutApply::getApplyId, applyId)
                .set(HzCheckoutApply::getApplyStatus, "5"); // 5=已完成
         this.update(wrapper);
+
+        // 5. 更新合同状态为已解约
+        LambdaUpdateWrapper<HzContract> contractWrapper = new LambdaUpdateWrapper<>();
+        contractWrapper.eq(HzContract::getContractId, apply.getContractId())
+                       .set(HzContract::getContractStatus, "5"); // 5=已解约
+        contractMapper.update(null, contractWrapper);
 
         return result;
     }

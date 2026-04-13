@@ -170,6 +170,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             b.del_flag = '0'
             AND b.tenant_id = #{userId}
+            AND (c.contract_status IS NULL OR c.contract_status != '5')
             <if test="billType != null and billType != ''">
                 AND b.bill_type = #{billType}
             </if>
