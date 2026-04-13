@@ -2,6 +2,8 @@ package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzCheckoutApply;
@@ -23,6 +25,7 @@ import com.ruoyi.system.mapper.HzUserMapper;
 import com.ruoyi.system.mapper.HzRefundApplyMapper;
 import com.ruoyi.system.domain.HzRefundApply;
 import com.ruoyi.system.service.IHzCheckoutService;
+import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.utils.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,13 +92,14 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
     }
 
     @Override
-    public List<HzCheckoutApplyVO> selectCheckoutApplyListWithDetails(HzCheckoutApply hzCheckoutApply) {
-        // 1. 查询退租申请列表
+    public TableDataInfo selectCheckoutApplyListWithDetails(Page<HzCheckoutApply> page, HzCheckoutApply hzCheckoutApply) {
+        // 1. 用 MyBatis-Plus 分页查询退租申请列表
         LambdaQueryWrapper<HzCheckoutApply> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzCheckoutApply::getDelFlag, "0")
                .eq(hzCheckoutApply.getApplyStatus() != null, HzCheckoutApply::getApplyStatus, hzCheckoutApply.getApplyStatus())
                .orderByDesc(HzCheckoutApply::getApplyTime);
-        List<HzCheckoutApply> applyList = this.list(wrapper);
+        IPage<HzCheckoutApply> pageResult = this.page(page, wrapper);
+        List<HzCheckoutApply> applyList = pageResult.getRecords();
 
         List<HzCheckoutApplyVO> voList = new ArrayList<>();
 
@@ -174,7 +178,12 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
             voList.add(vo);
         }
 
-        return voList;
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(200);
+        rspData.setMsg("查询成功");
+        rspData.setRows(voList);
+        rspData.setTotal(pageResult.getTotal());
+        return rspData;
     }
 
     /**

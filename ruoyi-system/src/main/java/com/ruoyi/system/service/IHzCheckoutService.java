@@ -1,11 +1,13 @@
 package com.ruoyi.system.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.system.domain.HzCheckoutApply;
-import com.ruoyi.system.domain.HzCheckoutApplyVO;
 import com.ruoyi.system.domain.HzCheckoutRecord;
 
 import java.util.List;
 import java.util.Map;
+
 
 /**
  * 退租Service接口
@@ -36,7 +38,7 @@ public interface IHzCheckoutService {
      * @param hzCheckoutApply 退租申请查询条件
      * @return 退租申请VO集合（包含合同和房源信息）
      */
-    public List<HzCheckoutApplyVO> selectCheckoutApplyListWithDetails(HzCheckoutApply hzCheckoutApply);
+    public TableDataInfo selectCheckoutApplyListWithDetails(Page<HzCheckoutApply> page, HzCheckoutApply hzCheckoutApply);
 
     /**
      * 根据租户ID查询退租申请列表

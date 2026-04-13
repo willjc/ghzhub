@@ -1,10 +1,12 @@
 package com.ruoyi.web.controller.system;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.system.domain.HzCheckoutApply;
@@ -37,9 +39,8 @@ public class HzCheckOutController extends BaseController {
     @PreAuthorize("@ss.hasPermi('gangzhu:checkout:list')")
     @GetMapping("/list")
     public TableDataInfo list(HzCheckoutApply checkoutApply) {
-        startPage();
-        List<HzCheckoutApplyVO> list = checkoutService.selectCheckoutApplyListWithDetails(checkoutApply);
-        return getDataTable(list);
+        Page<HzCheckoutApply> page = PageUtils.getPage();
+        return checkoutService.selectCheckoutApplyListWithDetails(page, checkoutApply);
     }
 
     /**
