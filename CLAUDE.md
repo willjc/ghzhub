@@ -16,21 +16,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **🔴 强制要求：所有数据库查询和操作必须使用 MCP MySQL 工具**
 
-- ✅ **必须使用**: `mcp__mysql__*` 系列工具进行数据库操作
+- ✅ **必须使用**: `mcp__mcp_server_mysql__mysql_query` 工具进行数据库操作
 - ❌ **严禁使用**: Bash 执行 `mysql` 命令行工具
 - ❌ **严禁使用**: 其他任何直接连接数据库的方式
 
-### MCP 工具使用步骤
+### MCP 工具说明
 
-1. **连接数据库**: 使用 `mcp__mysql__connect_db`
-2. **查询数据**: 使用 `mcp__mysql__query` (SELECT)
-3. **修改数据**: 使用 `mcp__mysql__execute` (INSERT/UPDATE/DELETE)
-4. **查看表结构**: 使用 `mcp__mysql__describe_table`
-5. **列出所有表**: 使用 `mcp__mysql__list_tables`
+**MCP Server 名称**: `mcp_server_mysql`（通过 `claude mcp add` 注册，连接生产库 `36.133.39.148:33061/ghz`）
+
+只有一个工具，SELECT / INSERT / UPDATE / DELETE 全部通过它完成：
+
+```
+mcp__mcp_server_mysql__mysql_query
+参数: query (SQL语句字符串)
+```
+
+### 使用示例
+
+```sql
+-- 查询数据 (SELECT)
+SELECT * FROM hz_contract WHERE tenant_id = 34 LIMIT 5;
+
+-- 修改数据 (UPDATE)
+UPDATE hz_contract SET contract_status = '5' WHERE contract_id = 105;
+
+-- 查看表结构
+DESCRIBE hz_checkout_apply;
+
+-- 列出所有表
+SHOW TABLES;
+```
 
 ## 数据库配置
 
-**境数据库连接信息**：
+**生产数据库连接信息**：
+- Host: `36.133.39.148:33061`，数据库: `ghz`，用户: `ghzuser`
 - 配置文件位置：`ruoyi-admin/src/main/resources/application-druid.yml`
 
 

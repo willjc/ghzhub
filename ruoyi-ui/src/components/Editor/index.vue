@@ -220,9 +220,8 @@ export default {
 </script>
 
 <style>
-.editor, .ql-toolbar {
-  white-space: pre-wrap !important;
-  line-height: normal !important;
+.ql-toolbar {
+  white-space: normal;
 }
 .quill-img {
   display: none;
