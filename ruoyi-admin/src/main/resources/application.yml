@@ -158,7 +158,8 @@ xss:
   # 过滤开关
   enabled: true
   # 排除链接（多个用逗号分隔）
-  excludes: /system/notice
+  # /system/commitment/template 需排除，否则富文本内容中的 <p>/<h2> 等标签会被 EscapeUtil.clean() 过滤掉
+  excludes: /system/notice,/system/commitment/template
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*
 
