@@ -310,11 +310,42 @@ export default {
 			}
 			try {
 				const tempFilePath = await this.mpGetPNG()
-				await this._dispatchConfirm(tempFilePath)
+				// 小程序端先上传到服务器，获取服务器路径
+				const serverPath = await this.uploadSignatureToServer(tempFilePath)
+				await this._dispatchConfirm(serverPath)
 			} catch (e) {
 				uni.showToast({ title: '获取签名失败，请重试', icon: 'none' })
 			}
 			// #endif
+		},
+
+		// 将签名临时文件上传到服务器，返回服务器相对路径
+		uploadSignatureToServer(tempFilePath) {
+			return new Promise((resolve, reject) => {
+				const token = uni.getStorageSync('token') || ''
+				const config = require('@/config/index').default
+				uni.uploadFile({
+					url: config.baseUrl + '/common/upload',
+					filePath: tempFilePath,
+					name: 'file',
+					header: {
+						'Authorization': token ? ('Bearer ' + token) : ''
+					},
+					success: (res) => {
+						try {
+							const data = JSON.parse(res.data)
+							if (data.fileName) {
+								resolve(data.fileName) // /profile/upload/xxx.png
+							} else {
+								reject(new Error('上传失败'))
+							}
+						} catch (e) {
+							reject(e)
+						}
+					},
+					fail: (err) => reject(err)
+				})
+			})
 		},
 
 		async _dispatchConfirm(signatureData) {
