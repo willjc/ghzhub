@@ -1,7 +1,10 @@
 package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.system.domain.HzCheckoutApply;
 import com.ruoyi.system.domain.HzCheckoutRecord;
 import com.ruoyi.system.domain.HzContract;
@@ -18,17 +21,15 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * 退款申请Service业务层处���
+ * 退款申请Service业务层处理
  *
  * @author ruoyi
  */
 @Service
 public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefundApply> implements IHzRefundService {
-
-    @Autowired
-    private HzRefundApplyMapper refundApplyMapper;
 
     @Autowired
     private HzContractMapper contractMapper;
@@ -40,54 +41,62 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
     private HzCheckoutRecordMapper checkoutRecordMapper;
 
     @Override
-    public List<HzRefundApplyVO> selectRefundList(String refundNo, String contractNo, String refundStatus) {
-        // 从退租申请表中查询已确认且有退款金额的记录
+    public TableDataInfo selectRefundList(Page<HzCheckoutApply> page, String refundNo, String contractNo, String refundStatus) {
+        // 构建退租申请查询条件（已确认且有退款金额）
         LambdaQueryWrapper<HzCheckoutApply> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(HzCheckoutApply::getApplyStatus, "5")  // 已确认
+        wrapper.eq(HzCheckoutApply::getApplyStatus, "5")
                .isNotNull(HzCheckoutApply::getRefundAmount)
                .gt(HzCheckoutApply::getRefundAmount, BigDecimal.ZERO)
                .orderByDesc(HzCheckoutApply::getApproveTime);
 
-        // 如果有退款编号条件（使用申请ID搜索）
+        // 退款编号（申请ID）过滤
         if (refundNo != null && !refundNo.isEmpty()) {
-            try {
-                wrapper.like(HzCheckoutApply::getApplyId, refundNo);
-            } catch (NumberFormatException e) {
-                // 如果不是数字，忽略该条件
-            }
+            wrapper.like(HzCheckoutApply::getApplyId, refundNo);
         }
 
-        // 查询退租申请列表
-        List<HzCheckoutApply> checkoutList = checkoutApplyMapper.selectList(wrapper);
+        // 合同编号过滤：先查出匹配的 contractId 集合
+        if (contractNo != null && !contractNo.isEmpty()) {
+            LambdaQueryWrapper<HzContract> contractWrapper = new LambdaQueryWrapper<>();
+            contractWrapper.like(HzContract::getContractNo, contractNo);
+            List<Long> contractIds = contractMapper.selectList(contractWrapper)
+                    .stream().map(HzContract::getContractId).collect(Collectors.toList());
+            if (contractIds.isEmpty()) {
+                return emptyResult();
+            }
+            wrapper.in(HzCheckoutApply::getContractId, contractIds);
+        }
 
-        // 转换为VO并填充关联信息
+        // 退款状态过滤：先查出匹配的 applyId 集合
+        if (refundStatus != null && !refundStatus.isEmpty()) {
+            LambdaQueryWrapper<HzCheckoutRecord> recordWrapper = new LambdaQueryWrapper<>();
+            recordWrapper.eq(HzCheckoutRecord::getRefundStatus, refundStatus);
+            List<Long> applyIds = checkoutRecordMapper.selectList(recordWrapper)
+                    .stream().map(HzCheckoutRecord::getApplyId).collect(Collectors.toList());
+            if (applyIds.isEmpty()) {
+                return emptyResult();
+            }
+            wrapper.in(HzCheckoutApply::getApplyId, applyIds);
+        }
+
+        // 分页查询
+        IPage<HzCheckoutApply> pageResult = checkoutApplyMapper.selectPage(page, wrapper);
+
+        // 对当前页结果做关联填充
         List<HzRefundApplyVO> voList = new ArrayList<>();
-        for (HzCheckoutApply checkout : checkoutList) {
-            HzRefundApplyVO vo = convertFromCheckout(checkout);
-
-            // 合同编号过滤
-            if (contractNo != null && !contractNo.isEmpty()) {
-                if (vo.getContractNo() == null || !vo.getContractNo().contains(contractNo)) {
-                    continue;
-                }
-            }
-
-            // 退款状态过滤
-            if (refundStatus != null && !refundStatus.isEmpty()) {
-                if (!refundStatus.equals(vo.getRefundStatus())) {
-                    continue;
-                }
-            }
-
-            voList.add(vo);
+        for (HzCheckoutApply checkout : pageResult.getRecords()) {
+            voList.add(convertFromCheckout(checkout));
         }
 
-        return voList;
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(200);
+        rspData.setMsg("查询成功");
+        rspData.setRows(voList);
+        rspData.setTotal(pageResult.getTotal());
+        return rspData;
     }
 
     @Override
     public HzRefundApplyVO selectRefundById(Long refundId) {
-        // refundId 实际上是退租申请ID
         HzCheckoutApply checkout = checkoutApplyMapper.selectById(refundId);
         if (checkout == null) {
             return null;
@@ -97,14 +106,21 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
 
     @Override
     public int auditRefund(Long refundId, String approveStatus, String approveOpinion) {
-        // 审核功能暂不使用，退款状态通过更新退租记录实现
         return 1;
     }
 
     @Override
     public int deleteRefundById(Long refundId) {
-        // 退款管理页面不需要删除功能
         return 1;
+    }
+
+    private TableDataInfo emptyResult() {
+        TableDataInfo empty = new TableDataInfo();
+        empty.setCode(200);
+        empty.setMsg("查询成功");
+        empty.setRows(new ArrayList<>());
+        empty.setTotal(0);
+        return empty;
     }
 
     /**
@@ -113,7 +129,6 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
     private HzRefundApplyVO convertFromCheckout(HzCheckoutApply checkout) {
         HzRefundApplyVO vo = new HzRefundApplyVO();
 
-        // 基本信息
         vo.setRefundId(checkout.getApplyId());
         vo.setRefundNo(String.valueOf(checkout.getApplyId()));
         vo.setContractId(checkout.getContractId());
@@ -125,7 +140,6 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
         vo.setApproveTime(checkout.getApproveTime());
         vo.setApproveOpinion(checkout.getApproveOpinion());
 
-        // 费用明细（从退租申请获取）
         vo.setWaterFee(checkout.getWaterFee() != null ? checkout.getWaterFee() : BigDecimal.ZERO);
         vo.setElectricFee(checkout.getElectricFee() != null ? checkout.getElectricFee() : BigDecimal.ZERO);
         vo.setGasFee(checkout.getGasFee() != null ? checkout.getGasFee() : BigDecimal.ZERO);
@@ -133,10 +147,8 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
         vo.setPropertyFee(checkout.getPropertyFee() != null ? checkout.getPropertyFee() : BigDecimal.ZERO);
         vo.setDamageDeduction(checkout.getDamageDeduction() != null ? checkout.getDamageDeduction() : BigDecimal.ZERO);
         vo.setPenaltyAmount(checkout.getPenaltyAmount() != null ? checkout.getPenaltyAmount() : BigDecimal.ZERO);
-        // 押金从合同中获取
         vo.setDeposit(getDepositFromContract(checkout.getContractId()));
 
-        // 查询合同编号
         if (checkout.getContractId() != null) {
             HzContract contract = contractMapper.selectById(checkout.getContractId());
             if (contract != null) {
@@ -144,78 +156,50 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
             }
         }
 
-        // 查询退租记录获取退款状态和付款信息
         LambdaQueryWrapper<HzCheckoutRecord> recordWrapper = new LambdaQueryWrapper<>();
         recordWrapper.eq(HzCheckoutRecord::getApplyId, checkout.getApplyId());
         HzCheckoutRecord record = checkoutRecordMapper.selectOne(recordWrapper);
 
-        String refundStatus = "0"; // 默认待退还
+        String refundStatusVal = "0";
         if (record != null) {
             if (record.getRefundStatus() != null) {
-                refundStatus = record.getRefundStatus();
+                refundStatusVal = record.getRefundStatus();
             }
-            // 付款信息
             vo.setPaymentMethod(record.getPaymentMethod());
             vo.setPaymentMethodText(getPaymentMethodText(record.getPaymentMethod()));
             vo.setPaymentVoucher(record.getPaymentVoucher());
             vo.setPaymentRemark(record.getPaymentRemark());
             vo.setPaymentTime(record.getRefundTime());
         }
-        vo.setRefundStatus(refundStatus);
-        vo.setRefundStatusText(getRefundStatusText(refundStatus));
+        vo.setRefundStatus(refundStatusVal);
+        vo.setRefundStatusText(getRefundStatusText(refundStatusVal));
 
         return vo;
     }
 
-    /**
-     * 从合同获取押金
-     */
     private BigDecimal getDepositFromContract(Long contractId) {
-        if (contractId == null) {
-            return BigDecimal.ZERO;
-        }
+        if (contractId == null) return BigDecimal.ZERO;
         HzContract contract = contractMapper.selectById(contractId);
-        if (contract != null && contract.getDeposit() != null) {
-            return contract.getDeposit();
-        }
-        return BigDecimal.ZERO;
+        return (contract != null && contract.getDeposit() != null) ? contract.getDeposit() : BigDecimal.ZERO;
     }
 
-    /**
-     * 获取退款状态文本
-     */
     private String getRefundStatusText(String status) {
-        if (status == null) {
-            return "待退还";
-        }
+        if (status == null) return "待退还";
         switch (status) {
-            case "0":
-                return "待退还";
-            case "1":
-                return "已退还";
-            default:
-                return "待退还";
+            case "0": return "待退还";
+            case "1": return "已退还";
+            default: return "待退还";
         }
     }
 
-    /**
-     * 获取付款方式文本
-     */
     private String getPaymentMethodText(String method) {
-        if (method == null) {
-            return "";
-        }
+        if (method == null) return "";
         switch (method) {
-            case "1":
-                return "现金";
-            case "2":
-                return "支付宝";
-            case "3":
-                return "微信";
-            case "4":
-                return "银行转账";
-            default:
-                return "";
+            case "1": return "现金";
+            case "2": return "支付宝";
+            case "3": return "微信";
+            case "4": return "银行转账";
+            default: return "";
         }
     }
 }

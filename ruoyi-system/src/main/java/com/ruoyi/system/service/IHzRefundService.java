@@ -1,5 +1,8 @@
 package com.ruoyi.system.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.system.domain.HzCheckoutApply;
 import com.ruoyi.system.domain.HzRefundApplyVO;
 
 import java.util.List;
@@ -12,14 +15,9 @@ import java.util.List;
 public interface IHzRefundService {
 
     /**
-     * 查询退款申请列表（包含关联信息）
-     *
-     * @param refundNo 退款编号
-     * @param contractNo 合同编号
-     * @param refundStatus 退款状态
-     * @return 退款申请VO集合
+     * 查询退款申请列表（包含关联信息，带分页）
      */
-    List<HzRefundApplyVO> selectRefundList(String refundNo, String contractNo, String refundStatus);
+    TableDataInfo selectRefundList(Page<HzCheckoutApply> page, String refundNo, String contractNo, String refundStatus);
 
     /**
      * 查询退款申请详情
