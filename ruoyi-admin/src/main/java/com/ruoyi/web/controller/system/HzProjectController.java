@@ -1,10 +1,13 @@
 package com.ruoyi.web.controller.system;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.domain.HzHouseType;
@@ -40,9 +43,15 @@ public class HzProjectController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(HzProject project)
     {
-        startPage();
-        List<HzProject> list = projectService.selectProjectList(project);
-        return getDataTable(list);
+        Page<HzProject> page = PageUtils.getPage();
+        IPage<HzProject> pageResult = projectService.selectProjectPage(project, (int)page.getCurrent(), (int)page.getSize());
+
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(200);
+        rspData.setMsg("查询成功");
+        rspData.setRows(pageResult.getRecords());
+        rspData.setTotal(pageResult.getTotal());
+        return rspData;
     }
 
     /**
