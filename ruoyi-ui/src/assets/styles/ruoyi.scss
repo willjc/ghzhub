@@ -285,3 +285,199 @@
 .splitpanes.default-theme .splitpanes__pane {
   background-color: #fff!important;
 }
+
+/** ===== 页面美化增强样式 ===== */
+
+/** 页面容器卡片化 */
+.app-container {
+  .el-form:not(.login-form):not(.el-form--inline) {
+    background: #ffffff;
+    padding: 18px 20px 0;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    margin-bottom: 16px;
+  }
+}
+
+/** 表格容器美化 - 现代风格 */
+.el-table {
+  border-radius: 8px;
+  
+  // 表头 - 现代简洁风
+  .el-table__header-wrapper, .el-table__fixed-header-wrapper {
+    th {
+      background-color: #f8fafc !important;
+      color: #1e293b !important;
+      font-weight: 600 !important;
+      font-size: 13px;
+      height: 44px;
+    }
+  }
+  
+  // 表格行
+  .el-table__body {
+    tr {
+      transition: background-color 0.2s ease;
+      
+      td {
+        color: #334155;
+        font-size: 13px;
+      }
+    }
+    
+    // hover效果 - 更柔和
+    tr:hover > td {
+      background-color: #f0f7ff !important;
+    }
+  }
+  
+  // 斑马纹 - 极其微妙
+  .el-table__body tr.el-table__row--striped td {
+    background-color: #fafcff !important;
+  }
+  .el-table__body tr.el-table__row--striped:hover > td {
+    background-color: #f0f7ff !important;
+  }
+  
+  // 操作列按钮
+  .el-table__body {
+    .el-button--text {
+      border-radius: 4px;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        background-color: #e6f4ff;
+        color: #096dd9;
+      }
+    }
+  }
+  
+  // 空数据状态
+  .el-table__empty-block {
+    min-height: 120px;
+    
+    .el-table__empty-text {
+      color: #94a3b8;
+      font-size: 14px;
+    }
+  }
+  
+  // 表格内标签优化
+  .el-tag {
+    border: none;
+    font-weight: 500;
+    
+    &--success {
+      background-color: #f0fdf4;
+      color: #15803d;
+    }
+    
+    &--warning {
+      background-color: #fffbeb;
+      color: #b45309;
+    }
+    
+    &--danger {
+      background-color: #fef2f2;
+      color: #b91c1c;
+    }
+    
+    &--info {
+      background-color: #f8fafc;
+      color: #475569;
+    }
+  }
+  
+  // 表格内滚动条美化
+  .el-table__body-wrapper {
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+      
+      &:hover {
+        background: #94a3b8;
+      }
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  }
+}
+
+/** 表格工具栏区域美化 */
+.app-container {
+  // 搜索+操作区域整体间距
+  .mb8 {
+    margin-bottom: 12px !important;
+  }
+}
+
+/** 分页美化 - 现代风格 */
+.pagination-container {
+  padding: 20px 0 8px;
+  
+  .el-pagination {
+    font-weight: 500;
+    
+    .btn-prev, .btn-next {
+      border-radius: 6px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      
+      &:hover {
+        color: #1890ff;
+        border-color: #1890ff;
+      }
+    }
+    
+    .el-pager li {
+      border-radius: 6px;
+      min-width: 32px;
+      height: 32px;
+      line-height: 32px;
+      font-weight: 500;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      margin: 0 3px;
+      
+      &.active {
+        background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+        color: #fff;
+        border-color: transparent;
+        box-shadow: 0 2px 6px rgba(24, 144, 255, 0.35);
+      }
+      
+      &:hover:not(.active) {
+        color: #1890ff;
+        border-color: #1890ff;
+      }
+    }
+    
+    // 每页条数选择器
+    .el-select .el-input .el-input__inner {
+      border-radius: 6px;
+    }
+    
+    // 跳转输入框
+    .el-pagination__jump .el-input__inner {
+      border-radius: 6px;
+    }
+  }
+}
+
+/** 顶部工具栏美化 */
+.top-right-btn {
+  .el-button {
+    border-radius: 6px;
+    
+    &:hover {
+      transform: translateY(-1px);
+    }
+  }
+}

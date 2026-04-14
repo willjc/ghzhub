@@ -405,8 +405,8 @@ export default {
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   margin-bottom: 20px;
   position: relative;
   overflow: hidden;
@@ -427,7 +427,7 @@ export default {
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   }
 
   .stat-icon {
@@ -529,6 +529,8 @@ export default {
     font-size: 16px;
     font-weight: 600;
     color: #303133;
+    padding-left: 12px;
+    border-left: 3px solid #1890ff;
   }
 
   .section-tag {
@@ -556,11 +558,11 @@ export default {
 .content-card {
   border-radius: 14px;
   border: none;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   }
 
   ::v-deep .el-card__body {

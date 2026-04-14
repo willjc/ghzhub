@@ -90,3 +90,166 @@
   .el-submenu__icon-arrow {
   display: none;
 }
+
+/** ===== Element UI 组件全局美化 ===== */
+
+/** 对话框美化 */
+.el-dialog {
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15) !important;
+  
+  .el-dialog__header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f2f5;
+    
+    .el-dialog__title {
+      font-weight: 600;
+      font-size: 16px;
+      color: #303133;
+    }
+    
+    .el-dialog__headerbtn {
+      top: 16px;
+      right: 16px;
+      font-size: 18px;
+    }
+  }
+  
+  .el-dialog__body {
+    padding: 20px;
+  }
+  
+  .el-dialog__footer {
+    padding: 12px 20px;
+    border-top: 1px solid #f0f2f5;
+  }
+}
+
+/** 卡片美化 */
+.el-card {
+  border-radius: 8px !important;
+  border: none !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+  }
+}
+
+/** 按钮美化 */
+.el-button {
+  border-radius: 6px;
+  transition: all 0.25s ease;
+  font-weight: 500;
+  
+  &--primary {
+    &:hover, &:focus {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(24, 144, 255, 0.35);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+  }
+  
+  &--success {
+    &:hover, &:focus {
+      box-shadow: 0 4px 12px rgba(19, 206, 102, 0.35);
+    }
+  }
+  
+  &--danger {
+    &:hover, &:focus {
+      box-shadow: 0 4px 12px rgba(255, 73, 73, 0.35);
+    }
+  }
+  
+  &--warning {
+    &:hover, &:focus {
+      box-shadow: 0 4px 12px rgba(255, 186, 0, 0.35);
+    }
+  }
+}
+
+/** 标签pill样式 */
+.el-tag {
+  border-radius: 12px;
+  padding: 0 12px;
+}
+
+/** 面包屑优化 */
+.el-breadcrumb {
+  font-size: 14px;
+  
+  .el-breadcrumb__item {
+    .el-breadcrumb__inner {
+      color: #606266;
+      
+      a {
+        color: #606266;
+        transition: color 0.2s;
+        
+        &:hover {
+          color: #1890ff;
+        }
+      }
+    }
+    
+    &:last-child .el-breadcrumb__inner {
+      color: #303133;
+      font-weight: 500;
+    }
+  }
+}
+
+/** 输入框focus效果 */
+.el-input__inner:focus {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.12);
+}
+
+.el-textarea__inner:focus {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.12);
+}
+
+/** 下拉面板美化 */
+.el-select-dropdown {
+  border-radius: 8px !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid #e4e7ed;
+  
+  .el-select-dropdown__item.selected {
+    color: #1890ff;
+    font-weight: 600;
+  }
+}
+
+/** 消息框美化 */
+.el-message-box {
+  border-radius: 12px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+}
+
+/** 通知美化 */
+.el-notification {
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+/** 抽屉美化 */
+.el-drawer {
+  &__header {
+    border-bottom: 1px solid #f0f2f5;
+    padding: 16px 20px;
+    margin-bottom: 0;
+    
+    span {
+      font-weight: 600;
+      font-size: 16px;
+    }
+  }
+}

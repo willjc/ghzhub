@@ -225,3 +225,55 @@
     }
   }
 }
+
+/** ===== 侧边栏美化增强 ===== */
+#app {
+  .sidebar-container {
+    // 活跃菜单项左侧指示条
+    .el-menu-item.is-active {
+      position: relative;
+      background-color: #334155 !important;
+      
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: #1890ff;
+        border-radius: 0 3px 3px 0;
+      }
+    }
+    
+    // 菜单项过渡动画
+    .el-menu-item,
+    .el-submenu__title {
+      transition: all 0.3s ease;
+    }
+    
+    // hover效果优化
+    .submenu-title-noDropdown,
+    .el-submenu__title {
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+      }
+    }
+    
+    .el-submenu .el-menu-item {
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+      }
+    }
+    
+    // Logo区域分隔线
+    .sidebar-logo-container {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  }
+}
+
+/** 顶部导航栏阴影 */
+.navbar {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
+}
