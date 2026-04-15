@@ -64,6 +64,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ORDER BY p.create_time DESC
     </select>
 
+    <!-- 分页查询项目列表(带统计) -->
+    <select id="selectProjectAllocationPage" resultMap="HzProjectResult">
+        <include refid="selectProjectVo"/>
+        <where>
+            p.del_flag = '0'
+            <if test="project.projectName != null and project.projectName != ''">
+                AND p.project_name LIKE CONCAT('%', #{project.projectName}, '%')
+            </if>
+            <if test="project.projectType != null and project.projectType != ''">
+                AND p.project_type = #{project.projectType}
+            </if>
+            <if test="project.status != null and project.status != ''">
+                AND p.status = #{project.status}
+            </if>
+        </where>
+        ORDER BY p.sort_order ASC, p.create_time DESC
+    </select>
+
     <!-- 查询单个项目详情（带实时统计） -->
     <select id="selectProjectByIdWithStats" parameterType="Long" resultMap="HzProjectResult">
         <include refid="selectProjectVo"/>

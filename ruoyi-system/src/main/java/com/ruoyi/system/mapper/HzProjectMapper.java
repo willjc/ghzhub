@@ -1,8 +1,11 @@
 package com.ruoyi.system.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.HzProject;
 import java.util.List;
 
@@ -22,6 +25,15 @@ public interface HzProjectMapper extends BaseMapper<HzProject>
      * @return 项目集合
      */
     List<HzProject> selectProjectAllocationList(HzProject project);
+
+    /**
+     * 分页查询项目列表(带总房源数和可用房源数统计)
+     *
+     * @param page 分页对象
+     * @param project 项目查询条件
+     * @return 项目分页列表
+     */
+    IPage<HzProject> selectProjectAllocationPage(Page<HzProject> page, @Param("project") HzProject project);
 
     /**
      * 查询单个项目详情(带实时统计)

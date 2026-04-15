@@ -1,10 +1,8 @@
 package com.ruoyi.system.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.service.IHzProjectService;
@@ -35,7 +33,7 @@ public class HzProjectServiceImpl extends ServiceImpl<HzProjectMapper, HzProject
     }
 
     /**
-     * 分页查询项目列表
+     * 分页查询项目列表（带统计）
      *
      * @param project 项目查询条件
      * @param pageNum 当前页码
@@ -46,13 +44,7 @@ public class HzProjectServiceImpl extends ServiceImpl<HzProjectMapper, HzProject
     public IPage<HzProject> selectProjectPage(HzProject project, int pageNum, int pageSize)
     {
         Page<HzProject> page = new Page<>(pageNum, pageSize);
-        LambdaQueryWrapper<HzProject> wrapper = new LambdaQueryWrapper<>();
-        wrapper.like(StringUtils.isNotEmpty(project.getProjectName()), HzProject::getProjectName, project.getProjectName())
-               .eq(StringUtils.isNotEmpty(project.getProjectType()), HzProject::getProjectType, project.getProjectType())
-               .eq(StringUtils.isNotEmpty(project.getStatus()), HzProject::getStatus, project.getStatus())
-               .orderByAsc(HzProject::getSortOrder)
-               .orderByDesc(HzProject::getCreateTime);
-        return this.page(page, wrapper);
+        return this.baseMapper.selectProjectAllocationPage(page, project);
     }
 
     /**

@@ -703,8 +703,14 @@ def step6_import_tenants(cursor, filter_active=False):
         id_mapper.register('tenant', old_id, new_id)
         # 同时建立 资格证号 -> tenant_id 映射
         qual_no = safe_str(d.get('资格证号（一个家庭一个号）'))
+        applicant_type = safe_str(d.get('申请人类型'))
         if qual_no:
-            id_mapper.register('qualification', qual_no, new_id)
+            # 只有主申请人才注册资格证号映射，避免配偶覆盖
+            if applicant_type == '主申请人':
+                id_mapper.register('qualification', qual_no, new_id)
+            elif not id_mapper.has('qualification', qual_no):
+                # 如果主申请人尚未处理（兜底），配偶临时注册
+                id_mapper.register('qualification', qual_no, new_id)
         # 身份证 -> tenant_id 映射
         id_mapper.register('idcard', id_card, new_id)
 
