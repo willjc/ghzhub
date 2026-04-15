@@ -292,6 +292,18 @@ public class EsignServiceImpl implements EsignService {
         // ── 合同日期 ────────────────────────────────────────────────────
         String startDate  = contract.getStartDate() != null ? contract.getStartDate() : "";
         String endDate    = contract.getEndDate()   != null ? contract.getEndDate()   : "";
+        // 日期1/日期2控件要求 yyyy年MM月dd日 格式
+        String startDateCn = "";
+        String endDateCn   = "";
+        try {
+            java.time.format.DateTimeFormatter isoFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            java.time.format.DateTimeFormatter cnFmt  = java.time.format.DateTimeFormatter.ofPattern("yyyy年MM月dd日");
+            if (!startDate.isEmpty()) startDateCn = java.time.LocalDate.parse(startDate, isoFmt).format(cnFmt);
+            if (!endDate.isEmpty())   endDateCn   = java.time.LocalDate.parse(endDate, isoFmt).format(cnFmt);
+        } catch (Exception e) {
+            startDateCn = startDate;
+            endDateCn   = endDate;
+        }
 
         // ── 金额 ────────────────────────────────────────────────────────
         String rentPrice  = contract.getRentPrice() != null ? contract.getRentPrice().toString() : "0";
@@ -305,8 +317,8 @@ public class EsignServiceImpl implements EsignService {
             // 页1: 合同签约日期
             + "  {\"componentId\": \"5a2b66c26133442d9bbfe8ea93fa45ae\", \"componentValue\": \"" + escapeJson(startDate)    + "\"},\n"  // 日期3 (yyyy-MM-dd)
             // 页2: 合同期限
-            + "  {\"componentId\": \"768fda9eaf6d4492bc56e2b90a08c97d\", \"componentValue\": \"" + escapeJson(startDate)    + "\"},\n"  // 日期1: 起始日
-            + "  {\"componentId\": \"8608e65d7a8943d9bd6bf25b6de50045\", \"componentValue\": \"" + escapeJson(endDate)      + "\"},\n"  // 日期2: 终止日
+            + "  {\"componentId\": \"768fda9eaf6d4492bc56e2b90a08c97d\", \"componentValue\": \"" + escapeJson(startDateCn) + "\"},\n"  // 日期1: 起始日 (yyyy年MM月dd日)
+            + "  {\"componentId\": \"8608e65d7a8943d9bd6bf25b6de50045\", \"componentValue\": \"" + escapeJson(endDateCn)   + "\"},\n"  // 日期2: 终止日 (yyyy年MM月dd日)
             + "  {\"componentId\": \"7af62cd84df944dba1d828dba66ae394\", \"componentValue\": \"" + escapeJson(rentMonths)   + "\"},\n"  // 数字3: 租期(月)
             // 页2: 乙方个人信息
             + "  {\"componentId\": \"ebfedbda264e446390801f1ba6ee96eb\", \"componentValue\": \"" + escapeJson(tenantName)   + "\"},\n"  // 单行文本3: 乙方姓名
