@@ -311,6 +311,8 @@ public class EsignServiceImpl implements EsignService {
 
         // ── 房源与租期 ──────────────────────────────────────────────────
         String houseAddress = contract.getHouseAddress() != null ? contract.getHouseAddress() : "";
+        // 单行文本4控件最大20个汉字，超长截断
+        if (houseAddress.length() > 20) houseAddress = houseAddress.substring(0, 20);
         String rentMonths   = contract.getRentMonths()   != null ? contract.getRentMonths().toString() : "";
 
         return "[\n"
