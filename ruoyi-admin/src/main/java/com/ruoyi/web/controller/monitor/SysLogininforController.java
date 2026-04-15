@@ -39,9 +39,14 @@ public class SysLogininforController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(SysLogininfor logininfor)
     {
-        startPage();
-        List<SysLogininfor> list = logininforService.selectLogininforList(logininfor);
-        return getDataTable(list);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<SysLogininfor> page = com.ruoyi.common.utils.PageUtils.getPage();
+        com.baomidou.mybatisplus.core.metadata.IPage<SysLogininfor> pageResult = logininforService.selectLogininforPage(page, logininfor);
+        TableDataInfo data = new TableDataInfo();
+        data.setCode(com.ruoyi.common.constant.HttpStatus.SUCCESS);
+        data.setRows(pageResult.getRecords());
+        data.setTotal(pageResult.getTotal());
+        data.setMsg("查询成功");
+        return data;
     }
 
     @Log(title = "登录日志", businessType = BusinessType.EXPORT)

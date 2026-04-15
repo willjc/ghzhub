@@ -1,6 +1,8 @@
 package com.ruoyi.system.service.impl;
 
 import java.util.List;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.ruoyi.system.domain.SysOperLog;
@@ -72,5 +74,11 @@ public class SysOperLogServiceImpl implements ISysOperLogService
     public void cleanOperLog()
     {
         operLogMapper.cleanOperLog();
+    }
+
+    @Override
+    public IPage<SysOperLog> selectOperLogPage(Page<SysOperLog> page, SysOperLog operLog)
+    {
+        return operLogMapper.selectOperLogPage(page, operLog);
     }
 }

@@ -1,6 +1,8 @@
 package com.ruoyi.system.service;
 
 import java.util.List;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.SysLogininfor;
 
 /**
@@ -37,4 +39,9 @@ public interface ISysLogininforService
      * 清空系统登录日志
      */
     public void cleanLogininfor();
+
+    /**
+     * 分页查询系统登录日志集合
+     */
+    public IPage<SysLogininfor> selectLogininforPage(Page<SysLogininfor> page, SysLogininfor logininfor);
 }

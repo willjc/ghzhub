@@ -35,9 +35,14 @@ public class SysOperlogController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(SysOperLog operLog)
     {
-        startPage();
-        List<SysOperLog> list = operLogService.selectOperLogList(operLog);
-        return getDataTable(list);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<SysOperLog> page = com.ruoyi.common.utils.PageUtils.getPage();
+        com.baomidou.mybatisplus.core.metadata.IPage<SysOperLog> pageResult = operLogService.selectOperLogPage(page, operLog);
+        TableDataInfo data = new TableDataInfo();
+        data.setCode(com.ruoyi.common.constant.HttpStatus.SUCCESS);
+        data.setRows(pageResult.getRecords());
+        data.setTotal(pageResult.getTotal());
+        data.setMsg("查询成功");
+        return data;
     }
 
     @Log(title = "操作日志", businessType = BusinessType.EXPORT)

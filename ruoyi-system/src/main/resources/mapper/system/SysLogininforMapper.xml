@@ -53,5 +53,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="cleanLogininfor">
         truncate table sys_logininfor
     </update>
+
+    <select id="selectLogininforPage" resultMap="SysLogininforResult">
+		select info_id, user_name, ipaddr, login_location, browser, os, status, msg, login_time from sys_logininfor
+		<where>
+			<if test="logininfor.ipaddr != null and logininfor.ipaddr != ''">
+				AND ipaddr like concat('%', #{logininfor.ipaddr}, '%')
+			</if>
+			<if test="logininfor.status != null and logininfor.status != ''">
+				AND status = #{logininfor.status}
+			</if>
+			<if test="logininfor.userName != null and logininfor.userName != ''">
+				AND user_name like concat('%', #{logininfor.userName}, '%')
+			</if>
+			<if test="logininfor.params.beginTime != null and logininfor.params.beginTime != ''">
+				AND login_time &gt;= #{logininfor.params.beginTime}
+			</if>
+			<if test="logininfor.params.endTime != null and logininfor.params.endTime != ''">
+				AND login_time &lt;= #{logininfor.params.endTime}
+			</if>
+		</where>
+		order by info_id desc
+	</select>
     
 </mapper> 

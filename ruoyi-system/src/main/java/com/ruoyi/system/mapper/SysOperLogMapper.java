@@ -2,6 +2,9 @@ package com.ruoyi.system.mapper;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.ibatis.annotations.Param;
 import com.ruoyi.system.domain.SysOperLog;
 
 /**
@@ -47,4 +50,9 @@ public interface SysOperLogMapper
      * 清空操作日志
      */
     public void cleanOperLog();
+
+    /**
+     * 分页查询系统操作日志集合
+     */
+    public IPage<SysOperLog> selectOperLogPage(Page<SysOperLog> page, @Param("operLog") SysOperLog operLog);
 }

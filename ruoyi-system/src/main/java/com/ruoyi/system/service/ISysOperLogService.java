@@ -1,6 +1,8 @@
 package com.ruoyi.system.service;
 
 import java.util.List;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.SysOperLog;
 
 /**
@@ -45,4 +47,9 @@ public interface ISysOperLogService
      * 清空操作日志
      */
     public void cleanOperLog();
+
+    /**
+     * 分页查询系统操作日志集合
+     */
+    public IPage<SysOperLog> selectOperLogPage(Page<SysOperLog> page, SysOperLog operLog);
 }

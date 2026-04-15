@@ -2,6 +2,9 @@ package com.ruoyi.system.mapper;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.ibatis.annotations.Param;
 import com.ruoyi.system.domain.SysLogininfor;
 
 /**
@@ -41,4 +44,9 @@ public interface SysLogininforMapper
      * @return 结果
      */
     public int cleanLogininfor();
+
+    /**
+     * 分页查询系统登录日志集合
+     */
+    public IPage<SysLogininfor> selectLogininforPage(Page<SysLogininfor> page, @Param("logininfor") SysLogininfor logininfor);
 }
