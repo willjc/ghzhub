@@ -225,7 +225,7 @@ public class EsignServiceImpl implements EsignService {
                 + "\"normalSignFieldConfig\":{\"autoSign\":true,\"freeMode\":false,"
                 + "\"signFieldPosition\":{\"positionPage\":\"14\",\"positionX\":240,\"positionY\":646},"
                 + "\"signFieldStyle\":1},\"signFieldType\":0,"
-                + "\"signDateConfig\":{\"dateFormat\":\"yyyy年MM月dd日\",\"fontSize\":12}}]},"
+                + "\"signDateConfig\":{\"showSignDate\":1,\"dateFormat\":\"yyyy年MM月dd日\",\"fontSize\":12,\"signDatePositionX\":380,\"signDatePositionY\":639}}]},"
                 + "{\"signerType\":0,\"psnSignerInfo\":{\"psnId\":\"" + psnId + "\"},"
                 + "\"signConfig\":{\"signOrder\":2},\"signFields\":["
                 // 乙方签名1: 页1 个人章/签名2
@@ -243,7 +243,7 @@ public class EsignServiceImpl implements EsignService {
                 + "\"normalSignFieldConfig\":{\"autoSign\":false,\"freeMode\":false,"
                 + "\"signFieldPosition\":{\"positionPage\":\"14\",\"positionX\":243,\"positionY\":536},"
                 + "\"signFieldStyle\":1},\"signFieldType\":0,"
-                + "\"signDateConfig\":{\"dateFormat\":\"yyyy年MM月dd日\",\"fontSize\":12}}"
+                + "\"signDateConfig\":{\"showSignDate\":1,\"dateFormat\":\"yyyy年MM月dd日\",\"fontSize\":12,\"signDatePositionX\":376,\"signDatePositionY\":531}}"
                 + "]}]}";
 
         EsignHttpResponse resp = callApi("POST", "/v3/sign-flow/create-by-file", jsonParm);
