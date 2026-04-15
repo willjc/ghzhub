@@ -219,18 +219,33 @@ public class EsignServiceImpl implements EsignService {
         String jsonParm = "{\"docs\":[{\"fileId\":\"" + fileId + "\",\"fileName\":\"港好住租赁合同.pdf\"}],"
                 + "\"signFlowConfig\":{\"signFlowTitle\":\"港好住租赁合同-" + contractId + "\",\"autoFinish\":true,"
                 + "\"notifyUrl\":\"" + notifyUrl + "\",\"chargeConfig\":{\"chargeMode\":0}},"
-                // 甲方（平台企业，自动盖章）— 签在第14页企业章位置
+                // 甲方（平台企业，自动盖章）— 签在第14页企业章位置，显示签署日期
                 + "\"signers\":[{\"signerType\":1,\"orgSignerInfo\":{\"orgId\":\"" + orgId + "\"},"
                 + "\"signConfig\":{\"signOrder\":1},\"signFields\":[{\"fileId\":\"" + fileId + "\","
                 + "\"normalSignFieldConfig\":{\"autoSign\":true,\"freeMode\":false,"
                 + "\"signFieldPosition\":{\"positionPage\":\"14\",\"positionX\":240,\"positionY\":646},"
-                + "\"signFieldStyle\":1},\"signFieldType\":0}]},"
-                // 乙方（租户个人，手动签）— 签在第1页个人签名位置
+                + "\"signFieldStyle\":1,\"showSignDate\":1,\"signDateConfig\":{\"dateFormat\":\"yyyy-MM-dd\",\"positionX\":380,\"positionY\":639}},"
+                + "\"signFieldType\":0}]},"
+                // 乙方（租户个人，手动签）— 3个签名位：页1、页2、页14
                 + "{\"signerType\":0,\"psnSignerInfo\":{\"psnId\":\"" + psnId + "\"},"
-                + "\"signConfig\":{\"signOrder\":2},\"signFields\":[{\"fileId\":\"" + fileId + "\","
+                + "\"signConfig\":{\"signOrder\":2},\"signFields\":["
+                // 乙方签名1: 页1 个人章/签名2
+                + "{\"fileId\":\"" + fileId + "\","
                 + "\"normalSignFieldConfig\":{\"autoSign\":false,\"freeMode\":false,"
                 + "\"signFieldPosition\":{\"positionPage\":\"1\",\"positionX\":255,\"positionY\":290},"
-                + "\"signFieldStyle\":1},\"signFieldType\":0}]}]}";
+                + "\"signFieldStyle\":1},\"signFieldType\":0},"
+                // 乙方签名2: 页2 个人章/签名1
+                + "{\"fileId\":\"" + fileId + "\","
+                + "\"normalSignFieldConfig\":{\"autoSign\":false,\"freeMode\":false,"
+                + "\"signFieldPosition\":{\"positionPage\":\"2\",\"positionX\":282,\"positionY\":595},"
+                + "\"signFieldStyle\":1},\"signFieldType\":0},"
+                // 乙方签名3: 页14 个人章/签名4，显示签署日期
+                + "{\"fileId\":\"" + fileId + "\","
+                + "\"normalSignFieldConfig\":{\"autoSign\":false,\"freeMode\":false,"
+                + "\"signFieldPosition\":{\"positionPage\":\"14\",\"positionX\":243,\"positionY\":536},"
+                + "\"signFieldStyle\":1,\"showSignDate\":1,\"signDateConfig\":{\"dateFormat\":\"yyyy-MM-dd\",\"positionX\":376,\"positionY\":531}},"
+                + "\"signFieldType\":0}"
+                + "]}]}";
 
         EsignHttpResponse resp = callApi("POST", "/v3/sign-flow/create-by-file", jsonParm);
         JsonObject root = gson.fromJson(resp.getBody(), JsonObject.class);
@@ -262,22 +277,38 @@ public class EsignServiceImpl implements EsignService {
 
     /**
      * 构建模板填充数据 — 将合同+租户数据映射到 e签宝 模板控件
-     * 控件 ID 已通过 GET /system/contract/esign-template 确认（模板版本：2026-3-30 招商反馈）
+     * 控件 ID 已通过 GET /v3/doc-templates/{templateId} 确认（模板版本：2026-3-30 招商反馈）
+     * 查询方法: curl -s 'https://api.caigon.cn/h5/esign/template-detail'
      *
-     * 控件布局（按页码/Y坐标排序）：
-     *   页1  Y=220  日期3 (yyyy-MM-dd)       → 合同签约日期
-     *   页2  Y=80   日期1/2 (yyyy年MM月dd日) → 合同起止日期
-     *   页2  Y=301  数字3                    → 租期(月)
-     *   页2  Y=356  单行文本3               → 乙方姓名
-     *   页2  Y=499  单行文本7 (default:\)   → 保留默认值，不传
-     *   页2  Y=530  手机号1                 → 手机号
-     *   页2  Y=558  身份证号1               → 身份证号
-     *   页2  Y=685  单行文本5 (default:栗毅) → 甲方代表人，保留默认值，不传
-     *   页3  Y=401  单行文本4               → 房源地址
-     *   页3  Y=425  数字1                   → 月租金
-     *   页3  Y=423  数字2                   → 押金
-     *   页14 Y=736  单行文本9               → 乙方姓名（签署页）
-     *   页1  Y=752  单行文本10              → 保留默认值，不传
+     * 控件布局（共20个控件，按页码/Y坐标排序）：
+     *
+     * ── 填充控件（12个，由代码传值）──────────────────────────────────────
+     *   页1  Y=220  日期3 (yyyy-MM-dd)       → 合同签约日期 (startDate)
+     *   页1  Y=752  单行文本10              → 合同编号 (contractNo)
+     *   页2  Y=80   日期1 (yyyy年MM月dd日)  → 合同起始日期 (startDateCn)
+     *   页2  Y=80   日期2 (yyyy年MM月dd日)  → 合同终止日期 (endDateCn)
+     *   页2  Y=301  数字3                   → 租期月数 (rentMonths)
+     *   页2  Y=356  单行文本3               → 乙方姓名 (tenantName)
+     *   页2  Y=530  手机号1                 → 手机号 (phone)
+     *   页2  Y=558  身份证号1               → 身份证号 (idCard)
+     *   页3  Y=401  单行文本4 (max20字)     → 房源地址 (houseAddress)
+     *   页3  Y=425  数字1                   → 月租金 (rentPrice)
+     *   页3  Y=423  数字2                   → 押金 (deposit)
+     *   页14 Y=736  单行文本9               → 乙方姓名-签署页 (tenantName)
+     *
+     * ── 默认值控件（2个，不传参）────────────────────────────────────────
+     *   页2  Y=685  单行文本5 (default:栗毅) → 甲方代表人
+     *   页2  Y=499  单行文本7 (default:\)    → 保留
+     *
+     * ── 签章控件（4个，由签署流自动处理）─────────────────────────────────
+     *   页1  Y=290  个人章/签名2            → 乙方签名(页1)
+     *   页2  Y=595  个人章/签名1            → 乙方签名(页2)
+     *   页14 Y=536  个人章/签名4            → 乙方签名(页14底部)
+     *   页14 Y=646  企业章3                 → 甲方企业章
+     *
+     * ── 签署日期控件（2个，签署流showSignDate自动填充）────────────────────
+     *   页14 Y=639  签署日期1               → 甲方签署日期
+     *   页14 Y=531  签署日期2               → 乙方签署日期
      */
     private String buildTemplateComponents(HzContract contract, HzUser user) {
         // ── 租户信息（优先从合同表取，回退到用户表）────────────────────
@@ -315,6 +346,9 @@ public class EsignServiceImpl implements EsignService {
         if (houseAddress.length() > 20) houseAddress = houseAddress.substring(0, 20);
         String rentMonths   = contract.getRentMonths()   != null ? contract.getRentMonths().toString() : "";
 
+        // ── 合同编号 ──────────────────────────────────────────────────────
+        String contractNo   = contract.getContractNo()   != null ? contract.getContractNo()  : "";
+
         return "[\n"
             // 页1: 合同签约日期
             + "  {\"componentId\": \"5a2b66c26133442d9bbfe8ea93fa45ae\", \"componentValue\": \"" + escapeJson(startDate)    + "\"},\n"  // 日期3 (yyyy-MM-dd)
@@ -331,9 +365,11 @@ public class EsignServiceImpl implements EsignService {
             + "  {\"componentId\": \"d2a93cfe598449c49fac10a5c8d58f08\", \"componentValue\": \"" + rentPrice               + "\"},\n"  // 数字1: 月租金
             + "  {\"componentId\": \"ef7ed4f368094d19a52d45369994e7e7\", \"componentValue\": \"" + deposit                 + "\"},\n"  // 数字2: 押金
             // 页14: 签署页乙方姓名
-            + "  {\"componentId\": \"23c33b4791934632b6cc8322d8b15fe3\", \"componentValue\": \"" + escapeJson(tenantName)   + "\"}\n"   // 单行文本9: 乙方姓名(签署页)
+            + "  {\"componentId\": \"23c33b4791934632b6cc8322d8b15fe3\", \"componentValue\": \"" + escapeJson(tenantName)   + "\"},\n"  // 单行文本9: 乙方姓名(签署页)
+            // 页1: 合同编号
+            + "  {\"componentId\": \"fe46bc6ad7c84533949d2c32e75c3182\", \"componentValue\": \"" + escapeJson(contractNo)   + "\"}\n"   // 单行文本10: 合同编号
             + "]";
-        // 单行文本5 (default:栗毅, 甲方代表人)、单行文本7 (default:\)、单行文本10 — 保留模板默认值，不传
+        // 单行文本5 (default:栗毅, 甲方代表人)、单行文本7 (default:\) — 保留模板默认值，不传
     }
 
     /**
