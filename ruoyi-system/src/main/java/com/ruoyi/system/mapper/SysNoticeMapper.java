@@ -2,6 +2,9 @@ package com.ruoyi.system.mapper;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.SysNotice;
 
 /**
@@ -59,4 +62,9 @@ public interface SysNoticeMapper
      * @return 结果
      */
     public int deleteNoticeByIds(Long[] noticeIds);
+
+    /**
+     * 分页查询公告列表
+     */
+    public IPage<SysNotice> selectNoticePage(IPage<SysNotice> page, @Param("entity") SysNotice notice);
 }

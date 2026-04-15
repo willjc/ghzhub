@@ -1,6 +1,8 @@
 package com.ruoyi.system.service;
 
 import java.util.List;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.entity.SysDictData;
 
 /**
@@ -57,4 +59,9 @@ public interface ISysDictDataService
      * @return 结果
      */
     public int updateDictData(SysDictData dictData);
+
+    /**
+     * 分页查询字典数据
+     */
+    public IPage<SysDictData> selectDictDataPage(Page<SysDictData> page, SysDictData dictData);
 }

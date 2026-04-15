@@ -1,6 +1,8 @@
 package com.ruoyi.system.service;
 
 import java.util.List;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.SysPost;
 
 /**
@@ -96,4 +98,9 @@ public interface ISysPostService
      * @return 结果
      */
     public int updatePost(SysPost post);
+
+    /**
+     * 分页查询岗位列表
+     */
+    public IPage<SysPost> selectPostPage(Page<SysPost> page, SysPost post);
 }

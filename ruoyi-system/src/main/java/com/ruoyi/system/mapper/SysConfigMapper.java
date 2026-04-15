@@ -2,6 +2,9 @@ package com.ruoyi.system.mapper;
 
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.SysConfig;
 
 /**
@@ -75,4 +78,9 @@ public interface SysConfigMapper
      * @return 结果
      */
     public int deleteConfigByIds(Long[] configIds);
+
+    /**
+     * 分页查询参数配置列表
+     */
+    public IPage<SysConfig> selectConfigPage(IPage<SysConfig> page, @Param("entity") SysConfig config);
 }

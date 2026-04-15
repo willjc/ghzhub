@@ -1,5 +1,7 @@
 package com.ruoyi.system.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.HzContractTemplate;
 
 import java.util.List;
@@ -66,4 +68,9 @@ public interface IHzContractTemplateService {
      * @return 结果
      */
     int deleteTemplateByIds(Long[] templateIds);
+
+    /**
+     * 分页查询合同模版列表
+     */
+    IPage<HzContractTemplate> selectTemplatePage(Page<HzContractTemplate> page, HzContractTemplate template);
 }

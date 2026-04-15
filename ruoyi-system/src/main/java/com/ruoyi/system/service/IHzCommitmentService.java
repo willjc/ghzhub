@@ -1,5 +1,7 @@
 package com.ruoyi.system.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.HzCommitment;
 import com.ruoyi.system.domain.HzCommitmentVO;
 
@@ -75,4 +77,9 @@ public interface IHzCommitmentService {
      * @return 结果
      */
     int deleteCommitmentById(Long commitmentId);
+
+    /**
+     * 分页查询承诺书VO列表
+     */
+    IPage<HzCommitmentVO> selectCommitmentVOPage(Page<HzCommitmentVO> page, HzCommitment commitment);
 }

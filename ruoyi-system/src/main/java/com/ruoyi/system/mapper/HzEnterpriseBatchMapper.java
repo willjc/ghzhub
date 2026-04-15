@@ -1,8 +1,10 @@
 package com.ruoyi.system.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ruoyi.system.domain.HzEnterpriseBatch;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -29,5 +31,10 @@ public interface HzEnterpriseBatchMapper extends BaseMapper<HzEnterpriseBatch> {
      * @return 企业批次
      */
     HzEnterpriseBatch selectEnterpriseBatchById(Long batchId);
+
+    /**
+     * 分页查询企业批次列表
+     */
+    IPage<HzEnterpriseBatch> selectEnterpriseBatchPage(IPage<HzEnterpriseBatch> page, @Param("entity") HzEnterpriseBatch enterpriseBatch);
 
 }

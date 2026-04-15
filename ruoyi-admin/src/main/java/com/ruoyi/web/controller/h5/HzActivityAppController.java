@@ -1,8 +1,12 @@
 package com.ruoyi.web.controller.h5;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ruoyi.common.constant.HttpStatus;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.gangzhu.activity.domain.HzActivity;
 import com.ruoyi.gangzhu.activity.service.IHzActivityService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,11 +32,16 @@ public class HzActivityAppController extends BaseController {
      */
     @GetMapping("/list")
     public TableDataInfo list(HzActivity activity) {
-        startPage();
         // 只查询状态正常的活动
         activity.setStatus("0");
-        List<HzActivity> list = activityService.selectActivityList(activity);
-        return getDataTable(list);
+        Page<HzActivity> page = PageUtils.getPage();
+        IPage<HzActivity> pageResult = activityService.selectActivityPage(page, activity);
+        TableDataInfo data = new TableDataInfo();
+        data.setCode(HttpStatus.SUCCESS);
+        data.setRows(pageResult.getRecords());
+        data.setTotal(pageResult.getTotal());
+        data.setMsg("查询成功");
+        return data;
     }
 
     /**

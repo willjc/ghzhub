@@ -1,6 +1,8 @@
 package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
@@ -209,5 +211,10 @@ public class HzEnterpriseBatchServiceImpl extends ServiceImpl<HzEnterpriseBatchM
         // 生成3位随机数确保唯一性
         int randomNum = (int) (Math.random() * 1000);
         return String.format("EP%s%03d", dateTime, randomNum);
+    }
+
+    @Override
+    public IPage<HzEnterpriseBatch> selectEnterpriseBatchPage(Page<HzEnterpriseBatch> page, HzEnterpriseBatch enterpriseBatch) {
+        return enterpriseBatchMapper.selectEnterpriseBatchPage(page, enterpriseBatch);
     }
 }

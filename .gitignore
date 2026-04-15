@@ -63,6 +63,7 @@ SaaSAPI_V3_Demo_JAVA/
 
 # 备份目录
 uniapp-h5-backup-*/
+sql/
 
 # 运行时日志
 logs/

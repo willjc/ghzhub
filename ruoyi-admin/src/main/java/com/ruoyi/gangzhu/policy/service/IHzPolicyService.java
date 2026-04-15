@@ -1,5 +1,7 @@
 package com.ruoyi.gangzhu.policy.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ruoyi.gangzhu.policy.domain.HzPolicy;
 
@@ -59,4 +61,13 @@ public interface IHzPolicyService extends IService<HzPolicy> {
      * @return 结果
      */
     int increaseViewCount(Long policyId);
+
+    /**
+     * 分页查询政策文件列表
+     *
+     * @param page 分页参数
+     * @param policy 政策文件
+     * @return 分页结果
+     */
+    IPage<HzPolicy> selectPolicyPage(Page<HzPolicy> page, HzPolicy policy);
 }

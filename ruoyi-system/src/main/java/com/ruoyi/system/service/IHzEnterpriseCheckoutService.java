@@ -1,5 +1,7 @@
 package com.ruoyi.system.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.HzEnterpriseCheckout;
 
 import java.util.List;
@@ -89,4 +91,9 @@ public interface IHzEnterpriseCheckoutService {
      * @return 结果
      */
     int submitCheckout(Long billId);
+
+    /**
+     * 分页查询企业退租申请列表
+     */
+    IPage<HzEnterpriseCheckout> selectCheckoutPage(Page<HzEnterpriseCheckout> page, HzEnterpriseCheckout checkout);
 }

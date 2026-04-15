@@ -1,5 +1,7 @@
 package com.ruoyi.system.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ruoyi.system.domain.HzBatchAllocation;
 import org.springframework.web.multipart.MultipartFile;
@@ -128,4 +130,9 @@ public interface IHzBatchAllocationService extends IService<HzBatchAllocation> {
      * @return 人员列表
      */
     List<Map<String, Object>> getBatchTenants(Long batchId);
+
+    /**
+     * 分页查询配租批次列表
+     */
+    IPage<HzBatchAllocation> selectBatchAllocationPage(Page<HzBatchAllocation> page, HzBatchAllocation batch);
 }

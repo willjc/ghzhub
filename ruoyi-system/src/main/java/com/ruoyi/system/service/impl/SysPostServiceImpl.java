@@ -3,6 +3,8 @@ package com.ruoyi.system.service.impl;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.constant.UserConstants;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
@@ -174,5 +176,11 @@ public class SysPostServiceImpl implements ISysPostService
     public int updatePost(SysPost post)
     {
         return postMapper.updatePost(post);
+    }
+
+    @Override
+    public IPage<SysPost> selectPostPage(Page<SysPost> page, SysPost post)
+    {
+        return postMapper.selectPostPage(page, post);
     }
 }

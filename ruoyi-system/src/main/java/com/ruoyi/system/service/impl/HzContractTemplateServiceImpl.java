@@ -1,6 +1,8 @@
 package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.system.domain.HzContractTemplate;
 import com.ruoyi.system.mapper.HzContractTemplateMapper;
@@ -107,5 +109,10 @@ public class HzContractTemplateServiceImpl implements IHzContractTemplateService
             count += deleteTemplateById(templateId);
         }
         return count;
+    }
+
+    @Override
+    public IPage<HzContractTemplate> selectTemplatePage(Page<HzContractTemplate> page, HzContractTemplate template) {
+        return templateMapper.selectTemplatePage(page, template);
     }
 }

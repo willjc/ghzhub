@@ -120,6 +120,20 @@ public class SysUserServiceImpl implements ISysUserService
         return userMapper.selectUnallocatedList(user);
     }
 
+    @Override
+    @DataScope(deptAlias = "d", userAlias = "u")
+    public IPage<SysUser> selectAllocatedPage(IPage<SysUser> page, SysUser user)
+    {
+        return userMapper.selectAllocatedPage(page, user);
+    }
+
+    @Override
+    @DataScope(deptAlias = "d", userAlias = "u")
+    public IPage<SysUser> selectUnallocatedPage(IPage<SysUser> page, SysUser user)
+    {
+        return userMapper.selectUnallocatedPage(page, user);
+    }
+
     /**
      * 通过用户名查询用户
      * 

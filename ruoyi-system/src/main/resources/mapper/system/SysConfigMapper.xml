@@ -59,6 +59,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		</where>
     </select>
     
+    <select id="selectConfigPage" resultMap="SysConfigResult">
+        <include refid="selectConfigVo"/>
+        <where>
+			<if test="entity.configName != null and entity.configName != ''">
+				AND config_name like concat('%', #{entity.configName}, '%')
+			</if>
+			<if test="entity.configType != null and entity.configType != ''">
+				AND config_type = #{entity.configType}
+			</if>
+			<if test="entity.configKey != null and entity.configKey != ''">
+				AND config_key like concat('%', #{entity.configKey}, '%')
+			</if>
+			<if test="entity.params.beginTime != null and entity.params.beginTime != ''">
+				and date_format(create_time,'%Y%m%d') &gt;= date_format(#{entity.params.beginTime},'%Y%m%d')
+			</if>
+			<if test="entity.params.endTime != null and entity.params.endTime != ''">
+				and date_format(create_time,'%Y%m%d') &lt;= date_format(#{entity.params.endTime},'%Y%m%d')
+			</if>
+		</where>
+    </select>
+    
     <select id="selectConfigById" parameterType="Long" resultMap="SysConfigResult">
         <include refid="selectConfigVo"/>
         where config_id = #{configId}

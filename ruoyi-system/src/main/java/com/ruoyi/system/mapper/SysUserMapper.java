@@ -51,6 +51,16 @@ public interface SysUserMapper extends BaseMapper<SysUser>
     public List<SysUser> selectUnallocatedList(SysUser user);
 
     /**
+     * 分页查询已分配用户角色列表
+     */
+    public IPage<SysUser> selectAllocatedPage(IPage<SysUser> page, @Param("entity") SysUser user);
+
+    /**
+     * 分页查询未分配用户角色列表
+     */
+    public IPage<SysUser> selectUnallocatedPage(IPage<SysUser> page, @Param("entity") SysUser user);
+
+    /**
      * 通过用户名查询用户
      * 
      * @param userName 用户名

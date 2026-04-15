@@ -1,5 +1,7 @@
 package com.ruoyi.system.service.impl;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.system.domain.HzEnterpriseBatch;
@@ -297,5 +299,10 @@ public class HzEnterpriseBillServiceImpl implements IHzEnterpriseBillService {
         bill.setUpdateTime(new Date());
 
         return enterpriseBillMapper.updateEnterpriseBill(bill);
+    }
+
+    @Override
+    public IPage<HzEnterpriseBill> selectEnterpriseBillPage(Page<HzEnterpriseBill> page, HzEnterpriseBill enterpriseBill) {
+        return enterpriseBillMapper.selectEnterpriseBillPage(page, enterpriseBill);
     }
 }

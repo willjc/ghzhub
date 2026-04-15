@@ -1,6 +1,8 @@
 package com.ruoyi.system.service;
 
 import java.util.List;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.SysConfig;
 
 /**
@@ -86,4 +88,9 @@ public interface ISysConfigService
      * @return 结果
      */
     public boolean checkConfigKeyUnique(SysConfig config);
+
+    /**
+     * 分页查询参数配置列表
+     */
+    public IPage<SysConfig> selectConfigPage(Page<SysConfig> page, SysConfig config);
 }

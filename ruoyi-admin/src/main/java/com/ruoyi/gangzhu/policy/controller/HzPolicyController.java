@@ -1,10 +1,14 @@
 package com.ruoyi.gangzhu.policy.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.constant.HttpStatus;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.gangzhu.policy.domain.HzPolicy;
 import com.ruoyi.gangzhu.policy.service.IHzPolicyService;
@@ -33,9 +37,14 @@ public class HzPolicyController extends BaseController {
     @PreAuthorize("@ss.hasPermi('gangzhu:policy:list')")
     @GetMapping("/list")
     public TableDataInfo list(HzPolicy policy) {
-        startPage();
-        List<HzPolicy> list = policyService.selectPolicyList(policy);
-        return getDataTable(list);
+        Page<HzPolicy> page = PageUtils.getPage();
+        IPage<HzPolicy> pageResult = policyService.selectPolicyPage(page, policy);
+        TableDataInfo data = new TableDataInfo();
+        data.setCode(HttpStatus.SUCCESS);
+        data.setRows(pageResult.getRecords());
+        data.setTotal(pageResult.getTotal());
+        data.setMsg("查询成功");
+        return data;
     }
 
     /**

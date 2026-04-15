@@ -46,7 +46,16 @@ public interface ISysUserService
     public List<SysUser> selectUnallocatedList(SysUser user);
 
     /**
-     * 通过用户名查询用户
+     * 分页查询已分配用户角色列表
+     */
+    public IPage<SysUser> selectAllocatedPage(IPage<SysUser> page, SysUser user);
+
+    /**
+     * 分页查询未分配用户角色列表
+     */
+    public IPage<SysUser> selectUnallocatedPage(IPage<SysUser> page, SysUser user);
+
+    /**
      * 
      * @param userName 用户名
      * @return 用户对象信息

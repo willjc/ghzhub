@@ -1,6 +1,8 @@
 package com.ruoyi.system.service.impl;
 
 import com.alibaba.fastjson2.JSON;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzEnterpriseBatch;
@@ -223,5 +225,10 @@ public class HzEnterpriseCheckoutServiceImpl implements IHzEnterpriseCheckoutSer
         checkout.setDelFlag("0");
 
         return checkoutMapper.insertCheckout(checkout);
+    }
+
+    @Override
+    public IPage<HzEnterpriseCheckout> selectCheckoutPage(Page<HzEnterpriseCheckout> page, HzEnterpriseCheckout checkout) {
+        return checkoutMapper.selectCheckoutPage(page, checkout);
     }
 }

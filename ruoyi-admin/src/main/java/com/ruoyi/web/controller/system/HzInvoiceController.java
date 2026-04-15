@@ -2,12 +2,16 @@ package com.ruoyi.web.controller.system;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.constant.HttpStatus;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.system.domain.HzBill;
@@ -53,15 +57,20 @@ public class HzInvoiceController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(HzInvoiceApply invoiceApply)
     {
-        startPage();
+        Page<HzInvoiceApply> page = PageUtils.getPage();
         LambdaQueryWrapper<HzInvoiceApply> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(StringUtils.isNotEmpty(invoiceApply.getApplyNo()), HzInvoiceApply::getApplyNo, invoiceApply.getApplyNo())
                .like(StringUtils.isNotEmpty(invoiceApply.getInvoiceTitle()), HzInvoiceApply::getInvoiceTitle, invoiceApply.getInvoiceTitle())
                .eq(StringUtils.isNotEmpty(invoiceApply.getApplyStatus()), HzInvoiceApply::getApplyStatus, invoiceApply.getApplyStatus())
                .eq(HzInvoiceApply::getDelFlag, "0")
                .orderByDesc(HzInvoiceApply::getCreateTime);
-        List<HzInvoiceApply> list = invoiceApplyMapper.selectList(wrapper);
-        return getDataTable(list);
+        IPage<HzInvoiceApply> pageResult = invoiceApplyMapper.selectPage(page, wrapper);
+        TableDataInfo data = new TableDataInfo();
+        data.setCode(HttpStatus.SUCCESS);
+        data.setRows(pageResult.getRecords());
+        data.setTotal(pageResult.getTotal());
+        data.setMsg("查询成功");
+        return data;
     }
 
     /**

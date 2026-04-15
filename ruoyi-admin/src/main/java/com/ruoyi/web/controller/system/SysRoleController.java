@@ -13,7 +13,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.constant.HttpStatus;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.domain.entity.SysDept;
@@ -22,6 +25,7 @@ import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.core.domain.model.LoginUser;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.framework.web.service.SysPermissionService;
@@ -59,9 +63,14 @@ public class SysRoleController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(SysRole role)
     {
-        startPage();
-        List<SysRole> list = roleService.selectRoleList(role);
-        return getDataTable(list);
+        Page<SysRole> page = PageUtils.getPage();
+        IPage<SysRole> pageResult = roleService.selectRolePage(page, role);
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(HttpStatus.SUCCESS);
+        rspData.setRows(pageResult.getRecords());
+        rspData.setTotal(pageResult.getTotal());
+        rspData.setMsg("查询成功");
+        return rspData;
     }
 
     @Log(title = "角色管理", businessType = BusinessType.EXPORT)
@@ -196,9 +205,14 @@ public class SysRoleController extends BaseController
     @GetMapping("/authUser/allocatedList")
     public TableDataInfo allocatedList(SysUser user)
     {
-        startPage();
-        List<SysUser> list = userService.selectAllocatedList(user);
-        return getDataTable(list);
+        Page<SysUser> page = PageUtils.getPage();
+        IPage<SysUser> pageResult = userService.selectAllocatedPage(page, user);
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(HttpStatus.SUCCESS);
+        rspData.setRows(pageResult.getRecords());
+        rspData.setTotal(pageResult.getTotal());
+        rspData.setMsg("查询成功");
+        return rspData;
     }
 
     /**
@@ -208,9 +222,14 @@ public class SysRoleController extends BaseController
     @GetMapping("/authUser/unallocatedList")
     public TableDataInfo unallocatedList(SysUser user)
     {
-        startPage();
-        List<SysUser> list = userService.selectUnallocatedList(user);
-        return getDataTable(list);
+        Page<SysUser> page = PageUtils.getPage();
+        IPage<SysUser> pageResult = userService.selectUnallocatedPage(page, user);
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(HttpStatus.SUCCESS);
+        rspData.setRows(pageResult.getRecords());
+        rspData.setTotal(pageResult.getTotal());
+        rspData.setMsg("查询成功");
+        return rspData;
     }
 
     /**

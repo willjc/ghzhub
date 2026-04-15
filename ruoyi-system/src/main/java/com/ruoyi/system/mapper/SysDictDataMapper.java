@@ -3,6 +3,8 @@ import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.entity.SysDictData;
 
 /**
@@ -94,4 +96,9 @@ public interface SysDictDataMapper
      * @return 结果
      */
     public int updateDictDataType(@Param("oldDictType") String oldDictType, @Param("newDictType") String newDictType);
+
+    /**
+     * 分页查询字典数据
+     */
+    public IPage<SysDictData> selectDictDataPage(IPage<SysDictData> page, @Param("entity") SysDictData dictData);
 }

@@ -1,5 +1,7 @@
 package com.ruoyi.system.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.HzEnterpriseBill;
 
 import java.math.BigDecimal;
@@ -131,4 +133,9 @@ public interface IHzEnterpriseBillService {
      * @return 结果
      */
     int submitCheckin(Long billId, String personnelFile);
+
+    /**
+     * 分页查询企业账单列表
+     */
+    IPage<HzEnterpriseBill> selectEnterpriseBillPage(Page<HzEnterpriseBill> page, HzEnterpriseBill enterpriseBill);
 }

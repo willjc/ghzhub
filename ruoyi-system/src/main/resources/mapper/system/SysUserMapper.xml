@@ -150,6 +150,39 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		${params.dataScope}
 	</select>
 	
+	<select id="selectAllocatedPage" resultMap="SysUserResult">
+	    select distinct u.user_id, u.dept_id, u.user_name, u.nick_name, u.email, u.phonenumber, u.status, u.create_time
+	    from sys_user u
+			 left join sys_dept d on u.dept_id = d.dept_id
+			 left join sys_user_role ur on u.user_id = ur.user_id
+			 left join sys_role r on r.role_id = ur.role_id
+	    where u.del_flag = '0' and r.role_id = #{entity.roleId}
+	    <if test="entity.userName != null and entity.userName != ''">
+			AND u.user_name like concat('%', #{entity.userName}, '%')
+		</if>
+		<if test="entity.phonenumber != null and entity.phonenumber != ''">
+			AND u.phonenumber like concat('%', #{entity.phonenumber}, '%')
+		</if>
+		${entity.params.dataScope}
+	</select>
+	
+	<select id="selectUnallocatedPage" resultMap="SysUserResult">
+	    select distinct u.user_id, u.dept_id, u.user_name, u.nick_name, u.email, u.phonenumber, u.status, u.create_time
+	    from sys_user u
+			 left join sys_dept d on u.dept_id = d.dept_id
+			 left join sys_user_role ur on u.user_id = ur.user_id
+			 left join sys_role r on r.role_id = ur.role_id
+	    where u.del_flag = '0' and (r.role_id != #{entity.roleId} or r.role_id IS NULL)
+	    and u.user_id not in (select u.user_id from sys_user u inner join sys_user_role ur on u.user_id = ur.user_id and ur.role_id = #{entity.roleId})
+	    <if test="entity.userName != null and entity.userName != ''">
+			AND u.user_name like concat('%', #{entity.userName}, '%')
+		</if>
+		<if test="entity.phonenumber != null and entity.phonenumber != ''">
+			AND u.phonenumber like concat('%', #{entity.phonenumber}, '%')
+		</if>
+		${entity.params.dataScope}
+	</select>
+	
 	<select id="selectUserByUserName" parameterType="String" resultMap="SysUserResult">
 	    <include refid="selectUserVo"/>
 		where u.user_name = #{userName} and u.del_flag = '0'

@@ -1,10 +1,14 @@
 package com.ruoyi.web.controller.system;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.constant.HttpStatus;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.system.domain.HzEnterpriseBatch;
 import com.ruoyi.system.domain.HzEnterpriseBill;
@@ -43,9 +47,14 @@ public class HzEnterpriseBatchController extends BaseController {
     @PreAuthorize("@ss.hasPermi('system:enterpriseBatch:list')")
     @GetMapping("/list")
     public TableDataInfo list(HzEnterpriseBatch enterpriseBatch) {
-        startPage();
-        List<HzEnterpriseBatch> list = enterpriseBatchService.selectEnterpriseBatchList(enterpriseBatch);
-        return getDataTable(list);
+        Page<HzEnterpriseBatch> page = PageUtils.getPage();
+        IPage<HzEnterpriseBatch> pageResult = enterpriseBatchService.selectEnterpriseBatchPage(page, enterpriseBatch);
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(HttpStatus.SUCCESS);
+        rspData.setRows(pageResult.getRecords());
+        rspData.setTotal(pageResult.getTotal());
+        rspData.setMsg("查询成功");
+        return rspData;
     }
 
     /**

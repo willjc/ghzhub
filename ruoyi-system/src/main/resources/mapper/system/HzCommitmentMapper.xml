@@ -106,4 +106,52 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE c.commitment_id = #{commitmentId}
     </select>
 
+    <!-- 分页查询承诺书VO列表 -->
+    <select id="selectCommitmentVOPage" resultMap="HzCommitmentVOResult">
+        SELECT
+            c.commitment_id,
+            c.tenant_id,
+            c.project_id,
+            c.commitment_type,
+            c.commitment_content,
+            c.signature_image,
+            c.sign_time,
+            c.ip_address,
+            c.device_info,
+            c.status,
+            c.create_by,
+            c.create_time,
+            c.update_by,
+            c.update_time,
+            c.remark,
+            c.del_flag,
+            u.nickname as user_nickname,
+            u.phone as user_account,
+            p.project_name,
+            p.project_code
+        FROM hz_commitment c
+        LEFT JOIN hz_user u ON c.tenant_id = u.user_id
+        LEFT JOIN hz_project p ON c.project_id = p.project_id
+        WHERE c.del_flag = '0'
+        <if test="entity.tenantId != null">
+            AND c.tenant_id = #{entity.tenantId}
+        </if>
+        <if test="entity.projectId != null">
+            AND c.project_id = #{entity.projectId}
+        </if>
+        <if test="entity.commitmentType != null and entity.commitmentType != ''">
+            AND c.commitment_type = #{entity.commitmentType}
+        </if>
+        <if test="entity.status != null and entity.status != ''">
+            AND c.status = #{entity.status}
+        </if>
+        <if test="entity.params.beginTime != null and entity.params.beginTime != ''">
+            AND DATE_FORMAT(c.sign_time, '%Y-%m-%d') &gt;= DATE_FORMAT(#{entity.params.beginTime}, '%Y-%m-%d')
+        </if>
+        <if test="entity.params.endTime != null and entity.params.endTime != ''">
+            AND DATE_FORMAT(c.sign_time, '%Y-%m-%d') &lt;= DATE_FORMAT(#{entity.params.endTime}, '%Y-%m-%d')
+        </if>
+        ORDER BY c.sign_time DESC
+    </select>
+
 </mapper>

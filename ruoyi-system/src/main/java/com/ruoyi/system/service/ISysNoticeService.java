@@ -1,6 +1,8 @@
 package com.ruoyi.system.service;
 
 import java.util.List;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.SysNotice;
 
 /**
@@ -57,4 +59,9 @@ public interface ISysNoticeService
      * @return 结果
      */
     public int deleteNoticeByIds(Long[] noticeIds);
+
+    /**
+     * 分页查询公告列表
+     */
+    public IPage<SysNotice> selectNoticePage(Page<SysNotice> page, SysNotice notice);
 }

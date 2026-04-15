@@ -2,6 +2,8 @@ package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.system.domain.HzCommitment;
 import com.ruoyi.system.domain.HzCommitmentVO;
@@ -73,5 +75,10 @@ public class HzCommitmentServiceImpl extends ServiceImpl<HzCommitmentMapper, HzC
     @Override
     public List<HzCommitmentVO> selectCommitmentVOList(HzCommitment commitment) {
         return this.baseMapper.selectCommitmentVOList(commitment);
+    }
+
+    @Override
+    public IPage<HzCommitmentVO> selectCommitmentVOPage(Page<HzCommitmentVO> page, HzCommitment commitment) {
+        return this.baseMapper.selectCommitmentVOPage(page, commitment);
     }
 }

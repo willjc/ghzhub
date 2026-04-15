@@ -38,9 +38,14 @@ public class SysDictTypeController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(SysDictType dictType)
     {
-        startPage();
-        List<SysDictType> list = dictTypeService.selectDictTypeList(dictType);
-        return getDataTable(list);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<SysDictType> page = com.ruoyi.common.utils.PageUtils.getPage();
+        com.baomidou.mybatisplus.core.metadata.IPage<SysDictType> pageResult = dictTypeService.selectDictTypePage(page, dictType);
+        TableDataInfo data = new TableDataInfo();
+        data.setCode(com.ruoyi.common.constant.HttpStatus.SUCCESS);
+        data.setRows(pageResult.getRecords());
+        data.setTotal(pageResult.getTotal());
+        data.setMsg("查询成功");
+        return data;
     }
 
     @Log(title = "字典类型", businessType = BusinessType.EXPORT)

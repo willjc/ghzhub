@@ -42,6 +42,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		</where>
     </select>
     
+    <select id="selectNoticePage" resultMap="SysNoticeResult">
+        <include refid="selectNoticeVo"/>
+        <where>
+			<if test="entity.noticeTitle != null and entity.noticeTitle != ''">
+				AND notice_title like concat('%', #{entity.noticeTitle}, '%')
+			</if>
+			<if test="entity.noticeType != null and entity.noticeType != ''">
+				AND notice_type = #{entity.noticeType}
+			</if>
+			<if test="entity.createBy != null and entity.createBy != ''">
+				AND create_by like concat('%', #{entity.createBy}, '%')
+			</if>
+		</where>
+    </select>
+    
     <insert id="insertNotice" parameterType="SysNotice">
         insert into sys_notice (
 			<if test="noticeTitle != null and noticeTitle != '' ">notice_title, </if>

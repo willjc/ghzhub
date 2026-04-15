@@ -1,6 +1,8 @@
 package com.ruoyi.system.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.HzEnterpriseBill;
 import org.apache.ibatis.annotations.Param;
 
@@ -76,4 +78,9 @@ public interface HzEnterpriseBillMapper extends BaseMapper<HzEnterpriseBill> {
      * @return 企业账单
      */
     HzEnterpriseBill selectBillByBatchId(@Param("batchId") Long batchId);
+
+    /**
+     * 分页查询企业账单列表
+     */
+    IPage<HzEnterpriseBill> selectEnterpriseBillPage(IPage<HzEnterpriseBill> page, @Param("entity") HzEnterpriseBill enterpriseBill);
 }

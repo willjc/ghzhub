@@ -1,0 +1,191 @@
+================================================================================
+                  Controller分页问题排查报告 - 执行摘要
+================================================================================
+
+执行时间: 2026-04-15
+排查范围: ruoyi-admin/src/main/java/com/ruoyi/web/controller/
+总Controller数: 89个
+
+================================================================================
+【关键发现】
+================================================================================
+
+1. 已修复Controller: 4个 ✓
+   - HzProjectController (system)
+   - HzUserMessageController
+   - HzUserController
+   - HzTenantController
+
+2. 需要修复Controller: 30个
+   - 优先级1（仅改Controller）: 11个
+   - 优先级2（改Service+Controller）: 19个
+
+3. 无需修复Controller: 45个
+   - 无list方法
+   - list方法无分页逻辑
+
+4. 总体完成度: 4/34 = 11.8%
+
+================================================================================
+【分类清单】
+================================================================================
+
+【优先级1】Service已有分页方法，只需改Controller - 11个
+- HzActivityAppController          → IHzAnnouncementService.selectAnnouncementPage()
+- HzAppointmentController          → IHzAppointmentService.selectAppointmentPage()
+- HzBuildingController             → IHzBuildingService.selectBuildingPage()
+- HzCoTenantController             → IHzCoTenantService.selectCoTenantPage()
+- HzComplaintController            → IHzComplaintService.selectComplaintPage()
+- HzHouseController                → IHzHouseService.selectHouseList()/selectHousePage()
+- HzHouseExchangeController        → IHzHouseExchangeService.selectExchangePage()
+- HzPolicyAppController            → IHzAnnouncementService.selectAnnouncementPage()
+- HzProjectController (h5)         → IHzProjectService.selectProjectPage()
+- HzQualificationController        → IHzQualificationService.selectQualificationPage()
+- HzRepairController               → IHzRepairService.selectRepairPage()
+
+【优先级2】需要新增Service分页方法 - 19个
+
+【Sys系列 - 系统基础功能】9个
+- SysUserController                → ISysUserService (需新增selectUserPage)
+- SysRoleController                → ISysRoleService (需新增selectRolePage)
+- SysConfigController              → ISysConfigService (需新增selectConfigPage)
+- SysDictTypeController            → ISysDictTypeService (需新增selectDictTypePage)
+- SysDictDataController            → ISysDictDataService (需新增selectDictDataPage)
+- SysPostController                → ISysPostService (需新增selectPostPage)
+- SysNoticeController              → ISysNoticeService (需新增selectNoticePage)
+- SysLogininforController          → ISysLogininforService (需新增selectLogininforPage)
+- SysOperlogController             → ISysOperLogService (需新增selectOperLogPage)
+
+【Hz业务系列 - 租赁相关】10个
+- HzBatchAllocationController      → IHzBatchAllocationService
+- HzCommitmentController           → IHzCommitmentService
+- HzCommitmentTemplateController   → IHzCommitmentTemplateService
+- HzContractTemplateController     → IHzContractTemplateService
+- HzEnterpriseBatchController      → IHzEnterpriseBatchService
+- HzEnterpriseBillController       → IHzEnterpriseBillService
+- HzEnterpriseCheckoutController   → IHzEnterpriseCheckoutService
+- HzEnterpriseController           → IHzEnterpriseService
+- HzInvoiceController              → IHzInvoiceService
+- HzOperationConfigController      → IHzOperationConfigService
+
+================================================================================
+【根本问题】
+================================================================================
+
+错误的分页模式（当前多个Controller存在）:
+┌─────────────────────────────────────────────────────────────────┐
+│ startPage();  // ThreadLocal存储分页参数，但接下来的查询未使用  │
+│ List<T> list = service.selectXxxList(xxx);  // 返回全量List     │
+│ return getDataTable(list);  // total = list.size() 分页无效     │
+└─────────────────────────────────────────────────────────────────┘
+
+正确的分页模式（已修复4个Controller采用）:
+┌─────────────────────────────────────────────────────────────────┐
+│ Page<T> page = PageUtils.getPage();                             │
+│ IPage<T> result = service.selectXxxPage(xxx, page.getCurrent(), │
+│     page.getSize());  // MyBatis-Plus处理分页                   │
+│ TableDataInfo.setRows(result.getRecords());  // 当前页数据      │
+│ TableDataInfo.setTotal(result.getTotal());   // 正确的总数      │
+└─────────────────────────────────────────────────────────────────┘
+
+================================================================================
+【修复工作量估算】
+================================================================================
+
+优先级1 (11个Controller):
+- 工作量: 4-8小时
+- 风险: 低
+- 只需修改Controller，无需改Service
+- 可以并行处理
+
+优先级2 (19个Controller):
+- 工作量: 16-24小时
+- 风险: 中
+- 需要在Service接口和实现类中添加分页方法
+- 建议分批处理：
+  1. Sys系列 (9个) - 优先修复，影响系统稳定性
+  2. Hz业务系列 (10个) - 后续修复，影响业务功能
+
+总计修复时间: 20-32小时 (含测试)
+
+================================================================================
+【修复模板】
+================================================================================
+
+Controller修复 (以HzBuildingController为例):
+┌─────────────────────────────────────────────────────────────────┐
+│ // 【修改前】                                                    │
+│ @GetMapping("/list")                                             │
+│ public TableDataInfo list(HzBuilding building) {                │
+│     startPage();  // ← 删除此行                                  │
+│     List<HzBuilding> list = buildingService.selectBuildingList()│
+│     return getDataTable(list);  // ← 修改返回方式              │
+│ }                                                                │
+│                                                                  │
+│ // 【修改后】                                                    │
+│ @GetMapping("/list")                                             │
+│ public TableDataInfo list(HzBuilding building) {                │
+│     Page<HzBuilding> page = PageUtils.getPage();                │
+│     IPage<HzBuilding> pageResult =                              │
+│         buildingService.selectBuildingPage(building,            │
+│         (int)page.getCurrent(), (int)page.getSize());           │
+│     TableDataInfo rspData = new TableDataInfo();                │
+│     rspData.setCode(200);                                        │
+│     rspData.setRows(pageResult.getRecords());                   │
+│     rspData.setTotal(pageResult.getTotal());                    │
+│     return rspData;                                              │
+│ }                                                                │
+└─────────────────────────────────────────────────────────────────┘
+
+Service修复 (以HzBatchAllocationService为例):
+┌─────────────────────────────────────────────────────────────────┐
+│ // 在IHzBatchAllocationService接口中新增:                        │
+│ /**                                                              │
+│  * 分页查询批量分配列表                                         │
+│  */                                                              │
+│ IPage<HzBatchAllocation> selectBatchAllocationPage(             │
+│     HzBatchAllocation condition, int pageNum, int pageSize);    │
+│                                                                  │
+│ // 在HzBatchAllocationServiceImpl中实现:                         │
+│ public IPage<HzBatchAllocation> selectBatchAllocationPage(      │
+│         HzBatchAllocation condition, int pageNum,               │
+│         int pageSize) {                                          │
+│     Page<HzBatchAllocation> page = new Page<>(pageNum,          │
+│         pageSize);                                              │
+│     LambdaQueryWrapper<HzBatchAllocation> queryWrapper =        │
+│         new LambdaQueryWrapper<>();                             │
+│     // 添加查询条件...                                          │
+│     return baseMapper.selectPage(page, queryWrapper);           │
+│ }                                                                │
+└─────────────────────────────────────────────────────────────────┘
+
+================================================================================
+【后续检查清单】
+================================================================================
+
+修复完毕后需要:
+□ 编译打包: mvn clean package -DskipTests
+□ 单元测试: mvn test
+□ 功能测试: 验证各列表页面分页是否正常
+□ 性能测试: 大数据量分页是否流畅
+□ 回归测试: 其他相关功能是否受影响
+□ 代码审查: 确认符合规范和最小改动原则
+□ 部署验证: 上线后验证生产环境分页功能
+
+================================================================================
+【相关文件位置】
+================================================================================
+
+Controller文件路径:
+- /Users/wangwen/Desktop/ghz/ghz/ruoyi-admin/src/main/java/com/ruoyi/web/controller/
+
+Service接口路径:
+- /Users/wangwen/Desktop/ghz/ghz/ruoyi-system/src/main/java/com/ruoyi/system/service/
+
+Service实现路径:
+- /Users/wangwen/Desktop/ghz/ghz/ruoyi-system/src/main/java/com/ruoyi/system/service/impl/
+
+Mapper文件路径:
+- /Users/wangwen/Desktop/ghz/ghz/ruoyi-system/src/main/resources/mapper/
+
+================================================================================

@@ -2,6 +2,9 @@ package com.ruoyi.system.mapper;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.SysPost;
 
 /**
@@ -98,4 +101,9 @@ public interface SysPostMapper
      * @return 结果
      */
     public SysPost checkPostCodeUnique(String postCode);
+
+    /**
+     * 分页查询岗位列表
+     */
+    public IPage<SysPost> selectPostPage(IPage<SysPost> page, @Param("entity") SysPost post);
 }

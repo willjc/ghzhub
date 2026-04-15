@@ -53,6 +53,12 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService
         return dictTypeMapper.selectDictTypeList(dictType);
     }
 
+    @Override
+    public com.baomidou.mybatisplus.core.metadata.IPage<SysDictType> selectDictTypePage(com.baomidou.mybatisplus.extension.plugins.pagination.Page<SysDictType> page, SysDictType dictType)
+    {
+        return dictTypeMapper.selectDictTypePage(page, dictType);
+    }
+
     /**
      * 根据所有字典类型
      * 

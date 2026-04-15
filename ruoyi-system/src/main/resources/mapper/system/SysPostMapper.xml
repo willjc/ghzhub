@@ -37,6 +37,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		</where>
 	</select>
 	
+	<select id="selectPostPage" resultMap="SysPostResult">
+	    <include refid="selectPostVo"/>
+		<where>
+			<if test="entity.postCode != null and entity.postCode != ''">
+				AND post_code like concat('%', #{entity.postCode}, '%')
+			</if>
+			<if test="entity.status != null and entity.status != ''">
+				AND status = #{entity.status}
+			</if>
+			<if test="entity.postName != null and entity.postName != ''">
+				AND post_name like concat('%', #{entity.postName}, '%')
+			</if>
+		</where>
+	</select>
+	
 	<select id="selectPostAll" resultMap="SysPostResult">
 		<include refid="selectPostVo"/>
 	</select>

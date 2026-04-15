@@ -1,6 +1,7 @@
 package com.ruoyi.system.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ruoyi.system.domain.HzEnterpriseCheckout;
 import org.apache.ibatis.annotations.Param;
 
@@ -76,4 +77,9 @@ public interface HzEnterpriseCheckoutMapper extends BaseMapper<HzEnterpriseCheck
      * @return 企业退租申请集合
      */
     List<HzEnterpriseCheckout> selectCheckoutsByContactPhone(@Param("contactPhone") String contactPhone);
+
+    /**
+     * 分页查询企业退租申请列表
+     */
+    IPage<HzEnterpriseCheckout> selectCheckoutPage(IPage<HzEnterpriseCheckout> page, @Param("entity") HzEnterpriseCheckout checkout);
 }

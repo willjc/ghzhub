@@ -1,0 +1,35 @@
+分类,Controller名称,文件路径,Service接口,当前Service方法,需要新增Service方法,修复优先级,修复复杂度,状态
+已修复,HzProjectController (system),ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzProjectController.java,IHzProjectService,selectProjectPage(),N/A,已完成,低,✓
+已修复,HzUserMessageController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzUserMessageController.java,IHzUserMessageService,selectMessagePage(),N/A,已完成,低,✓
+已修复,HzUserController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzUserController.java,IHzUserService,selectUserPage(),N/A,已完成,低,✓
+已修复,HzTenantController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzTenantController.java,IHzTenantService,selectTenantPage(),N/A,已完成,低,✓
+优先级1,HzActivityAppController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/h5/HzActivityAppController.java,IHzAnnouncementService,selectAnnouncementPage(),N/A,1,低,待修
+优先级1,HzAppointmentController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzAppointmentController.java,IHzAppointmentService,selectAppointmentPage(),N/A,1,低,待修
+优先级1,HzBuildingController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzBuildingController.java,IHzBuildingService,selectBuildingPage(),N/A,1,低,待修
+优先级1,HzCoTenantController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzCoTenantController.java,IHzCoTenantService,selectCoTenantPage(),N/A,1,低,待修
+优先级1,HzComplaintController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzComplaintController.java,IHzComplaintService,selectComplaintPage(),N/A,1,低,待修
+优先级1,HzHouseController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzHouseController.java,IHzHouseService,selectHouseList()/selectHousePage(),N/A,1,低,已部分修复
+优先级1,HzHouseExchangeController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzHouseExchangeController.java,IHzHouseExchangeService,selectExchangePage(),N/A,1,低,待修
+优先级1,HzPolicyAppController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/h5/HzPolicyAppController.java,IHzAnnouncementService,selectAnnouncementPage(),N/A,1,低,待修
+优先级1,HzProjectController (h5),ruoyi-admin/src/main/java/com/ruoyi/web/controller/h5/HzProjectController.java,IHzProjectService,selectProjectPage(),N/A,1,低,待修
+优先级1,HzQualificationController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzQualificationController.java,IHzQualificationService,selectQualificationPage(),N/A,1,低,待修
+优先级1,HzRepairController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzRepairController.java,IHzRepairService,selectRepairPage(),N/A,1,低,待修
+优先级2,HzBatchAllocationController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzBatchAllocationController.java,IHzBatchAllocationService,selectBatchAllocationList(),selectBatchAllocationPage(),2,中,待修
+优先级2,HzCommitmentController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzCommitmentController.java,IHzCommitmentService,selectCommitmentVOList(),selectCommitmentPage(),2,中,待修
+优先级2,HzCommitmentTemplateController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzCommitmentTemplateController.java,IHzCommitmentTemplateService,selectTemplateList(),selectCommitmentTemplatePage(),2,中,待修
+优先级2,HzContractTemplateController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzContractTemplateController.java,IHzContractTemplateService,selectTemplateList(),selectContractTemplatePage(),2,中,待修
+优先级2,HzEnterpriseBatchController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzEnterpriseBatchController.java,IHzEnterpriseBatchService,selectEnterpriseBatchList(),selectEnterpriseBatchPage(),2,中,待修
+优先级2,HzEnterpriseBillController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzEnterpriseBillController.java,IHzEnterpriseBillService,selectEnterpriseBillList(),selectEnterpriseBillPage(),2,中,待修
+优先级2,HzEnterpriseCheckoutController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzEnterpriseCheckoutController.java,IHzEnterpriseCheckoutService,selectCheckoutList(),selectEnterpriseCheckoutPage(),2,中,待修
+优先级2,HzEnterpriseController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzEnterpriseController.java,IHzEnterpriseService,selectEnterpriseList(),selectEnterprisePage(),2,中,待修
+优先级2,HzInvoiceController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzInvoiceController.java,IHzInvoiceService,无,selectInvoicePage(),2,中,待修
+优先级2,HzOperationConfigController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/HzOperationConfigController.java,IHzOperationConfigService,selectConfigList(),selectOperationConfigPage(),2,中,待修
+优先级2,SysConfigController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/SysConfigController.java,ISysConfigService,selectConfigList(),selectConfigPage(),2,中,待修
+优先级2,SysDictDataController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/SysDictDataController.java,ISysDictDataService,selectDictDataList(),selectDictDataPage(),2,中,待修
+优先级2,SysDictTypeController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/SysDictTypeController.java,ISysDictTypeService,selectDictTypeList(),selectDictTypePage(),2,中,待修
+优先级2,SysLogininforController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/monitor/SysLogininforController.java,ISysLogininforService,selectLogininforList(),selectLogininforPage(),2,中,待修
+优先级2,SysNoticeController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/SysNoticeController.java,ISysNoticeService,selectNoticeList(),selectNoticePage(),2,中,待修
+优先级2,SysOperlogController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/monitor/SysOperlogController.java,ISysOperLogService,selectOperLogList(),selectOperLogPage(),2,中,待修
+优先级2,SysPostController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/SysPostController.java,ISysPostService,selectPostList(),selectPostPage(),2,中,待修
+优先级2,SysRoleController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/SysRoleController.java,ISysRoleService,selectRoleList(),selectRolePage(),2,中,待修
+优先级2,SysUserController,ruoyi-admin/src/main/java/com/ruoyi/web/controller/system/SysUserController.java,ISysUserService,selectUserList(),selectUserPage(),2,中,待修

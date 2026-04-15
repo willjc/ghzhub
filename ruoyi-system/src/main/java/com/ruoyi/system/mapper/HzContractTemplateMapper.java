@@ -1,8 +1,11 @@
 package com.ruoyi.system.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.HzContractTemplate;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -29,4 +32,9 @@ public interface HzContractTemplateMapper extends BaseMapper<HzContractTemplate>
      * @return 合同模版
      */
     HzContractTemplate selectTemplateByType(String contractType);
+
+    /**
+     * 分页查询合同模版列表
+     */
+    IPage<HzContractTemplate> selectTemplatePage(IPage<HzContractTemplate> page, @Param("entity") HzContractTemplate template);
 }

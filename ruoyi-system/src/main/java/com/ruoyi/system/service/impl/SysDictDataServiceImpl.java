@@ -3,6 +3,8 @@ package com.ruoyi.system.service.impl;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.domain.entity.SysDictData;
 import com.ruoyi.common.utils.DictUtils;
 import com.ruoyi.system.mapper.SysDictDataMapper;
@@ -107,5 +109,11 @@ public class SysDictDataServiceImpl implements ISysDictDataService
             DictUtils.setDictCache(data.getDictType(), dictDatas);
         }
         return row;
+    }
+
+    @Override
+    public IPage<SysDictData> selectDictDataPage(Page<SysDictData> page, SysDictData dictData)
+    {
+        return dictDataMapper.selectDictDataPage(page, dictData);
     }
 }

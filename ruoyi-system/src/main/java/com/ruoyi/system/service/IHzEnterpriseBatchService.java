@@ -1,5 +1,7 @@
 package com.ruoyi.system.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.HzEnterpriseBatch;
 
 import java.util.List;
@@ -76,4 +78,9 @@ public interface IHzEnterpriseBatchService {
      * @return 房源列表
      */
     List<Map<String, Object>> getBatchHouses(Long batchId);
+
+    /**
+     * 分页查询企业批次列表
+     */
+    IPage<HzEnterpriseBatch> selectEnterpriseBatchPage(Page<HzEnterpriseBatch> page, HzEnterpriseBatch enterpriseBatch);
 }

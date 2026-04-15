@@ -2,6 +2,8 @@ package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
@@ -631,5 +633,10 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
             return false;
         }
         return phone.matches("^1[3-9]\\d{9}$");
+    }
+
+    @Override
+    public IPage<HzBatchAllocation> selectBatchAllocationPage(Page<HzBatchAllocation> page, HzBatchAllocation batch) {
+        return batchAllocationMapper.selectBatchAllocationPage(page, batch);
     }
 }

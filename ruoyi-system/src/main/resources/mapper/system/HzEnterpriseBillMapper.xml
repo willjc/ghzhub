@@ -156,4 +156,33 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </delete>
 
+    <select id="selectEnterpriseBillPage" resultMap="EnterpriseBillResult">
+        <include refid="selectEnterpriseBillVo"/>
+        <where>
+            del_flag = '0'
+            <if test="entity.billNo != null and entity.billNo != ''">
+                AND bill_no LIKE CONCAT('%', #{entity.billNo}, '%')
+            </if>
+            <if test="entity.batchId != null">
+                AND batch_id = #{entity.batchId}
+            </if>
+            <if test="entity.batchName != null and entity.batchName != ''">
+                AND batch_name LIKE CONCAT('%', #{entity.batchName}, '%')
+            </if>
+            <if test="entity.enterpriseName != null and entity.enterpriseName != ''">
+                AND enterprise_name LIKE CONCAT('%', #{entity.enterpriseName}, '%')
+            </if>
+            <if test="entity.contactPhone != null and entity.contactPhone != ''">
+                AND contact_phone LIKE CONCAT('%', #{entity.contactPhone}, '%')
+            </if>
+            <if test="entity.billStatus != null and entity.billStatus != ''">
+                AND bill_status = #{entity.billStatus}
+            </if>
+            <if test="entity.approveStatus != null and entity.approveStatus != ''">
+                AND approve_status = #{entity.approveStatus}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
 </mapper>

@@ -141,4 +141,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </delete>
 
+    <select id="selectCheckoutPage" resultMap="EnterpriseCheckoutResult">
+        <include refid="selectEnterpriseCheckoutVo"/>
+        <where>
+            del_flag = '0'
+            <if test="entity.checkoutNo != null and entity.checkoutNo != ''">
+                AND checkout_no LIKE CONCAT('%', #{entity.checkoutNo}, '%')
+            </if>
+            <if test="entity.batchId != null">
+                AND batch_id = #{entity.batchId}
+            </if>
+            <if test="entity.batchName != null and entity.batchName != ''">
+                AND batch_name LIKE CONCAT('%', #{entity.batchName}, '%')
+            </if>
+            <if test="entity.enterpriseName != null and entity.enterpriseName != ''">
+                AND enterprise_name LIKE CONCAT('%', #{entity.enterpriseName}, '%')
+            </if>
+            <if test="entity.contactPhone != null and entity.contactPhone != ''">
+                AND contact_phone LIKE CONCAT('%', #{entity.contactPhone}, '%')
+            </if>
+            <if test="entity.checkoutStatus != null and entity.checkoutStatus != ''">
+                AND checkout_status = #{entity.checkoutStatus}
+            </if>
+        </where>
+        ORDER BY apply_time DESC
+    </select>
+
 </mapper>

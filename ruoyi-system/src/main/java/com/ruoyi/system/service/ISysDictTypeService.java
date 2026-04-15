@@ -20,6 +20,11 @@ public interface ISysDictTypeService
     public List<SysDictType> selectDictTypeList(SysDictType dictType);
 
     /**
+     * 分页查询字典类型
+     */
+    public com.baomidou.mybatisplus.core.metadata.IPage<SysDictType> selectDictTypePage(com.baomidou.mybatisplus.extension.plugins.pagination.Page<SysDictType> page, SysDictType dictType);
+
+    /**
      * 根据所有字典类型
      * 
      * @return 字典类型集合信息

@@ -5,6 +5,8 @@ import java.util.List;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.DataSource;
 import com.ruoyi.common.constant.CacheConstants;
 import com.ruoyi.common.constant.UserConstants;
@@ -228,5 +230,11 @@ public class SysConfigServiceImpl implements ISysConfigService
     private String getCacheKey(String configKey)
     {
         return CacheConstants.SYS_CONFIG_KEY + configKey;
+    }
+
+    @Override
+    public IPage<SysConfig> selectConfigPage(Page<SysConfig> page, SysConfig config)
+    {
+        return configMapper.selectConfigPage(page, config);
     }
 }

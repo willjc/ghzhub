@@ -1,8 +1,10 @@
 package com.ruoyi.system.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ruoyi.system.domain.HzCommitment;
 import com.ruoyi.system.domain.HzCommitmentVO;
 
@@ -31,4 +33,9 @@ public interface HzCommitmentMapper extends BaseMapper<HzCommitment> {
      * @return 承诺书VO
      */
     HzCommitmentVO selectCommitmentVOById(Long commitmentId);
+
+    /**
+     * 分页查询承诺书VO列表
+     */
+    IPage<HzCommitmentVO> selectCommitmentVOPage(IPage<HzCommitmentVO> page, @Param("entity") HzCommitment commitment);
 }

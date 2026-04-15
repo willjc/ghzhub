@@ -67,4 +67,40 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ORDER BY b.create_time DESC
     </select>
 
+    <select id="selectBatchAllocationPage" resultMap="HzBatchAllocationResult">
+        <include refid="selectBatchAllocationVo"/>
+        <where>
+            b.del_flag = '0'
+            <if test="entity.batchName != null and entity.batchName != ''">
+                AND b.batch_name LIKE CONCAT('%', #{entity.batchName}, '%')
+            </if>
+            <if test="entity.projectId != null">
+                AND FIND_IN_SET(#{entity.projectId}, b.project_ids)
+            </if>
+            <if test="entity.talentType != null and entity.talentType != ''">
+                AND b.talent_type = #{entity.talentType}
+            </if>
+        </where>
+        GROUP BY b.batch_id
+        ORDER BY b.create_time DESC
+    </select>
+
+    <select id="selectBatchAllocationPage" resultMap="HzBatchAllocationResult">
+        <include refid="selectBatchAllocationVo"/>
+        <where>
+            b.del_flag = '0'
+            <if test="entity.batchName != null and entity.batchName != ''">
+                AND b.batch_name LIKE CONCAT('%', #{entity.batchName}, '%')
+            </if>
+            <if test="entity.projectId != null">
+                AND FIND_IN_SET(#{entity.projectId}, b.project_ids)
+            </if>
+            <if test="entity.talentType != null and entity.talentType != ''">
+                AND b.talent_type = #{entity.talentType}
+            </if>
+        </where>
+        GROUP BY b.batch_id
+        ORDER BY b.create_time DESC
+    </select>
+
 </mapper>

@@ -41,6 +41,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		order by dict_sort asc
 	</select>
 	
+	<select id="selectDictDataPage" resultMap="SysDictDataResult">
+	    <include refid="selectDictDataVo"/>
+		<where>
+		    <if test="entity.dictType != null and entity.dictType != ''">
+				AND dict_type = #{entity.dictType}
+			</if>
+			<if test="entity.dictLabel != null and entity.dictLabel != ''">
+				AND dict_label like concat('%', #{entity.dictLabel}, '%')
+			</if>
+			<if test="entity.status != null and entity.status != ''">
+				AND status = #{entity.status}
+			</if>
+		</where>
+		order by dict_sort asc
+	</select>
+	
 	<select id="selectDictDataByType" parameterType="String" resultMap="SysDictDataResult">
 		<include refid="selectDictDataVo"/>
 		where status = '0' and dict_type = #{dictType} order by dict_sort asc
