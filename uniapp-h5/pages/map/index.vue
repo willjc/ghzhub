@@ -28,8 +28,40 @@
 			</view>
 		</view>
 
+		<!-- #ifdef H5 -->
 		<!-- 地图容器 -->
 		<view id="map-container" class="map-container"></view>
+		<!-- #endif -->
+
+		<!-- #ifdef MP-WEIXIN -->
+		<map
+			id="mp-map"
+			class="mp-map"
+			:longitude="mpCenter.lng"
+			:latitude="mpCenter.lat"
+			:scale="mpScale"
+			:markers="mpMarkers"
+			:enable-zoom="true"
+			:enable-scroll="true"
+			:show-location="true"
+			@markertap="onMarkerTap"
+			@callouttap="onCalloutTap"
+		/>
+		<!-- 底部项目卡片 -->
+		<view v-if="selectedProject" class="project-card" @click="goToProject(selectedProject)">
+			<view class="project-card-info">
+				<text class="project-card-name">{{ selectedProject.projectName }}</text>
+				<text class="project-card-address">{{ selectedProject.address || '暂无地址' }}</text>
+				<view class="project-card-row">
+					<text class="project-card-price">{{ selectedProject.price ? '¥' + selectedProject.price + '元/月起' : '价格面议' }}</text>
+					<text class="project-card-houses">可用房源: {{ selectedProject.availableHouses || 0 }}套</text>
+				</view>
+			</view>
+			<view class="project-card-arrow">
+				<text class="arrow-text">›</text>
+			</view>
+		</view>
+		<!-- #endif -->
 
 		<!-- 加载提示 -->
 		<view class="loading-mask" v-if="loading">
@@ -68,7 +100,13 @@ export default {
 			allProjects: [], // 所有项目数据
 			loading: true,
 			isEmpty: false,
-			sdkLoaded: false
+			sdkLoaded: false,
+			// #ifdef MP-WEIXIN
+			mpCenter: { lng: 113.84, lat: 34.56 },
+			mpScale: 12,
+			mpMarkers: [],
+			selectedProject: null,
+			// #endif
 		}
 	},
 
@@ -77,12 +115,8 @@ export default {
 		this.loadAMapSDK()
 		// #endif
 
-		// #ifndef H5
-		uni.showToast({
-			title: '地图功能仅支持H5',
-			icon: 'none'
-		})
-		this.loading = false
+		// #ifdef MP-WEIXIN
+		this.loadAllProjects()
 		// #endif
 	},
 
@@ -220,6 +254,10 @@ export default {
 		 * 更新地图标记
 		 */
 		updateMarkers() {
+			// #ifdef MP-WEIXIN
+			this.updateMpMarkers()
+			// #endif
+
 			// #ifdef H5
 				if (!this.map) return
 
@@ -375,6 +413,91 @@ export default {
 			// #endif
 		},
 
+		// #ifdef MP-WEIXIN
+		/**
+		 * 更新小程序端 markers
+		 */
+		updateMpMarkers() {
+			const selectedProjects = this.allProjects.filter(p =>
+				this.selectedTypes.includes(p.projectType)
+			)
+
+			if (selectedProjects.length === 0) {
+				this.mpMarkers = []
+				this.isEmpty = true
+				this.loading = false
+				this.selectedProject = null
+				return
+			}
+
+			this.isEmpty = false
+
+			const colorMap = { '1': '#002FA7', '2': '#E53935', '3': '#4CAF50' }
+
+			this.mpMarkers = selectedProjects.map((p, index) => {
+				const lng = parseFloat(p.longitude)
+				const lat = parseFloat(p.latitude)
+				const color = colorMap[p.projectType] || '#4A90E2'
+				return {
+					id: Number(p.projectId),
+					longitude: lng,
+					latitude: lat,
+					width: 28,
+					height: 36,
+					callout: {
+						content: p.projectName || '项目',
+						color: '#333333',
+						fontSize: 13,
+						borderRadius: 6,
+						borderWidth: 1,
+						borderColor: color,
+						bgColor: '#ffffff',
+						padding: 8,
+						display: 'ALWAYS'
+					}
+				}
+			}).filter(m => !isNaN(m.longitude) && !isNaN(m.latitude))
+
+			// 自动调整视野到第一个标记点
+			if (this.mpMarkers.length > 0) {
+				this.mpCenter = {
+					lng: this.mpMarkers[0].longitude,
+					lat: this.mpMarkers[0].latitude
+				}
+			}
+
+			this.loading = false
+		},
+
+		/**
+		 * 点击marker事件
+		 */
+		onMarkerTap(e) {
+			const markerId = e.markerId || (e.detail && e.detail.markerId)
+			this.selectedProject = this.allProjects.find(p => Number(p.projectId) === markerId) || null
+		},
+
+		/**
+		 * 点击callout事件（跳转详情）
+		 */
+		onCalloutTap(e) {
+			const markerId = e.markerId || (e.detail && e.detail.markerId)
+			const project = this.allProjects.find(p => Number(p.projectId) === markerId)
+			if (project) {
+				this.goToProject(project)
+			}
+		},
+
+		/**
+		 * 跳转项目详情
+		 */
+		goToProject(project) {
+			uni.navigateTo({
+				url: '/pages/project/detail?id=' + project.projectId
+			})
+		},
+		// #endif
+
 		/**
 		 * 切换标签选中状态
 		 */
@@ -503,4 +626,78 @@ export default {
 	font-size: 28rpx;
 	color: #999;
 }
+
+/* #ifdef MP-WEIXIN */
+.mp-map {
+	width: 100%;
+	flex: 1;
+	min-height: 0;
+}
+
+.project-card {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background: #ffffff;
+	padding: 24rpx 32rpx;
+	padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+	box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.08);
+	display: flex;
+	align-items: center;
+	z-index: 100;
+}
+
+.project-card-info {
+	flex: 1;
+	overflow: hidden;
+}
+
+.project-card-name {
+	font-size: 30rpx;
+	font-weight: 600;
+	color: #1a1a1a;
+	display: block;
+	margin-bottom: 8rpx;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.project-card-address {
+	font-size: 24rpx;
+	color: #999;
+	display: block;
+	margin-bottom: 8rpx;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.project-card-row {
+	display: flex;
+	align-items: center;
+	gap: 20rpx;
+}
+
+.project-card-price {
+	font-size: 28rpx;
+	color: #E53935;
+	font-weight: 500;
+}
+
+.project-card-houses {
+	font-size: 24rpx;
+	color: #999;
+}
+
+.project-card-arrow {
+	padding-left: 16rpx;
+}
+
+.arrow-text {
+	font-size: 40rpx;
+	color: #ccc;
+}
+/* #endif */
 </style>

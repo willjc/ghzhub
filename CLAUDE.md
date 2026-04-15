@@ -99,6 +99,7 @@ sudo supervisorctl status
 ```
 
 **注意事项：**
+- GitHub Actions SSH 连接服务器端口为 **3322**（非默认 22）
 - 服务器用 Gitee 拉代码（用 HTTPS，不用 SSH）：`https://gitee.com/xszhensheng/ghz.git`
 - supervisor 进程名：`ghz-backend:ghz-backend_00`，restart 时用 `ghz-backend:`（带冒号）
 - 首次在服务器 git pull 时需要：`git config --global --add safe.directory /www/wwwroot/ghz-source`
@@ -117,7 +118,18 @@ sudo supervisorctl status
 
 ### 管理后台前端自动部署
 
-推送 `ruoyi-ui/**` 改动后，GitHub Actions 自动构建并部署到管理后台服务器。
+推送 `ruoyi-ui/**` 改动后，GitHub Actions 自动触发：
+1. Node 16 环境 `npm install && npm run build:prod`
+2. SCP 上传 `ruoyi-ui/dist/` 到服务器 `FRONTEND_ADMIN_PATH`
+3. SSH 执行 `docker exec <openresty容器> nginx -s reload`
+
+（服务器 OpenResty 跑在 Docker 容器里，Actions 连接端口 **3322**）
+
+### 用户端微信小程序部署（手动）
+
+小程序不走 CI，手动发布：
+1. HBuilderX → 发行 → 小程序-微信，输出到 `uniapp-h5/unpackage/dist/build/mp-weixin/`
+2. 用微信开发者工具打开该目录，上传代码并提交审核
 
 ---
 
@@ -724,25 +736,45 @@ Element UI 表格在以下情况下会出现宽度问题：
 
 - **框架**: uni-app (基于 Vue 2)
 - **应用名称**: ganhaozhu (港好住)
-- **appid**: __UNI__B4D14B0
+- **appid**: __UNI__38430F5
 - **版本**: 1.0.0
-- **项目目录**: `d:\lasthm\gangzhu\uniapp-h5`
+- **项目目录**: `uniapp-h5/`
 
 ### 项目结构
 
 ```
 uniapp-h5/
-├── pages/                  # 页面目录
+├── pages/                  # 页面目录（22个模块）
 │   ├── index/             # 首页（底部导航）
 │   ├── affairs/           # 办事（底部导航）
 │   ├── service/           # 服务（底部导航）
 │   ├── my/                # 我的（底部导航）
-│   ├── talent/            # 人才公寓页面
-│   └── coupon/            # 优惠券页面
+│   ├── login/             # 登录页
+│   ├── home/              # 首页入口
+│   ├── house/             # 房源详情
+│   ├── project/           # 项目详情
+│   ├── room/              # 房间详情
+│   ├── talent/            # 人才公寓
+│   ├── rental/            # 市场租赁
+│   ├── market/            # 市场房源
+│   ├── map/               # 地图找房
+│   ├── contract/          # 合同详情
+│   ├── signature/         # 电子签名
+│   ├── commitment/        # 承诺书
+│   ├── message/           # 消息通知
+│   ├── notice/            # 通知公告
+│   ├── policy/            # 政策文件
+│   ├── coupon/            # 优惠券
+│   ├── upload/            # 资料上传
+│   └── auth/              # 资格认证
+├── api/                   # API 模块目录
+├── config/                # 环境配置
+│   └── index.js           # 统一环境配置（必须从此读取地址）
+├── utils/                 # 工具函数
+│   └── request.js         # HTTP 请求封装
+├── mixins/                # 全局混入
+│   └── authCheck.js       # 登录检查混入
 ├── static/                # 静态资源目录
-│   ├── 苹方字体/          # PingFang SC 字体文件
-│   ├── my/                # 个人中心图标
-│   └── *.png              # 其他图片资源
 ├── App.vue                # 应用入口
 ├── main.js                # 项目入口文件
 ├── pages.json             # 页面配置文件
@@ -752,147 +784,28 @@ uniapp-h5/
 
 ### 核心配置文件
 
-#### pages.json - 页面路由配置
-
-```json
-{
-  "pages": [
-    { "path": "pages/index/index", "style": { "navigationBarTitleText": "首页" } },
-    { "path": "pages/affairs/index", "style": { "navigationBarTitleText": "办事" } },
-    { "path": "pages/service/index", "style": { "navigationBarTitleText": "服务" } },
-    { "path": "pages/my/index", "style": { "navigationBarTitleText": "我的" } },
-    { "path": "pages/talent/index", "style": { "navigationBarTitleText": "人才公寓" } },
-    { "path": "pages/coupon/index", "style": { "navigationBarTitleText": "优惠券" } }
-  ],
-  "tabBar": {
-    "color": "#999999",
-    "selectedColor": "#4A90E2",
-    "list": [...]
-  }
-}
-```
-
 #### manifest.json - 应用配置
 
 - **Vue版本**: "vueVersion": "2"
-- **H5配置**: `{ "router": { "base": "./" } }`
+- **H5配置**: `{ "router": { "base": "./" } }`，devServer 端口 `8090`
+- **H5 开发代理**: `/app`、`/h5`、`/profile` 均代理到 `http://ghzapi.dayushaiwang.com`
+- **微信小程序 appid**: `wx74efa287343d0fa2`，已开启位置权限（地图找房）
 - **支持平台**: H5, 微信小程序, 支付宝小程序, 百度小程序, 头条小程序, App
 
-### 页面功能详解
+### 主要页面说明
 
-#### 1. 首页 (pages/index/index.vue)
-
-**功能模块**:
-- **Hero Banner**: 顶部宣传图
-- **搜索栏**: 搜索房源（浮动在 Banner 底部）
-- **功能图标网格**: 9 个快捷入口
-  - 人才公寓、保租房、市场租赁、地图找房、人才家园
-  - 政策文件、资料上传、优惠券、我的消息
-- **通知栏**: 滚动显示最新通知
-- **房源列表**:
-  - **分类标签**: 人才公寓 / 保租房 / 市场租赁
-  - **子标签**: 项目 / 房源
-  - **房源卡片**: 显示标题、状态、地址、标签、价格
-
-**数据结构** (listingData):
-```javascript
-{
-  title: '航南新城专家公寓项目',      // 项目名称
-  hasUnits: true,                      // 是否有房源
-  totalUnits: 100,                     // 总套数
-  distance: '8.2km',                   // 距离
-  address: '航空港区新港大道与遵大路交叉口',  // 地址
-  tags: ['商业街', '停车场', '运动场'],        // 标签
-  price: 2000,                         // 起租价格
-  image: '/static/矩形 21@2x.png'      // 封面图片
-}
-```
-
-**跳转逻辑**:
-- 点击"人才公寓"图标 → `uni.navigateTo({ url: '/pages/talent/index' })`
-- 点击"优惠券"图标 → `uni.navigateTo({ url: '/pages/coupon/index' })`
-- 点击房源卡片 → 跳转到人才公寓页面（待完善详情页）
-
-#### 2. 人才公寓页面 (pages/talent/index.vue)
-
-**功能模块**:
-- **搜索栏**: 搜索框 + 搜索按钮
-- **房源列表**: 与首页类似的房源卡片（垂直滚动）
-- **底部提示**: "—— 我是有底线的 ——"
-
-**当前状态**: 使用静态数据，点击房源只有 console.log 输出
-
-#### 3. 我的页面 (pages/my/index.vue)
-
-**功能模块**:
-- **用户信息卡**: 头像 + 昵称 + 手机号（点击跳转个人资料）
-- **菜单列表**:
-  - 我的消息
-  - 我的房源
-  - 我的合同
-  - 申诉记录
-  - 信息维护
-  - 优惠券
-  - 关于我们
-
-**当前状态**: 菜单点击只有 console.log 输出，未实现具体功能
-
-#### 4-6. 其他页面
-
-- **办事页面** (pages/affairs/index.vue): 页面存在但未开发
-- **服务页面** (pages/service/index.vue): 页面存在但未开发
-- **优惠券页面** (pages/coupon/index.vue): 页面存在但未开发
-
-### UI 设计规范
-
-#### 主题色彩
-- **主色**: `#4A90E2` (蓝色)
-- **背景色**: `#f5f6fc`
-- **卡片背景**: `#ffffff`
-- **文本色**: 标题 `#1a1a1a`, 正文 `#333333`, 次要 `#666666`, 提示 `#999999`
-- **价格色**: `#e5252b` (红色)
-
-#### 尺寸规范
-- **rpx 单位**: 响应式像素（750rpx = 屏幕宽度）
-- **圆角**: 小卡片 `16rpx`, 大卡片 `20rpx`, 按钮 `50rpx`
-- **间距**: 页面边距 `24-30rpx`, 卡片间距 `20-30rpx`
-
-#### 字体
-- **全局字体**: "PingFang SC", "苹方-简", sans-serif
-- **字体大小**: 标题 `32-40rpx`, 正文 `26-28rpx`, 辅助 `24rpx`, 小字 `20rpx`
-- **字重**: normal 400, medium 500, bold 700
+- **首页** `pages/index/`: Hero Banner、功能图标网格（人才公寓/保租房/市场租赁/地图找房等）、房源列表
+- **办事** `pages/affairs/`: 合同、账单、预约、入住、退租、续租、换房、发票等子页面
+- **服务** `pages/service/`: 投诉、报修等子页面
+- **我的** `pages/my/`: 个人信息、我的房源、我的合同、申诉、资料维护等
+- **地图找房** `pages/map/`: 地图展示房源位置
+- **电子签名** `pages/signature/`: 合同在线签署
+- **资格认证** `pages/auth/`: 入住资格审核流程
 
 ### API 对接规范
 
-#### 当前状态
-所有页面使用静态数据（硬编码在组件 data 中），**需要与后端 RuoYi API 对接**。
-
-#### 待对接的 API 接口
-
-##### 1. 用户相关
-- `GET /app/user/info` - 获取用户信息
-- `POST /app/user/login` - 用户登录
-- `POST /app/user/logout` - 用户登出
-
-##### 2. 房源相关
-- `GET /app/house/list` - 获取房源列表
-  - 参数: `categoryType`（人才公寓/保租房/市场租赁）
-  - 参数: `pageNum`, `pageSize`
-- `GET /app/house/{id}` - 获取房源详情
-- `GET /app/project/list` - 获取项目列表
-- `GET /app/project/{id}` - 获取项目详情
-
-##### 3. 消息通知
-- `GET /app/notice/list` - 获取通知列表
-- `GET /app/notice/{id}` - 获取通知详情
-
-##### 4. 优惠券
-- `GET /app/coupon/my` - 获取我的优惠券
-- `GET /app/coupon/list` - 获取可领取优惠券
-
-##### 5. 合同相关
-- `GET /app/contract/my` - 获取我的合同列表
-- `GET /app/contract/{id}` - 获取合同详情
+#### API 前缀说明
+- 用户端接口前缀：`/h5/app/`（区别于管理端 `/system/`）
 
 #### API 调用方式
 
@@ -945,95 +858,37 @@ export default {
 
 **3. 配置文件结构** (`config/index.js`)
 ```javascript
-// 开发环境配置
-const dev = {
-  baseUrl: 'http://localhost:8080',
-  uploadUrl: 'http://localhost:8080',
-  staticUrl: 'http://localhost:8080',
+// 开发/线上环境（指向测试服）
+const development = {
+  baseUrl: 'http://ghzapi.dayushaiwang.com',
+  staticUrl: 'http://ghzapi.dayushaiwang.com',
   timeout: 30000,
+  zhbModuleId: '413780',  // 郑好办应用ID
 }
 
-// 测试环境配置
+// 测试环境（本地局域网后端）
 const test = {
-  baseUrl: 'http://localhost:8090',  // ⚠️ 测试环境使用 8090 端口
-  uploadUrl: 'http://localhost:8090',
-  staticUrl: 'http://localhost:8090',
+  baseUrl: 'http://192.168.0.109:8090',
+  staticUrl: 'http://192.168.0.109:8090',
   timeout: 30000,
+  zhbModuleId: '413780',
 }
 
-// 生产环境配置
-const prod = {
-  baseUrl: 'https://api.example.com',
-  uploadUrl: 'https://api.example.com',
-  staticUrl: 'https://cdn.example.com',
+// 生产环境
+const production = {
+  baseUrl: 'https://api.caigon.cn',
+  staticUrl: 'https://api.caigon.cn',
   timeout: 30000,
+  zhbModuleId: '413780',
 }
 
-// 当前使用的环境（可根据需要修改）
-const env = 'test'  // 'dev' | 'test' | 'prod'
+// ⚠️ 手动切换环境：'development' | 'test' | 'production'
+const env = 'production'
 
-export default {
-  baseUrl: config[env].baseUrl,
-  uploadUrl: config[env].uploadUrl,
-  staticUrl: config[env].staticUrl,
-  timeout: config[env].timeout,
-}
+export default config[env]
 ```
 
-**4. Request 工具** (`utils/request.js`)
-```javascript
-import config from '@/config/index'
-
-// 从配置文件读取 BASE_URL
-const BASE_URL = config.baseUrl
-
-export function request(options) {
-  return new Promise((resolve, reject) => {
-    const token = uni.getStorageSync('token') || ''
-
-    uni.request({
-      url: BASE_URL + options.url,
-      method: options.method || 'GET',
-      data: options.data || {},
-      header: {
-        'Content-Type': 'application/json',
-        'Authorization': token ? `Bearer ${token}` : '',
-        ...options.header
-      },
-      success: (res) => {
-        if (res.statusCode === 200) {
-          if (res.data.code === 200 || res.data.code === undefined) {
-            resolve(res.data)
-          } else {
-            uni.showToast({ title: res.data.msg || '请求失败', icon: 'none' })
-            reject(res.data)
-          }
-        } else {
-          reject(res)
-        }
-      },
-      fail: (err) => {
-        console.error('网络请求失败:', err)
-        uni.showToast({ title: '网络连接失败', icon: 'none' })
-        reject(err)
-      }
-    })
-  })
-}
-
-// Default export（包含 BASE_URL）
-export default {
-  request,
-  get,
-  post,
-  put,
-  del,
-  BASE_URL
-}
-
-// 🔴 重要：命名导出 BASE_URL，供组件使用 { BASE_URL } 方式导入
-export { BASE_URL }
-```
+**4. Request 工具** (`utils/request.js`) — 从 `config/index.js` 读取 `BASE_URL`，封装 `get`/`post`/`put`/`del`，并命名导出 `BASE_URL` 供组件使用。
 
 ##### 常见错误
 
@@ -1059,24 +914,6 @@ import { BASE_URL } from '@/utils/request'
 
 getImageUrl(url) {
   return BASE_URL + url  // 使用配置
-}
-```
-
-#### 数据映射规范
-
-前端字段与后端字段的对应关系：
-
-```javascript
-// 房源列表数据映射
-{
-  title: house.projectName,        // 项目名称
-  hasUnits: house.houseStatus === '0',  // 是否有房源（空置）
-  totalUnits: house.totalCount,    // 总套数
-  distance: calculateDistance(house.latitude, house.longitude),  // 计算距离
-  address: house.address,          // 地址
-  tags: house.facilities?.split(',') || [],  // 设施标签
-  price: house.rentPrice,          // 租金
-  image: house.coverImage          // 封面图（需拼接 baseUrl）
 }
 ```
 
@@ -1171,13 +1008,13 @@ transformHouseData(house) {
 ```javascript
 // 测试环境
 const test = {
-  staticUrl: 'http://192.168.31.146:8090',  // 图片服务器地址
+  staticUrl: 'http://192.168.0.109:8090',  // 图片服务器地址
   // ...
 }
 
 // 生产环境
-const prod = {
-  staticUrl: 'http://ghzapi.dayushaiwang.com',
+const production = {
+  staticUrl: 'https://api.caigon.cn',
   // ...
 }
 ```
@@ -1250,227 +1087,43 @@ console.log('除 H5 外的平台执行')
 // #endif
 ```
 
-### 开发优先级
-
-根据项目进度，建议按以下顺序完善功能：
-
-1. **Phase 1 - API 对接**
-   - 创建 `utils/request.js` 统一请求工具
-   - 创建 `api/house.js`、`api/user.js` 等 API 模块
-   - 替换首页静态数据为真实 API 数据
-   - 实现用户登录/登出功能
-
-2. **Phase 2 - 核心页面**
-   - 完善房源详情页（显示房源完整信息、图片轮播、VR 看房）
-   - 完善人才公寓页面（筛选、排序、分页）
-   - 完善我的消息页面
-   - 完善我的合同页面
-
-3. **Phase 3 - 业务流程**
-   - 实现预约看房流程
-   - 实现资格校验流程
-   - 实现在线签约流程
-   - 实现账单缴费功能
-
-4. **Phase 4 - 扩展功能**
-   - 地图找房（集成地图 SDK）
-   - 优惠券功能
-   - 申诉记录
-   - 政策文件查看
-   - 资料上传
-
 ### 调试和构建
 
-#### 运行项目
-```bash
-# 使用 HBuilderX 打开项目
-# 或使用 CLI
-
-# 运行 H5
-npm run dev:h5
-
-# 构建 H5
-npm run build:h5
-
-# 运行微信小程序
-npm run dev:mp-weixin
-```
-
-#### 预览地址
-- **H5 预览**: `http://localhost:8080` (默认)
-- **编译输出**: `unpackage/dist/build/web/`
-
-### 与后端集成清单
-
-#### 需要后端提供的接口前缀
-- **用户端 API 前缀**: `/app/*`（区别于管理端 `/system/*`）
-
-#### 需要后端支持的功能
-- ✅ JWT Token 认证（已有）
-- ✅ 房源管理 API（已有，需要提供用户端简化版）
-- ✅ 用户管理 API（已有）
-- ✅ 文件上传 API（已有）
-- ❌ 优惠券模块（待开发）
-- ❌ 申诉记录模块（待开发）
-- ❌ 在线签约模块（待开发）
-- ❌ 在线支付模块（待开发）
+使用 **HBuilderX** 运行/构建（主要方式）：
+- 运行 H5：HBuilderX → 运行 → 运行到浏览器，访问 `http://localhost:8090`
+- 构建 H5：HBuilderX → 发行 → 网站-PC Web，输出到 `unpackage/dist/build/web/`
+- 构建小程序：HBuilderX → 发行 → 小程序-微信，输出到 `unpackage/dist/build/mp-weixin/`
 
 ---
 
-## UniApp H5 用户端用户登录处理规范 (重要!)
+## UniApp H5 用户端登录规范 (重要!)
 
-### 问题背景
+### 登录存储结构
 
-用户端页面在调用需要用户身份的API时，如果未正确获取和传递用户ID，会导致"用户未登录"错误。
-
-### 登录机制
-
-#### 登录成功后的存储
-登录成功后（[pages/login/index.vue](d:\lasthm\gangzhu\uniapp-h5\pages\login\index.vue:64-66)会存储三个信息：
+登录成功后存储三个 key（`uniapp-h5/pages/login/index.vue`）：
 
 ```javascript
 uni.setStorageSync('token', response.data.token)
 uni.setStorageSync('userId', response.data.userInfo.userId)
 uni.setStorageSync('userInfo', response.data.userInfo)
+// userInfo: { userId, nickname, phone, realName, ... }
 ```
 
-#### userInfo 数据结构
-```javascript
-{
-  userId: 123456,
-  nickname: "微信用户",
-  phone: "13800138001",
-  realName: "张三",
-  // ... 其他用户信息
-}
-```
+### API 定义规范
 
-### 标准用户登录处理模式
-
-#### 页面 onLoad 模板
-
-```javascript
-onLoad(options) {
-	// 1. 获取用户信息
-	const userInfo = uni.getStorageSync('userInfo')
-	if (!userInfo || !userInfo.userId) {
-		uni.showToast({
-			title: '请先登录',
-			icon: 'none'
-		})
-		setTimeout(() => {
-			uni.navigateTo({
-				url: '/pages/login/index'
-			})
-		}, 1500)
-		return
-	}
-
-	// 2. 保存用户ID到组件data
-	this.userId = userInfo.userId
-
-	// 3. 执行页面初始化逻辑
-	this.loadData()
-}
-```
-
-#### API 定义模板
+- `userId` 必须作为参数显式传递，不依赖后端从 token 解析
+- 用户端接口前缀：`/h5/app/`
 
 ```javascript
 import { get, post, put } from '@/utils/request'
 
-/**
- * 获取我的XXX列表
- * @param {number} userId 用户ID
- */
 export function getMyList(userId) {
   return get(`/h5/app/xxx/myList?userId=${userId}`)
 }
-
-/**
- * 获取详情
- * @param {number} id 数据ID
- * @param {number} userId 用户ID (用于权限验证)
- */
-export function getDetail(id, userId) {
-  return get(`/h5/app/xxx/${id}?userId=${userId}`)
-}
-
-/**
- * 提交/操作
- * @param {Object} data 数据
- */
 export function submitData(data) {
-  return post('/h5/app/xxx/submit', data)  // userId包含在data中
-}
-
-/**
- * 催办/取消等操作
- * @param {number} id 数据ID
- * @param {number} userId 用户ID
- */
-export function operate(id, userId) {
-  return put(`/h5/app/xxx/operate/${id}?userId=${userId}`)
+  return post('/h5/app/xxx/submit', data)  // data 中包含 userId
 }
 ```
-
-#### 页面调用示例
-
-```javascript
-export default {
-	data() {
-		return {
-			userId: null  // 当前登录用户ID
-		}
-	},
-	onLoad() {
-		const userInfo = uni.getStorageSync('userInfo')
-		if (!userInfo || !userInfo.userId) {
-			uni.showToast({ title: '请先登录', icon: 'none' })
-			setTimeout(() => {
-				uni.navigateTo({ url: '/pages/login/index' })
-			}, 1500)
-			return
-		}
-		this.userId = userInfo.userId
-		this.loadData()
-	},
-	methods: {
-		async loadData() {
-			if (!this.userId) return
-
-			// 调用API时传递userId
-			const res = await getMyList(this.userId)
-			// ...
-		},
-		async handleUrge(id) {
-			const res = await urgeComplaint(id, this.userId)
-			// ...
-		}
-	}
-}
-```
-
-### 关键要点
-
-1. ✅ **所有需要用户身份的页面**必须在 `onLoad` 中进行登录检查
-2. ✅ **userId 必须作为参数传递给API**，不能依赖后端从token解析
-3. ✅ **未登录时友好提示并跳转到登录页**
-4. ✅ **登录检查统一放在 `onLoad` 中**，避免重复代码
-
-### 参考实现
-
-可参考以下页面的完整实现：
-- [pages/affairs/contract.vue](d:\lasthm\gangzhu\uniapp-h5\pages\affairs\contract.vue:124-152) - 我的合同
-- [pages/affairs/appointment.vue](d:\lasthm\gangzhu\uniapp-h5\pages\affairs\appointment.vue:74-96) - 我的预约
-
----
-
-## UniApp H5 用户端登录检查规范 (重要!)
-
-### 问题背景
-
-用户端页面在返回时可能跳转到登录页（返回循环问题），原因是使用了 `uni.navigateTo` 保留页面栈。
 
 ### 登录检查混入 (统一解决方案)
 
@@ -1607,5 +1260,5 @@ onLoad(options) {
 
 ---
 
-**更新时间**: 2026-02-09
+**更新时间**: 2026-04-15
 **维护者**: Claude Code

@@ -2,8 +2,11 @@ package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzUser;
 import com.ruoyi.system.mapper.HzUserMapper;
 import com.ruoyi.system.service.IHzUserService;
@@ -25,7 +28,7 @@ public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> impleme
     private HzUserMapper hzUserMapper;
 
     /**
-     * 查询用户列表
+     * 查询用户列表（全量，导出用，不分页）
      *
      * @param hzUser 用户信息
      * @return 用户集合
@@ -33,6 +36,47 @@ public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> impleme
     @Override
     public List<HzUser> selectHzUserList(HzUser hzUser) {
         return hzUserMapper.selectHzUserList(hzUser);
+    }
+
+    /**
+     * 分页查询用户列表（管理端列表页专用，真正走数据库分页）
+     * <p>
+     * 筛选条件与 HzUserMapper.xml#selectHzUserList 保持一致，
+     * 以保证导出和列表的筛选语义不漂移。
+     */
+    @Override
+    public IPage<HzUser> selectHzUserPage(HzUser hzUser, int pageNum, int pageSize) {
+        Page<HzUser> page = new Page<>(pageNum, pageSize);
+
+        // 日期范围参数（前端通过 addDateRange 放入 params.beginTime / params.endTime）
+        // 拼接时分秒：既能包含当天全部数据，又能保证 create_time 走索引（不用 DATE_FORMAT）
+        String beginDateTime = null;
+        String endDateTime = null;
+        if (hzUser.getParams() != null) {
+            Object beginObj = hzUser.getParams().get("beginTime");
+            Object endObj = hzUser.getParams().get("endTime");
+            if (beginObj != null && StringUtils.isNotEmpty(beginObj.toString())) {
+                beginDateTime = beginObj.toString() + " 00:00:00";
+            }
+            if (endObj != null && StringUtils.isNotEmpty(endObj.toString())) {
+                endDateTime = endObj.toString() + " 23:59:59";
+            }
+        }
+
+        LambdaQueryWrapper<HzUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(HzUser::getDelFlag, "0")
+                .like(StringUtils.isNotEmpty(hzUser.getPhone()), HzUser::getPhone, hzUser.getPhone())
+                .like(StringUtils.isNotEmpty(hzUser.getRealName()), HzUser::getRealName, hzUser.getRealName())
+                .like(StringUtils.isNotEmpty(hzUser.getNickname()), HzUser::getNickname, hzUser.getNickname())
+                .eq(StringUtils.isNotEmpty(hzUser.getSourceType()), HzUser::getSourceType, hzUser.getSourceType())
+                .eq(StringUtils.isNotEmpty(hzUser.getGender()), HzUser::getGender, hzUser.getGender())
+                .eq(StringUtils.isNotEmpty(hzUser.getEducation()), HzUser::getEducation, hzUser.getEducation())
+                .eq(StringUtils.isNotEmpty(hzUser.getStatus()), HzUser::getStatus, hzUser.getStatus())
+                .ge(beginDateTime != null, HzUser::getCreateTime, beginDateTime)
+                .le(endDateTime != null, HzUser::getCreateTime, endDateTime)
+                .orderByDesc(HzUser::getCreateTime);
+
+        return this.page(page, wrapper);
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.ruoyi.system.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ruoyi.system.domain.HzUser;
 
@@ -13,12 +14,22 @@ import java.util.List;
 public interface IHzUserService extends IService<HzUser> {
 
     /**
-     * 查询用户列表
+     * 查询用户列表（全量，导出用）
      *
      * @param hzUser 用户信息
      * @return 用户集合
      */
     List<HzUser> selectHzUserList(HzUser hzUser);
+
+    /**
+     * 分页查询用户列表（管理端列表页专用，真正走数据库分页）
+     *
+     * @param hzUser   查询条件
+     * @param pageNum  页码
+     * @param pageSize 每页条数
+     * @return 分页结果
+     */
+    IPage<HzUser> selectHzUserPage(HzUser hzUser, int pageNum, int pageSize);
 
     /**
      * 查询用户详情

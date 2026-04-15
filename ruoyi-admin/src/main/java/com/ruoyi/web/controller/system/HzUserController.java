@@ -1,10 +1,13 @@
 package com.ruoyi.web.controller.system;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.system.domain.HzUser;
 import com.ruoyi.system.service.IHzUserService;
@@ -28,14 +31,21 @@ public class HzUserController extends BaseController {
     private IHzUserService hzUserService;
 
     /**
-     * 查询用户列表
+     * 查询用户列表（真正走数据库分页，避免全表扫描导致前端 10s 超时）
      */
     @PreAuthorize("@ss.hasPermi('gangzhu:user:list')")
     @GetMapping("/list")
     public TableDataInfo list(HzUser hzUser) {
-        startPage();
-        List<HzUser> list = hzUserService.selectHzUserList(hzUser);
-        return getDataTable(list);
+        Page<HzUser> page = PageUtils.getPage();
+        IPage<HzUser> pageResult = hzUserService.selectHzUserPage(
+                hzUser, (int) page.getCurrent(), (int) page.getSize());
+
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(200);
+        rspData.setMsg("查询成功");
+        rspData.setRows(pageResult.getRecords());
+        rspData.setTotal(pageResult.getTotal());
+        return rspData;
     }
 
     /**
