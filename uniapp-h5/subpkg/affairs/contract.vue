@@ -104,6 +104,20 @@
 						</view>
 					</view>
 
+					<!-- 押金支付倒计时提示 -->
+					<view class="countdown-timer" v-if="showCountdown(item)"
+						:class="{ 'countdown-warning': isCountdownUrgent(item.contractId), 'countdown-expired': isCountdownExpired(item.contractId) }">
+						<text class="countdown-timer-text"
+							:class="{ 'countdown-warning-text': isCountdownUrgent(item.contractId), 'countdown-expired-text': isCountdownExpired(item.contractId) }">
+							{{ getCountdownText(item.contractId) }}
+						</text>
+					</view>
+
+					<!-- 3日资料上传提示 -->
+					<view class="material-alert" v-if="item.depositPaid && !item.materialSubmitted">
+						<text class="material-alert-text">⚠ 请在3日内上传工作证明和学历证明，逾期合同将失效，房源将被释放</text>
+					</view>
+
 					<!-- 操作按钮区域 -->
 					<!-- 待签署 -->
 					<view class="button-group" v-if="item.status === 'pending'">
@@ -167,6 +181,8 @@
 				allContractList: [],  // 从API获取的所有合同
 				userId: null,  // 当前登录用户ID
 				highlightContractId: null,  // 需要高亮显示的合同ID (从续租页面跳转时传入)
+				countdownTimers: {},   // key=contractId, value=剩余秒数
+				timerIntervals: {},    // key=contractId, value=setInterval ID
 
 				statusClassMap: {
 					'unsigned': 'status-unsigned',
@@ -219,6 +235,9 @@
 			if (this.userId) {
 				this.loadContractList()
 			}
+		},
+		beforeDestroy() {
+			this.clearAllTimers()
 		},
 		methods: {
 			switchTab(tab) {
@@ -352,6 +371,8 @@
 						// 映射数据格式
 						this.allContractList = res.data.map(item => this.mapContractData(item))
 						console.log('获取到合同数据:', this.allContractList.length, '条')
+						// 启动倒计时定时器
+						this.startCountdownTimers()
 					} else {
 						uni.showToast({ title: res.msg || '加载失败', icon: 'none' })
 					}
@@ -395,6 +416,7 @@
 					firstRentPaid,
 					contractContent:  item.contract_content || '',
 					hasPdf: item.contract_content && item.contract_content.startsWith('http'),
+					lockExpireTime:   item.lock_expire_time || '',  // 锁定过期时间
 				}
 			},
 
@@ -431,6 +453,65 @@
 					console.error('日期格式化失败', e)
 					return ''
 				}
+			},
+
+			// ========== 倒计时相关方法 ==========
+
+			// 启动所有需要倒计时的合同定时器
+			startCountdownTimers() {
+				this.clearAllTimers()
+				this.allContractList.forEach(item => {
+					if (item.signed && !item.depositPaid && item.lockExpireTime) {
+						const remaining = Math.max(0, Math.floor((new Date(item.lockExpireTime) - new Date()) / 1000))
+						this.$set(this.countdownTimers, item.contractId, remaining)
+						if (remaining > 0) {
+							const intervalId = setInterval(() => {
+								const cur = this.countdownTimers[item.contractId]
+								if (cur <= 1) {
+									this.$set(this.countdownTimers, item.contractId, 0)
+									clearInterval(this.timerIntervals[item.contractId])
+									delete this.timerIntervals[item.contractId]
+								} else {
+									this.$set(this.countdownTimers, item.contractId, cur - 1)
+								}
+							}, 1000)
+							this.$set(this.timerIntervals, item.contractId, intervalId)
+						}
+					}
+				})
+			},
+
+			// 清除所有定时器
+			clearAllTimers() {
+				Object.values(this.timerIntervals).forEach(id => clearInterval(id))
+				this.timerIntervals = {}
+			},
+
+			// 获取倒计时文本
+			getCountdownText(contractId) {
+				const seconds = this.countdownTimers[contractId]
+				if (seconds === undefined || seconds === null) return ''
+				if (seconds <= 0) return '⚠ 支付已超时，合同即将失效'
+				const min = String(Math.floor(seconds / 60)).padStart(2, '0')
+				const sec = String(seconds % 60).padStart(2, '0')
+				return `⏱ 剩余 ${min}:${sec} 支付押金，逾期合同将失效`
+			},
+
+			// 是否不足5分钟
+			isCountdownUrgent(contractId) {
+				const seconds = this.countdownTimers[contractId]
+				return seconds !== undefined && seconds > 0 && seconds < 300
+			},
+
+			// 是否已超时
+			isCountdownExpired(contractId) {
+				const seconds = this.countdownTimers[contractId]
+				return seconds !== undefined && seconds <= 0
+			},
+
+			// 是否需要显示倒计时
+			showCountdown(item) {
+				return item.signed && !item.depositPaid && item.lockExpireTime && this.countdownTimers[item.contractId] !== undefined
 			}
 		}
 	}
@@ -773,6 +854,48 @@
 		font-size: 28rpx;
 		font-weight: 500;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
+	}
+
+	/* 倒计时提示 */
+	.countdown-timer {
+		margin-top: 16rpx;
+		padding: 14rpx 20rpx;
+		background: rgba(255, 102, 0, 0.08);
+		border-radius: 10rpx;
+		text-align: center;
+	}
+	.countdown-timer-text {
+		color: #ff6600;
+		font-size: 24rpx;
+		font-family: "PingFang SC", sans-serif;
+	}
+	.countdown-warning {
+		background: rgba(255, 0, 0, 0.08);
+	}
+	.countdown-warning-text {
+		color: #ff0000 !important;
+		font-weight: bold;
+	}
+	.countdown-expired {
+		background: rgba(255, 0, 0, 0.1);
+	}
+	.countdown-expired-text {
+		color: #ff0000 !important;
+		font-weight: bold;
+	}
+
+	/* 资料上传提示 */
+	.material-alert {
+		margin-top: 16rpx;
+		padding: 14rpx 20rpx;
+		background: rgba(255, 102, 0, 0.08);
+		border-radius: 10rpx;
+	}
+	.material-alert-text {
+		color: #ff6600;
+		font-size: 24rpx;
+		font-family: "PingFang SC", sans-serif;
+		line-height: 36rpx;
 	}
 </style>
 

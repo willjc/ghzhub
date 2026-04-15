@@ -1260,5 +1260,120 @@ onLoad(options) {
 
 ---
 
+## e签宝电子签约集成 (重要!)
+
+### 概述
+
+系统通过 e签宝 v3 API 实现电子合同签署功能。核心流程：模板填充生成PDF → 创建签署流 → 甲方自动盖章 → 乙方手动签名。
+
+核心实现文件：`ruoyi-system/src/main/java/com/ruoyi/system/service/impl/EsignServiceImpl.java`
+
+### 模板查询方法
+
+获取模板完整控件列表（含 componentId、坐标、类型等）：
+
+```bash
+# 公开接口（无需登录）
+curl -s 'https://api.caigon.cn/h5/esign/template-detail'
+
+# 管理端接口（需登录token）
+curl -H 'Authorization: Bearer <token>' 'https://admin.caigon.cn/prod-api/system/contract/esign-template'
+```
+
+### 模板控件对照表（共20个）
+
+| 类型 | 控件名 | componentId | 页码 | 说明 |
+|------|--------|-------------|------|------|
+| 日期(3) | 日期3 | 5a2b66c2... | 1 | 合同签约日期 (yyyy-MM-dd) |
+| 日期(3) | 日期1 | 768fda9e... | 2 | 合同起始日 (yyyy年MM月dd日) |
+| 日期(3) | 日期2 | 8608e65d... | 2 | 合同终止日 (yyyy年MM月dd日) |
+| 数字(2) | 数字3 | 7af62cd8... | 2 | 租期(月) |
+| 文本(1) | 单行文本3 | ebfedbda... | 2 | 乙方姓名 |
+| 手机(19) | 手机号1 | 520eaa1e... | 2 | 乙方手机 |
+| 身份证(16) | 身份证号1 | ba2d50d3... | 2 | 乙方身份证 |
+| 文本(1) | 单行文本4 | 37fdb412... | 3 | 房源地址 (最大20字) |
+| 数字(2) | 数字1 | d2a93cfe... | 3 | 月租金 |
+| 数字(2) | 数字2 | ef7ed4f3... | 3 | 押金 |
+| 文本(1) | 单行文本9 | 23c33b47... | 14 | 乙方姓名(签署页) |
+| 文本(1) | 单行文本10 | fe46bc6a... | 1 | 合同编号 |
+| 文本(1) | 单行文本5 | 43f58df6... | - | 甲方代表人 (默认值:栗毅) |
+| 文本(1) | 单行文本7 | a09daefc... | - | 保留 (默认值:\\) |
+| 签章(6) | 个人章/签名2 | e6ade8f8... | 1 | 乙方签名(页1) |
+| 签章(6) | 个人章/签名1 | 9710ccc8... | 2 | 乙方签名(页2) |
+| 签章(6) | 企业章3 | 38800e82... | 14 | 甲方企业章 |
+| 签章(6) | 个人章/签名4 | 3995d55c... | 14 | 乙方签名(页14) |
+| 签署日期(21) | 签署日期1 | 3964bb15... | 14 | 甲方签署日期 (380,639) |
+| 签署日期(21) | 签署日期2 | 58c4d59f... | 14 | 乙方签署日期 (376,531) |
+
+### 模板填充注意事项
+
+**🔴 componentType=21（签署日期）控件不支持模板填充！**
+
+模板填充API（`/v3/files/create-by-doc-template`）只接受以下类型的填充：
+- ✅ componentType=1（文本）、2（数字）、3（日期）、16（身份证）、19（手机号）
+- ❌ componentType=6（签章）— 由签署流处理
+- ❌ componentType=21（签署日期）— 由签署流的 signDateConfig 处理
+
+日期控件(type=3)的格式必须与模板预设匹配：
+- 日期1/日期2 预设格式：`yyyy年MM月dd日`（代码需做格式转换）
+- 日期3 预设格式：`yyyy-MM-dd`
+
+文本控件有长度限制（如单行文本4最大20字），超长需截断。
+
+### 签署流配置 (signDateConfig 三要素)
+
+**🔴 签署日期配置必须同时满足三个条件：**
+
+1. **层级正确**：`signDateConfig` 与 `normalSignFieldConfig`、`signFieldType` 同级
+2. **showSignDate 必填**：内部必须包含 `"showSignDate": 1`
+3. **显式坐标**：指定 `signDatePositionX`/`signDatePositionY`
+
+#### 正确的签署区 JSON 结构
+
+```json
+{
+  "fileId": "xxx",
+  "normalSignFieldConfig": {
+    "autoSign": true,
+    "freeMode": false,
+    "signFieldPosition": {"positionPage":"14","positionX":240,"positionY":646},
+    "signFieldStyle": 1
+  },
+  "signFieldType": 0,
+  "signDateConfig": {
+    "showSignDate": 1,
+    "dateFormat": "yyyy年MM月dd日",
+    "fontSize": 12,
+    "signDatePositionX": 380,
+    "signDatePositionY": 639
+  }
+}
+```
+
+#### 常见错误
+
+```
+❌ 错误1: signDateConfig 嵌套在 normalSignFieldConfig 内部
+   → 签署日期不会显示
+
+❌ 错误2: signDateConfig 层级正确，但缺少 showSignDate:1
+   → 签署日期不会显示
+
+❌ 错误3: 通过模板填充API传入 componentType=21 控件值
+   → API 静默忽略，签署日期不显示
+
+✅ 正确: signDateConfig 同级 + showSignDate:1 + 显式坐标
+```
+
+### 当前签署流配置
+
+甲方（企业自动盖章）：1个签署区在页14 (240,646)，带签署日期 (380,639)
+乙方（个人手动签名）：3个签署区
+  - 页1 (255,290) — 无签署日期
+  - 页2 (282,595) — 无签署日期
+  - 页14 (243,536) — 带签署日期 (376,531)
+
+---
+
 **更新时间**: 2026-04-15
 **维护者**: Claude Code
