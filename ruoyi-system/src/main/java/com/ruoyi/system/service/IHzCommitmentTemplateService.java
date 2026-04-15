@@ -1,5 +1,7 @@
 package com.ruoyi.system.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.HzCommitmentTemplate;
 
 import java.util.List;
@@ -65,4 +67,13 @@ public interface IHzCommitmentTemplateService {
      * @return 结果
      */
     int deleteTemplateByIds(Long[] templateIds);
+
+    /**
+     * 分页查询承诺书模板列表
+     *
+     * @param page 分页参数
+     * @param template 承诺书模板
+     * @return 承诺书模板分页结果
+     */
+    IPage<HzCommitmentTemplate> selectCommitmentTemplatePage(Page<HzCommitmentTemplate> page, HzCommitmentTemplate template);
 }

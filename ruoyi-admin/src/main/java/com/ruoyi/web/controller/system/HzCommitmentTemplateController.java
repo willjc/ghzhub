@@ -1,8 +1,12 @@
 package com.ruoyi.web.controller.system;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.constant.HttpStatus;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
@@ -33,9 +37,14 @@ public class HzCommitmentTemplateController extends BaseController {
     @PreAuthorize("@ss.hasPermi('system:commitment:list')")
     @GetMapping("/list")
     public TableDataInfo list(HzCommitmentTemplate template) {
-        startPage();
-        List<HzCommitmentTemplate> list = commitmentTemplateService.selectTemplateList(template);
-        return getDataTable(list);
+        Page<HzCommitmentTemplate> page = PageUtils.getPage();
+        IPage<HzCommitmentTemplate> pageResult = commitmentTemplateService.selectCommitmentTemplatePage(page, template);
+        TableDataInfo data = new TableDataInfo();
+        data.setCode(HttpStatus.SUCCESS);
+        data.setRows(pageResult.getRecords());
+        data.setTotal(pageResult.getTotal());
+        data.setMsg("查询成功");
+        return data;
     }
 
     /**

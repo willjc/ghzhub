@@ -1,8 +1,11 @@
 package com.ruoyi.system.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.HzBatchAllocation;
 
 import java.util.List;
@@ -22,4 +25,13 @@ public interface HzBatchAllocationMapper extends BaseMapper<HzBatchAllocation> {
      * @return 配租批次集合
      */
     List<HzBatchAllocation> selectBatchAllocationList(HzBatchAllocation batch);
+
+    /**
+     * 分页查询配租批次列表
+     *
+     * @param page 分页参数
+     * @param batch 配租批次
+     * @return 配租批次分页结果
+     */
+    IPage<HzBatchAllocation> selectBatchAllocationPage(Page<HzBatchAllocation> page, @Param("entity") HzBatchAllocation batch);
 }

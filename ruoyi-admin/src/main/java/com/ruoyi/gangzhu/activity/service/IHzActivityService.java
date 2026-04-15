@@ -1,5 +1,7 @@
 package com.ruoyi.gangzhu.activity.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ruoyi.gangzhu.activity.domain.HzActivity;
 
@@ -19,6 +21,15 @@ public interface IHzActivityService extends IService<HzActivity> {
      * @return 人才家园活动集合
      */
     List<HzActivity> selectActivityList(HzActivity activity);
+
+    /**
+     * 分页查询人才家园活动列表
+     *
+     * @param page 分页参数
+     * @param activity 人才家园活动
+     * @return 分页结果
+     */
+    IPage<HzActivity> selectActivityPage(Page<HzActivity> page, HzActivity activity);
 
     /**
      * 新增人才家园活动

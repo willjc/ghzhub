@@ -1,11 +1,14 @@
 package com.ruoyi.web.controller.system;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.constant.HttpStatus;
+import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.system.domain.HzRepair;
@@ -36,9 +39,14 @@ public class HzRepairController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(HzRepair repair)
     {
-        startPage();
-        List<HzRepair> list = repairService.selectRepairList(repair);
-        return getDataTable(list);
+        Page<HzRepair> page = PageUtils.getPage();
+        IPage<HzRepair> pageResult = repairService.selectRepairPage(repair, (int)page.getCurrent(), (int)page.getSize());
+        TableDataInfo data = new TableDataInfo();
+        data.setCode(HttpStatus.SUCCESS);
+        data.setRows(pageResult.getRecords());
+        data.setTotal(pageResult.getTotal());
+        data.setMsg("查询成功");
+        return data;
     }
 
     /**

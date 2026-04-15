@@ -2,6 +2,8 @@ package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzEnterprise;
@@ -76,5 +78,21 @@ public class HzEnterpriseServiceImpl extends ServiceImpl<HzEnterpriseMapper, HzE
             count += deleteEnterpriseById(enterpriseId);
         }
         return count;
+    }
+
+    @Override
+    public IPage<HzEnterprise> selectEnterprisePage(Page<HzEnterprise> page, HzEnterprise enterprise) {
+        LambdaQueryWrapper<HzEnterprise> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(StringUtils.isNotEmpty(enterprise.getEnterpriseName()),
+                    HzEnterprise::getEnterpriseName, enterprise.getEnterpriseName())
+               .like(StringUtils.isNotEmpty(enterprise.getSocialCreditCode()),
+                    HzEnterprise::getSocialCreditCode, enterprise.getSocialCreditCode())
+               .eq(StringUtils.isNotEmpty(enterprise.getContactPhone()),
+                  HzEnterprise::getContactPhone, enterprise.getContactPhone())
+               .eq(StringUtils.isNotEmpty(enterprise.getStatus()),
+                  HzEnterprise::getStatus, enterprise.getStatus())
+               .eq(HzEnterprise::getDelFlag, "0")
+               .orderByDesc(HzEnterprise::getCreateTime);
+        return this.page(page, wrapper);
     }
 }

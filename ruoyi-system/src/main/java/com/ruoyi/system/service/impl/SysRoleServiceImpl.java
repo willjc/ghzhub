@@ -8,6 +8,7 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ruoyi.common.annotation.DataScope;
 import com.ruoyi.common.constant.UserConstants;
 import com.ruoyi.common.core.domain.entity.SysRole;
@@ -56,6 +57,16 @@ public class SysRoleServiceImpl implements ISysRoleService
     public List<SysRole> selectRoleList(SysRole role)
     {
         return roleMapper.selectRoleList(role);
+    }
+
+    /**
+     * 根据条件分页查询角色数据（分页版本）
+     */
+    @Override
+    @DataScope(deptAlias = "d")
+    public IPage<SysRole> selectRolePage(IPage<SysRole> page, SysRole role)
+    {
+        return roleMapper.selectRolePage(page, role);
     }
 
     /**

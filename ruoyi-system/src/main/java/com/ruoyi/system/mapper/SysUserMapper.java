@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ruoyi.common.core.domain.entity.SysUser;
 
 /**
@@ -23,6 +24,15 @@ public interface SysUserMapper extends BaseMapper<SysUser>
      * @return 用户信息集合信息
      */
     public List<SysUser> selectUserList(SysUser sysUser);
+
+    /**
+     * 根据条件分页查询用户列表（分页版本）
+     * 
+     * @param page 分页参数
+     * @param entity 用户信息
+     * @return 用户信息分页结果
+     */
+    public IPage<SysUser> selectUserPage(IPage<SysUser> page, @Param("entity") SysUser entity);
 
     /**
      * 根据条件分页查询已配用户角色列表

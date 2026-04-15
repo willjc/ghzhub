@@ -1,10 +1,14 @@
 package com.ruoyi.web.controller.system;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.constant.HttpStatus;
+import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.system.domain.HzHouseExchange;
 import com.ruoyi.system.service.IHzHouseExchangeService;
@@ -33,9 +37,14 @@ public class HzHouseExchangeController extends BaseController {
     @PreAuthorize("@ss.hasPermi('gangzhu:exchange:list')")
     @GetMapping("/list")
     public TableDataInfo list(HzHouseExchange exchange) {
-        startPage();
-        List<HzHouseExchange> list = exchangeService.selectExchangeList(exchange);
-        return getDataTable(list);
+        Page<HzHouseExchange> page = PageUtils.getPage();
+        IPage<HzHouseExchange> pageResult = exchangeService.selectExchangePage(exchange, (int)page.getCurrent(), (int)page.getSize());
+        TableDataInfo data = new TableDataInfo();
+        data.setCode(HttpStatus.SUCCESS);
+        data.setRows(pageResult.getRecords());
+        data.setTotal(pageResult.getTotal());
+        data.setMsg("查询成功");
+        return data;
     }
 
     /**

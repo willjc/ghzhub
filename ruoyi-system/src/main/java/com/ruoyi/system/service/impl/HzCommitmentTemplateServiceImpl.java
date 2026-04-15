@@ -1,6 +1,8 @@
 package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzCommitmentTemplate;
@@ -84,5 +86,19 @@ public class HzCommitmentTemplateServiceImpl extends ServiceImpl<HzCommitmentTem
             count += deleteTemplateById(templateId);
         }
         return count;
+    }
+
+    @Override
+    public IPage<HzCommitmentTemplate> selectCommitmentTemplatePage(Page<HzCommitmentTemplate> page, HzCommitmentTemplate template) {
+        LambdaQueryWrapper<HzCommitmentTemplate> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(StringUtils.isNotBlank(template.getTemplateName()),
+                    HzCommitmentTemplate::getTemplateName, template.getTemplateName())
+               .eq(StringUtils.isNotBlank(template.getCommitmentType()),
+                    HzCommitmentTemplate::getCommitmentType, template.getCommitmentType())
+               .eq(StringUtils.isNotBlank(template.getStatus()),
+                    HzCommitmentTemplate::getStatus, template.getStatus())
+               .eq(HzCommitmentTemplate::getDelFlag, "0")
+               .orderByDesc(HzCommitmentTemplate::getCreateTime);
+        return this.page(page, wrapper);
     }
 }

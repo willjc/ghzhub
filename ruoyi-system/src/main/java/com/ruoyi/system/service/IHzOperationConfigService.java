@@ -1,5 +1,7 @@
 package com.ruoyi.system.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ruoyi.system.domain.HzOperationConfig;
 
@@ -43,4 +45,13 @@ public interface IHzOperationConfigService extends IService<HzOperationConfig> {
      * @return 结果
      */
     int deleteConfigByIds(Long[] configIds);
+
+    /**
+     * 分页查询运营配置列表
+     *
+     * @param page 分页参数
+     * @param config 运营配置
+     * @return 运营配置分页结果
+     */
+    IPage<HzOperationConfig> selectOperationConfigPage(Page<HzOperationConfig> page, HzOperationConfig config);
 }

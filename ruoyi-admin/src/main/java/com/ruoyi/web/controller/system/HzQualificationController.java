@@ -1,10 +1,14 @@
 package com.ruoyi.web.controller.system;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.constant.HttpStatus;
+import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.system.domain.HzQualification;
 import com.ruoyi.system.service.IHzQualificationService;
@@ -34,9 +38,14 @@ public class HzQualificationController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(HzQualification qualification)
     {
-        startPage();
-        List<HzQualification> list = qualificationService.selectQualificationList(qualification);
-        return getDataTable(list);
+        Page<HzQualification> page = PageUtils.getPage();
+        IPage<HzQualification> pageResult = qualificationService.selectQualificationPage(qualification, (int)page.getCurrent(), (int)page.getSize());
+        TableDataInfo data = new TableDataInfo();
+        data.setCode(HttpStatus.SUCCESS);
+        data.setRows(pageResult.getRecords());
+        data.setTotal(pageResult.getTotal());
+        data.setMsg("查询成功");
+        return data;
     }
 
     /**

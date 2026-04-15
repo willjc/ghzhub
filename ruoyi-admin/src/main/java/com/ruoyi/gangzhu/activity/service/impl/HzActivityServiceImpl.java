@@ -2,6 +2,8 @@ package com.ruoyi.gangzhu.activity.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.gangzhu.activity.domain.HzActivity;
@@ -35,6 +37,24 @@ public class HzActivityServiceImpl extends ServiceImpl<HzActivityMapper, HzActiv
                 .eq(StringUtils.isNotEmpty(activity.getStatus()), HzActivity::getStatus, activity.getStatus())
                 .orderByDesc(HzActivity::getCreateTime);
         return this.list(wrapper);
+    }
+
+    /**
+     * 分页查询人才家园活动列表
+     *
+     * @param page 分页参数
+     * @param activity 人才家园活动
+     * @return 分页结果
+     */
+    @Override
+    public IPage<HzActivity> selectActivityPage(Page<HzActivity> page, HzActivity activity) {
+        LambdaQueryWrapper<HzActivity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(StringUtils.isNotEmpty(activity.getActivityTitle()), HzActivity::getActivityTitle, activity.getActivityTitle())
+                .eq(StringUtils.isNotEmpty(activity.getActivityType()), HzActivity::getActivityType, activity.getActivityType())
+                .like(StringUtils.isNotEmpty(activity.getOrganizer()), HzActivity::getOrganizer, activity.getOrganizer())
+                .eq(StringUtils.isNotEmpty(activity.getStatus()), HzActivity::getStatus, activity.getStatus())
+                .orderByDesc(HzActivity::getCreateTime);
+        return this.page(page, wrapper);
     }
 
     /**

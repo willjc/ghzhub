@@ -1,9 +1,12 @@
 package com.ruoyi.web.controller.h5;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.common.constant.HttpStatus;
+import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.service.IHzProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,9 +33,14 @@ public class HzProjectController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(HzProject project)
     {
-        startPage();
-        List<HzProject> list = projectService.selectProjectList(project);
-        return getDataTable(list);
+        Page<HzProject> page = PageUtils.getPage();
+        IPage<HzProject> pageResult = projectService.selectProjectPage(project, (int)page.getCurrent(), (int)page.getSize());
+        TableDataInfo data = new TableDataInfo();
+        data.setCode(HttpStatus.SUCCESS);
+        data.setRows(pageResult.getRecords());
+        data.setTotal(pageResult.getTotal());
+        data.setMsg("查询成功");
+        return data;
     }
 
     /**

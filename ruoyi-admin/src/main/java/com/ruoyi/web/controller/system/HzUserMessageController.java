@@ -1,11 +1,13 @@
 package com.ruoyi.web.controller.system;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.system.domain.HzUserMessage;
 import com.ruoyi.system.service.IHzUserMessageService;
@@ -14,7 +16,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.List;
 
 /**
  * 用户消息Controller
@@ -35,9 +36,15 @@ public class HzUserMessageController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(HzUserMessage message)
     {
-        startPage();
-        List<HzUserMessage> list = messageService.selectMessageList(message);
-        return getDataTable(list);
+        Page<HzUserMessage> page = PageUtils.getPage();
+        IPage<HzUserMessage> pageResult = messageService.selectMessagePage(message, (int) page.getCurrent(), (int) page.getSize());
+
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(200);
+        rspData.setMsg("查询成功");
+        rspData.setRows(pageResult.getRecords());
+        rspData.setTotal(pageResult.getTotal());
+        return rspData;
     }
 
     /**

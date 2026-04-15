@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ruoyi.common.annotation.DataScope;
 import com.ruoyi.common.constant.UserConstants;
 import com.ruoyi.common.core.domain.entity.SysRole;
@@ -77,6 +78,20 @@ public class SysUserServiceImpl implements ISysUserService
     public List<SysUser> selectUserList(SysUser user)
     {
         return userMapper.selectUserList(user);
+    }
+
+    /**
+     * 根据条件分页查询用户列表（分页版本）
+     * 
+     * @param page 分页参数
+     * @param user 用户信息
+     * @return 用户信息分页结果
+     */
+    @Override
+    @DataScope(deptAlias = "d", userAlias = "u")
+    public IPage<SysUser> selectUserPage(IPage<SysUser> page, SysUser user)
+    {
+        return userMapper.selectUserPage(page, user);
     }
 
     /**

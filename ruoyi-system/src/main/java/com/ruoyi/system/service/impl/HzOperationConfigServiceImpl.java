@@ -1,6 +1,8 @@
 package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzOperationConfig;
@@ -68,5 +70,16 @@ public class HzOperationConfigServiceImpl extends ServiceImpl<HzOperationConfigM
     @Override
     public int deleteConfigByIds(Long[] configIds) {
         return this.removeByIds(Arrays.asList(configIds)) ? configIds.length : 0;
+    }
+
+    @Override
+    public IPage<HzOperationConfig> selectOperationConfigPage(Page<HzOperationConfig> page, HzOperationConfig config) {
+        LambdaQueryWrapper<HzOperationConfig> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(StringUtils.isNotEmpty(config.getConfigType()), HzOperationConfig::getConfigType, config.getConfigType())
+                .like(StringUtils.isNotEmpty(config.getTitle()), HzOperationConfig::getTitle, config.getTitle())
+                .eq(StringUtils.isNotEmpty(config.getStatus()), HzOperationConfig::getStatus, config.getStatus())
+                .orderByAsc(HzOperationConfig::getSortOrder)
+                .orderByDesc(HzOperationConfig::getCreateTime);
+        return this.page(page, wrapper);
     }
 }

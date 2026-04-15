@@ -1,5 +1,7 @@
 package com.ruoyi.system.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ruoyi.system.domain.HzEnterprise;
 
@@ -59,4 +61,13 @@ public interface IHzEnterpriseService extends IService<HzEnterprise> {
      * @return 结果
      */
     int deleteEnterpriseByIds(Long[] enterpriseIds);
+
+    /**
+     * 分页查询企业客户列表
+     *
+     * @param page 分页参数
+     * @param enterprise 企业客户
+     * @return 企业客户分页结果
+     */
+    IPage<HzEnterprise> selectEnterprisePage(Page<HzEnterprise> page, HzEnterprise enterprise);
 }
