@@ -224,8 +224,7 @@ public class EsignServiceImpl implements EsignService {
                 + "\"signConfig\":{\"signOrder\":1},\"signFields\":[{\"fileId\":\"" + fileId + "\","
                 + "\"normalSignFieldConfig\":{\"autoSign\":true,\"freeMode\":false,"
                 + "\"signFieldPosition\":{\"positionPage\":\"14\",\"positionX\":240,\"positionY\":646},"
-                + "\"signFieldStyle\":1,\"showSignDate\":1,\"signDateConfig\":{\"dateFormat\":\"yyyy-MM-dd\",\"positionX\":380,\"positionY\":639}},"
-                + "\"signFieldType\":0}]},"
+                + "\"signFieldStyle\":1},\"signFieldType\":0}]},"
                 // 乙方（租户个人，手动签）— 3个签名位：页1、页2、页14
                 + "{\"signerType\":0,\"psnSignerInfo\":{\"psnId\":\"" + psnId + "\"},"
                 + "\"signConfig\":{\"signOrder\":2},\"signFields\":["
@@ -243,8 +242,7 @@ public class EsignServiceImpl implements EsignService {
                 + "{\"fileId\":\"" + fileId + "\","
                 + "\"normalSignFieldConfig\":{\"autoSign\":false,\"freeMode\":false,"
                 + "\"signFieldPosition\":{\"positionPage\":\"14\",\"positionX\":243,\"positionY\":536},"
-                + "\"signFieldStyle\":1,\"showSignDate\":1,\"signDateConfig\":{\"dateFormat\":\"yyyy-MM-dd\",\"positionX\":376,\"positionY\":531}},"
-                + "\"signFieldType\":0}"
+                + "\"signFieldStyle\":1},\"signFieldType\":0}"
                 + "]}]}";
 
         EsignHttpResponse resp = callApi("POST", "/v3/sign-flow/create-by-file", jsonParm);
@@ -349,6 +347,9 @@ public class EsignServiceImpl implements EsignService {
         // ── 合同编号 ──────────────────────────────────────────────────────
         String contractNo   = contract.getContractNo()   != null ? contract.getContractNo()  : "";
 
+        // ── 签署日期（当天）────────────────────────────────────────────────
+        String signDate = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
         return "[\n"
             // 页1: 合同签约日期
             + "  {\"componentId\": \"5a2b66c26133442d9bbfe8ea93fa45ae\", \"componentValue\": \"" + escapeJson(startDate)    + "\"},\n"  // 日期3 (yyyy-MM-dd)
@@ -367,7 +368,10 @@ public class EsignServiceImpl implements EsignService {
             // 页14: 签署页乙方姓名
             + "  {\"componentId\": \"23c33b4791934632b6cc8322d8b15fe3\", \"componentValue\": \"" + escapeJson(tenantName)   + "\"},\n"  // 单行文本9: 乙方姓名(签署页)
             // 页1: 合同编号
-            + "  {\"componentId\": \"fe46bc6ad7c84533949d2c32e75c3182\", \"componentValue\": \"" + escapeJson(contractNo)   + "\"}\n"   // 单行文本10: 合同编号
+            + "  {\"componentId\": \"fe46bc6ad7c84533949d2c32e75c3182\", \"componentValue\": \"" + escapeJson(contractNo)   + "\"},\n"  // 单行文本10: 合同编号
+            // 页14: 签署日期（甲方+乙方）
+            + "  {\"componentId\": \"3964bb157dc047ecb10e91f2a4b38514\", \"componentValue\": \"" + signDate                 + "\"},\n"  // 签署日期1: 甲方签署日期
+            + "  {\"componentId\": \"58c4d59fbd164f5282eb6586ecfdb4c8\", \"componentValue\": \"" + signDate                 + "\"}\n"   // 签署日期2: 乙方签署日期
             + "]";
         // 单行文本5 (default:栗毅, 甲方代表人)、单行文本7 (default:\) — 保留模板默认值，不传
     }
