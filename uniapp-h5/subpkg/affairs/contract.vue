@@ -479,16 +479,36 @@
 									this.$set(this.countdownTimers, item.contractId, 0)
 									clearInterval(this.timerIntervals[item.contractId])
 									delete this.timerIntervals[item.contractId]
-									// 倒计时结束，自动刷新合同列表获取最新状态
+									// 倒计时结束：立即在前端乐观更新为"已失效"状态
+									this.markContractVoidedLocally(item.contractId)
+									// 立即刷新一次，获取后端最新状态
 									this.loadContractList()
+									// 延迟3秒后再刷新一次，确保后端定时任务已执行
+									setTimeout(() => {
+										if (this.userId) {
+											this.loadContractList()
+										}
+									}, 3000)
 								} else {
 									this.$set(this.countdownTimers, item.contractId, cur - 1)
 								}
 							}, 1000)
 							this.$set(this.timerIntervals, item.contractId, intervalId)
+						} else {
+							// 页面加载时倒计时已经归零，立即标记为失效
+							this.markContractVoidedLocally(item.contractId)
 						}
 					}
 				})
+			},
+
+			// 前端乐观更新：将指定合同本地标记为"已失效"
+			markContractVoidedLocally(contractId) {
+				const idx = this.allContractList.findIndex(c => c.contractId === contractId)
+				if (idx !== -1) {
+					const updated = { ...this.allContractList[idx], status: 'voided', statusText: '已失效' }
+					this.$set(this.allContractList, idx, updated)
+				}
 			},
 
 			// 清除所有定时器
@@ -501,7 +521,7 @@
 			getCountdownText(contractId) {
 				const seconds = this.countdownTimers[contractId]
 				if (seconds === undefined || seconds === null) return ''
-				if (seconds <= 0) return '⚠ 支付已超时，合同即将失效'
+				if (seconds <= 0) return '⚠ 支付已超时，合同已失效'
 				const min = String(Math.floor(seconds / 60)).padStart(2, '0')
 				const sec = String(seconds % 60).padStart(2, '0')
 				return `⏱ 剩余 ${min}:${sec} 支付押金，逾期合同将失效`

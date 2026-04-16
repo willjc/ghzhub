@@ -276,99 +276,208 @@ public class EsignServiceImpl implements EsignService {
 
     /**
      * 构建模板填充数据 — 将合同+租户数据映射到 e签宝 模板控件
-     * 控件 ID 已通过 GET /v3/doc-templates/{templateId} 确认（模板版本：2026-3-30 招商反馈）
+     * 控件 ID 已通过 GET /v3/doc-templates/{templateId} 确认（模板版本：2026-4-16 更新）
      * 查询方法: curl -s 'https://api.caigon.cn/h5/esign/template-detail'
      *
-     * 控件布局（共20个控件，按页码/Y坐标排序）：
-     *
-     * ── 填充控件（12个，由代码传值）──────────────────────────────────────
-     *   页1  Y=220  日期3 (yyyy-MM-dd)       → 合同签约日期 (startDate)
-     *   页1  Y=752  单行文本10              → 合同编号 (contractNo)
-     *   页2  Y=80   日期1 (yyyy年MM月dd日)  → 合同起始日期 (startDateCn)
-     *   页2  Y=80   日期2 (yyyy年MM月dd日)  → 合同终止日期 (endDateCn)
-     *   页2  Y=301  数字3                   → 租期月数 (rentMonths)
-     *   页2  Y=356  单行文本3               → 乙方姓名 (tenantName)
-     *   页2  Y=530  手机号1                 → 手机号 (phone)
-     *   页2  Y=558  身份证号1               → 身份证号 (idCard)
-     *   页3  Y=401  单行文本4 (max20字)     → 房源地址 (houseAddress)
-     *   页3  Y=425  数字1                   → 月租金 (rentPrice)
-     *   页3  Y=423  数字2                   → 押金 (deposit)
-     *   页14 Y=736  单行文本9               → 乙方姓名-签署页 (tenantName)
+     * ── 填充控件（18个，由代码传值）──────────────────────────────────────
+     *   单行文本3  (ebfedbda...) → 地址+房间号
+     *   单行文本4  (37fdb412...) → 租金大写（中文大写金额）
+     *   单行文本9  (23c33b47...) → 合同编号
+     *   单行文本10 (fe46bc6a...) → 合同编号
+     *   数字1      (d2a93cfe...) → 房租单价（元/平方米/月）
+     *   数字2      (ef7ed4f3...) → 每月租金
+     *   数字3      (7af62cd8...) → 房间平米数（面积）
+     *   身份证号1  (ba2d50d3...) → 身份证号
+     *   手机号1    (520eaa1e...) → 手机号
+     *   数字4~6    → 合同起始日期 年/月/日
+     *   数字7~9    → 合同终止日期 年/月/日
+     *   数字10~12  → 签约日期 年/月/日（当前日期）
      *
      * ── 默认值控件（2个，不传参）────────────────────────────────────────
-     *   页2  Y=685  单行文本5 (default:栗毅) → 甲方代表人
-     *   页2  Y=499  单行文本7 (default:\)    → 保留
+     *   单行文本5 (43f58df6..., default:栗毅) → 甲方代表人
+     *   单行文本7 (a09daefd..., default:\)    → 保留
      *
      * ── 签章控件（4个，由签署流自动处理）─────────────────────────────────
-     *   页1  Y=290  个人章/签名2            → 乙方签名(页1)
-     *   页2  Y=595  个人章/签名1            → 乙方签名(页2)
-     *   页14 Y=536  个人章/签名4            → 乙方签名(页14底部)
-     *   页14 Y=646  企业章3                 → 甲方企业章
-     *
      * ── 签署日期控件（2个，签署流showSignDate自动填充）────────────────────
-     *   页14 Y=639  签署日期1               → 甲方签署日期
-     *   页14 Y=531  签署日期2               → 乙方签署日期
      */
     private String buildTemplateComponents(HzContract contract, HzUser user) {
         // ── 租户信息（优先从合同表取，回退到用户表）────────────────────
-        String tenantName = contract.getTenantName() != null ? contract.getTenantName()
-                          : (user.getRealName()  != null ? user.getRealName()
-                          : (user.getNickname()  != null ? user.getNickname() : ""));
         String idCard     = contract.getTenantIdCard()  != null ? contract.getTenantIdCard()
                           : (user.getIdCard()    != null ? user.getIdCard()  : "");
         String phone      = contract.getTenantPhone()   != null ? contract.getTenantPhone()
                           : (user.getPhone()     != null ? user.getPhone()   : "");
 
-        // ── 合同日期 ────────────────────────────────────────────────────
-        String startDate  = contract.getStartDate() != null ? contract.getStartDate() : "";
-        String endDate    = contract.getEndDate()   != null ? contract.getEndDate()   : "";
-        // 日期1/日期2控件要求 yyyy年MM月dd日 格式
-        String startDateCn = "";
-        String endDateCn   = "";
-        try {
-            java.time.format.DateTimeFormatter isoFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            java.time.format.DateTimeFormatter cnFmt  = java.time.format.DateTimeFormatter.ofPattern("yyyy年MM月dd日");
-            if (!startDate.isEmpty()) startDateCn = java.time.LocalDate.parse(startDate, isoFmt).format(cnFmt);
-            if (!endDate.isEmpty())   endDateCn   = java.time.LocalDate.parse(endDate, isoFmt).format(cnFmt);
-        } catch (Exception e) {
-            startDateCn = startDate;
-            endDateCn   = endDate;
-        }
-
-        // ── 金额 ────────────────────────────────────────────────────────
-        String rentPrice  = contract.getRentPrice() != null ? contract.getRentPrice().toString() : "0";
-        String deposit    = contract.getDeposit()   != null ? contract.getDeposit().toString()   : "0";
-
-        // ── 房源与租期 ──────────────────────────────────────────────────
-        String houseAddress = contract.getHouseAddress() != null ? contract.getHouseAddress() : "";
-        // 单行文本4控件最大20个汉字，超长截断
-        if (houseAddress.length() > 20) houseAddress = houseAddress.substring(0, 20);
-        String rentMonths   = contract.getRentMonths()   != null ? contract.getRentMonths().toString() : "";
-
         // ── 合同编号 ──────────────────────────────────────────────────────
         String contractNo   = contract.getContractNo()   != null ? contract.getContractNo()  : "";
 
+        // ── 房源信息（查询房源表获取面积、房间号）────────────────────────
+        HzHouse house = null;
+        if (contract.getHouseId() != null) {
+            house = houseMapper.selectById(contract.getHouseId());
+        }
+
+        // 地址+房间号：合同地址拼接房源房间号
+        String houseAddress = contract.getHouseAddress() != null ? contract.getHouseAddress() : "";
+        String houseNo = (house != null && house.getHouseNo() != null) ? house.getHouseNo() : "";
+        String addressWithRoom = houseAddress + houseNo;
+
+        // 房间面积（平方米）
+        String houseArea = (house != null && house.getArea() != null) ? house.getArea().toString() : "0";
+
+        // ── 金额 ────────────────────────────────────────────────────────
+        BigDecimal rentPriceNum = contract.getRentPrice() != null ? contract.getRentPrice() : BigDecimal.ZERO;
+        String monthlyRent = rentPriceNum.toString();  // 每月租金
+
+        // 房租单价 = 月租金 / 面积（元/平方米/月）
+        String unitPrice = "0";
+        if (house != null && house.getArea() != null && house.getArea().compareTo(BigDecimal.ZERO) > 0) {
+            unitPrice = rentPriceNum.divide(house.getArea(), 2, BigDecimal.ROUND_HALF_UP).toString();
+        }
+
+        // 租金大写（中文大写金额）
+        String rentPriceChinese = convertToChineseAmount(rentPriceNum);
+
+        // ── 合同日期拆分 ────────────────────────────────────────────────
+        String startDate  = contract.getStartDate() != null ? contract.getStartDate() : "";
+        String endDate    = contract.getEndDate()   != null ? contract.getEndDate()   : "";
+
+        String startYear = "", startMonth = "", startDay = "";
+        String endYear = "", endMonth = "", endDay = "";
+        try {
+            java.time.format.DateTimeFormatter isoFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            if (!startDate.isEmpty()) {
+                java.time.LocalDate sd = java.time.LocalDate.parse(startDate, isoFmt);
+                startYear  = String.valueOf(sd.getYear());
+                startMonth = String.valueOf(sd.getMonthValue());
+                startDay   = String.valueOf(sd.getDayOfMonth());
+            }
+            if (!endDate.isEmpty()) {
+                java.time.LocalDate ed = java.time.LocalDate.parse(endDate, isoFmt);
+                endYear  = String.valueOf(ed.getYear());
+                endMonth = String.valueOf(ed.getMonthValue());
+                endDay   = String.valueOf(ed.getDayOfMonth());
+            }
+        } catch (Exception e) {
+            log.warn("合同日期解析失败，startDate={}, endDate={}", startDate, endDate);
+        }
+
+        // 签约日期：使用当前日期
+        java.time.LocalDate signDate = java.time.LocalDate.now();
+        String signYear  = String.valueOf(signDate.getYear());
+        String signMonth = String.valueOf(signDate.getMonthValue());
+        String signDay   = String.valueOf(signDate.getDayOfMonth());
+
+        // ── 组装控件JSON ────────────────────────────────────────────────
         return "[\n"
-            // 页1: 合同签约日期
-            + "  {\"componentId\": \"5a2b66c26133442d9bbfe8ea93fa45ae\", \"componentValue\": \"" + escapeJson(startDate)    + "\"},\n"  // 日期3 (yyyy-MM-dd)
-            // 页2: 合同期限
-            + "  {\"componentId\": \"768fda9eaf6d4492bc56e2b90a08c97d\", \"componentValue\": \"" + escapeJson(startDateCn) + "\"},\n"  // 日期1: 起始日 (yyyy年MM月dd日)
-            + "  {\"componentId\": \"8608e65d7a8943d9bd6bf25b6de50045\", \"componentValue\": \"" + escapeJson(endDateCn)   + "\"},\n"  // 日期2: 终止日 (yyyy年MM月dd日)
-            + "  {\"componentId\": \"7af62cd84df944dba1d828dba66ae394\", \"componentValue\": \"" + escapeJson(rentMonths)   + "\"},\n"  // 数字3: 租期(月)
-            // 页2: 乙方个人信息
-            + "  {\"componentId\": \"ebfedbda264e446390801f1ba6ee96eb\", \"componentValue\": \"" + escapeJson(tenantName)   + "\"},\n"  // 单行文本3: 乙方姓名
-            + "  {\"componentId\": \"520eaa1e2b634c0592937bd216a74cf5\", \"componentValue\": \"" + escapeJson(phone)        + "\"},\n"  // 手机号1
-            + "  {\"componentId\": \"ba2d50d300394daba46764c3f7ca5aec\", \"componentValue\": \"" + escapeJson(idCard)       + "\"},\n"  // 身份证号1
-            // 页3: 租金押金
-            + "  {\"componentId\": \"37fdb4123afb45139912f5dc938d5e3c\", \"componentValue\": \"" + escapeJson(houseAddress) + "\"},\n"  // 单行文本4: 房源地址
-            + "  {\"componentId\": \"d2a93cfe598449c49fac10a5c8d58f08\", \"componentValue\": \"" + rentPrice               + "\"},\n"  // 数字1: 月租金
-            + "  {\"componentId\": \"ef7ed4f368094d19a52d45369994e7e7\", \"componentValue\": \"" + deposit                 + "\"},\n"  // 数字2: 押金
-            // 页14: 签署页乙方姓名
-            + "  {\"componentId\": \"23c33b4791934632b6cc8322d8b15fe3\", \"componentValue\": \"" + escapeJson(tenantName)   + "\"},\n"  // 单行文本9: 乙方姓名(签署页)
-            // 页1: 合同编号
-            + "  {\"componentId\": \"fe46bc6ad7c84533949d2c32e75c3182\", \"componentValue\": \"" + escapeJson(contractNo)   + "\"}\n"   // 单行文本10: 合同编号
+            // 单行文本3: 地址+房间号
+            + "  {\"componentId\": \"ebfedbda264e446390801f1ba6ee96eb\", \"componentValue\": \"" + escapeJson(addressWithRoom) + "\"},\n"
+            // 单行文本4: 租金大写（中文大写金额）
+            + "  {\"componentId\": \"37fdb4123afb45139912f5dc938d5e3c\", \"componentValue\": \"" + escapeJson(rentPriceChinese) + "\"},\n"
+            // 数字1: 房租单价（元/平方米/月）
+            + "  {\"componentId\": \"d2a93cfe598449c49fac10a5c8d58f08\", \"componentValue\": \"" + unitPrice                   + "\"},\n"
+            // 数字2: 每月租金
+            + "  {\"componentId\": \"ef7ed4f368094d19a52d45369994e7e7\", \"componentValue\": \"" + monthlyRent                 + "\"},\n"
+            // 数字3: 房间平米数（面积）
+            + "  {\"componentId\": \"7af62cd84df944dba1d828dba66ae394\", \"componentValue\": \"" + houseArea                   + "\"},\n"
+            // 单行文本9: 合同编号
+            + "  {\"componentId\": \"23c33b4791934632b6cc8322d8b15fe3\", \"componentValue\": \"" + escapeJson(contractNo)      + "\"},\n"
+            // 单行文本10: 合同编号
+            + "  {\"componentId\": \"fe46bc6ad7c84533949d2c32e75c3182\", \"componentValue\": \"" + escapeJson(contractNo)      + "\"},\n"
+            // 身份证号1
+            + "  {\"componentId\": \"ba2d50d300394daba46764c3f7ca5aec\", \"componentValue\": \"" + escapeJson(idCard)          + "\"},\n"
+            // 手机号1
+            + "  {\"componentId\": \"520eaa1e2b634c0592937bd216a74cf5\", \"componentValue\": \"" + escapeJson(phone)           + "\"},\n"
+            // ── 合同起始日期拆分 ──
+            // 数字4: 起始年
+            + "  {\"componentId\": \"0a17d6c252294058bef7a5959d0444e3\", \"componentValue\": \"" + startYear                   + "\"},\n"
+            // 数字5: 起始月
+            + "  {\"componentId\": \"873b2dca5ffd407c896bc42266b590e2\", \"componentValue\": \"" + startMonth                  + "\"},\n"
+            // 数字6: 起始日
+            + "  {\"componentId\": \"31e87f7e9f1e4ec6a6d9db1301d65f6b\", \"componentValue\": \"" + startDay                    + "\"},\n"
+            // ── 合同终止日期拆分 ──
+            // 数字7: 终止年
+            + "  {\"componentId\": \"2ba6a017f99b42f7ad3a7b90b5f7e021\", \"componentValue\": \"" + endYear                     + "\"},\n"
+            // 数字8: 终止月
+            + "  {\"componentId\": \"75361beac8664e859fa090b9253b7ccf\", \"componentValue\": \"" + endMonth                    + "\"},\n"
+            // 数字9: 终止日
+            + "  {\"componentId\": \"6f93df14d68e4b9e80f58973b6b948e9\", \"componentValue\": \"" + endDay                      + "\"},\n"
+            // ── 签约日期拆分（当前日期）──
+            // 数字10: 签约年
+            + "  {\"componentId\": \"682336d1a20744f888d18c38026cf1ba\", \"componentValue\": \"" + signYear                    + "\"},\n"
+            // 数字11: 签约月
+            + "  {\"componentId\": \"a96cbcb2bb6c469dbce41f2896919423\", \"componentValue\": \"" + signMonth                   + "\"},\n"
+            // 数字12: 签约日
+            + "  {\"componentId\": \"994019cb2cfb41a2ae832f8e106d5282\", \"componentValue\": \"" + signDay                     + "\"}\n"
             + "]";
         // 单行文本5 (default:栗毅, 甲方代表人)、单行文本7 (default:\) — 保留模板默认值，不传
+    }
+
+    /**
+     * 将数字金额转换为中文大写金额
+     * 例如：1200 → "壹仟贰佰元整"，3500.50 → "叁仟伍佰元伍角"
+     */
+    private String convertToChineseAmount(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) == 0) {
+            return "零元整";
+        }
+
+        final String[] cnNums = {"零", "壹", "贰", "叁", "肆", "伍", "陆", "柒", "捌", "玖"};
+        final String[] cnIntRadice = {"", "拾", "佰", "仟"};
+        final String[] cnIntUnits = {"", "万", "亿", "兆"};
+        final String cnIntLast = "元";
+        final String cnInteger = "整";
+        final String[] cnDecUnits = {"角", "分"};
+
+        // 分离整数和小数部分
+        long integerPart = amount.abs().longValue();
+        int decimalPart = amount.abs().subtract(new BigDecimal(integerPart))
+                .multiply(new BigDecimal(100)).intValue();
+
+        StringBuilder sb = new StringBuilder();
+
+        // 整数部分
+        if (integerPart > 0) {
+            int zeroCount = 0;
+            String intStr = String.valueOf(integerPart);
+            int intLen = intStr.length();
+            for (int i = 0; i < intLen; i++) {
+                int digit = intStr.charAt(i) - '0';
+                int pos = intLen - i - 1;     // 当前位的权重位置
+                int quotient = pos / 4;        // 所在的万级单元
+                int remainder = pos % 4;       // 万级内的位置
+
+                if (digit == 0) {
+                    zeroCount++;
+                } else {
+                    if (zeroCount > 0) {
+                        sb.append(cnNums[0]);
+                    }
+                    zeroCount = 0;
+                    sb.append(cnNums[digit]).append(cnIntRadice[remainder]);
+                }
+                // 每个万级单元的末尾加单位（万/亿）
+                if (remainder == 0 && zeroCount < 4) {
+                    sb.append(cnIntUnits[quotient]);
+                }
+            }
+            sb.append(cnIntLast);
+        }
+
+        // 小数部分（角/分）
+        if (decimalPart > 0) {
+            int jiao = decimalPart / 10;
+            int fen = decimalPart % 10;
+            if (jiao > 0) {
+                sb.append(cnNums[jiao]).append(cnDecUnits[0]);
+            }
+            if (fen > 0) {
+                sb.append(cnNums[fen]).append(cnDecUnits[1]);
+            }
+        } else {
+            sb.append(cnInteger);
+        }
+
+        return sb.toString();
     }
 
     /**
