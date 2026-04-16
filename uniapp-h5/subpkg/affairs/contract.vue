@@ -24,7 +24,7 @@
 				class="card"
 				:class="{ 'card-highlight': item.contractId === highlightContractId, 'card-voided': item.status === 'voided' }"
 				v-for="(item, index) in currentContractList"
-				:key="item.type === 'order' ? ('order_' + item.orderId) : ('contract_' + item.contractId)"
+				:key="item.type === 'booking' ? ('bk_' + item.orderId) : ('contract_' + item.contractId)"
 			>
 				<!-- 合同状态 -->
 				<view class="info-row">
@@ -331,7 +331,7 @@
 
 			// 去签署 (e签宝流程)
 			goSign(item) {
-				if (item.type === 'order') {
+				if (item.type === 'booking') {
 					// 预订单 → 跳转签约页（需要 roomId, projectId, houseCode, orderNo, lockExpireTime）
 					const params = `roomId=${item.houseId}&projectId=${item.projectId}&houseCode=${encodeURIComponent(item.houseCode || '')}&orderNo=${item.orderNo}&lockExpireTime=${encodeURIComponent(item.bookingExpireTime || '')}`
 					uni.navigateTo({
@@ -419,7 +419,7 @@
 				// === 预订单类型（尚未生成合同）===
 				if (item.type === 'order') {
 					return {
-						type:             'order',
+						type:             'booking',
 						orderId:          item.order_id,
 						orderNo:          item.order_no,
 						contractId:       null,
@@ -531,7 +531,7 @@
 			startCountdownTimers() {
 				this.clearAllTimers()
 				this.allContractList.forEach(item => {
-					const itemKey = item.contractId || `order_${item.orderId}`
+					const itemKey = item.contractId || `bk_${item.orderId}`
 					// 1. 预订倒计时：待签署(pending)且有bookingExpireTime
 					if (item.status === 'pending' && item.bookingExpireTime) {
 						this._startTimer(item, item.bookingExpireTime, 'booking', itemKey)
@@ -579,8 +579,8 @@
 			// 前端乐观更新：将指定合同/预订单本地标记为"已失效"
 			markItemVoidedLocally(item) {
 				const idx = this.allContractList.findIndex(c => {
-					if (item.type === 'order') {
-						return c.type === 'order' && c.orderId === item.orderId
+					if (item.type === 'booking') {
+						return c.type === 'booking' && c.orderId === item.orderId
 					}
 					return c.contractId === item.contractId
 				})
@@ -598,7 +598,7 @@
 
 			// 获取步骤内倒计时文本（mm:ss格式）
 			getStepCountdown(item, type) {
-				const itemKey = item.contractId || `order_${item.orderId}`
+				const itemKey = item.contractId || `bk_${item.orderId}`
 				const timerKey = `${type}_${itemKey}`
 				const seconds = this.countdownTimers[timerKey]
 				if (seconds === undefined || seconds === null || seconds <= 0) return ''
@@ -609,7 +609,7 @@
 
 			// 步骤内倒计时是否紧急（预订<3分钟，押金<5分钟）
 			isStepUrgent(item, type) {
-				const itemKey = item.contractId || `order_${item.orderId}`
+				const itemKey = item.contractId || `bk_${item.orderId}`
 				const timerKey = `${type}_${itemKey}`
 				const seconds = this.countdownTimers[timerKey]
 				if (seconds === undefined || seconds <= 0) return false
