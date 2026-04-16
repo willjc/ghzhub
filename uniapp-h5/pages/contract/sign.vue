@@ -12,6 +12,17 @@
     <!-- ── 合同确认预览 ── -->
     <view v-else-if="step === 'preview'" class="preview-layout">
 
+      <!-- 预订倒计时条 -->
+      <view class="countdown-bar" v-if="showLockCountdown"
+        :class="{ 'countdown-bar-urgent': countdownUrgent, 'countdown-bar-expired': countdownExpired }">
+        <view class="countdown-bar-inner">
+          <text class="countdown-bar-icon">⏱</text>
+          <text class="countdown-bar-text" :class="{ 'countdown-blink': countdownUrgent }">
+            {{ countdownExpired ? '预订已失效，请重新选房' : '房源预订剩余 ' + countdown }}
+          </text>
+        </view>
+      </view>
+
       <!-- 顶部 Banner -->
       <view class="banner">
         <view class="banner-tag">电子合同</view>
@@ -106,8 +117,8 @@
       <view class="footer">
         <button
           class="btn-sign"
-          :class="{ disabled: submitting }"
-          :disabled="submitting"
+          :class="{ disabled: submitting || countdownExpired }"
+          :disabled="submitting || countdownExpired"
           @click="handleConfirmSign"
         >
           <text class="btn-sign-icon">✍</text>
@@ -220,7 +231,12 @@ export default {
       pollTimer: null,
       pollCount: 0,
       submitting: false,
-      fromEsignWebview: false  // 标记是否跳转去了 esign-webview，用于 onShow 检测返回
+      fromEsignWebview: false,  // 标记是否跳转去了 esign-webview，用于 onShow 检测返回
+      // 预订倒计时
+      lockExpireTime: null,
+      countdown: '10:00',
+      countdownSeconds: 0,
+      countdownTimer: null
     }
   },
   onLoad(options) {
@@ -244,6 +260,11 @@ export default {
     this.rentMonthsIndex = this.rentMonths - 1
     if (options.houseCode) {
       this.houseCode = decodeURIComponent(options.houseCode)
+    }
+    // 接收预订锁定过期时间（仅从选房流程跳转时有值）
+    if (options.lockExpireTime && this.orderNo) {
+      this.lockExpireTime = decodeURIComponent(options.lockExpireTime)
+      this.startLockCountdown()
     }
 
     // 检测是否从e签宝跳回（H5环境）
@@ -290,11 +311,24 @@ export default {
   },
   onUnload() {
     this.stopPolling()
+    this.clearLockCountdown()
   },
   computed: {
     pollCountDisplay() {
       if (this.pollCount === 0) return ''
       return `（已等待 ${this.pollCount * 5} 秒）`
+    },
+    // 是否显示预订倒计时（仅选房流程 + 有 lockExpireTime 时显示）
+    showLockCountdown() {
+      return !!(this.lockExpireTime && this.orderNo)
+    },
+    // 剩余不足2分钟 → 紧急状态
+    countdownUrgent() {
+      return this.countdownSeconds > 0 && this.countdownSeconds < 120
+    },
+    // 倒计时已结束
+    countdownExpired() {
+      return this.showLockCountdown && this.countdownSeconds <= 0
     }
   },
   methods: {
@@ -527,7 +561,56 @@ export default {
 
     goBack() {
       this.stopPolling()
+      this.clearLockCountdown()
       uni.redirectTo({ url: '/subpkg/affairs/contract' })
+    },
+
+    // ========== 预订倒计时 ==========
+    startLockCountdown() {
+      this.clearLockCountdown()
+      const expireTs = new Date(this.lockExpireTime).getTime()
+      if (isNaN(expireTs)) return
+      const remaining = Math.floor((expireTs - Date.now()) / 1000)
+      this.countdownSeconds = Math.max(0, remaining)
+      this.formatCountdown()
+      if (this.countdownSeconds <= 0) {
+        this.onLockExpired()
+        return
+      }
+      this.countdownTimer = setInterval(() => {
+        this.countdownSeconds--
+        this.formatCountdown()
+        if (this.countdownSeconds <= 0) {
+          this.clearLockCountdown()
+          this.onLockExpired()
+        }
+      }, 1000)
+    },
+
+    formatCountdown() {
+      const s = Math.max(0, this.countdownSeconds)
+      const min = String(Math.floor(s / 60)).padStart(2, '0')
+      const sec = String(s % 60).padStart(2, '0')
+      this.countdown = `${min}:${sec}`
+    },
+
+    clearLockCountdown() {
+      if (this.countdownTimer) {
+        clearInterval(this.countdownTimer)
+        this.countdownTimer = null
+      }
+    },
+
+    onLockExpired() {
+      uni.showModal({
+        title: '预订已失效',
+        content: '房源预订时间已到期，请重新选房',
+        showCancel: false,
+        confirmText: '返回选房',
+        success: () => {
+          uni.navigateBack()
+        }
+      })
     }
   }
 }
@@ -828,4 +911,40 @@ export default {
 }
 .btn-sign.disabled { opacity: 0.55; }
 .btn-sign-icon { font-size: 34rpx; }
+
+/* ─── 预订倒计时条 ─── */
+.countdown-bar {
+  background: linear-gradient(135deg, #FF6B00, #FF9500);
+  padding: 16rpx 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.countdown-bar-urgent {
+  background: linear-gradient(135deg, #DC2626, #EF4444);
+}
+.countdown-bar-expired {
+  background: #991B1B;
+}
+.countdown-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+.countdown-bar-icon {
+  font-size: 28rpx;
+}
+.countdown-bar-text {
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 600;
+  letter-spacing: 1rpx;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.countdown-blink {
+  animation: blink 1s ease-in-out infinite;
+}
 </style>

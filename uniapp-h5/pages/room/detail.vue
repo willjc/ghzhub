@@ -305,7 +305,7 @@ import config from '@/config/index'
 						const { buildingNo, unitNo, roomNo } = this.roomInfo
 						const houseCode = [buildingNo, unitNo, roomNo].filter(Boolean).join('-')
 						uni.navigateTo({
-							url: `/pages/contract/sign?roomId=${this.roomId}&projectId=${this.projectId}&houseCode=${encodeURIComponent(houseCode)}&orderNo=${orderNo}`
+							url: `/pages/contract/sign?roomId=${this.roomId}&projectId=${this.projectId}&houseCode=${encodeURIComponent(houseCode)}&orderNo=${orderNo}&lockExpireTime=${encodeURIComponent(lockExpireTime || '')}`
 						})
 					} else {
 						uni.showToast({ title: res.msg || '该房源已被他人选中', icon: 'none' })
