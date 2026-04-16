@@ -260,8 +260,9 @@ export default {
 						uni.hideLoading()
 						this.workUploading = false
 						if (uploadRes && uploadRes.code === 200) {
-							// 上传成功，保存服务器路径
-							this.workFile = uploadRes.fileName || uploadRes.filePath || uploadRes.url
+							// 上传成功，保存服务器路径（data中包含filePath和documentId）
+							const resData = uploadRes.data || uploadRes
+							this.workFile = resData.filePath || resData.fileName || resData.url
 							uni.showToast({ title: '工作证明上传成功', icon: 'success' })
 						} else {
 							// 上传失败，清除预览
@@ -300,8 +301,9 @@ export default {
 						uni.hideLoading()
 						this.eduUploading = false
 						if (uploadRes && uploadRes.code === 200) {
-							// 上传成功，保存服务器路径
-							this.educationFile = uploadRes.fileName || uploadRes.filePath || uploadRes.url
+							// 上传成功，保存服务器路径（data中包含filePath和documentId）
+							const resData = uploadRes.data || uploadRes
+							this.educationFile = resData.filePath || resData.fileName || resData.url
 							uni.showToast({ title: '学历证明上传成功', icon: 'success' })
 						} else {
 							// 上传失败，清除预览
