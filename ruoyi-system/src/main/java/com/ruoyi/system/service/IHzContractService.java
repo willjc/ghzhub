@@ -100,4 +100,20 @@ public interface IHzContractService {
      * @return 合同编号
      */
     String generateContractNo();
+
+    /**
+     * 原子锁定房源并创建合同（事务内执行，保证一致性）
+     *
+     * @param contract 合同
+     * @return 结果
+     */
+    int createContractWithLockHouse(HzContract contract);
+
+    /**
+     * 合同失效并释放房源（事务内执行，保证一致性）
+     *
+     * @param contractId 合同ID
+     * @param houseId 房源ID
+     */
+    void expireContractAndReleaseHouse(Long contractId, Long houseId);
 }

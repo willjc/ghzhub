@@ -13,6 +13,7 @@ import com.ruoyi.system.service.IHzCheckInService;
 import com.ruoyi.system.service.IHzContractService;
 import com.ruoyi.system.service.IHzDocumentService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -397,6 +398,7 @@ public class HzContractAppController extends BaseController {
 
             // 3. 获取房源和项目信息
             HzHouse house = houseMapper.selectById(houseId);
+
             HzProject project = projectMapper.selectById(projectId);
 
             // 拼接完整地址
@@ -490,8 +492,13 @@ public class HzContractAppController extends BaseController {
             contract.setContractStatus("0"); // 草稿(待e签宝签署)
             contract.setDelFlag("0");
 
-            // 6. 保存合同
-            int result = contractService.insertContract(contract);
+            // 6. 保存合同（事务内锁房+创建合同，保证一致性）
+            int result;
+            try {
+                result = contractService.createContractWithLockHouse(contract);
+            } catch (RuntimeException e) {
+                return error(e.getMessage());
+            }
 
             if (result > 0) {
                 // 注意：账单和入驻记录已迁移到 e签宝签署回调中生成（EsignServiceImpl.handleSignCallback）

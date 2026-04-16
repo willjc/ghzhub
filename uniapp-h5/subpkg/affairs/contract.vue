@@ -22,7 +22,7 @@
 			<!-- 合同卡片列表 -->
 			<view
 				class="card"
-				:class="{ 'card-highlight': item.contractId === highlightContractId }"
+				:class="{ 'card-highlight': item.contractId === highlightContractId, 'card-voided': item.status === 'voided' }"
 				v-for="(item, index) in currentContractList"
 				:key="index"
 			>
@@ -105,7 +105,7 @@
 					</view>
 
 					<!-- 押金支付倒计时提示 -->
-					<view class="countdown-timer" v-if="showCountdown(item)"
+					<view class="countdown-timer" v-if="item.status !== 'voided' && showCountdown(item)"
 						:class="{ 'countdown-warning': isCountdownUrgent(item.contractId), 'countdown-expired': isCountdownExpired(item.contractId) }">
 						<text class="countdown-timer-text"
 							:class="{ 'countdown-warning-text': isCountdownUrgent(item.contractId), 'countdown-expired-text': isCountdownExpired(item.contractId) }">
@@ -114,13 +114,19 @@
 					</view>
 
 					<!-- 3日资料上传提示 -->
-					<view class="material-alert" v-if="item.depositPaid && !item.materialSubmitted">
+					<view class="material-alert" v-if="item.status !== 'voided' && item.depositPaid && !item.materialSubmitted">
 						<text class="material-alert-text">⚠ 请在3日内上传工作证明和学历证明，逾期合同将失效，房源将被释放</text>
 					</view>
 
 					<!-- 操作按钮区域 -->
+					<!-- 已失效 -->
+					<view class="button-group" v-if="item.status === 'voided'">
+						<view class="btn btn-disabled-state">
+							<text class="btn-text-gray">已失效</text>
+						</view>
+					</view>
 					<!-- 待签署 -->
-					<view class="button-group" v-if="item.status === 'pending'">
+					<view class="button-group" v-else-if="item.status === 'pending'">
 						<view class="btn btn-sign" @click="goSign(item)">
 							<text class="btn-text-white">去签署</text>
 						</view>
@@ -187,7 +193,8 @@
 				statusClassMap: {
 					'unsigned': 'status-unsigned',
 					'signed': 'status-signed',
-					'expired': 'status-expired'
+					'expired': 'status-expired',
+					'voided': 'status-voided'
 				}
 			}
 		},
@@ -429,6 +436,7 @@
 					case '3': return { code: 'signed', text: '合约中' }       // 履行中
 					case '4': return { code: 'expired', text: '已到期' }      // 已到期
 					case '5': return { code: 'expired', text: '已解约' }      // 已解约
+					case '6': return { code: 'voided', text: '已失效' }       // 超时失效
 					default: return { code: 'expired', text: '未知' }
 				}
 			},
@@ -471,6 +479,8 @@
 									this.$set(this.countdownTimers, item.contractId, 0)
 									clearInterval(this.timerIntervals[item.contractId])
 									delete this.timerIntervals[item.contractId]
+									// 倒计时结束，自动刷新合同列表获取最新状态
+									this.loadContractList()
 								} else {
 									this.$set(this.countdownTimers, item.contractId, cur - 1)
 								}
@@ -648,6 +658,16 @@
 
 	.status-expired {
 		color: #768394;
+	}
+
+	.status-voided {
+		color: #ff4400;
+	}
+
+	/* 已失效合同卡片 - 灰色遮罩 */
+	.card-voided {
+		opacity: 0.6;
+		background: #f9f9f9;
 	}
 
 	/* 待审核状态行 */

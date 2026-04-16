@@ -9,12 +9,15 @@ import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzCheckoutApply;
 import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.mapper.HzCheckoutApplyMapper;
 import com.ruoyi.system.mapper.HzContractMapper;
+import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.service.IHzCheckoutService;
 import com.ruoyi.system.service.IHzContractService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
@@ -30,6 +33,9 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
 
     @Autowired
     private HzCheckoutApplyMapper checkoutApplyMapper;
+
+    @Autowired
+    private HzHouseMapper houseMapper;
 
     @Override
     public HzContract selectContractById(Long contractId) {
@@ -205,5 +211,36 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
         return contracts.stream()
                 .filter(contract -> !applyingContractIds.contains(contract.getContractId()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public int createContractWithLockHouse(HzContract contract) {
+        // 1. 原子锁定房源（house_status: 0→1）
+        int locked = houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                .eq(HzHouse::getHouseId, contract.getHouseId())
+                .eq(HzHouse::getHouseStatus, "0")
+                .set(HzHouse::getHouseStatus, "1"));
+        if (locked == 0) {
+            throw new RuntimeException("该房源已被他人选中，请重新选择其他房源");
+        }
+        // 2. 插入合同
+        return this.insertContract(contract);
+    }
+
+    @Override
+    @Transactional
+    public void expireContractAndReleaseHouse(Long contractId, Long houseId) {
+        // 1. 合同状态更新为超时失效
+        baseMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                .eq(HzContract::getContractId, contractId)
+                .set(HzContract::getContractStatus, "6"));
+        // 2. 释放关联房源
+        if (houseId != null) {
+            houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                    .eq(HzHouse::getHouseId, houseId)
+                    .eq(HzHouse::getHouseStatus, "1")
+                    .set(HzHouse::getHouseStatus, "0"));
+        }
     }
 }

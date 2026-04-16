@@ -4,8 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.DateUtils;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.ruoyi.system.domain.HzBill;
+import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.mapper.HzBillMapper;
+import com.ruoyi.system.mapper.HzContractMapper;
+import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.service.IHzHouseOrderService;
 import com.ruoyi.system.service.WechatPayService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +46,12 @@ public class WechatPayController extends BaseController {
     @Autowired
     private IHzHouseOrderService houseOrderService;
 
+    @Autowired
+    private HzContractMapper contractMapper;
+
+    @Autowired
+    private HzHouseMapper houseMapper;
+
     /**
      * 预支付
      * 请求体：{ billNo, payType("jsapi"|"h5"), openid?, clientIp? }
@@ -70,6 +81,26 @@ public class WechatPayController extends BaseController {
         }
         if (bill == null) return error("账单不存在");
         if ("1".equals(bill.getBillStatus())) return error("账单已支付");
+
+        // 如果是押金账单（bill_type='1'），检查合同是否还在有效期内
+        if ("1".equals(bill.getBillType())) {
+            HzContract contract = contractMapper.selectById(bill.getContractId());
+            if (contract == null || !"2".equals(contract.getContractStatus())) {
+                return error("合同已失效，无法支付押金");
+            }
+            // 检查是否在30分钟窗口内
+            String signTimeStr = contract.getSignTime();
+            if (signTimeStr != null && !signTimeStr.isEmpty()) {
+                try {
+                    String s = signTimeStr.replace("T", " ");
+                    java.util.Date signTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(s);
+                    long elapsed = System.currentTimeMillis() - signTime.getTime();
+                    if (elapsed > 30 * 60 * 1000L) {
+                        return error("合同已超时失效，请重新签约");
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
 
         int totalFen = bill.getUnpaidAmount()
                            .multiply(new BigDecimal("100"))
@@ -165,7 +196,19 @@ public class WechatPayController extends BaseController {
                         houseOrderService.onDepositPaid(bill.getOrderNo());
                         logger.info("【微信回调】押金账单已触发 onDepositPaid，orderNo={}", bill.getOrderNo());
                     } else {
-                        logger.warn("【微信回调】押金账单 billId={} 没有 orderNo，跳过订单状态推进（直签合同无订单属正常）", bill.getBillId());
+                        // 直签合同模式：押金支付成功后，将房源状态从已预订改为已出租
+                        HzContract contract = contractMapper.selectById(bill.getContractId());
+                        if (contract != null && contract.getHouseId() != null) {
+                            houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                                .eq(HzHouse::getHouseId, contract.getHouseId())
+                                .eq(HzHouse::getHouseStatus, "1")
+                                .set(HzHouse::getHouseStatus, "2"));
+                            // 合同状态推进到 '3'（履行中）
+                            contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                                .eq(HzContract::getContractId, contract.getContractId())
+                                .set(HzContract::getContractStatus, "3"));
+                            logger.info("【微信回调】直签合同押金支付成功，房源状态→已出租，合同状态→履行中, contractId={}", contract.getContractId());
+                        }
                     }
                 }
             }
