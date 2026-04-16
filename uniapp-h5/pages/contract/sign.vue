@@ -568,7 +568,7 @@ export default {
     // ========== 预订倒计时 ==========
     startLockCountdown() {
       this.clearLockCountdown()
-      const expireTs = new Date(this.lockExpireTime).getTime()
+      const expireTs = new Date(Number(this.lockExpireTime)).getTime()
       if (isNaN(expireTs)) return
       const remaining = Math.floor((expireTs - Date.now()) / 1000)
       this.countdownSeconds = Math.max(0, remaining)

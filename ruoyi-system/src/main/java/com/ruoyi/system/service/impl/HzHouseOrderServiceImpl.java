@@ -56,12 +56,13 @@ public class HzHouseOrderServiceImpl
     @Transactional(rollbackFor = Exception.class)
     public AjaxResult createOrder(Long tenantId, Long houseId) {
         // 1. 检查是否有进行中的活跃订单
-        long activeCount = count(new LambdaQueryWrapper<HzHouseOrder>()
+        long existCount = count(new LambdaQueryWrapper<HzHouseOrder>()
                 .eq(HzHouseOrder::getTenantId, tenantId)
+                .eq(HzHouseOrder::getHouseId, houseId)
                 .in(HzHouseOrder::getOrderStatus, "0", "1", "2")
                 .eq(HzHouseOrder::getDelFlag, "0"));
-        if (activeCount > 0) {
-            return AjaxResult.error("您已有进行中的预订，请先处理");
+        if (existCount > 0) {
+            return AjaxResult.error("您已预订过该房源，请勿重复操作");
         }
 
         // 2. 原子锁定房源（house_status: 空置→已预订），利用数据库行级锁保证并发安全
