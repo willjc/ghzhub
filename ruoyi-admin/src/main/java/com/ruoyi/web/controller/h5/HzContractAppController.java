@@ -138,7 +138,7 @@ public class HzContractAppController extends BaseController {
             }
             contract.put("material_status", materialStatus);
 
-            // 用签署时间 + 30分钟 计算锁定过期时间
+            // 用签署时间 + 30分钟 计算锁定过期时间（已签署待付押金倒计时）
             Object signTimeObj = contract.get("sign_time");
             if (signTimeObj != null) {
                 try {
@@ -158,6 +158,21 @@ public class HzContractAppController extends BaseController {
                     contract.put("lock_expire_time", cal.getTime());
                 } catch (Exception e) {
                     // sign_time 格式异常，忽略
+                }
+            }
+
+            // 待签署合同(status=0/1)：查询预订单的10分钟锁定过期时间
+            String contractStatus = contract.get("contract_status") != null ? contract.get("contract_status").toString() : "";
+            if ("0".equals(contractStatus) || "1".equals(contractStatus)) {
+                if (contractIdObj != null) {
+                    Long cIdForOrder = Long.parseLong(contractIdObj.toString());
+                    HzHouseOrder bookingOrder = houseOrderService.getOne(new LambdaQueryWrapper<HzHouseOrder>()
+                            .eq(HzHouseOrder::getContractId, cIdForOrder)
+                            .eq(HzHouseOrder::getDelFlag, "0")
+                            .last("LIMIT 1"));
+                    if (bookingOrder != null && bookingOrder.getLockExpireTime() != null) {
+                        contract.put("booking_expire_time", bookingOrder.getLockExpireTime());
+                    }
                 }
             }
         }

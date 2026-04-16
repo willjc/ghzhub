@@ -15,6 +15,9 @@
 		<!-- 合同列表 -->
 		<scroll-view class="scroll-content" scroll-y>
 			<!-- 提示卡片 -->
+			<view class="tip-card tip-card-booking" v-if="currentTab === 'current' && hasBookingCountdown">
+				<text class="tip-text">提示：房源预订锁定10分钟，请在倒计时内完成签署，逾期房源将被释放！</text>
+			</view>
 			<view class="tip-card" v-if="currentTab === 'current' && hasUnsignedContract">
 				<text class="tip-text">提示：合同签署后30分钟内未支付押金，则合同自动失效！</text>
 			</view>
@@ -104,12 +107,12 @@
 						</view>
 					</view>
 
-					<!-- 押金支付倒计时提示 -->
+					<!-- 押金支付/预订倒计时提示 -->
 					<view class="countdown-timer" v-if="item.status !== 'voided' && showCountdown(item)"
-						:class="{ 'countdown-warning': isCountdownUrgent(item.contractId), 'countdown-expired': isCountdownExpired(item.contractId) }">
+						:class="{ 'countdown-warning': isCountdownUrgent(item), 'countdown-expired': isCountdownExpired(item) }">
 						<text class="countdown-timer-text"
-							:class="{ 'countdown-warning-text': isCountdownUrgent(item.contractId), 'countdown-expired-text': isCountdownExpired(item.contractId) }">
-							{{ getCountdownText(item.contractId) }}
+							:class="{ 'countdown-warning-text': isCountdownUrgent(item), 'countdown-expired-text': isCountdownExpired(item) }">
+							{{ getCountdownText(item) }}
 						</text>
 					</view>
 
@@ -229,6 +232,9 @@
 			},
 			hasUnsignedContract() {
 				return this.allContractList.some(item => item.status === 'pending' || (item.status === 'signed' && !item.depositPaid))
+			},
+			hasBookingCountdown() {
+				return this.allContractList.some(item => item.status === 'pending' && item.bookingExpireTime)
 			}
 		},
 		onLoad(options) {
@@ -434,7 +440,8 @@
 					firstRentPaid,
 					contractContent:  item.contract_content || '',
 					hasPdf: item.contract_content && item.contract_content.startsWith('http'),
-					lockExpireTime:   item.lock_expire_time || '',  // 锁定过期时间
+					lockExpireTime:   item.lock_expire_time || '',  // 押金支付锁定过期时间
+					bookingExpireTime: item.booking_expire_time || '',  // 预订锁定过期时间
 				}
 			},
 
@@ -480,37 +487,48 @@
 			startCountdownTimers() {
 				this.clearAllTimers()
 				this.allContractList.forEach(item => {
-					if (item.signed && !item.depositPaid && item.lockExpireTime) {
-						const remaining = Math.max(0, Math.floor((new Date(item.lockExpireTime) - new Date()) / 1000))
-						this.$set(this.countdownTimers, item.contractId, remaining)
-						if (remaining > 0) {
-							const intervalId = setInterval(() => {
-								const cur = this.countdownTimers[item.contractId]
-								if (cur <= 1) {
-									this.$set(this.countdownTimers, item.contractId, 0)
-									clearInterval(this.timerIntervals[item.contractId])
-									delete this.timerIntervals[item.contractId]
-									// 倒计时结束：立即在前端乐观更新为"已失效"状态
-									this.markContractVoidedLocally(item.contractId)
-									// 立即刷新一次，获取后端最新状态
-									this.loadContractList()
-									// 延迟3秒后再刷新一次，确保后端定时任务已执行
-									setTimeout(() => {
-										if (this.userId) {
-											this.loadContractList()
-										}
-									}, 3000)
-								} else {
-									this.$set(this.countdownTimers, item.contractId, cur - 1)
-								}
-							}, 1000)
-							this.$set(this.timerIntervals, item.contractId, intervalId)
-						} else {
-							// 页面加载时倒计时已经归零，立即标记为失效
-							this.markContractVoidedLocally(item.contractId)
-						}
+					// 1. 预订倒计时：待签署(pending)且有bookingExpireTime
+					if (item.status === 'pending' && item.bookingExpireTime) {
+						this._startTimer(item, item.bookingExpireTime, 'booking')
+					}
+					// 2. 押金支付倒计时：已签署未付押金且有lockExpireTime
+					else if (item.signed && !item.depositPaid && item.lockExpireTime) {
+						this._startTimer(item, item.lockExpireTime, 'deposit')
 					}
 				})
+			},
+
+			// 通用定时器启动（type: 'booking' | 'deposit'）
+			_startTimer(item, expireTime, type) {
+				const timerKey = `${type}_${item.contractId}`
+				const remaining = Math.max(0, Math.floor((new Date(expireTime) - new Date()) / 1000))
+				this.$set(this.countdownTimers, timerKey, remaining)
+				if (remaining > 0) {
+					const intervalId = setInterval(() => {
+						const cur = this.countdownTimers[timerKey]
+						if (cur <= 1) {
+							this.$set(this.countdownTimers, timerKey, 0)
+							clearInterval(this.timerIntervals[timerKey])
+							delete this.timerIntervals[timerKey]
+							// 倒计时结束：立即在前端乐观更新为"已失效"状态
+							this.markContractVoidedLocally(item.contractId)
+							// 立即刷新一次，获取后端最新状态
+							this.loadContractList()
+							// 延迟3秒后再刷新一次，确保后端定时任务已执行
+							setTimeout(() => {
+								if (this.userId) {
+									this.loadContractList()
+								}
+							}, 3000)
+						} else {
+							this.$set(this.countdownTimers, timerKey, cur - 1)
+						}
+					}, 1000)
+					this.$set(this.timerIntervals, timerKey, intervalId)
+				} else {
+					// 页面加载时倒计时已经归零，立即标记为失效
+					this.markContractVoidedLocally(item.contractId)
+				}
 			},
 
 			// 前端乐观更新：将指定合同本地标记为"已失效"
@@ -529,30 +547,57 @@
 			},
 
 			// 获取倒计时文本
-			getCountdownText(contractId) {
-				const seconds = this.countdownTimers[contractId]
+			getCountdownText(item) {
+				const timerKey = this._getTimerKey(item)
+				if (!timerKey) return ''
+				const seconds = this.countdownTimers[timerKey]
 				if (seconds === undefined || seconds === null) return ''
-				if (seconds <= 0) return '⚠ 支付已超时，合同已失效'
-				const min = String(Math.floor(seconds / 60)).padStart(2, '0')
-				const sec = String(seconds % 60).padStart(2, '0')
-				return `⏱ 剩余 ${min}:${sec} 支付押金，逾期合同将失效`
+				if (timerKey.startsWith('booking_')) {
+					if (seconds <= 0) return '⚠ 预订已超时，房源锁定已失效'
+					const min = String(Math.floor(seconds / 60)).padStart(2, '0')
+					const sec = String(seconds % 60).padStart(2, '0')
+					return `⏱ 预订剩余 ${min}:${sec}，请尽快完成签署`
+				} else {
+					if (seconds <= 0) return '⚠ 支付已超时，合同已失效'
+					const min = String(Math.floor(seconds / 60)).padStart(2, '0')
+					const sec = String(seconds % 60).padStart(2, '0')
+					return `⏱ 剩余 ${min}:${sec} 支付押金，逾期合同将失效`
+				}
 			},
 
-			// 是否不足5分钟
-			isCountdownUrgent(contractId) {
-				const seconds = this.countdownTimers[contractId]
-				return seconds !== undefined && seconds > 0 && seconds < 300
+			// 是否不足5分钟（预订倒计时不足3分钟也算紧急）
+			isCountdownUrgent(item) {
+				const timerKey = this._getTimerKey(item)
+				if (!timerKey) return false
+				const seconds = this.countdownTimers[timerKey]
+				if (seconds === undefined || seconds <= 0) return false
+				const threshold = timerKey.startsWith('booking_') ? 180 : 300
+				return seconds < threshold
 			},
 
 			// 是否已超时
-			isCountdownExpired(contractId) {
-				const seconds = this.countdownTimers[contractId]
+			isCountdownExpired(item) {
+				const timerKey = this._getTimerKey(item)
+				if (!timerKey) return false
+				const seconds = this.countdownTimers[timerKey]
 				return seconds !== undefined && seconds <= 0
 			},
 
 			// 是否需要显示倒计时
 			showCountdown(item) {
-				return item.signed && !item.depositPaid && item.lockExpireTime && this.countdownTimers[item.contractId] !== undefined
+				const timerKey = this._getTimerKey(item)
+				if (!timerKey) return false
+				return this.countdownTimers[timerKey] !== undefined
+			},
+
+			// 获取当前合同对应的 timerKey
+			_getTimerKey(item) {
+				if (item.status === 'pending' && item.bookingExpireTime) {
+					return `booking_${item.contractId}`
+				} else if (item.signed && !item.depositPaid && item.lockExpireTime) {
+					return `deposit_${item.contractId}`
+				}
+				return null
 			}
 		}
 	}
@@ -627,6 +672,13 @@
 		font-size: 26rpx;
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
+	}
+
+	.tip-card-booking {
+		background: rgba(25, 118, 248, 0.1);
+	}
+	.tip-card-booking .tip-text {
+		color: #1976f8;
 	}
 
 	.card {
