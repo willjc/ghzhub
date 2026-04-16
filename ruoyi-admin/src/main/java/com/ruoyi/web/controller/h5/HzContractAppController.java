@@ -137,10 +137,14 @@ public class HzContractAppController extends BaseController {
             if (signTimeObj != null) {
                 try {
                     java.util.Date signTime;
-                    if (signTimeObj instanceof java.util.Date) {
+                    if (signTimeObj instanceof java.time.LocalDateTime) {
+                        java.time.LocalDateTime ldt = (java.time.LocalDateTime) signTimeObj;
+                        signTime = java.util.Date.from(ldt.atZone(java.time.ZoneId.systemDefault()).toInstant());
+                    } else if (signTimeObj instanceof java.util.Date) {
                         signTime = (java.util.Date) signTimeObj;
                     } else {
-                        signTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(signTimeObj.toString());
+                        String s = signTimeObj.toString().replace("T", " ");
+                        signTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(s);
                     }
                     java.util.Calendar cal = java.util.Calendar.getInstance();
                     cal.setTime(signTime);
