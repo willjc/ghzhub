@@ -15,9 +15,6 @@
 		<!-- 合同列表 -->
 		<scroll-view class="scroll-content" scroll-y>
 			<!-- 提示卡片 -->
-			<view class="tip-card tip-card-booking" v-if="currentTab === 'current' && hasBookingCountdown">
-				<text class="tip-text">提示：房源预订锁定10分钟，请在倒计时内完成签署，逾期房源将被释放！</text>
-			</view>
 			<view class="tip-card" v-if="currentTab === 'current' && hasUnsignedContract">
 				<text class="tip-text">提示：合同签署后30分钟内未支付押金，则合同自动失效！</text>
 			</view>
@@ -77,43 +74,47 @@
 					<text class="info-value" style="color:#bbb;">待生成</text>
 				</view>
 
-					<!-- 4步状态指示器 - 仅已签署(未完成全部步骤)显示 -->
-					<view class="steps-bar" v-if="item.status === 'signed'">
-						<!-- Step1: 合同已签 -->
-						<view class="step-item done">
-							<view class="step-dot">✓</view>
+					<!-- 4步状态指示器 - 待签署和已签署状态显示 -->
+					<view class="steps-bar" v-if="item.status === 'pending' || item.status === 'signed'">
+						<!-- Step1: 去签署 -->
+						<view class="step-item" :class="{ done: item.signed, 'step-current': item.status === 'pending' }">
+							<view class="step-dot" :class="{ 'step-dot-current': item.status === 'pending' }">
+								{{ item.signed ? '✓' : '1' }}
+							</view>
+							<text class="step-label">去签署</text>
+							<text class="step-countdown" v-if="item.status === 'pending' && getStepCountdown(item, 'booking')"
+								:class="{ 'step-countdown-urgent': isStepUrgent(item, 'booking') }">
+								{{ getStepCountdown(item, 'booking') }}
+							</text>
+						</view>
+						<view class="step-line" :class="{ active: item.signed }"></view>
+						<!-- Step2: 合同已签 -->
+						<view class="step-item" :class="{ done: item.signed }">
+							<view class="step-dot">{{ item.signed ? '✓' : '2' }}</view>
 							<text class="step-label">合同已签</text>
-							<text class="step-date" v-if="item.signedDate">{{ item.signedDate.slice(0,10) }}</text>
+							<text class="step-date" v-if="item.signedDate && item.signed">{{ item.signedDate.slice(0,10) }}</text>
 						</view>
 						<view class="step-line" :class="{ active: item.depositPaid }"></view>
-						<!-- Step2: 押金已缴 -->
-						<view class="step-item" :class="{ done: item.depositPaid }">
-							<view class="step-dot">{{ item.depositPaid ? '✓' : '2' }}</view>
+						<!-- Step3: 押金已缴 -->
+						<view class="step-item" :class="{ done: item.depositPaid, 'step-current': item.signed && !item.depositPaid }">
+							<view class="step-dot" :class="{ 'step-dot-current': item.signed && !item.depositPaid }">
+								{{ item.depositPaid ? '✓' : '3' }}
+							</view>
 							<text class="step-label">押金已缴</text>
+							<text class="step-countdown" v-if="item.signed && !item.depositPaid && getStepCountdown(item, 'deposit')"
+								:class="{ 'step-countdown-urgent': isStepUrgent(item, 'deposit') }">
+								{{ getStepCountdown(item, 'deposit') }}
+							</text>
 						</view>
 						<view class="step-line" :class="{ active: item.materialSubmitted }"></view>
-						<!-- Step3: 资料审核 -->
-						<view class="step-item" :class="{ done: item.materialApproved, 'step-pending': item.materialSubmitted && !item.materialApproved }">
+						<!-- Step4: 提交资料 -->
+						<view class="step-item" :class="{ done: item.materialSubmitted, 'step-pending': item.materialSubmitted && !item.materialApproved }">
 							<view class="step-dot" :class="{ 'step-dot-pending': item.materialSubmitted && !item.materialApproved }">
-								{{ item.materialApproved ? '✓' : (item.materialSubmitted ? '⏳' : '3') }}
+								{{ item.materialApproved ? '✓' : (item.materialSubmitted ? '⏳' : '4') }}
 							</view>
 							<text class="step-label">{{ item.materialApproved ? '资料已审' : (item.materialSubmitted ? '审核中' : '提交资料') }}</text>
+							<text class="step-countdown" v-if="item.depositPaid && !item.materialSubmitted">3日内</text>
 						</view>
-						<view class="step-line" :class="{ active: item.firstRentPaid }"></view>
-						<!-- Step4: 合约中 -->
-						<view class="step-item" :class="{ done: item.firstRentPaid }">
-							<view class="step-dot">{{ item.firstRentPaid ? '✓' : '4' }}</view>
-							<text class="step-label">合约中</text>
-						</view>
-					</view>
-
-					<!-- 押金支付/预订倒计时提示 -->
-					<view class="countdown-timer" v-if="item.status !== 'voided' && showCountdown(item)"
-						:class="{ 'countdown-warning': isCountdownUrgent(item), 'countdown-expired': isCountdownExpired(item) }">
-						<text class="countdown-timer-text"
-							:class="{ 'countdown-warning-text': isCountdownUrgent(item), 'countdown-expired-text': isCountdownExpired(item) }">
-							{{ getCountdownText(item) }}
-						</text>
 					</view>
 
 					<!-- 3日资料上传提示 -->
@@ -232,9 +233,6 @@
 			},
 			hasUnsignedContract() {
 				return this.allContractList.some(item => item.status === 'pending' || (item.status === 'signed' && !item.depositPaid))
-			},
-			hasBookingCountdown() {
-				return this.allContractList.some(item => item.status === 'pending' && item.bookingExpireTime)
 			}
 		},
 		onLoad(options) {
@@ -546,58 +544,23 @@
 				this.timerIntervals = {}
 			},
 
-			// 获取倒计时文本
-			getCountdownText(item) {
-				const timerKey = this._getTimerKey(item)
-				if (!timerKey) return ''
+			// 获取步骤内倒计时文本（mm:ss格式）
+			getStepCountdown(item, type) {
+				const timerKey = `${type}_${item.contractId}`
 				const seconds = this.countdownTimers[timerKey]
-				if (seconds === undefined || seconds === null) return ''
-				if (timerKey.startsWith('booking_')) {
-					if (seconds <= 0) return '⚠ 预订已超时，房源锁定已失效'
-					const min = String(Math.floor(seconds / 60)).padStart(2, '0')
-					const sec = String(seconds % 60).padStart(2, '0')
-					return `⏱ 预订剩余 ${min}:${sec}，请尽快完成签署`
-				} else {
-					if (seconds <= 0) return '⚠ 支付已超时，合同已失效'
-					const min = String(Math.floor(seconds / 60)).padStart(2, '0')
-					const sec = String(seconds % 60).padStart(2, '0')
-					return `⏱ 剩余 ${min}:${sec} 支付押金，逾期合同将失效`
-				}
+				if (seconds === undefined || seconds === null || seconds <= 0) return ''
+				const min = String(Math.floor(seconds / 60)).padStart(2, '0')
+				const sec = String(seconds % 60).padStart(2, '0')
+				return `${min}:${sec}`
 			},
 
-			// 是否不足5分钟（预订倒计时不足3分钟也算紧急）
-			isCountdownUrgent(item) {
-				const timerKey = this._getTimerKey(item)
-				if (!timerKey) return false
+			// 步骤内倒计时是否紧急（预订<3分钟，押金<5分钟）
+			isStepUrgent(item, type) {
+				const timerKey = `${type}_${item.contractId}`
 				const seconds = this.countdownTimers[timerKey]
 				if (seconds === undefined || seconds <= 0) return false
-				const threshold = timerKey.startsWith('booking_') ? 180 : 300
+				const threshold = type === 'booking' ? 180 : 300
 				return seconds < threshold
-			},
-
-			// 是否已超时
-			isCountdownExpired(item) {
-				const timerKey = this._getTimerKey(item)
-				if (!timerKey) return false
-				const seconds = this.countdownTimers[timerKey]
-				return seconds !== undefined && seconds <= 0
-			},
-
-			// 是否需要显示倒计时
-			showCountdown(item) {
-				const timerKey = this._getTimerKey(item)
-				if (!timerKey) return false
-				return this.countdownTimers[timerKey] !== undefined
-			},
-
-			// 获取当前合同对应的 timerKey
-			_getTimerKey(item) {
-				if (item.status === 'pending' && item.bookingExpireTime) {
-					return `booking_${item.contractId}`
-				} else if (item.signed && !item.depositPaid && item.lockExpireTime) {
-					return `deposit_${item.contractId}`
-				}
-				return null
 			}
 		}
 	}
@@ -672,13 +635,6 @@
 		font-size: 26rpx;
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
-	}
-
-	.tip-card-booking {
-		background: rgba(25, 118, 248, 0.1);
-	}
-	.tip-card-booking .tip-text {
-		color: #1976f8;
 	}
 
 	.card {
@@ -940,6 +896,41 @@
 		text-align: center;
 	}
 
+	/* 当前活跃步骤 - 蓝色高亮 */
+	.step-current .step-dot,
+	.step-dot-current {
+		background: #1976f8 !important;
+		color: #fff !important;
+		animation: stepPulse 1.5s ease-in-out infinite;
+	}
+	.step-current .step-label {
+		color: #1976f8;
+		font-weight: 600;
+	}
+
+	/* 步骤内倒计时文本 */
+	.step-countdown {
+		font-size: 20rpx;
+		color: #ff6600;
+		font-family: "PingFang SC", sans-serif;
+		margin-top: 4rpx;
+		font-weight: 600;
+		text-align: center;
+	}
+	.step-countdown-urgent {
+		color: #ff0000 !important;
+		animation: countdownBlink 1s ease-in-out infinite;
+	}
+
+	@keyframes stepPulse {
+		0%, 100% { transform: scale(1); }
+		50% { transform: scale(1.1); }
+	}
+	@keyframes countdownBlink {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0.5; }
+	}
+
 	/* 审核中状态 - 黄色 */
 	.step-dot-pending {
 		background: #faad14 !important;
@@ -961,34 +952,6 @@
 		font-size: 28rpx;
 		font-weight: 500;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
-	}
-
-	/* 倒计时提示 */
-	.countdown-timer {
-		margin-top: 16rpx;
-		padding: 14rpx 20rpx;
-		background: rgba(255, 102, 0, 0.08);
-		border-radius: 10rpx;
-		text-align: center;
-	}
-	.countdown-timer-text {
-		color: #ff6600;
-		font-size: 24rpx;
-		font-family: "PingFang SC", sans-serif;
-	}
-	.countdown-warning {
-		background: rgba(255, 0, 0, 0.08);
-	}
-	.countdown-warning-text {
-		color: #ff0000 !important;
-		font-weight: bold;
-	}
-	.countdown-expired {
-		background: rgba(255, 0, 0, 0.1);
-	}
-	.countdown-expired-text {
-		color: #ff0000 !important;
-		font-weight: bold;
 	}
 
 	/* 资料上传提示 */
