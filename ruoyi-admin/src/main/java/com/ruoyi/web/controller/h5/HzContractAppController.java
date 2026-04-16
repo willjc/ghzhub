@@ -84,9 +84,6 @@ public class HzContractAppController extends BaseController {
     @Autowired
     private EsignService esignService;
 
-    @Autowired
-    private HzHouseOrderMapper houseOrderMapper;
-
     /**
      * 根据用户ID获取合同列表
      * @param userId 用户ID
@@ -135,15 +132,22 @@ public class HzContractAppController extends BaseController {
             }
             contract.put("material_status", materialStatus);
 
-            // 查询房源锁定过期时间（从预订单获取）
-            if (contractIdObj != null) {
-                Long cIdForOrder = Long.parseLong(contractIdObj.toString());
-                HzHouseOrder order = houseOrderMapper.selectOne(new LambdaQueryWrapper<HzHouseOrder>()
-                        .eq(HzHouseOrder::getContractId, cIdForOrder)
-                        .orderByDesc(HzHouseOrder::getCreateTime)
-                        .last("LIMIT 1"));
-                if (order != null && order.getLockExpireTime() != null) {
-                    contract.put("lock_expire_time", order.getLockExpireTime());
+            // 用签署时间 + 30分钟 计算锁定过期时间
+            Object signTimeObj = contract.get("sign_time");
+            if (signTimeObj != null) {
+                try {
+                    java.util.Date signTime;
+                    if (signTimeObj instanceof java.util.Date) {
+                        signTime = (java.util.Date) signTimeObj;
+                    } else {
+                        signTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(signTimeObj.toString());
+                    }
+                    java.util.Calendar cal = java.util.Calendar.getInstance();
+                    cal.setTime(signTime);
+                    cal.add(java.util.Calendar.MINUTE, 30);
+                    contract.put("lock_expire_time", cal.getTime());
+                } catch (Exception e) {
+                    // sign_time 格式异常，忽略
                 }
             }
         }

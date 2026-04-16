@@ -492,7 +492,8 @@ public class EsignServiceImpl implements EsignService {
         // 签署完成，执行与回调相同的后续逻辑
         contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
                 .eq(HzContract::getContractId, contractId)
-                .set(HzContract::getContractStatus, "2"));
+                .set(HzContract::getContractStatus, "2")
+                .set(HzContract::getSignTime, new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date())));
 
         // 获取 PDF 下载链接
         try {
@@ -578,10 +579,11 @@ public class EsignServiceImpl implements EsignService {
         if (contract == null) { log.warn("e签宝回调未找到对应合同 flowId={}", flowId); return; }
         if ("2".equals(contract.getContractStatus())) { log.info("合同已处理，忽略重复回调 flowId={}", flowId); return; }
 
-        // 1. 更新合同状态为已签署
+        // 1. 更新合同状态为已签署，同时记录签署时间
         contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
                 .eq(HzContract::getContractId, contract.getContractId())
-                .set(HzContract::getContractStatus, "2")); // 2=已签署
+                .set(HzContract::getContractStatus, "2")
+                .set(HzContract::getSignTime, new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()))); // 2=已签署
 
         // 2. 获取已签合同PDF下载链接
         try {
