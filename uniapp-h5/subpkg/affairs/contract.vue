@@ -24,7 +24,7 @@
 				class="card"
 				:class="{ 'card-highlight': item.contractId === highlightContractId, 'card-voided': item.status === 'voided' }"
 				v-for="(item, index) in currentContractList"
-				:key="item.type === 'booking' ? ('bk_' + item.orderId) : ('contract_' + item.contractId)"
+				:key="item.uniqueKey"
 			>
 				<!-- 合同状态 -->
 				<view class="info-row">
@@ -82,9 +82,9 @@
 								{{ item.signed ? '✓' : '1' }}
 							</view>
 							<text class="step-label">去签署</text>
-							<text class="step-countdown" v-if="item.status === 'pending' && getStepCountdown(item, 'booking')"
-								:class="{ 'step-countdown-urgent': isStepUrgent(item, 'booking') }">
-								{{ getStepCountdown(item, 'booking') }}
+							<text class="step-countdown" v-if="item.status === 'pending' && getStepCountdown(item, 1)"
+								:class="{ 'step-countdown-urgent': isStepUrgent(item, 1) }">
+								{{ getStepCountdown(item, 1) }}
 							</text>
 						</view>
 						<view class="step-line" :class="{ active: item.signed }"></view>
@@ -101,9 +101,9 @@
 								{{ item.depositPaid ? '✓' : '3' }}
 							</view>
 							<text class="step-label">押金已缴</text>
-							<text class="step-countdown" v-if="item.signed && !item.depositPaid && getStepCountdown(item, 'deposit')"
-								:class="{ 'step-countdown-urgent': isStepUrgent(item, 'deposit') }">
-								{{ getStepCountdown(item, 'deposit') }}
+							<text class="step-countdown" v-if="item.signed && !item.depositPaid && getStepCountdown(item, 2)"
+								:class="{ 'step-countdown-urgent': isStepUrgent(item, 2) }">
+								{{ getStepCountdown(item, 2) }}
 							</text>
 						</view>
 						<view class="step-line" :class="{ active: item.materialSubmitted }"></view>
@@ -420,6 +420,7 @@
 				if (item.type === 'order') {
 					return {
 						type:             'booking',
+						uniqueKey:        'bk_' + item.order_id,
 						orderId:          item.order_id,
 						orderNo:          item.order_no,
 						contractId:       null,
@@ -463,6 +464,7 @@
 
 				return {
 					type:             'contract',
+					uniqueKey:        'c_' + item.contract_id,
 					contractId:       item.contract_id,
 					house_id:         item.house_id,
 					project_id:       item.project_id,
@@ -597,9 +599,11 @@
 			},
 
 			// 获取步骤内倒计时文本（mm:ss格式）
+			// type: 1=booking, 2=deposit（避免模板中出现字符串字面量触发小程序WXML编译错误）
 			getStepCountdown(item, type) {
+				const typeName = type === 1 ? 'booking' : 'deposit'
 				const itemKey = item.contractId || `bk_${item.orderId}`
-				const timerKey = `${type}_${itemKey}`
+				const timerKey = `${typeName}_${itemKey}`
 				const seconds = this.countdownTimers[timerKey]
 				if (seconds === undefined || seconds === null || seconds <= 0) return ''
 				const min = String(Math.floor(seconds / 60)).padStart(2, '0')
@@ -609,11 +613,12 @@
 
 			// 步骤内倒计时是否紧急（预订<3分钟，押金<5分钟）
 			isStepUrgent(item, type) {
+				const typeName = type === 1 ? 'booking' : 'deposit'
 				const itemKey = item.contractId || `bk_${item.orderId}`
-				const timerKey = `${type}_${itemKey}`
+				const timerKey = `${typeName}_${itemKey}`
 				const seconds = this.countdownTimers[timerKey]
 				if (seconds === undefined || seconds <= 0) return false
-				const threshold = type === 'booking' ? 180 : 300
+				const threshold = type === 1 ? 180 : 300
 				return seconds < threshold
 			}
 		}
