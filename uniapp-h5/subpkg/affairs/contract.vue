@@ -548,7 +548,9 @@
 			// 通用定时器启动（type: 'booking' | 'deposit'）
 			_startTimer(item, expireTime, type, itemKey) {
 				const timerKey = `${type}_${itemKey || item.contractId}`
-				const remaining = Math.max(0, Math.floor((new Date(expireTime) - new Date()) / 1000))
+				// 兼容毫秒时间戳和日期字符串
+				const expTs = typeof expireTime === 'number' || /^\d+$/.test(expireTime) ? new Date(Number(expireTime)) : new Date(expireTime)
+				const remaining = Math.max(0, Math.floor((expTs - new Date()) / 1000))
 				this.$set(this.countdownTimers, timerKey, remaining)
 				if (remaining > 0) {
 					const intervalId = setInterval(() => {

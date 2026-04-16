@@ -172,7 +172,7 @@ public class HzContractAppController extends BaseController {
                             .eq(HzHouseOrder::getDelFlag, "0")
                             .last("LIMIT 1"));
                     if (bookingOrder != null && bookingOrder.getLockExpireTime() != null) {
-                        contract.put("booking_expire_time", bookingOrder.getLockExpireTime());
+                        contract.put("booking_expire_time", bookingOrder.getLockExpireTime().getTime());
                     }
                 }
             }
@@ -201,7 +201,7 @@ public class HzContractAppController extends BaseController {
             orderMap.put("deposit", order.getDepositAmount());
             orderMap.put("contract_status", "pending_sign"); // 特殊标识：预订单待签
             orderMap.put("create_time", order.getCreateTime());
-            orderMap.put("booking_expire_time", order.getLockExpireTime());
+            orderMap.put("booking_expire_time", order.getLockExpireTime() != null ? order.getLockExpireTime().getTime() : null);
 
             // 补充房源信息
             HzHouse house = houseMapper.selectById(order.getHouseId());
