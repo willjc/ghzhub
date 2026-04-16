@@ -262,7 +262,7 @@ export default {
     }
     // #endif
 
-    if (!this.roomId || !this.projectId) {
+    if (!this.contractId && (!this.roomId || !this.projectId)) {
       this.step = 'error'
       this.errorMsg = '缺少房源或项目信息'
       this.loading = false

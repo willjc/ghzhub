@@ -84,9 +84,9 @@ public class HzHouseOrderServiceImpl
         order.setOrderStatus("0"); // 待签约
         order.setIsBatchAlloc("0");
 
-        // 锁定30分钟
+        // 锁定10分钟
         Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.MINUTE, 30);
+        cal.add(Calendar.MINUTE, 10);
         order.setLockExpireTime(cal.getTime());
         order.setDelFlag("0");
         order.setCreateTime(new Date());
