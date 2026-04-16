@@ -80,7 +80,7 @@
 
 					<!-- 上传区域 -->
 					<view class="upload-area" @click="handleUpload">
-						<image v-if="workFile" class="uploaded-image" :src="workFile" mode="aspectFill"></image>
+						<image v-if="workFilePreview" class="uploaded-image" :src="workFilePreview" mode="aspectFill"></image>
 						<view v-else class="upload-placeholder">
 							<image class="upload-icon" src="/static/上传@2x.png"></image>
 							<text class="upload-text">点击上传</text>
@@ -102,7 +102,7 @@
 						<text class="upload-tip">（毕业证或在读证明）</text>
 					</view>
 					<view class="upload-area" @click="handleEducationUpload">
-						<image v-if="educationFile" :src="educationFile" mode="aspectFill" class="uploaded-image"></image>
+						<image v-if="educationFilePreview" :src="educationFilePreview" mode="aspectFill" class="uploaded-image"></image>
 						<view v-else class="upload-placeholder">
 							<image class="upload-icon" src="/static/上传@2x.png"></image>
 							<text class="upload-text">点击上传</text>
@@ -141,10 +141,14 @@ export default {
 				unitPhone: '',
 				spouse: ''
 			},
-			// 工作证明：只存本地临时路径，不立即上传
-			workFile: null,        // 本地临时路径（用于预览和提交时上传）
-			// 学历证明：只存本地临时路径，不立即上传
-			educationFile: null,   // 本地临时路径（用于预览和提交时上传）
+			// 工作证明
+			workFile: null,           // 服务器返回的文件路径（已上传）
+			workFilePreview: null,    // 用于界面预览的图片路径
+			workUploading: false,     // 是否正在上传中
+			// 学历证明
+			educationFile: null,      // 服务器返回的文件路径（已上传）
+			educationFilePreview: null, // 用于界面预览的图片路径
+			eduUploading: false,      // 是否正在上传中
 			loading: false,
 			pendingOrders: [],
 			_countdownTimer: null,
@@ -190,7 +194,8 @@ export default {
 
 					// 如果已有工作证明附件，显示
 					if (user.workProofAttachment) {
-						this.workFile = this.getImageUrl(user.workProofAttachment)
+						this.workFile = user.workProofAttachment
+						this.workFilePreview = this.getImageUrl(user.workProofAttachment)
 					}
 				} else {
 					uni.showToast({
@@ -234,14 +239,36 @@ export default {
 			return baseUrl + (url.startsWith('/') ? url : '/' + url)
 		},
 
-		// 工作证明：只选图，不上传，仅本地预览
+		// 工作证明：选择图片后立即上传到服务器
 		handleUpload() {
+			if (this.workUploading) {
+				uni.showToast({ title: '正在上传中，请稍候', icon: 'none' })
+				return
+			}
 			uni.chooseImage({
 				count: 1,
 				sizeType: ['compressed'],
 				sourceType: ['album', 'camera'],
 				success: (res) => {
-					this.workFile = res.tempFilePaths[0]
+					const tempPath = res.tempFilePaths[0]
+					// 立即显示本地预览
+					this.workFilePreview = tempPath
+					this.workFile = null // 清除旧的服务器路径
+					this.workUploading = true
+					uni.showLoading({ title: '上传中...' })
+					this.uploadFile(tempPath, '3').then(uploadRes => {
+						uni.hideLoading()
+						this.workUploading = false
+						if (uploadRes && uploadRes.code === 200) {
+							// 上传成功，保存服务器路径
+							this.workFile = uploadRes.fileName || uploadRes.filePath || uploadRes.url
+							uni.showToast({ title: '工作证明上传成功', icon: 'success' })
+						} else {
+							// 上传失败，清除预览
+							this.workFilePreview = null
+							uni.showToast({ title: uploadRes?.msg || '工作证明上传失败', icon: 'none' })
+						}
+					})
 				},
 				fail: (err) => {
 					console.error('选择图片失败:', err)
@@ -252,14 +279,36 @@ export default {
 		downloadTemplate() {
 			uni.showToast({ title: '模版下载功能待实现', icon: 'none' })
 		},
-		// 学历证明：只选图，不上传，仅本地预览
+		// 学历证明：选择图片后立即上传到服务器
 		handleEducationUpload() {
+			if (this.eduUploading) {
+				uni.showToast({ title: '正在上传中，请稍候', icon: 'none' })
+				return
+			}
 			uni.chooseImage({
 				count: 1,
 				sizeType: ['compressed'],
 				sourceType: ['album', 'camera'],
 				success: (res) => {
-					this.educationFile = res.tempFilePaths[0]
+					const tempPath = res.tempFilePaths[0]
+					// 立即显示本地预览
+					this.educationFilePreview = tempPath
+					this.educationFile = null // 清除旧的服务器路径
+					this.eduUploading = true
+					uni.showLoading({ title: '上传中...' })
+					this.uploadFile(tempPath, '2').then(uploadRes => {
+						uni.hideLoading()
+						this.eduUploading = false
+						if (uploadRes && uploadRes.code === 200) {
+							// 上传成功，保存服务器路径
+							this.educationFile = uploadRes.fileName || uploadRes.filePath || uploadRes.url
+							uni.showToast({ title: '学历证明上传成功', icon: 'success' })
+						} else {
+							// 上传失败，清除预览
+							this.educationFilePreview = null
+							uni.showToast({ title: uploadRes?.msg || '学历证明上传失败', icon: 'none' })
+						}
+					})
 				},
 				fail: (err) => {
 					console.error('选择图片失败:', err)
@@ -267,14 +316,14 @@ export default {
 				}
 			})
 		},
-		// 提交材料：两个文件都选好后，点击才上传入库
+		// 提交材料：文件已在选择时上传，此处仅做校验和确认
 		async handleSubmit() {
 			if (!this.workFile) {
-				uni.showToast({ title: '请上传工作证明', icon: 'none' })
+				uni.showToast({ title: this.workUploading ? '工作证明正在上传中' : '请上传工作证明', icon: 'none' })
 				return
 			}
 			if (!this.educationFile) {
-				uni.showToast({ title: '请上传学历证明', icon: 'none' })
+				uni.showToast({ title: this.eduUploading ? '学历证明正在上传中' : '请上传学历证明', icon: 'none' })
 				return
 			}
 			if (!this.contractId) {
@@ -282,34 +331,10 @@ export default {
 				return
 			}
 
-			try {
-				uni.showLoading({ title: '提交中...' })
-
-				// 依次上传工作证明（type=3）和学历证明（type=2）
-				const workRes = await this.uploadFile(this.workFile, '3')
-				if (!workRes || workRes.code !== 200) {
-					uni.hideLoading()
-					uni.showToast({ title: workRes?.msg || '工作证明上传失败', icon: 'none' })
-					return
-				}
-
-				const eduRes = await this.uploadFile(this.educationFile, '2')
-				if (!eduRes || eduRes.code !== 200) {
-					uni.hideLoading()
-					uni.showToast({ title: eduRes?.msg || '学历证明上传失败', icon: 'none' })
-					return
-				}
-
-				uni.hideLoading()
-				uni.showToast({ title: '提交成功', icon: 'success' })
-				setTimeout(() => {
-					uni.navigateBack()
-				}, 1500)
-			} catch (e) {
-				uni.hideLoading()
-				console.error('提交失败:', e)
-				uni.showToast({ title: '提交失败，请重试', icon: 'none' })
-			}
+			uni.showToast({ title: '提交成功', icon: 'success' })
+			setTimeout(() => {
+				uni.navigateBack()
+			}, 1500)
 		},
 		async loadPendingOrders() {
 			try {
@@ -338,6 +363,10 @@ export default {
 			return `${h}时${m}分${s}秒`
 		},
 		async uploadFile(filePath, documentType) {
+			// 校验文件路径有效性
+			if (!filePath) {
+				return { code: 500, msg: '文件路径无效，请重新选择' }
+			}
 			return new Promise((resolve) => {
 				const token = uni.getStorageSync('token') || ''
 				uni.uploadFile({
@@ -357,7 +386,12 @@ export default {
 					},
 					fail: (err) => {
 						console.error('uploadFile fail:', err)
-						resolve({ code: 500, msg: '网络请求失败' })
+						const errMsg = (err && err.errMsg) || ''
+						if (errMsg.indexOf('file not found') !== -1 || errMsg.indexOf('createUploadTask:fail') !== -1) {
+							resolve({ code: 500, msg: '文件已过期，请重新选择' })
+						} else {
+							resolve({ code: 500, msg: '网络请求失败' })
+						}
 					}
 				})
 			})
