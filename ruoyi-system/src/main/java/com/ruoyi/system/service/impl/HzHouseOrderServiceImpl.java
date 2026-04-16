@@ -208,11 +208,11 @@ public class HzHouseOrderServiceImpl
                 .last("LIMIT 1"));
         boolean firstRentPaid = firstRentBill != null && "1".equals(firstRentBill.getBillStatus());
 
-        boolean canCheckin = depositPaid && materialApproved && firstRentPaid;
+        // 入住条件：押金已缴 + 首期房租已缴（资料审核不阻断入住）
+        boolean canCheckin = depositPaid && firstRentPaid;
 
         String blockMsg = "";
         if (!depositPaid)        blockMsg = "请先缴纳押金";
-        else if (!materialApproved) blockMsg = "请等待资料审核通过";
         else if (!firstRentPaid) blockMsg = "请先缴纳首期房租";
 
         result.put("canCheckin",       canCheckin);

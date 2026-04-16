@@ -6,9 +6,6 @@
 			<view v-if="!depositPaid" @click="goToBill" style="background:#fa8c16;border-radius:8rpx;padding:10rpx 20rpx;margin-left:16rpx;flex-shrink:0;">
 				<text style="font-size:24rpx;color:#fff;">去缴押金</text>
 			</view>
-			<view v-else-if="!materialApproved" @click="goUpload" style="background:#fa8c16;border-radius:8rpx;padding:10rpx 20rpx;margin-left:16rpx;flex-shrink:0;">
-				<text style="font-size:24rpx;color:#fff;">去上传资料</text>
-			</view>
 			<view v-else-if="!firstRentPaid" @click="goToBill" style="background:#fa8c16;border-radius:8rpx;padding:10rpx 20rpx;margin-left:16rpx;flex-shrink:0;">
 				<text style="font-size:24rpx;color:#fff;">去缴房租</text>
 			</view>
