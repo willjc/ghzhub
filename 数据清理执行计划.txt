@@ -1,0 +1,375 @@
+================================================================================
+                        数据库清理执行计划
+                  Database Cleanup Execution Plan
+================================================================================
+
+研究完成日期: 2026-04-16
+数据库: 36.133.39.148:33061/ghz  (正式服务器)
+
+================================================================================
+【执行概览】
+================================================================================
+
+任务: 清理测试数据 - 删除5个测试项目及其关联数据
+涉及表: 19个表 (包括1个根表hz_project)
+删除记录总数: 约13,147条
+预期执行时间: 5-15分钟 (取决于批量大小)
+风险等级: 中等 (需严格按顺序执行,数据备份充分)
+
+要删除的项目:
+  - project_id: 2, 5, 6, 9, 11, 21
+  - 其中project_id=21数据最多(195份合同,4473份账单)
+
+================================================================================
+【前置条件检查】
+================================================================================
+
+执行删除前必须完成:
+
+1. □ 数据备份
+   - 执行: mysqldump -h 36.133.39.148 -P 33061 -u ghzuser -p ghz > ghz_backup_2026-04-16.sql
+   - 验证: 备份文件大小>100MB
+
+2. □ 业务确认
+   - 确认: 项目2,5,6,9,11,21是否为测试/过期项目 (需产品确认)
+   - 确认: 所有合同已结束,无进行中的业务
+   - 确认: 用户端(App)无相关业务交互
+
+3. □ 用户数据隔离
+   - 确认: 用户18539279011(王连胜)的数据与待删项目无交集 ✓ (已验证)
+   - 确认: 没有其他用户数据与项目关联
+
+4. □ 系统准备
+   - 停用: 与这些项目相关的任何定时任务
+   - 限制: 禁止用户访问相关项目页面
+   - 配置: 将删除表加入监控告警
+
+5. □ 测试验证
+   - 测试: 在测试库执行完整删除流程
+   - 验证: 删除后应用功能正常
+   - 记录: 删除前后的数据计数对比
+
+================================================================================
+【执行步骤】- 19步有序删除
+================================================================================
+
+每一步都MUST按顺序执行,违反外键约束会导致删除失败。
+建议使用: 逻辑删除(UPDATE...SET del_flag='1') 而非物理删除(DELETE)
+
+─────────────────────────────────────────────────────────────────────────────
+【第一阶段】删除叶子节点 - 1,939条记录
+─────────────────────────────────────────────────────────────────────────────
+
+步骤1: 删除hz_payment表 (1,905条)
+  - 对象: 所有账单的支付记录
+  - 方式: UPDATE hz_payment SET del_flag = '1' WHERE bill_id IN (...)
+  - 验证: SELECT COUNT(*) FROM hz_payment WHERE del_flag = '0' AND bill_id IN (...)
+  预期结果: 0行
+
+步骤2: 删除hz_house_image表 (34条)
+  - 对象: 所有房源的图片记录
+  - 方式: UPDATE hz_house_image SET del_flag = '1' WHERE house_id IN (...)
+  - 验证: SELECT COUNT(*) FROM hz_house_image WHERE house_id IN (...)
+  预期结果: 0行
+
+步骤3: 删除hz_contract_signature表 (195条)
+  - 对象: 所有合同的签署记录
+  - 方式: UPDATE hz_contract_signature SET del_flag = '1' WHERE contract_id IN (...)
+  - 验证: SELECT COUNT(*) FROM hz_contract_signature WHERE contract_id IN (...)
+  预期结果: 0行
+
+步骤4-6: 删除其他空表 (0条,可跳过)
+  - hz_invoice (发票)
+  - hz_refund_apply (退款申请)
+  - hz_co_tenant (同住人)
+
+─────────────────────────────────────────────────────────────────────────────
+【第二阶段】删除中间层表 - 4,873条记录
+─────────────────────────────────────────────────────────────────────────────
+
+步骤7: 检查hz_refund_record (确认数量)
+  - 方式: SELECT COUNT(*) FROM hz_refund_record WHERE ...合同id...
+  - 若有数据,按同样方式删除
+
+步骤8: 删除hz_checkout_record表 (80条)
+  - 对象: 所有的退租记录
+  - 方式: UPDATE hz_checkout_record SET del_flag = '1' WHERE contract_id IN (...)
+  - 验证: SELECT COUNT(*) FROM hz_checkout_record WHERE contract_id IN (...)
+
+步骤9: 删除hz_checkin_record表 (150条)
+  - 对象: 所有的入住记录
+  - 方式: UPDATE hz_checkin_record SET del_flag = '1' WHERE contract_id IN (...)
+  - 验证: SELECT COUNT(*) FROM hz_checkin_record WHERE contract_id IN (...)
+
+步骤10: 删除hz_checkout_apply表 (80条)
+  - 对象: 所有的退租申请
+  - 方式: UPDATE hz_checkout_apply SET del_flag = '1' WHERE contract_id IN (...)
+  - 验证: SELECT COUNT(*) FROM hz_checkout_apply WHERE contract_id IN (...)
+
+步骤11: 删除hz_bill表 (4,473条) **大批量**
+  - 对象: 所有的账单
+  - 方式: UPDATE hz_bill SET del_flag = '1' WHERE contract_id IN (...)
+  - 分批建议: LIMIT 50 分批执行 (避免长时间锁表)
+  - 验证: SELECT COUNT(*) FROM hz_bill WHERE contract_id IN (...)
+
+步骤12: 删除hz_invoice_apply表 (0条,可跳过)
+  - 对象: 发票申请记录
+
+─────────────────────────────────────────────────────────────────────────────
+【第三阶段】删除合同记录 - 195条记录
+─────────────────────────────────────────────────────────────────────────────
+
+步骤13: 删除hz_contract表 (195条)
+  - 对象: 所有的租赁合同
+  - 方式: UPDATE hz_contract SET del_flag = '1' WHERE project_id IN (2,5,6,9,11,21)
+  - 验证: SELECT COUNT(*) FROM hz_contract WHERE project_id IN (...)
+
+─────────────────────────────────────────────────────────────────────────────
+【第四阶段】删除房源及房型 - 287条记录
+─────────────────────────────────────────────────────────────────────────────
+
+步骤14: 删除hz_house_order表 (0条,可跳过)
+  - 对象: 房源预订单
+
+步骤15: 删除hz_house表 (132条)
+  - 对象: 所有的房源
+  - 方式: UPDATE hz_house SET del_flag = '1' WHERE project_id IN (2,5,6,9,11,21)
+  - 验证: SELECT COUNT(*) FROM hz_house WHERE project_id IN (...)
+
+步骤16: 删除hz_unit表 (12条)
+  - 对象: 楼栋中的单元
+  - 方式: UPDATE hz_unit SET del_flag = '1' WHERE building_id IN (...)
+  - 验证: SELECT COUNT(*) FROM hz_unit WHERE building_id IN (...)
+
+步骤17: 删除hz_house_type表 (108条)
+  - 对象: 所有的房型
+  - 方式: UPDATE hz_house_type SET del_flag = '1' WHERE project_id IN (2,5,6,9,11,21)
+  - 验证: SELECT COUNT(*) FROM hz_house_type WHERE project_id IN (...)
+
+─────────────────────────────────────────────────────────────────────────────
+【第五阶段】删除基础设施 - 25条记录
+─────────────────────────────────────────────────────────────────────────────
+
+步骤18: 删除hz_building表 (25条)
+  - 对象: 所有的楼栋
+  - 方式: UPDATE hz_building SET del_flag = '1' WHERE project_id IN (2,5,6,9,11,21)
+  - 验证: SELECT COUNT(*) FROM hz_building WHERE project_id IN (...)
+
+─────────────────────────────────────────────────────────────────────────────
+【第六阶段】删除项目主记录 - 6条记录 (最后一步)
+─────────────────────────────────────────────────────────────────────────────
+
+步骤19: 删除hz_project表 (6条) **最后步骤**
+  - 对象: 项目记录本身
+  - 方式: UPDATE hz_project SET del_flag = '1' WHERE project_id IN (2,5,6,9,11,21)
+  - 验证: SELECT COUNT(*) FROM hz_project WHERE project_id IN (2,5,6,9,11,21)
+
+================================================================================
+【删除SQL模板】
+================================================================================
+
+【第1层 - 叶子表】
+
+-- 1. 删除hz_payment
+UPDATE hz_payment SET del_flag = '1' 
+WHERE bill_id IN (
+  SELECT bill_id FROM hz_bill 
+  WHERE contract_id IN (
+    SELECT contract_id FROM hz_contract 
+    WHERE project_id IN (2, 5, 6, 9, 11, 21)
+  )
+);
+
+-- 2. 删除hz_house_image
+UPDATE hz_house_image SET del_flag = '1' 
+WHERE house_id IN (
+  SELECT house_id FROM hz_house 
+  WHERE project_id IN (2, 5, 6, 9, 11, 21)
+);
+
+-- 3. 删除hz_contract_signature
+UPDATE hz_contract_signature SET del_flag = '1' 
+WHERE contract_id IN (
+  SELECT contract_id FROM hz_contract 
+  WHERE project_id IN (2, 5, 6, 9, 11, 21)
+);
+
+【第2层 - 中间表】
+
+-- 8. 删除hz_checkout_record
+UPDATE hz_checkout_record SET del_flag = '1' 
+WHERE contract_id IN (
+  SELECT contract_id FROM hz_contract 
+  WHERE project_id IN (2, 5, 6, 9, 11, 21)
+);
+
+-- 9. 删除hz_checkin_record
+UPDATE hz_checkin_record SET del_flag = '1' 
+WHERE contract_id IN (
+  SELECT contract_id FROM hz_contract 
+  WHERE project_id IN (2, 5, 6, 9, 11, 21)
+);
+
+-- 10. 删除hz_checkout_apply
+UPDATE hz_checkout_apply SET del_flag = '1' 
+WHERE contract_id IN (
+  SELECT contract_id FROM hz_contract 
+  WHERE project_id IN (2, 5, 6, 9, 11, 21)
+);
+
+-- 11. 删除hz_bill (大批量,建议分批)
+UPDATE hz_bill SET del_flag = '1' 
+WHERE contract_id IN (
+  SELECT contract_id FROM hz_contract 
+  WHERE project_id IN (2, 5, 6, 9, 11, 21)
+);
+-- 分批执行: 加上 LIMIT 50; 并重复执行
+
+【第3层 - 合同】
+
+-- 13. 删除hz_contract
+UPDATE hz_contract SET del_flag = '1' 
+WHERE project_id IN (2, 5, 6, 9, 11, 21);
+
+【第4层 - 房源和房型】
+
+-- 15. 删除hz_house
+UPDATE hz_house SET del_flag = '1' 
+WHERE project_id IN (2, 5, 6, 9, 11, 21);
+
+-- 16. 删除hz_unit
+UPDATE hz_unit SET del_flag = '1' 
+WHERE building_id IN (
+  SELECT building_id FROM hz_building 
+  WHERE project_id IN (2, 5, 6, 9, 11, 21)
+);
+
+-- 17. 删除hz_house_type
+UPDATE hz_house_type SET del_flag = '1' 
+WHERE project_id IN (2, 5, 6, 9, 11, 21);
+
+【第5层 - 基础设施】
+
+-- 18. 删除hz_building
+UPDATE hz_building SET del_flag = '1' 
+WHERE project_id IN (2, 5, 6, 9, 11, 21);
+
+【第6层 - 项目】
+
+-- 19. 删除hz_project
+UPDATE hz_project SET del_flag = '1' 
+WHERE project_id IN (2, 5, 6, 9, 11, 21);
+
+================================================================================
+【执行后验证】
+================================================================================
+
+1. 数据计数验证
+   
+   -- 验证所有待删数据都被标记为已删除
+   SELECT '总记录数' as 类型, COUNT(*) FROM hz_payment WHERE del_flag = '1' ...
+   UNION ALL
+   SELECT '房源图片', COUNT(*) FROM hz_house_image WHERE del_flag = '1' ...
+   -- 等等...
+
+2. 应用测试
+   
+   - 访问项目2: 应返回空或404
+   - 访问项目21: 应返回空或404
+   - 查询合同列表: 不应显示这些项目的合同
+   - 查询房源列表: 不应显示这些项目的房源
+
+3. 数据一致性检查
+   
+   -- 验证没有孤立数据
+   SELECT * FROM hz_bill WHERE contract_id NOT IN (SELECT contract_id FROM hz_contract WHERE del_flag = '0');
+   SELECT * FROM hz_payment WHERE bill_id NOT IN (SELECT bill_id FROM hz_bill WHERE del_flag = '0');
+
+4. 数据库性能检查
+   
+   - 检查表大小是否显著减小
+   - 检查查询性能是否改善
+   - 运行OPTIMIZE TABLE (可选,在维护时段)
+
+================================================================================
+【回滚计划】
+================================================================================
+
+如果执行中出现问题:
+
+1. 停止删除操作
+
+2. 恢复备份
+   mysql -h 36.133.39.148 -P 33061 -u ghzuser -p < ghz_backup_2026-04-16.sql
+
+3. 调查问题
+   - 检查哪一步失败
+   - 查看数据库错误日志
+   - 确认外键约束
+
+4. 重新规划
+   - 修复问题后重新执行
+   - 或寻求DBA支持
+
+================================================================================
+【重要注意事项】
+================================================================================
+
+⚠ CRITICAL:
+  1. 删除顺序不能颠倒,必须严格按照19步执行
+  2. 删除前必须备份完整数据库
+  3. 用户18539279011(王连胜)的数据在正式项目中,不要误删
+  4. 大批量删除(hz_bill 4473条)建议分批处理
+
+✓ RECOMMENDED:
+  1. 使用逻辑删除(UPDATE...SET del_flag='1')而非物理删除
+  2. 在生产环境高峰期外执行 (建议午夜或节假日)
+  3. 每执行5步后,验证一次数据
+  4. 保留完整的执行日志和截图
+
+⚠ WATCH OUT:
+  1. 确认项目状态: 这些项目是否已在生产中停用?
+  2. 确认没有定时任务在访问这些数据
+  3. 确认前端(App/Web)已禁用这些项目的入口
+  4. 监控删除过程中的服务器CPU和内存使用
+
+================================================================================
+【文档清单】
+================================================================================
+
+本次研究生成的文档:
+
+1. delete_analysis_report.txt (本文件)
+   - 完整的删除分析和执行计划
+
+2. detailed_query_results.md
+   - 详细的查询结果和数据统计
+
+3. 原始SQL查询结果(在数据库中)
+   - 所有的COUNT查询结果
+
+建议文档流程:
+  1. 产品/PM review本文档
+  2. 获批后在测试库验证
+  3. 成功后在生产库执行
+  4. 执行后更新部署文档
+
+================================================================================
+【联系方式】
+================================================================================
+
+如有问题,请联系:
+- 数据库管理员: [DBA_NAME]
+- 产品经理: [PM_NAME]
+- 系统管理员: [SYS_ADMIN_NAME]
+
+执行记录:
+- 研究完成: 2026-04-16
+- 计划创建: 2026-04-16
+- 批准状态: [ ] 待审核 [ ] 已批准 [ ] 已执行
+- 执行者: ____________
+- 执行时间: ____________
+- 执行结果: [ ] 成功 [ ] 部分成功 [ ] 失败
+- 备注: ____________
+
+================================================================================

@@ -33,6 +33,7 @@ import java.net.URI;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -176,6 +177,66 @@ public class HzContractAppController extends BaseController {
                 }
             }
         }
+
+        // === 查询该用户的活跃预订单（order_status='0' 待签约，尚未生成合同） ===
+        List<HzHouseOrder> activeOrders = houseOrderService.list(new LambdaQueryWrapper<HzHouseOrder>()
+                .eq(HzHouseOrder::getTenantId, userId)
+                .eq(HzHouseOrder::getOrderStatus, "0")
+                .eq(HzHouseOrder::getDelFlag, "0")
+                .orderByDesc(HzHouseOrder::getCreateTime));
+
+        for (HzHouseOrder order : activeOrders) {
+            // 排除已有合同关联的预订单
+            if (order.getContractId() != null && order.getContractId() > 0) {
+                continue;
+            }
+
+            Map<String, Object> orderMap = new HashMap<>();
+            orderMap.put("type", "order");  // 标识为预订单
+            orderMap.put("order_id", order.getOrderId());
+            orderMap.put("order_no", order.getOrderNo());
+            orderMap.put("house_id", order.getHouseId());
+            orderMap.put("project_id", order.getProjectId());
+            orderMap.put("rent_price", order.getRentPrice());
+            orderMap.put("deposit", order.getDepositAmount());
+            orderMap.put("contract_status", "pending_sign"); // 特殊标识：预订单待签
+            orderMap.put("create_time", order.getCreateTime());
+            orderMap.put("booking_expire_time", order.getLockExpireTime());
+
+            // 补充房源信息
+            HzHouse house = houseMapper.selectById(order.getHouseId());
+            if (house != null) {
+                orderMap.put("house_no", house.getHouseNo());
+                orderMap.put("house_code", house.getHouseNo());
+
+                // 补充楼栋、单元信息
+                HzBuilding building = buildingMapper.selectById(house.getBuildingId());
+                HzUnit unit = unitMapper.selectById(house.getUnitId());
+                orderMap.put("building_name", building != null ? building.getBuildingName() : "");
+                orderMap.put("unit_name", unit != null ? unit.getUnitName() : "");
+            }
+
+            // 补充项目信息
+            HzProject project = projectMapper.selectById(order.getProjectId());
+            if (project != null) {
+                orderMap.put("project_name", project.getProjectName());
+            }
+
+            // 预订单没有合同字段，补充空值
+            orderMap.put("contract_id", null);
+            orderMap.put("contract_no", null);
+            orderMap.put("start_date", null);
+            orderMap.put("end_date", null);
+            orderMap.put("rent_months", null);
+            orderMap.put("sign_time", null);
+            orderMap.put("contract_content", null);
+            orderMap.put("deposit_paid", "0");
+            orderMap.put("first_rent_paid", "0");
+            orderMap.put("material_status", "0");
+
+            contracts.add(orderMap);
+        }
+
         return success(contracts);
     }
 

@@ -24,7 +24,7 @@
 				class="card"
 				:class="{ 'card-highlight': item.contractId === highlightContractId, 'card-voided': item.status === 'voided' }"
 				v-for="(item, index) in currentContractList"
-				:key="index"
+				:key="item.type === 'order' ? ('order_' + item.orderId) : ('contract_' + item.contractId)"
 			>
 				<!-- 合同状态 -->
 				<view class="info-row">
@@ -45,7 +45,7 @@
 				</view>
 				
 				<!-- 租期 -->
-				<view class="info-row">
+				<view class="info-row" v-if="item.rentPeriod">
 					<text class="info-label">租期</text>
 					<text class="info-value">{{ item.rentPeriod }}</text>
 				</view>
@@ -331,9 +331,18 @@
 
 			// 去签署 (e签宝流程)
 			goSign(item) {
-				uni.navigateTo({
-					url: `/pages/contract/sign?contractId=${item.contractId || item.id}`
-				})
+				if (item.type === 'order') {
+					// 预订单 → 跳转签约页（需要 roomId, projectId, houseCode, orderNo, lockExpireTime）
+					const params = `roomId=${item.houseId}&projectId=${item.projectId}&houseCode=${encodeURIComponent(item.houseCode || '')}&orderNo=${item.orderNo}&lockExpireTime=${encodeURIComponent(item.bookingExpireTime || '')}`
+					uni.navigateTo({
+						url: `/pages/contract/sign?${params}`
+					})
+				} else {
+					// 已有合同 → 跳转签约页（只需 contractId）
+					uni.navigateTo({
+						url: `/pages/contract/sign?contractId=${item.contractId || item.id}`
+					})
+				}
 			},
 
 			// 签约 (旧流程，保留兼容)
@@ -407,6 +416,42 @@
 
 			// 数据映射：数据库字段 → 前端显示字段
 			mapContractData(item) {
+				// === 预订单类型（尚未生成合同）===
+				if (item.type === 'order') {
+					return {
+						type:             'order',
+						orderId:          item.order_id,
+						orderNo:          item.order_no,
+						contractId:       null,
+						house_id:         item.house_id,
+						houseId:          item.house_id,
+						project_id:       item.project_id,
+						projectId:        item.project_id,
+						houseCode:        item.house_code || item.house_no || '',
+						status:           'pending',
+						statusText:       '待签署',
+						community:        item.project_name || '未知小区',
+						room:             `${item.building_name || ''}${item.unit_name || ''}${item.house_no || ''}`,
+						rentPeriod:       '',
+						rent:             item.rent_price ? `${item.rent_price}元/月` : '',
+						deposit:          item.deposit ? `${item.deposit}元` : '',
+						depositAmount:    item.deposit || '0',
+						end_date:         new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().slice(0, 10), // 保证在"当前合同"tab
+						signedDate:       '',
+						signed:           false,
+						depositPaid:      false,
+						materialStatus:   '0',
+						materialSubmitted: false,
+						materialApproved: false,
+						firstRentPaid:    false,
+						contractContent:  '',
+						hasPdf:           false,
+						lockExpireTime:   '',
+						bookingExpireTime: item.booking_expire_time || '',
+					}
+				}
+
+				// === 正常合同类型 ===
 				const status = this.getContractStatus(item)
 
 				const signed           = ['2','3','4'].includes(item.contract_status)
@@ -417,6 +462,7 @@
 				const firstRentPaid    = item.first_rent_paid === '1'
 
 				return {
+					type:             'contract',
 					contractId:       item.contract_id,
 					house_id:         item.house_id,
 					project_id:       item.project_id,
@@ -485,20 +531,21 @@
 			startCountdownTimers() {
 				this.clearAllTimers()
 				this.allContractList.forEach(item => {
+					const itemKey = item.contractId || `order_${item.orderId}`
 					// 1. 预订倒计时：待签署(pending)且有bookingExpireTime
 					if (item.status === 'pending' && item.bookingExpireTime) {
-						this._startTimer(item, item.bookingExpireTime, 'booking')
+						this._startTimer(item, item.bookingExpireTime, 'booking', itemKey)
 					}
 					// 2. 押金支付倒计时：已签署未付押金且有lockExpireTime
 					else if (item.signed && !item.depositPaid && item.lockExpireTime) {
-						this._startTimer(item, item.lockExpireTime, 'deposit')
+						this._startTimer(item, item.lockExpireTime, 'deposit', itemKey)
 					}
 				})
 			},
 
 			// 通用定时器启动（type: 'booking' | 'deposit'）
-			_startTimer(item, expireTime, type) {
-				const timerKey = `${type}_${item.contractId}`
+			_startTimer(item, expireTime, type, itemKey) {
+				const timerKey = `${type}_${itemKey || item.contractId}`
 				const remaining = Math.max(0, Math.floor((new Date(expireTime) - new Date()) / 1000))
 				this.$set(this.countdownTimers, timerKey, remaining)
 				if (remaining > 0) {
@@ -509,7 +556,7 @@
 							clearInterval(this.timerIntervals[timerKey])
 							delete this.timerIntervals[timerKey]
 							// 倒计时结束：立即在前端乐观更新为"已失效"状态
-							this.markContractVoidedLocally(item.contractId)
+							this.markItemVoidedLocally(item)
 							// 立即刷新一次，获取后端最新状态
 							this.loadContractList()
 							// 延迟3秒后再刷新一次，确保后端定时任务已执行
@@ -525,13 +572,18 @@
 					this.$set(this.timerIntervals, timerKey, intervalId)
 				} else {
 					// 页面加载时倒计时已经归零，立即标记为失效
-					this.markContractVoidedLocally(item.contractId)
+					this.markItemVoidedLocally(item)
 				}
 			},
 
-			// 前端乐观更新：将指定合同本地标记为"已失效"
-			markContractVoidedLocally(contractId) {
-				const idx = this.allContractList.findIndex(c => c.contractId === contractId)
+			// 前端乐观更新：将指定合同/预订单本地标记为"已失效"
+			markItemVoidedLocally(item) {
+				const idx = this.allContractList.findIndex(c => {
+					if (item.type === 'order') {
+						return c.type === 'order' && c.orderId === item.orderId
+					}
+					return c.contractId === item.contractId
+				})
 				if (idx !== -1) {
 					const updated = { ...this.allContractList[idx], status: 'voided', statusText: '已失效' }
 					this.$set(this.allContractList, idx, updated)
@@ -546,7 +598,8 @@
 
 			// 获取步骤内倒计时文本（mm:ss格式）
 			getStepCountdown(item, type) {
-				const timerKey = `${type}_${item.contractId}`
+				const itemKey = item.contractId || `order_${item.orderId}`
+				const timerKey = `${type}_${itemKey}`
 				const seconds = this.countdownTimers[timerKey]
 				if (seconds === undefined || seconds === null || seconds <= 0) return ''
 				const min = String(Math.floor(seconds / 60)).padStart(2, '0')
@@ -556,7 +609,8 @@
 
 			// 步骤内倒计时是否紧急（预订<3分钟，押金<5分钟）
 			isStepUrgent(item, type) {
-				const timerKey = `${type}_${item.contractId}`
+				const itemKey = item.contractId || `order_${item.orderId}`
+				const timerKey = `${type}_${itemKey}`
 				const seconds = this.countdownTimers[timerKey]
 				if (seconds === undefined || seconds <= 0) return false
 				const threshold = type === 'booking' ? 180 : 300
