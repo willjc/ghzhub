@@ -196,6 +196,7 @@ export default {
       roomId: null,
       projectId: null,
       contractId: null,
+      orderNo: null,
       rentMonths: 12,
       rentMonthsOptions: Array.from({ length: 24 }, (_, i) => ({ label: `${i + 1} 个月`, value: i + 1 })),
       rentMonthsIndex: 11,
@@ -238,6 +239,7 @@ export default {
     this.roomId = options.roomId ? parseInt(options.roomId) : null
     this.projectId = options.projectId ? parseInt(options.projectId) : null
     this.contractId = options.contractId ? parseInt(options.contractId) : null
+    this.orderNo = options.orderNo || null
     this.rentMonths = options.rentMonths ? parseInt(options.rentMonths) : 12
     this.rentMonthsIndex = this.rentMonths - 1
     if (options.houseCode) {
@@ -355,7 +357,8 @@ export default {
             contractContent: this.contractContent,
             endDate: this.endDate,
             rentMonths: this.rentMonths,
-            userId: this.userId
+            userId: this.userId,
+            orderNo: this.orderNo
           })
           if (saveRes.code !== 200) throw new Error(saveRes.msg || '保存合同失败')
           this.contractId = saveRes.data.contractId

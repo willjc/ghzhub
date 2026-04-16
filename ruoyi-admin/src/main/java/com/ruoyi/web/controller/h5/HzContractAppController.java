@@ -12,6 +12,8 @@ import com.ruoyi.system.service.EsignService;
 import com.ruoyi.system.service.IHzCheckInService;
 import com.ruoyi.system.service.IHzContractService;
 import com.ruoyi.system.service.IHzDocumentService;
+import com.ruoyi.system.service.IHzHouseOrderService;
+import com.ruoyi.system.domain.HzHouseOrder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,6 +86,9 @@ public class HzContractAppController extends BaseController {
 
     @Autowired
     private EsignService esignService;
+
+    @Autowired
+    private IHzHouseOrderService houseOrderService;
 
     /**
      * 根据用户ID获取合同列表
@@ -492,12 +497,50 @@ public class HzContractAppController extends BaseController {
             contract.setContractStatus("0"); // 草稿(待e签宝签署)
             contract.setDelFlag("0");
 
-            // 6. 保存合同（事务内锁房+创建合同，保证一致性）
+            // 6. 保存合同（根据是否有预订单决定是否需要锁房）
             int result;
-            try {
-                result = contractService.createContractWithLockHouse(contract);
-            } catch (RuntimeException e) {
-                return error(e.getMessage());
+            String orderNo = params.get("orderNo") != null ? params.get("orderNo").toString().trim() : "";
+            HzHouseOrder matchedOrder = null;
+
+            if (!orderNo.isEmpty()) {
+                // 有预订单号：验证预订单有效性，跳过锁房
+                matchedOrder = houseOrderService.getOne(new LambdaQueryWrapper<HzHouseOrder>()
+                        .eq(HzHouseOrder::getOrderNo, orderNo)
+                        .eq(HzHouseOrder::getDelFlag, "0"));
+                if (matchedOrder == null) {
+                    return error("预订单不存在");
+                }
+                if (!"0".equals(matchedOrder.getOrderStatus())) {
+                    return error("预订单状态异常，请重新选房");
+                }
+                if (matchedOrder.getLockExpireTime() != null && matchedOrder.getLockExpireTime().before(new java.util.Date())) {
+                    return error("预订单已过期，请重新选房");
+                }
+                if (!houseId.equals(matchedOrder.getHouseId())) {
+                    return error("预订单与房源不匹配");
+                }
+
+                // 预订单有效，房源已在创建预订单时锁定，直接创建合同
+                try {
+                    result = contractService.insertContract(contract);
+                } catch (RuntimeException e) {
+                    return error(e.getMessage());
+                }
+
+                // 更新预订单：关联合同ID，状态从 '0'(待签约) 改为 '1'(待付押金)
+                if (result > 0) {
+                    matchedOrder.setContractId(contract.getContractId());
+                    matchedOrder.setOrderStatus("1");
+                    matchedOrder.setUpdateTime(new java.util.Date());
+                    houseOrderService.updateById(matchedOrder);
+                }
+            } else {
+                // 无预订单：保持现有逻辑（事务内锁房+创建合同）
+                try {
+                    result = contractService.createContractWithLockHouse(contract);
+                } catch (RuntimeException e) {
+                    return error(e.getMessage());
+                }
             }
 
             if (result > 0) {

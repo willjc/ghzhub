@@ -16,7 +16,7 @@
 		<scroll-view class="scroll-content" scroll-y>
 			<!-- 提示卡片 -->
 			<view class="tip-card" v-if="currentTab === 'current' && hasUnsignedContract">
-				<text class="tip-text">提示：未签约合同，半小时内未签署，择合同自动取消！</text>
+				<text class="tip-text">提示：合同签署后30分钟内未支付押金，则合同自动失效！</text>
 			</view>
 			
 			<!-- 合同卡片列表 -->
@@ -74,7 +74,7 @@
 					<text class="info-value" style="color:#bbb;">待生成</text>
 				</view>
 
-					<!-- 4步状态指示器 - 仅合约中显示 -->
+					<!-- 4步状态指示器 - 仅已签署(未完成全部步骤)显示 -->
 					<view class="steps-bar" v-if="item.status === 'signed'">
 						<!-- Step1: 合同已签 -->
 						<view class="step-item done">
@@ -129,6 +129,15 @@
 					<view class="button-group" v-else-if="item.status === 'pending'">
 						<view class="btn btn-sign" @click="goSign(item)">
 							<text class="btn-text-white">去签署</text>
+						</view>
+					</view>
+					<!-- 履行中 -->
+					<view class="button-group" v-else-if="item.status === 'active'">
+						<view class="btn btn-renew" @click="handleRenew(item)">
+							<text class="btn-text-blue">续租</text>
+						</view>
+						<view class="btn btn-pay" @click="handlePay(item)">
+							<text class="btn-text-white">租金缴纳</text>
 						</view>
 					</view>
 					<!-- 已签署但未付押金 -->
@@ -192,7 +201,9 @@
 
 				statusClassMap: {
 					'unsigned': 'status-unsigned',
+					'pending': 'status-unsigned',
 					'signed': 'status-signed',
+					'active': 'status-active',
 					'expired': 'status-expired',
 					'voided': 'status-voided'
 				}
@@ -217,7 +228,7 @@
 				})
 			},
 			hasUnsignedContract() {
-				return this.allContractList.some(item => item.status === 'pending')
+				return this.allContractList.some(item => item.status === 'pending' || (item.status === 'signed' && !item.depositPaid))
 			}
 		},
 		onLoad(options) {
@@ -414,7 +425,7 @@
 					deposit:          `${item.deposit}元`,
 					depositAmount:    item.deposit || '0',
 					end_date:         item.end_date,
-					signedDate:       item.signed_date || item.update_time || '',
+					signedDate:       item.sign_time || item.signed_date || '',
 					signed,
 					depositPaid,
 					materialStatus,
@@ -430,10 +441,10 @@
 			// 根据contract_status映射状态
 			getContractStatus(item) {
 				switch(item.contract_status) {
-					case '0': return { code: 'pending', text: '待审核' }      // 草稿(待审核)
-					case '1': return { code: 'pending', text: '待审核' }      // 待签署
-					case '2': return { code: 'signed', text: '合约中' }       // 已签署
-					case '3': return { code: 'signed', text: '合约中' }       // 履行中
+					case '0': return { code: 'pending', text: '待签署' }      // 草稿(待签署)
+					case '1': return { code: 'pending', text: '待签署' }      // 待签署
+					case '2': return { code: 'signed', text: '已签署' }       // 已签署(办理中)
+					case '3': return { code: 'active', text: '履行中' }       // 履行中
 					case '4': return { code: 'expired', text: '已到期' }      // 已到期
 					case '5': return { code: 'expired', text: '已解约' }      // 已解约
 					case '6': return { code: 'voided', text: '已失效' }       // 超时失效
@@ -674,6 +685,10 @@
 
 	.status-signed {
 		color: #12a566;
+	}
+
+	.status-active {
+		color: #1976f8;
 	}
 
 	.status-expired {

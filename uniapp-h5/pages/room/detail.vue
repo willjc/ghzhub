@@ -109,8 +109,8 @@
 			<view class="reserve-btn" @click="reserveRoom">
 				<text class="reserve-text">预约看房</text>
 			</view>
-			<view class="select-btn" @click="selectRoom">
-				<text class="select-text">房源选定</text>
+			<view class="select-btn" :class="{ 'select-btn-disabled': houseStatus === '1' || houseStatus === '2' }" @click="selectRoom">
+				<text class="select-text">{{ houseStatus === '1' ? '已被选定' : houseStatus === '2' ? '已出租' : '房源选定' }}</text>
 			</view>
 		</view>
 	</view>
@@ -118,6 +118,7 @@
 
 <script>
 import { getHouseDetail, getHouseVR, getHouseImages } from '@/api/house'
+import { createOrder } from '@/api/order'
 import config from '@/config/index'
 
 	export default {
@@ -125,6 +126,7 @@ import config from '@/config/index'
 			return {
 				roomId: '',
 				projectId: '',
+				houseStatus: '0',  // 房源状态：0-空闲 1-已预订 2-已出租
 				activeImageTab: 'vr',
 				imageTabs: [
 					{ key: 'vr', name: 'VR' },
@@ -284,12 +286,34 @@ import config from '@/config/index'
 					url: `/pages/room/reserve?roomId=${this.roomId}&projectId=${this.projectId}`
 				})
 			},
-			selectRoom() {
-				const { buildingNo, unitNo, roomNo } = this.roomInfo
-				const houseCode = [buildingNo, unitNo, roomNo].filter(Boolean).join('-')
-				uni.navigateTo({
-					url: `/pages/contract/sign?roomId=${this.roomId}&projectId=${this.projectId}&houseCode=${encodeURIComponent(houseCode)}`
-				})
+			async selectRoom() {
+				if (this.houseStatus === '1' || this.houseStatus === '2') {
+					return
+				}
+				const userInfo = uni.getStorageSync('userInfo')
+				if (!userInfo || !userInfo.userId) {
+					uni.showToast({ title: '请先登录', icon: 'none' })
+					return
+				}
+				// 先调用预订单API锁定房源
+				uni.showLoading({ title: '选房中...' })
+				try {
+					const res = await createOrder(userInfo.userId, this.roomId)
+					uni.hideLoading()
+					if (res.code === 200) {
+						const { orderNo, lockExpireTime } = res.data
+						const { buildingNo, unitNo, roomNo } = this.roomInfo
+						const houseCode = [buildingNo, unitNo, roomNo].filter(Boolean).join('-')
+						uni.navigateTo({
+							url: `/pages/contract/sign?roomId=${this.roomId}&projectId=${this.projectId}&houseCode=${encodeURIComponent(houseCode)}&orderNo=${orderNo}`
+						})
+					} else {
+						uni.showToast({ title: res.msg || '该房源已被他人选中', icon: 'none' })
+					}
+				} catch (e) {
+					uni.hideLoading()
+					uni.showToast({ title: '选房失败，请重试', icon: 'none' })
+				}
 			},
 			async loadRoomDetail() {
 				try {
@@ -319,6 +343,11 @@ import config from '@/config/index'
 						// 保存项目ID
 						if (data.projectId) {
 							this.projectId = data.projectId
+						}
+
+						// 保存房源状态
+						if (data.houseStatus !== undefined && data.houseStatus !== null) {
+							this.houseStatus = String(data.houseStatus)
 						}
 
 						// 配套设施映射
@@ -891,6 +920,11 @@ backdrop-filter: blur(4rpx);
 		font-family: "PingFang SC", "苹方-简", sans-serif;
 		text-align: center;
 		line-height: 51rpx;
+	}
+
+	.select-btn-disabled {
+		background: #c0c4cc;
+		opacity: 0.7;
 	}
 </style>
 
