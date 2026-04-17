@@ -39,17 +39,27 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  c.status, c.create_by, c.create_time, c.update_by, c.update_time, c.remark, c.del_flag, " +
             "  ct.contract_no AS contractNo, " +
             "  u.nickname AS tenantNickname, " +
-            "  CONCAT(h.house_code, '-', h.house_no) AS houseName " +
+            "  CONCAT(h.house_code, '-', h.house_no) AS houseName, " +
+            "  u.real_name AS realName, u.id_card AS idCard, u.phone, " +
+            "  p.project_name AS projectName, b.building_name AS buildingName, " +
+            "  h.floor, h.orientation, h.area, " +
+            "  ct.start_date AS startDate, ct.end_date AS endDate, " +
+            "  DATEDIFF(ct.end_date, CURDATE()) AS remainingDays " +
             "FROM hz_checkin_record c " +
             "LEFT JOIN hz_contract ct ON c.contract_id = ct.contract_id " +
             "LEFT JOIN hz_user u ON c.tenant_id = u.user_id " +
             "LEFT JOIN hz_house h ON c.house_id = h.house_id " +
+            "LEFT JOIN hz_building b ON h.building_id = b.building_id " +
+            "LEFT JOIN hz_project p ON h.project_id = p.project_id " +
             "WHERE c.del_flag = '0' " +
             "<if test='checkIn.tenantId != null'> AND c.tenant_id = #{checkIn.tenantId} </if>" +
             "<if test='checkIn.contractId != null'> AND c.contract_id = #{checkIn.contractId} </if>" +
             "<if test='checkIn.houseId != null'> AND c.house_id = #{checkIn.houseId} </if>" +
             "<if test='checkIn.status != null and checkIn.status != \"\"'> AND c.status = #{checkIn.status} </if>" +
             "<if test='checkIn.checkinNo != null and checkIn.checkinNo != \"\"'> AND c.checkin_no LIKE CONCAT('%', #{checkIn.checkinNo}, '%') </if>" +
+            "<if test='checkIn.realName != null and checkIn.realName != \"\"'> AND u.real_name LIKE CONCAT('%', #{checkIn.realName}, '%') </if>" +
+            "<if test='checkIn.projectName != null and checkIn.projectName != \"\"'> AND p.project_name LIKE CONCAT('%', #{checkIn.projectName}, '%') </if>" +
+            "<if test='checkIn.phone != null and checkIn.phone != \"\"'> AND u.phone LIKE CONCAT('%', #{checkIn.phone}, '%') </if>" +
             "ORDER BY c.create_time DESC" +
             "</script>")
     IPage<HzCheckIn> selectCheckInPageWithRelations(Page<HzCheckIn> page, @Param("checkIn") HzCheckIn checkIn);
@@ -71,11 +81,18 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  c.status, c.create_by, c.create_time, c.update_by, c.update_time, c.remark, c.del_flag, " +
             "  ct.contract_no AS contractNo, " +
             "  u.nickname AS tenantNickname, " +
-            "  CONCAT(h.house_code, '-', h.house_no) AS houseName " +
+            "  CONCAT(h.house_code, '-', h.house_no) AS houseName, " +
+            "  u.real_name AS realName, u.id_card AS idCard, u.phone, " +
+            "  p.project_name AS projectName, b.building_name AS buildingName, " +
+            "  h.floor, h.orientation, h.area, " +
+            "  ct.start_date AS startDate, ct.end_date AS endDate, " +
+            "  DATEDIFF(ct.end_date, CURDATE()) AS remainingDays " +
             "FROM hz_checkin_record c " +
             "LEFT JOIN hz_contract ct ON c.contract_id = ct.contract_id " +
             "LEFT JOIN hz_user u ON c.tenant_id = u.user_id " +
             "LEFT JOIN hz_house h ON c.house_id = h.house_id " +
+            "LEFT JOIN hz_building b ON h.building_id = b.building_id " +
+            "LEFT JOIN hz_project p ON h.project_id = p.project_id " +
             "WHERE c.record_id = #{recordId} AND c.del_flag = '0'")
     HzCheckIn selectCheckInByIdWithRelations(@Param("recordId") Long recordId);
 
@@ -97,17 +114,27 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  c.status, c.create_by, c.create_time, c.update_by, c.update_time, c.remark, c.del_flag, " +
             "  ct.contract_no AS contractNo, " +
             "  u.nickname AS tenantNickname, " +
-            "  CONCAT(h.house_code, '-', h.house_no) AS houseName " +
+            "  CONCAT(h.house_code, '-', h.house_no) AS houseName, " +
+            "  u.real_name AS realName, u.id_card AS idCard, u.phone, " +
+            "  p.project_name AS projectName, b.building_name AS buildingName, " +
+            "  h.floor, h.orientation, h.area, " +
+            "  ct.start_date AS startDate, ct.end_date AS endDate, " +
+            "  DATEDIFF(ct.end_date, CURDATE()) AS remainingDays " +
             "FROM hz_checkin_record c " +
             "LEFT JOIN hz_contract ct ON c.contract_id = ct.contract_id " +
             "LEFT JOIN hz_user u ON c.tenant_id = u.user_id " +
             "LEFT JOIN hz_house h ON c.house_id = h.house_id " +
+            "LEFT JOIN hz_building b ON h.building_id = b.building_id " +
+            "LEFT JOIN hz_project p ON h.project_id = p.project_id " +
             "WHERE c.del_flag = '0' " +
             "<if test='tenantId != null'> AND c.tenant_id = #{tenantId} </if>" +
             "<if test='contractId != null'> AND c.contract_id = #{contractId} </if>" +
             "<if test='houseId != null'> AND c.house_id = #{houseId} </if>" +
             "<if test='status != null and status != \"\"'> AND c.status = #{status} </if>" +
             "<if test='checkinNo != null and checkinNo != \"\"'> AND c.checkin_no LIKE CONCAT('%', #{checkinNo}, '%') </if>" +
+            "<if test='realName != null and realName != \"\"'> AND u.real_name LIKE CONCAT('%', #{realName}, '%') </if>" +
+            "<if test='projectName != null and projectName != \"\"'> AND p.project_name LIKE CONCAT('%', #{projectName}, '%') </if>" +
+            "<if test='phone != null and phone != \"\"'> AND u.phone LIKE CONCAT('%', #{phone}, '%') </if>" +
             "ORDER BY c.create_time DESC" +
             "</script>")
     List<HzCheckIn> selectCheckInListWithRelations(HzCheckIn checkIn);

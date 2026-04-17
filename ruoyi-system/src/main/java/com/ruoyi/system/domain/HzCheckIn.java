@@ -8,6 +8,8 @@ import com.ruoyi.common.core.domain.BaseEntity;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import java.math.BigDecimal;
+
 /**
  * 入住记录对象 hz_checkin_record
  *
@@ -140,6 +142,50 @@ public class HzCheckIn extends BaseEntity {
     /** 房源名称（关联查询字段，非数据库字段） */
     @TableField(exist = false)
     private String houseName;
+
+    /** 真实姓名 hz_user.real_name */
+    @TableField(exist = false)
+    private String realName;
+
+    /** 身份证号 hz_user.id_card */
+    @TableField(exist = false)
+    private String idCard;
+
+    /** 联系电话 hz_user.phone */
+    @TableField(exist = false)
+    private String phone;
+
+    /** 项目名 hz_project.project_name */
+    @TableField(exist = false)
+    private String projectName;
+
+    /** 楼栋名 hz_building.building_name */
+    @TableField(exist = false)
+    private String buildingName;
+
+    /** 楼层 hz_house.floor */
+    @TableField(exist = false)
+    private String floor;
+
+    /** 朝向 hz_house.orientation */
+    @TableField(exist = false)
+    private String orientation;
+
+    /** 面积 hz_house.area */
+    @TableField(exist = false)
+    private BigDecimal area;
+
+    /** 合同开始日期 hz_contract.start_date */
+    @TableField(exist = false)
+    private String startDate;
+
+    /** 合同结束日期 hz_contract.end_date */
+    @TableField(exist = false)
+    private String endDate;
+
+    /** 剩余天数 DATEDIFF(end_date, CURDATE()) */
+    @TableField(exist = false)
+    private Integer remainingDays;
 
     public void setRecordId(Long recordId) {
         this.recordId = recordId;
@@ -387,6 +433,94 @@ public class HzCheckIn extends BaseEntity {
 
     public String getHouseName() {
         return houseName;
+    }
+
+    public String getRealName() {
+        return realName;
+    }
+
+    public void setRealName(String realName) {
+        this.realName = realName;
+    }
+
+    public String getIdCard() {
+        return idCard;
+    }
+
+    public void setIdCard(String idCard) {
+        this.idCard = idCard;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getProjectName() {
+        return projectName;
+    }
+
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
+
+    public String getBuildingName() {
+        return buildingName;
+    }
+
+    public void setBuildingName(String buildingName) {
+        this.buildingName = buildingName;
+    }
+
+    public String getFloor() {
+        return floor;
+    }
+
+    public void setFloor(String floor) {
+        this.floor = floor;
+    }
+
+    public String getOrientation() {
+        return orientation;
+    }
+
+    public void setOrientation(String orientation) {
+        this.orientation = orientation;
+    }
+
+    public BigDecimal getArea() {
+        return area;
+    }
+
+    public void setArea(BigDecimal area) {
+        this.area = area;
+    }
+
+    public String getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(String startDate) {
+        this.startDate = startDate;
+    }
+
+    public String getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(String endDate) {
+        this.endDate = endDate;
+    }
+
+    public Integer getRemainingDays() {
+        return remainingDays;
+    }
+
+    public void setRemainingDays(Integer remainingDays) {
+        this.remainingDays = remainingDays;
     }
 
 

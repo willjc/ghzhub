@@ -651,6 +651,25 @@ public class HzContractAppController extends BaseController {
             Integer rentMonths = params.get("rentMonths") != null
                 ? Integer.parseInt(params.get("rentMonths").toString()) : 12;
 
+            // ========== 续租到期校验 ==========
+            // 1. 校验原合同是否已到期
+            HzContract oldContract = contractService.selectContractById(oldContractId);
+            if (oldContract == null) {
+                return error("原合同不存在");
+            }
+            if (oldContract.getEndDate() != null && !oldContract.getEndDate().isEmpty()) {
+                LocalDate contractEndDate = LocalDate.parse(oldContract.getEndDate().substring(0, 10));
+                if (LocalDate.now().isAfter(contractEndDate)) {
+                    return error("合同已到期，房源已释放，无法续租");
+                }
+            }
+            // 2. 校验房源状态，空置(0)说明已被释放
+            HzHouse currentHouse = houseMapper.selectById(houseId);
+            if (currentHouse != null && "0".equals(currentHouse.getHouseStatus())) {
+                return error("房源已释放，无法续租");
+            }
+            // ========== 续租到期校验结束 ==========
+
             // 优先从请求参数获取 userId，兼容前端直接传参
             Long userId = null;
             Object userIdParam = params.get("userId");
@@ -776,8 +795,8 @@ public class HzContractAppController extends BaseController {
             int result = contractService.insertContract(contract);
 
             if (result > 0) {
-                // 7. 标记原合同已续租
-                HzContract oldContract = contractService.selectContractById(oldContractId);
+                // 7. 标记原合同已续租（复用前面校验时查询的 oldContract）
+                oldContract = contractService.selectContractById(oldContractId);
                 if (oldContract != null) {
                     oldContract.setIsRenewed("1");
                     oldContract.setRenewedContractId(contract.getContractId());

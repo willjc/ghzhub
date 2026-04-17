@@ -9,6 +9,7 @@ import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzDocument;
 import com.ruoyi.system.service.IHzContractService;
+import com.ruoyi.system.service.IHzUserMessageService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.slf4j.Logger;
@@ -54,6 +55,72 @@ public class ContractExpireTask {
 
     @Autowired
     private IHzContractService contractService;
+
+    @Autowired
+    private IHzUserMessageService messageService;
+
+    /**
+     * 合同到期自动释放房源（每天凌晨1点执行）
+     *
+     * <p>查询到期日 < 当天 且 合同状态为"履行中(3)" 且未续租的合同，
+     * 将合同状态更新为"已到期(4)"，房源状态改为"空置(0)"，并发送消息提醒。
+     */
+    public void execute() {
+        log.info("开始执行合同到期释放房源定时任务...");
+        try {
+            String todayStr = java.time.LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+            // 查询到期未续租的履行中合同
+            LambdaQueryWrapper<HzContract> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(HzContract::getContractStatus, "3")  // 履行中
+                    .lt(HzContract::getEndDate, todayStr)     // end_date < 今天
+                    .ne(HzContract::getIsRenewed, "1")        // 未续租
+                    .eq(HzContract::getDelFlag, "0");
+
+            List<HzContract> expiredContracts = contractMapper.selectList(wrapper);
+            log.info("查询到{}条到期未续租的履行中合同", expiredContracts.size());
+
+            if (expiredContracts.isEmpty()) {
+                log.info("无到期合同需要处理，任务结束");
+                return;
+            }
+
+            int processedCount = 0;
+            for (HzContract contract : expiredContracts) {
+                try {
+                    // 1. 更新合同状态为"已到期(4)"
+                    contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                            .eq(HzContract::getContractId, contract.getContractId())
+                            .set(HzContract::getContractStatus, "4"));
+
+                    // 2. 将对应房源状态改为"空置(0)"
+                    if (contract.getHouseId() != null) {
+                        houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                                .eq(HzHouse::getHouseId, contract.getHouseId())
+                                .eq(HzHouse::getHouseStatus, "2")  // 仅已出租状态才释放
+                                .set(HzHouse::getHouseStatus, "0"));
+                    }
+
+                    // 3. 发送消息提醒
+                    if (contract.getTenantId() != null) {
+                        String title = "合同到期通知";
+                        String content = "您的合同" + (contract.getContractNo() != null ? contract.getContractNo() : "")
+                                + "已到期，房源已释放。如需继续租住，请联系管理员。";
+                        messageService.sendMessage(contract.getTenantId(), "contract", title, content);
+                    }
+
+                    processedCount++;
+                    log.info("合同到期处理完成：contractId={}, contractNo={}", contract.getContractId(), contract.getContractNo());
+                } catch (Exception e) {
+                    log.error("处理到期合同失败：contractId={}", contract.getContractId(), e);
+                }
+            }
+
+            log.info("合同到期释放房源任务完成：共处理{}条", processedCount);
+        } catch (Exception e) {
+            log.error("合同到期释放房源定时任务执行失败", e);
+        }
+    }
 
     /**
      * 检查并处理超时合同，释放被锁定的房源
