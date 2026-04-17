@@ -12,6 +12,7 @@ import com.ruoyi.system.mapper.HzBillMapper;
 import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.service.IHzHouseOrderService;
+import com.ruoyi.system.service.IHzUserMessageService;
 import com.ruoyi.system.service.WechatPayService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,6 +52,9 @@ public class WechatPayController extends BaseController {
 
     @Autowired
     private HzHouseMapper houseMapper;
+
+    @Autowired
+    private IHzUserMessageService messageService;
 
     /**
      * 预支付
@@ -189,6 +193,17 @@ public class WechatPayController extends BaseController {
                 bill.setTransactionNo(transactionId);
                 billMapper.updateById(bill);
                 logger.info("【微信回调】账单状态已更新为已支付，billId={}, outTradeNo={}", bill.getBillId(), outTradeNo);
+
+                // 发送支付成功消息
+                try {
+                    if ("1".equals(bill.getBillType())) {
+                        messageService.sendMessage(bill.getTenantId(), "bill", "押金缴纳成功", "您的押金已缴纳成功");
+                    } else if ("2".equals(bill.getBillType())) {
+                        messageService.sendMessage(bill.getTenantId(), "bill", "房租缴纳成功", "您的房租账单已缴纳成功");
+                    }
+                } catch (Exception msgEx) {
+                    logger.warn("【微信回调】发送支付消息失败，不影响主流程: {}", msgEx.getMessage());
+                }
 
                 // 押金账单 → 触发订单状态推进 + 房源状态更新
                 if ("1".equals(bill.getBillType())) {

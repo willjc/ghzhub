@@ -135,7 +135,7 @@
           <dict-tag :options="dict.type.sys_normal_disable" :value="scope.row.status"/>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="180" fixed="right" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="260" fixed="right" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -144,6 +144,13 @@
             @click="handleDetail(scope.row)"
             v-hasPermi="['gangzhu:activity:query']"
           >详情</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-s-data"
+            @click="handleViewRegistrations(scope.row)"
+            v-hasPermi="['gangzhu:activity:list']"
+          >活动数据</el-button>
           <el-button
             size="mini"
             type="text"
@@ -358,11 +365,32 @@
         <el-button @click="detailOpen = false">关 闭</el-button>
       </div>
     </el-dialog>
+
+    <!-- 活动数据 - 报名人列表对话框 -->
+    <el-dialog :title="'活动数据 - ' + currentActivityTitle" :visible.sync="registrationDialogVisible" width="800px" append-to-body>
+      <el-table :data="registrationList" v-loading="registrationLoading" empty-text="暂无报名数据">
+        <el-table-column label="序号" type="index" width="55" align="center" />
+        <el-table-column label="姓名" prop="realName" width="120" />
+        <el-table-column label="联系方式" prop="phone" width="150" />
+        <el-table-column label="报名时间" prop="createTime" width="180" />
+        <el-table-column label="状态" prop="registrationStatus" width="100" align="center">
+          <template slot-scope="scope">
+            <el-tag :type="scope.row.registrationStatus === '0' ? 'success' : 'info'" size="small">
+              {{ scope.row.registrationStatus === '0' ? '已报名' : '已取消' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="备注" prop="remark" show-overflow-tooltip />
+      </el-table>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="registrationDialogVisible = false">关 闭</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listActivity, getActivity, addActivity, updateActivity, delActivity } from "@/api/gangzhu/activity";
+import { listActivity, getActivity, addActivity, updateActivity, delActivity, getRegistrations } from "@/api/gangzhu/activity";
 import Editor from '@/components/Editor';
 import ImageUpload from '@/components/ImageUpload';
 
@@ -397,6 +425,11 @@ export default {
       detailOpen: false,
       // 详情数据
       detailData: {},
+      // 报名人列表弹窗
+      registrationDialogVisible: false,
+      registrationList: [],
+      registrationLoading: false,
+      currentActivityTitle: '',
       // 日期范围
       dateRange: [],
       // 查询参数
@@ -567,6 +600,19 @@ export default {
       this.download('gangzhu/activity/export', {
         ...this.queryParams
       }, `activity_${new Date().getTime()}.xlsx`)
+    },
+    /** 查看活动报名数据 */
+    handleViewRegistrations(row) {
+      this.currentActivityTitle = row.activityTitle;
+      this.registrationDialogVisible = true;
+      this.registrationLoading = true;
+      this.registrationList = [];
+      getRegistrations(row.activityId).then(response => {
+        this.registrationList = response.data || [];
+        this.registrationLoading = false;
+      }).catch(() => {
+        this.registrationLoading = false;
+      });
     },
     /** 获取图片完整URL - 遵循RuoYi标准 */
     getImageUrl(url) {

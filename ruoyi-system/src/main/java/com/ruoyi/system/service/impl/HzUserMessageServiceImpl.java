@@ -9,6 +9,8 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzUserMessage;
 import com.ruoyi.system.mapper.HzUserMessageMapper;
 import com.ruoyi.system.service.IHzUserMessageService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +23,8 @@ import java.util.List;
 @Service
 public class HzUserMessageServiceImpl extends ServiceImpl<HzUserMessageMapper, HzUserMessage> implements IHzUserMessageService
 {
+    private static final Logger log = LoggerFactory.getLogger(HzUserMessageServiceImpl.class);
+
     @Override
     public HzUserMessage selectMessageById(Long messageId)
     {
@@ -123,5 +127,26 @@ public class HzUserMessageServiceImpl extends ServiceImpl<HzUserMessageMapper, H
         message.setDelFlag("2");
         message.setUpdateTime(DateUtils.getNowDate());
         return this.updateById(message) ? 1 : 0;
+    }
+
+    @Override
+    public void sendMessage(Long userId, String messageType, String messageTitle, String messageContent)
+    {
+        try
+        {
+            HzUserMessage message = new HzUserMessage();
+            message.setUserId(userId);
+            message.setMessageType(messageType);
+            message.setMessageTitle(messageTitle);
+            message.setMessageContent(messageContent);
+            message.setIsRead("0");
+            message.setDelFlag("0");
+            message.setCreateTime(DateUtils.getNowDate());
+            this.save(message);
+        }
+        catch (Exception e)
+        {
+            log.error("发送消息失败，userId={}, title={}", userId, messageTitle, e);
+        }
     }
 }

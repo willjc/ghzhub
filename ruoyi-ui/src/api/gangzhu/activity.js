@@ -50,3 +50,11 @@ export function increaseViewCount(activityId) {
     method: 'post'
   })
 }
+
+// 获取活动报名人列表
+export function getRegistrations(activityId) {
+  return request({
+    url: '/gangzhu/activity/registrations/' + activityId,
+    method: 'get'
+  })
+}

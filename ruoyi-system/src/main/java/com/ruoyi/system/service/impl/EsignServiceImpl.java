@@ -11,6 +11,7 @@ import com.ruoyi.system.mapper.*;
 import com.ruoyi.system.service.EsignService;
 import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.service.IHzCheckInService;
+import com.ruoyi.system.service.IHzUserMessageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,12 +47,13 @@ public class EsignServiceImpl implements EsignService {
     private final HzBuildingMapper buildingMapper;
     private final HzUnitMapper unitMapper;
     private final IHzCheckInService checkInService;
+    private final IHzUserMessageService messageService;
 
     public EsignServiceImpl(HzUserMapper userMapper, HzContractMapper contractMapper,
                             HzHouseOrderMapper orderMapper, HzBillMapper billMapper,
                             HzHouseMapper houseMapper, HzProjectMapper projectMapper,
                             HzBuildingMapper buildingMapper, HzUnitMapper unitMapper,
-                            IHzCheckInService checkInService) {
+                            IHzCheckInService checkInService, IHzUserMessageService messageService) {
         this.userMapper = userMapper;
         this.contractMapper = contractMapper;
         this.orderMapper = orderMapper;
@@ -61,6 +63,7 @@ public class EsignServiceImpl implements EsignService {
         this.buildingMapper = buildingMapper;
         this.unitMapper = unitMapper;
         this.checkInService = checkInService;
+        this.messageService = messageService;
     }
 
     // ==================== 实名认证 ====================
@@ -633,6 +636,15 @@ public class EsignServiceImpl implements EsignService {
         }
 
         log.info("主动查询签署完成，已更新合同/账单/入住记录 contractId={}", contractId);
+
+        // 发送合同签署成功消息
+        try {
+            messageService.sendMessage(contract.getTenantId(), "contract", "合同签署成功",
+                    "您的合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳押金");
+        } catch (Exception e) {
+            log.warn("发送合同签署成功消息失败，不影响主流程: {}", e.getMessage());
+        }
+
         return true;
     }
 
@@ -726,6 +738,14 @@ public class EsignServiceImpl implements EsignService {
                     .eq(HzHouseOrder::getOrderNo, order.getOrderNo())
                     .set(HzHouseOrder::getOrderStatus, "1")); // 1=待付押金
             log.info("预订单推进至待付押金 orderNo={}", order.getOrderNo());
+        }
+
+        // 6. 发送合同签署成功消息
+        try {
+            messageService.sendMessage(contract.getTenantId(), "contract", "合同签署成功",
+                    "您的合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳押金");
+        } catch (Exception e) {
+            log.warn("发送合同签署成功消息失败，不影响主流程: {}", e.getMessage());
         }
     }
 

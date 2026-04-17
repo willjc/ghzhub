@@ -93,4 +93,14 @@ public interface IHzUserMessageService
      * @return 结果
      */
     public int deleteMessageById(Long messageId);
+
+    /**
+     * 通用发送消息方法（各业务节点调用）
+     *
+     * @param userId 用户ID
+     * @param messageType 消息类型：login/system/bill/contract
+     * @param messageTitle 消息标题
+     * @param messageContent 消息内容
+     */
+    void sendMessage(Long userId, String messageType, String messageTitle, String messageContent);
 }

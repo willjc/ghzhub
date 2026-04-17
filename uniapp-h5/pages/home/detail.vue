@@ -28,8 +28,8 @@
 						<text class="info-value">{{ detailData.organizer }}</text>
 					</view>
 					<view class="info-item" v-if="detailData.maxParticipants">
-						<text class="info-label">报名人数限制：</text>
-						<text class="info-value">{{ detailData.maxParticipants }}人</text>
+						<text class="info-label">报名人数：</text>
+						<text class="info-value">{{ detailData.currentParticipants || 0 }} / {{ detailData.maxParticipants }}人</text>
 					</view>
 				</view>
 
@@ -37,12 +37,26 @@
 				<view class="content-divider"></view>
 				<rich-text class="detail-content" :nodes="detailData.activityContent"></rich-text>
 			</view>
+
+			<!-- 底部占位，避免内容被固定按钮遮挡 -->
+			<view class="bottom-placeholder"></view>
 		</scroll-view>
+
+		<!-- 底部固定报名按钮 -->
+		<view class="bottom-action" v-if="detailData.activityTitle">
+			<button v-if="registrationStatus === 'not_started'" class="btn-register" disabled>报名未开始</button>
+			<button v-else-if="registrationStatus === 'registered'" class="btn-registered" disabled>已报名</button>
+			<button v-else-if="registrationStatus === 'full'" class="btn-register" disabled>报名已满</button>
+			<button v-else-if="registrationStatus === 'ended'" class="btn-register" disabled>报名已结束</button>
+			<button v-else-if="registering" class="btn-register-active" disabled>报名中...</button>
+			<button v-else class="btn-register-active" @click="handleRegister">立即报名</button>
+		</view>
 	</view>
 </template>
 
 <script>
 	import config from '@/config/index'
+	import { registerActivity, checkRegistered } from '@/api/activity'
 
 	export default {
 		data() {
@@ -57,8 +71,40 @@
 					organizer: '',
 					maxParticipants: null,
 					currentParticipants: 0,
-					activityContent: ''
+					activityContent: '',
+					// 原始时间字段，用于报名状态判断
+					registrationStartTime: null,
+					registrationEndTime: null
+				},
+				isRegistered: false,
+				registering: false
+			}
+		},
+		computed: {
+			registrationStatus() {
+				if (!this.detailData.activityTitle) return 'loading'
+				if (this.isRegistered) return 'registered'
+
+				const now = new Date().getTime()
+
+				// 检查报名时间
+				if (this.detailData.registrationStartTime) {
+					const regStart = new Date(this.detailData.registrationStartTime).getTime()
+					if (now < regStart) return 'not_started'
 				}
+				if (this.detailData.registrationEndTime) {
+					const regEnd = new Date(this.detailData.registrationEndTime).getTime()
+					if (now > regEnd) return 'ended'
+				}
+
+				// 检查人数限制
+				if (this.detailData.maxParticipants && this.detailData.maxParticipants > 0) {
+					if ((this.detailData.currentParticipants || 0) >= this.detailData.maxParticipants) {
+						return 'full'
+					}
+				}
+
+				return 'available'
 			}
 		},
 		onLoad(options) {
@@ -72,7 +118,7 @@
 			/** 加载活动详情 */
 			loadDetail(id) {
 				uni.request({
-					url: 'http://localhost:8090/h5/activity/' + id,
+					url: config.baseUrl + '/h5/activity/' + id,
 					method: 'GET',
 					success: (res) => {
 						if (res.data.code === 200) {
@@ -103,8 +149,14 @@
 								organizer: data.organizer,
 								maxParticipants: data.maxParticipants,
 								currentParticipants: data.currentParticipants,
-								activityContent: this.processHtmlContent(data.activityContent)
+								activityContent: this.processHtmlContent(data.activityContent),
+								// 保留原始时间用于报名状态判断
+								registrationStartTime: data.registrationStartTime,
+								registrationEndTime: data.registrationEndTime
 							};
+
+							// 加载详情后检查报名状态
+							this.checkRegistrationStatus();
 						} else {
 							uni.showToast({
 								title: res.data.msg || '加载失败',
@@ -120,6 +172,62 @@
 						});
 					}
 				});
+			},
+
+			/** 检查用户是否已报名 */
+			async checkRegistrationStatus() {
+				try {
+					const userInfo = uni.getStorageSync('userInfo')
+					if (!userInfo || !userInfo.userId) return // 未登录不检查
+					const res = await checkRegistered(this.activityId, userInfo.userId)
+					this.isRegistered = res.registered === true
+				} catch (e) {
+					console.log('检查报名状态失败', e)
+				}
+			},
+
+			/** 报名操作 */
+			async handleRegister() {
+				const userInfo = uni.getStorageSync('userInfo')
+				const token = uni.getStorageSync('token')
+				if (!token || !userInfo || !userInfo.userId) {
+					uni.showModal({
+						title: '提示',
+						content: '请先登录后再报名',
+						confirmText: '去登录',
+						success(res) {
+							if (res.confirm) {
+								uni.navigateTo({ url: '/pages/login/index' })
+							}
+						}
+					})
+					return
+				}
+
+				this.registering = true
+				try {
+					const res = await registerActivity({
+						activityId: this.activityId,
+						userId: userInfo.userId,
+						realName: userInfo.realName || userInfo.nickName || null,
+						phone: userInfo.phonenumber || userInfo.phone || null
+					})
+					if (res.code === 200) {
+						uni.showToast({ title: '报名成功', icon: 'success' })
+						this.isRegistered = true
+						// 更新当前参与人数
+						if (this.detailData.currentParticipants !== undefined) {
+							this.detailData.currentParticipants++
+						}
+					} else {
+						uni.showToast({ title: res.msg || '报名失败', icon: 'none' })
+					}
+				} catch (e) {
+					// request 工具已经有统一 toast，这里不重复提示
+					console.log('报名失败', e)
+				} finally {
+					this.registering = false
+				}
 			},
 
 			/** 获取图片完整URL */
@@ -282,5 +390,59 @@
 	.detail-content >>> p {
 		margin: 10rpx 0;
 		line-height: 40rpx;
+	}
+
+	/* 底部占位 */
+	.bottom-placeholder {
+		height: 140rpx;
+	}
+
+	/* 底部固定报名按钮 */
+	.bottom-action {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: 16rpx 30rpx;
+		padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+		background: #fff;
+		box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+		z-index: 99;
+	}
+
+	.btn-register {
+		width: 100%;
+		height: 88rpx;
+		line-height: 88rpx;
+		text-align: center;
+		border-radius: 44rpx;
+		font-size: 32rpx;
+		color: #999;
+		background: #f5f5f5;
+		border: none;
+	}
+
+	.btn-register-active {
+		width: 100%;
+		height: 88rpx;
+		line-height: 88rpx;
+		text-align: center;
+		border-radius: 44rpx;
+		font-size: 32rpx;
+		color: #fff;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		border: none;
+	}
+
+	.btn-registered {
+		width: 100%;
+		height: 88rpx;
+		line-height: 88rpx;
+		text-align: center;
+		border-radius: 44rpx;
+		font-size: 32rpx;
+		color: #fff;
+		background: #67c23a;
+		border: none;
 	}
 </style>

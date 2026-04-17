@@ -11,6 +11,8 @@ import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.gangzhu.activity.domain.HzActivity;
+import com.ruoyi.gangzhu.activity.domain.HzActivityRegistration;
+import com.ruoyi.gangzhu.activity.service.IHzActivityRegistrationService;
 import com.ruoyi.gangzhu.activity.service.IHzActivityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
-
 /**
  * 人才家园活动Controller
  *
@@ -30,6 +31,9 @@ public class HzActivityController extends BaseController {
 
     @Autowired
     private IHzActivityService activityService;
+
+    @Autowired
+    private IHzActivityRegistrationService registrationService;
 
     /**
      * 查询人才家园活动列表
@@ -104,5 +108,15 @@ public class HzActivityController extends BaseController {
     @PostMapping("/view/{activityId}")
     public AjaxResult increaseViewCount(@PathVariable Long activityId) {
         return toAjax(activityService.increaseViewCount(activityId));
+    }
+
+    /**
+     * 查看活动报名人列表
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:activity:list')")
+    @GetMapping("/registrations/{activityId}")
+    public AjaxResult getRegistrations(@PathVariable("activityId") Long activityId) {
+        List<HzActivityRegistration> list = registrationService.getRegistrationsByActivityId(activityId);
+        return success(list);
     }
 }

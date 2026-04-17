@@ -7,6 +7,7 @@ import com.ruoyi.system.domain.HzTenant;
 import com.ruoyi.system.service.IHzDocumentService;
 import com.ruoyi.system.service.IHzHouseOrderService;
 import com.ruoyi.system.service.IHzTenantService;
+import com.ruoyi.system.service.IHzUserMessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,6 +36,9 @@ public class HzDocumentController extends BaseController {
 
     @Autowired
     private IHzHouseOrderService orderService;
+
+    @Autowired
+    private IHzUserMessageService messageService;
 
     /**
      * 查询当前用户的资料列表
@@ -115,6 +119,15 @@ public class HzDocumentController extends BaseController {
 
             int result = documentService.insertDocument(document);
             if (result > 0) {
+                // 发送资料提交成功消息
+                try {
+                    String docTypeLabel = getDocTypeLabel(documentType);
+                    messageService.sendMessage(tenantId, "system", "资料提交成功",
+                            "您的" + docTypeLabel + "已提交成功，请等待审核");
+                } catch (Exception msgEx) {
+                    logger.warn("发送资料提交消息失败: {}", msgEx.getMessage());
+                }
+
                 Map<String, Object> data = new HashMap<>();
                 data.put("documentId", document.getDocumentId());
                 data.put("filePath", filePath);
@@ -195,11 +208,34 @@ public class HzDocumentController extends BaseController {
 
         int result = documentService.updateDocument(document);
         if (result > 0 && "1".equals(document.getAuditStatus())) {
+            // 发送资料审核通过消息
+            try {
+                messageService.sendMessage(existDocument.getTenantId(), "system", "资料审核通过",
+                        "您提交的资料已审核通过");
+            } catch (Exception msgEx) {
+                logger.warn("发送资料审核消息失败: {}", msgEx.getMessage());
+            }
+
             // 触发检查：如果该租户的工作证明和学历证明均已通过，则完成预订单
             if (existDocument.getTenantId() != null) {
                 orderService.onDocumentsApproved(existDocument.getTenantId());
             }
         }
         return result > 0 ? success() : error("审核失败");
+    }
+
+    /**
+     * 资料类型编码转中文标签
+     */
+    private String getDocTypeLabel(String documentType) {
+        if (documentType == null) return "资料";
+        switch (documentType) {
+            case "1": return "身份证";
+            case "2": return "学历证明";
+            case "3": return "工作证明";
+            case "4": return "收入证明";
+            case "5": return "人才证书";
+            default: return "资料";
+        }
     }
 }
