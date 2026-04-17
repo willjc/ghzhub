@@ -724,7 +724,14 @@ public class EsignServiceImpl implements EsignService {
             log.warn("获取已签PDF链接失败（不影响主流程）: {}", e.getMessage());
         }
 
-        generateBills(contract);
+        // 根据合同类型区分账单生成
+        if ("2".equals(contract.getContractType())) {
+            generateRentBillsOnly(contract);
+            log.info("主动查询：续租合同仅生成租金账单，contractId={}", contractId);
+        } else {
+            generateBills(contract);
+            log.info("主动查询：新签合同生成押金+租金账单，contractId={}", contractId);
+        }
         generateCheckInRecord(contract);
 
         HzHouseOrder order = orderMapper.selectOne(new LambdaQueryWrapper<HzHouseOrder>()
@@ -739,8 +746,10 @@ public class EsignServiceImpl implements EsignService {
 
         // 发送合同签署成功消息
         try {
-            messageService.sendMessage(contract.getTenantId(), "contract", "合同签署成功",
-                    "您的合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳押金");
+            String msgContent = "2".equals(contract.getContractType())
+                    ? "您的续租合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳租金"
+                    : "您的合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳押金";
+            messageService.sendMessage(contract.getTenantId(), "contract", "合同签署成功", msgContent);
         } catch (Exception e) {
             log.warn("发送合同签署成功消息失败，不影响主流程: {}", e.getMessage());
         }
@@ -822,9 +831,16 @@ public class EsignServiceImpl implements EsignService {
             log.warn("获取已签合同PDF链接失败，不影响主流程：{}", e.getMessage());
         }
 
-        // 3. 生成账单（押金 + 租金）— 失败则整个事务回滚
-        generateBills(contract);
-        log.info("签署回调：账单生成成功，contractId={}", contract.getContractId());
+        // 3. 根据合同类型区分账单生成 — 失败则整个事务回滚
+        if ("2".equals(contract.getContractType())) {
+            // 续租合同：仅生成租金账单，不生成押金
+            generateRentBillsOnly(contract);
+            log.info("签署回调：续租合同仅生成租金账单，contractId={}", contract.getContractId());
+        } else {
+            // 新签合同：生成押金+租金
+            generateBills(contract);
+            log.info("签署回调：新签合同生成押金+租金账单，contractId={}", contract.getContractId());
+        }
 
         // 4. 生成入住记录
         generateCheckInRecord(contract);
@@ -842,8 +858,10 @@ public class EsignServiceImpl implements EsignService {
 
         // 6. 发送合同签署成功消息
         try {
-            messageService.sendMessage(contract.getTenantId(), "contract", "合同签署成功",
-                    "您的合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳押金");
+            String msgContent = "2".equals(contract.getContractType())
+                    ? "您的续租合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳租金"
+                    : "您的合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳押金";
+            messageService.sendMessage(contract.getTenantId(), "contract", "合同签署成功", msgContent);
         } catch (Exception e) {
             log.warn("发送合同签署成功消息失败，不影响主流程: {}", e.getMessage());
         }
@@ -933,6 +951,64 @@ public class EsignServiceImpl implements EsignService {
             billMapper.insert(rentBill);
         }
         log.info("合同 {} 生成账单成功：押金1条，租金{}条，免租{}期", contract.getContractNo(), billCount, freeRentPeriods);
+    }
+
+    /**
+     * 续租合同仅生成租金账单（不生成押金账单）
+     * 续租时押金沿用原合同，无需再次缴纳
+     */
+    private void generateRentBillsOnly(HzContract contract) {
+        // 0. 检查是否已生成过账单（防止e签宝重复回调）
+        Long existCount = billMapper.selectCount(new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, contract.getContractId()));
+        if (existCount > 0) {
+            log.info("合同{}的账单已存在（{}条），跳过重复生成", contract.getContractId(), existCount);
+            return;
+        }
+
+        // 生成租金账单（逻辑同 generateBills 中租金部分）
+        int paymentCycle = Integer.parseInt(contract.getPaymentCycle());
+        int rentMonths = contract.getRentMonths();
+        BigDecimal monthlyRent = contract.getRentPrice();
+        int freeRentPeriods = contract.getFreeRentPeriods() != null ? contract.getFreeRentPeriods() : 0;
+        int billCount = rentMonths / paymentCycle;
+        if (rentMonths % paymentCycle != 0) billCount++;
+
+        LocalDate startDate = LocalDate.parse(contract.getStartDate(), DateTimeFormatter.ISO_LOCAL_DATE);
+        for (int i = 0; i < billCount; i++) {
+            HzBill rentBill = new HzBill();
+            rentBill.setBillNo("ZJ" + DateUtils.dateTimeNow(DateUtils.YYYYMMDDHHMMSS) + String.format("%02d", i + 1));
+            rentBill.setContractId(contract.getContractId());
+            rentBill.setTenantId(contract.getTenantId());
+            rentBill.setTenantName(contract.getTenantName());
+            rentBill.setHouseId(contract.getHouseId());
+            rentBill.setHouseCode(contract.getHouseCode());
+            rentBill.setBillType("2");  // 2=租金
+
+            LocalDate billDueDate = startDate.plusMonths((long) i * paymentCycle);
+            rentBill.setBillPeriod(billDueDate.format(DateTimeFormatter.ofPattern("yyyy-MM")));
+            rentBill.setDueDate(billDueDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
+            rentBill.setBillDate(billDueDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
+
+            int monthsForThisBill = Math.min(paymentCycle, rentMonths - i * paymentCycle);
+            BigDecimal billAmount = monthlyRent.multiply(new BigDecimal(monthsForThisBill));
+            if (i < freeRentPeriods) billAmount = BigDecimal.ZERO;
+
+            rentBill.setBillAmount(billAmount);
+            rentBill.setLateFee(BigDecimal.ZERO);
+            rentBill.setDelFlag("0");
+            if (billAmount.compareTo(BigDecimal.ZERO) == 0) {
+                rentBill.setPaidAmount(BigDecimal.ZERO);
+                rentBill.setUnpaidAmount(BigDecimal.ZERO);
+                rentBill.setBillStatus("1");  // 已支付
+            } else {
+                rentBill.setPaidAmount(BigDecimal.ZERO);
+                rentBill.setUnpaidAmount(billAmount);
+                rentBill.setBillStatus("0");  // 待支付
+            }
+            billMapper.insert(rentBill);
+        }
+        log.info("续租合同 {} 仅生成租金账单成功：租金{}条，免租{}期（无押金）", contract.getContractNo(), billCount, freeRentPeriods);
     }
 
     // ==================== 入住记录生成（从 HzContractAppController 搬迁）====================

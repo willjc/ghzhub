@@ -13,7 +13,7 @@
     <view v-else-if="step === 'preview'" class="preview-layout">
 
       <!-- 预订倒计时条 -->
-      <view class="countdown-bar" v-if="showLockCountdown"
+      <view class="countdown-bar" v-if="showLockCountdown && !isRenew"
         :class="{ 'countdown-bar-urgent': countdownUrgent, 'countdown-bar-expired': countdownExpired }">
         <view class="countdown-bar-inner">
           <text class="countdown-bar-icon">⏱</text>
@@ -25,8 +25,8 @@
 
       <!-- 顶部 Banner -->
       <view class="banner">
-        <view class="banner-tag">电子合同</view>
-        <text class="banner-title">合同签署确认</text>
+        <view class="banner-tag">{{ isRenew ? '续租合同' : '电子合同' }}</view>
+        <text class="banner-title">{{ isRenew ? '续租签署确认' : '合同签署确认' }}</text>
         <text class="banner-project">{{ projectName }}</text>
       </view>
 
@@ -81,7 +81,8 @@
           </view>
           <view class="row">
             <text class="row-label">押金</text>
-            <text class="row-value price">¥ {{ deposit }}</text>
+            <text class="row-value price" v-if="!isRenew">¥ {{ deposit }}</text>
+            <text class="row-value renew-free" v-else>续租免押金</text>
           </view>
           <view class="row row-picker">
             <text class="row-label">租期</text>
@@ -117,8 +118,8 @@
       <view class="footer">
         <button
           class="btn-sign"
-          :class="{ disabled: submitting || countdownExpired }"
-          :disabled="submitting || countdownExpired"
+          :class="{ disabled: submitting || (!isRenew && countdownExpired) }"
+          :disabled="submitting || (!isRenew && countdownExpired)"
           @click="handleConfirmSign"
         >
           <text class="btn-sign-icon">✍</text>
@@ -174,8 +175,8 @@
         <text class="state-emoji">✅</text>
       </view>
       <text class="state-title">签署成功</text>
-      <text class="state-desc">合同已签署成功，正在跳转至押金缴费...</text>
-      <button class="btn-main" @click="goToBill">立即缴纳押金</button>
+      <text class="state-desc">{{ isRenew ? '续租合同已签署成功' : '合同已签署成功，正在跳转至押金缴费...' }}</text>
+      <button class="btn-main" v-if="!isRenew" @click="goToBill">立即缴纳押金</button>
       <button class="btn-ghost" @click="goBack">返回合同列表</button>
     </view>
 
@@ -194,7 +195,7 @@
 </template>
 
 <script>
-import { generateContract, signContract } from '@/api/contract'
+import { generateContract, signContract, renewContract } from '@/api/contract'
 import { getAuthStatus, initSign, checkSign } from '@/api/esign'
 
 export default {
@@ -232,6 +233,9 @@ export default {
       pollCount: 0,
       submitting: false,
       fromEsignWebview: false,  // 标记是否跳转去了 esign-webview，用于 onShow 检测返回
+      // 续租模式
+      isRenew: false,
+      oldContractId: null,
       // 预订倒计时
       lockExpireTime: null,
       countdown: '10:00',
@@ -260,6 +264,13 @@ export default {
     this.rentMonthsIndex = this.rentMonths - 1
     if (options.houseCode) {
       this.houseCode = decodeURIComponent(options.houseCode)
+    }
+    // 接收续租参数
+    if (options.isRenew === 'true' || options.isRenew === true) {
+      this.isRenew = true
+    }
+    if (options.oldContractId) {
+      this.oldContractId = parseInt(options.oldContractId)
     }
     // 接收预订锁定过期时间（仅从选房流程跳转时有值）
     if (options.lockExpireTime && this.orderNo) {
@@ -384,16 +395,32 @@ export default {
       uni.showLoading({ title: '正在发起签署...' })
       try {
         if (!this.contractId) {
-          const saveRes = await signContract({
-            houseId: this.roomId,
-            projectId: this.projectId,
-            templateId: this.templateId,
-            contractContent: this.contractContent,
-            endDate: this.endDate,
-            rentMonths: this.rentMonths,
-            userId: this.userId,
-            orderNo: this.orderNo
-          })
+          let saveRes
+          if (this.isRenew && this.oldContractId) {
+            // 续租模式
+            saveRes = await renewContract({
+              oldContractId: this.oldContractId,
+              houseId: this.roomId,
+              projectId: this.projectId,
+              templateId: this.templateId,
+              contractContent: this.contractContent,
+              endDate: this.endDate,
+              rentMonths: this.rentMonths,
+              userId: this.userId
+            })
+          } else {
+            // 新签模式
+            saveRes = await signContract({
+              houseId: this.roomId,
+              projectId: this.projectId,
+              templateId: this.templateId,
+              contractContent: this.contractContent,
+              endDate: this.endDate,
+              rentMonths: this.rentMonths,
+              userId: this.userId,
+              orderNo: this.orderNo
+            })
+          }
           if (saveRes.code !== 200) throw new Error(saveRes.msg || '保存合同失败')
           this.contractId = saveRes.data.contractId
           uni.setStorageSync('esign_contractId', this.contractId)
