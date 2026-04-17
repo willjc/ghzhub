@@ -324,10 +324,12 @@ public class EsignServiceImpl implements EsignService {
             house = houseMapper.selectById(contract.getHouseId());
         }
 
-        // 地址+房间号：合同地址拼接房源房间号
+        // 地址+房间号：合同地址已包含完整地址（项目地址+楼栋+单元+房间号），无需再拼接
         String houseAddress = contract.getHouseAddress() != null ? contract.getHouseAddress() : "";
         String houseNo = (house != null && house.getHouseNo() != null) ? house.getHouseNo() : "";
-        String addressWithRoom = houseAddress + houseNo;
+        // 避免重复拼接：如果houseAddress已经以houseNo结尾，则不再追加
+        String addressWithRoom = (!houseNo.isEmpty() && houseAddress.endsWith(houseNo))
+                ? houseAddress : houseAddress + houseNo;
 
         // 房间面积（平方米）
         String houseArea = (house != null && house.getArea() != null) ? house.getArea().toString() : "0";
@@ -476,32 +478,34 @@ public class EsignServiceImpl implements EsignService {
             {"晾衣架",       "0a638a08ce044b128809553f91b3e3bb"},   // 数字57
         };
 
-        // 一对一设施填充
+        // 一对一设施填充（无数据时留空）
         for (String[] mapping : facilityMapping) {
             int qty = facilityQtyMap.getOrDefault(mapping[0], 0);
-            sb.append("  {\"componentId\": \"").append(mapping[1]).append("\", \"componentValue\": \"").append(qty).append("\"},\n");
+            String qtyStr = qty > 0 ? String.valueOf(qty) : "";
+            sb.append("  {\"componentId\": \"").append(mapping[1]).append("\", \"componentValue\": \"").append(qtyStr).append("\"},\n");
         }
 
-        // 数字13: 电视（DB无此设施，默认0）
-        sb.append("  {\"componentId\": \"df9310d42f124edf986744f92edc78aa\", \"componentValue\": \"0\"},\n");
+        // 数字13: 电视（DB无此设施，留空）
+        sb.append("  {\"componentId\": \"df9310d42f124edf986744f92edc78aa\", \"componentValue\": \"\"},\n");
         // 数字33: 墙面（汇总: 客厅墙面+卧室墙面+厨房墙面+卫生间墙面）
         int wallQty = facilityQtyMap.getOrDefault("客厅墙面", 0)
                     + facilityQtyMap.getOrDefault("卧室墙面", 0)
                     + facilityQtyMap.getOrDefault("厨房墙面", 0)
                     + facilityQtyMap.getOrDefault("卫生间墙面", 0);
-        sb.append("  {\"componentId\": \"ab92c18d58614881aaf3bdec381920cd\", \"componentValue\": \"").append(wallQty).append("\"},\n");
+        sb.append("  {\"componentId\": \"ab92c18d58614881aaf3bdec381920cd\", \"componentValue\": \"").append(wallQty > 0 ? wallQty : "").append("\"},\n");
         // 数字34: 地板（DB: 房间地板）
-        sb.append("  {\"componentId\": \"3aaf69df97be45c6aca3ed0632b4dfba\", \"componentValue\": \"").append(facilityQtyMap.getOrDefault("房间地板", 0)).append("\"},\n");
-        // 数字35: 地毯（DB无此设施，默认0）
-        sb.append("  {\"componentId\": \"fe9eaa91e1c64f30b8e503fc61fee38b\", \"componentValue\": \"0\"},\n");
-        // 数字39: 密码锁（DB无此设施，默认0）
-        sb.append("  {\"componentId\": \"bac3286c5f8046ed924291c2e4888ea1\", \"componentValue\": \"0\"},\n");
-        // 数字41: 厨房推拉门（DB无此设施，默认0）
-        sb.append("  {\"componentId\": \"cf3857e2240544819dad9c3501b7f139\", \"componentValue\": \"0\"},\n");
+        int floorQty = facilityQtyMap.getOrDefault("房间地板", 0);
+        sb.append("  {\"componentId\": \"3aaf69df97be45c6aca3ed0632b4dfba\", \"componentValue\": \"").append(floorQty > 0 ? floorQty : "").append("\"},\n");
+        // 数字35: 地毯（DB无此设施，留空）
+        sb.append("  {\"componentId\": \"fe9eaa91e1c64f30b8e503fc61fee38b\", \"componentValue\": \"\"},\n");
+        // 数字39: 密码锁（DB无此设施，留空）
+        sb.append("  {\"componentId\": \"bac3286c5f8046ed924291c2e4888ea1\", \"componentValue\": \"\"},\n");
+        // 数字41: 厨房推拉门（DB无此设施，留空）
+        sb.append("  {\"componentId\": \"cf3857e2240544819dad9c3501b7f139\", \"componentValue\": \"\"},\n");
         // 数字42: 窗户（汇总: 客厅窗户+卧室窗户）
         int windowQty = facilityQtyMap.getOrDefault("客厅窗户", 0)
                       + facilityQtyMap.getOrDefault("卧室窗户", 0);
-        sb.append("  {\"componentId\": \"1c395eb1e2534fa0866976ce3d236a56\", \"componentValue\": \"").append(windowQty).append("\"},\n");
+        sb.append("  {\"componentId\": \"1c395eb1e2534fa0866976ce3d236a56\", \"componentValue\": \"").append(windowQty > 0 ? windowQty : "").append("\"},\n");
 
         // ── 单行文本11: 项目地址 ──
         sb.append("  {\"componentId\": \"72bf22dc56d24723a715a1f2546346c2\", \"componentValue\": \"").append(escapeJson(projectAddress)).append("\"}\n");
