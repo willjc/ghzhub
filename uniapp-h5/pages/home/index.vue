@@ -261,20 +261,17 @@
 
 	.listing-card {
 		display: flex;
+		flex-direction: column;
 		background-color: #fff;
-		padding: 16rpx 24rpx 24rpx 16rpx;
 		border-radius: 16rpx;
 		overflow: hidden;
 		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
 	}
 
 	.listing-image {
-		width: 160rpx;
-		height: 160rpx;
-		border-radius: 12rpx;
-		opacity: 1;
-		margin-right: 24rpx;
-		flex-shrink: 0;
+		width: 100%;
+		height: 360rpx;
+		display: block;
 	}
 
 	.listing-info {
@@ -282,11 +279,11 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
+		padding: 16rpx 24rpx 24rpx 24rpx;
 	}
 
 	.listing-title {
-		width: 480rpx;
-		height: 80rpx;
+		width: 100%;
 		opacity: 1;
 		color: #1a1a1a;
 		font-size: 30rpx;

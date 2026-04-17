@@ -285,9 +285,35 @@ public class WechatPayController extends BaseController {
                 bill.setTransactionNo(transactionId);
                 billMapper.updateById(bill);
 
-                // 押金账单额外通知订单服务
-                if ("1".equals(bill.getBillType()) && bill.getOrderNo() != null) {
-                    houseOrderService.onDepositPaid(bill.getOrderNo());
+                // 发送支付成功消息
+                try {
+                    if ("1".equals(bill.getBillType())) {
+                        messageService.sendMessage(bill.getTenantId(), "bill", "押金缴纳成功", "您的押金已缴纳成功");
+                    } else if ("2".equals(bill.getBillType())) {
+                        messageService.sendMessage(bill.getTenantId(), "bill", "房租缴纳成功", "您的房租账单已缴纳成功");
+                    }
+                } catch (Exception msgEx) {
+                    logger.warn("主动查单同步-发送支付消息失败，不影响主流程: {}", msgEx.getMessage());
+                }
+
+                // 押金账单 → 触发订单状态推进 + 房源状态更新
+                if ("1".equals(bill.getBillType())) {
+                    if (bill.getOrderNo() != null) {
+                        houseOrderService.onDepositPaid(bill.getOrderNo());
+                    } else {
+                        // 直签合同模式：押金支付成功后，将房源状态从已预订改为已出租
+                        HzContract contract = contractMapper.selectById(bill.getContractId());
+                        if (contract != null && contract.getHouseId() != null) {
+                            houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                                .eq(HzHouse::getHouseId, contract.getHouseId())
+                                .eq(HzHouse::getHouseStatus, "1")
+                                .set(HzHouse::getHouseStatus, "2"));
+                            contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                                .eq(HzContract::getContractId, contract.getContractId())
+                                .set(HzContract::getContractStatus, "3"));
+                            logger.info("主动查单同步-直签合同押金支付成功，房源状态→已出租，合同状态→履行中, contractId={}", contract.getContractId());
+                        }
+                    }
                 }
 
                 logger.info("主动查单同步成功，billNo={}", billNo);

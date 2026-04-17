@@ -2,7 +2,7 @@
 	<view class="page">
 		<scroll-view class="scroll-content" scroll-y>
 			<!-- 封面图 -->
-			<image v-if="detailData.coverImage" class="header-image" :src="getImageUrl(detailData.coverImage)" mode="aspectFill"></image>
+			<image v-if="detailData.coverImage" class="header-image" :src="getImageUrl(detailData.coverImage)" mode="widthFix"></image>
 
 			<!-- 内容区域 -->
 			<view class="content-wrapper">
@@ -273,7 +273,7 @@
 				return `${hour}:${minute}`;
 			},
 
-			/** 处理HTML内容，替换图片路径 */
+			/** 处理HTML内容，替换图片路径并适配图片显示 */
 			processHtmlContent(html) {
 				if (!html) return '';
 
@@ -283,6 +283,19 @@
 
 				// 同时处理可能存在的相对路径图片
 				processedHtml = processedHtml.replace(/src="\/profile/g, `src="${baseUrl}/profile`);
+
+				// 给所有 img 标签添加内联样式，确保图片自适应屏幕宽度
+				processedHtml = processedHtml.replace(/<img([^>]*?)style="([^"]*?)"([^>]*?)>/gi, (match, before, style, after) => {
+					// 移除原有的 width/height 样式，添加自适应样式
+					let newStyle = style.replace(/width\s*:\s*[^;]+;?/gi, '').replace(/height\s*:\s*[^;]+;?/gi, '');
+					newStyle = newStyle + ';max-width:100%!important;height:auto!important;display:block;';
+					return `<img${before}style="${newStyle}"${after}>`;
+				});
+
+				// 处理没有 style 属性的 img 标签
+				processedHtml = processedHtml.replace(/<img((?![^>]*style=)[^>]*?)>/gi, (match, attrs) => {
+					return `<img${attrs} style="max-width:100%!important;height:auto!important;display:block;">`;
+				});
 
 				return processedHtml;
 			}
@@ -306,7 +319,6 @@
 
 	.header-image {
 		width: 100%;
-		height: 400rpx;
 		display: block;
 	}
 
@@ -380,14 +392,16 @@
 	}
 
 	/* rich-text 内部元素样式 */
-	.detail-content >>> img {
-		max-width: 100%;
-		height: auto;
+	.detail-content >>> img,
+	/deep/ .detail-content img {
+		max-width: 100% !important;
+		height: auto !important;
 		display: block;
 		margin: 10rpx 0;
 	}
 
-	.detail-content >>> p {
+	.detail-content >>> p,
+	/deep/ .detail-content p {
 		margin: 10rpx 0;
 		line-height: 40rpx;
 	}
