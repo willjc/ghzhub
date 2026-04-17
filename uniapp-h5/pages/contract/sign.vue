@@ -861,6 +861,11 @@ export default {
   color: #2563EB;
   font-weight: 700;
 }
+.row-value.renew-free {
+  color: #16A34A;
+  font-weight: 600;
+  font-size: 28rpx;
+}
 .row-value.date-range {
   font-size: 26rpx;
   color: #4A5568;
