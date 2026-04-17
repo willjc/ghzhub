@@ -44,7 +44,7 @@ public class HzHouseTypeFacilityController extends BaseController
     @PostMapping("/batchSave")
     public AjaxResult batchSave(@RequestBody HouseTypeFacilitySaveRequest request)
     {
-        hzHouseTypeFacilityService.batchSave(request.getHouseTypeId(), request.getList());
+        hzHouseTypeFacilityService.batchSave(request.getHouseTypeId(), request.getFacilities());
         return success();
     }
 
@@ -54,7 +54,7 @@ public class HzHouseTypeFacilityController extends BaseController
     public static class HouseTypeFacilitySaveRequest
     {
         private Long houseTypeId;
-        private List<HzHouseTypeFacility> list;
+        private List<HzHouseTypeFacility> facilities;
 
         public Long getHouseTypeId()
         {
@@ -66,14 +66,14 @@ public class HzHouseTypeFacilityController extends BaseController
             this.houseTypeId = houseTypeId;
         }
 
-        public List<HzHouseTypeFacility> getList()
+        public List<HzHouseTypeFacility> getFacilities()
         {
-            return list;
+            return facilities;
         }
 
-        public void setList(List<HzHouseTypeFacility> list)
+        public void setFacilities(List<HzHouseTypeFacility> facilities)
         {
-            this.list = list;
+            this.facilities = facilities;
         }
     }
 }
