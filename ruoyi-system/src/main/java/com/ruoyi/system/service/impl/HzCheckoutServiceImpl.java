@@ -643,6 +643,9 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
         }
         result.put("damageDescription", damageDescription);
 
+        // 房源ID（供前端调用设施API）
+        result.put("houseId", apply.getHouseId());
+
         // 表读数
         result.put("meterReadingWater", apply.getMeterReadingWater());
         result.put("meterReadingElectric", apply.getMeterReadingElectric());

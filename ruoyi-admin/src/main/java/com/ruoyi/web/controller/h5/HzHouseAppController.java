@@ -18,7 +18,9 @@ import com.ruoyi.system.mapper.HzUnitMapper;
 import com.ruoyi.system.mapper.HzUserMapper;
 import com.ruoyi.system.mapper.HzBatchTenantMapper;
 import com.ruoyi.system.mapper.HzBatchHouseMapper;
+import com.ruoyi.system.domain.HzHouseFacility;
 import com.ruoyi.system.service.IHzAppointmentService;
+import com.ruoyi.system.service.IHzHouseFacilityService;
 import com.ruoyi.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -65,6 +67,9 @@ public class HzHouseAppController extends BaseController {
 
     @Autowired
     private IHzAppointmentService appointmentService;
+
+    @Autowired
+    private IHzHouseFacilityService houseFacilityService;
 
     /**
      * 按项目类型获取房源列表（用于首页房源展示）
@@ -501,6 +506,45 @@ public class HzHouseAppController extends BaseController {
         } else {
             return error("预约失败，请稍后重试");
         }
+    }
+
+    /**
+     * 查询房源设施列表（H5端）
+     * 优先返回 hz_house_facility 结构化数据，无数据时回退解析旧字段
+     */
+    @GetMapping("/facilities/{houseId}")
+    public AjaxResult getHouseFacilities(@PathVariable Long houseId) {
+        // 1. 优先查询新表
+        List<HzHouseFacility> facilities = houseFacilityService.selectByHouseId(houseId);
+
+        if (facilities != null && !facilities.isEmpty()) {
+            return success(facilities);
+        }
+
+        // 2. 回退：查询旧 hz_house.facilities 字段
+        HzHouse house = houseMapper.selectById(houseId);
+        if (house != null && house.getFacilities() != null && !house.getFacilities().isEmpty()) {
+            String oldFacilities = house.getFacilities();
+            List<Map<String, Object>> result = new ArrayList<>();
+
+            // 解析旧格式（逗号分隔）
+            String[] items = oldFacilities.split("[,，、]");
+            for (String item : items) {
+                String name = item.trim();
+                if (!name.isEmpty()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("facilityName", name);
+                    map.put("facilityCategory", "其他");
+                    map.put("quantity", 1);
+                    map.put("itemStatus", "完好");
+                    map.put("remark", "");
+                    result.add(map);
+                }
+            }
+            return success(result);
+        }
+
+        return success(new ArrayList<>());
     }
 
     /**

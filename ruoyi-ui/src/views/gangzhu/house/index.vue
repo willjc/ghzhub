@@ -360,8 +360,10 @@
             <el-radio label="1">是</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="房间设施" prop="facilities">
-          <el-input v-model="form.facilities" type="textarea" placeholder="多个设施用逗号分隔,如:空调,冰箱,洗衣机" :rows="2" />
+        <el-form-item label="房间设施">
+          <el-button type="primary" size="mini" @click="openFacilityEditor" :disabled="!form.houseId">管理设施</el-button>
+          <span v-if="houseFacilityCount > 0" style="margin-left: 10px; color: #67c23a;">已配置 {{ houseFacilityCount }} 项</span>
+          <span v-else style="margin-left: 10px; color: #999;">{{ form.houseId ? '未配置' : '请先保存房源后配置设施' }}</span>
         </el-form-item>
         <el-form-item label="房源简介" prop="remark">
           <el-input v-model="form.remark" type="textarea" placeholder="请输入房源简介,将在用户端房源详情页展示" :rows="4" />
@@ -499,7 +501,13 @@
             <el-col :span="24">
               <div class="info-item">
                 <label>房间设施:</label>
-                <span>{{ detailData.house ? (detailData.house.facilities || '无') : '无' }}</span>
+                <div v-if="detailData.facilities && detailData.facilities.length > 0" style="flex: 1;">
+                  <el-tag v-for="item in detailData.facilities" :key="item.facilityItemId" size="small" style="margin: 0 5px 5px 0;">
+                    {{ item.facilityName }} x{{ item.quantity }}
+                    <span v-if="item.itemStatus && item.itemStatus !== '完好'" style="color: #E6A23C;">({{ item.itemStatus }})</span>
+                  </el-tag>
+                </div>
+                <span v-else>无</span>
               </div>
             </el-col>
             <el-col :span="24">
@@ -745,6 +753,46 @@
     <!-- VR查看器 -->
     <vr-viewer :visible.sync="vrViewerVisible" :vrList="vrList" />
 
+    <!-- 编辑房间设施对话框 -->
+    <el-dialog title="编辑房间设施" :visible.sync="houseFacilityDialogVisible" width="800px" append-to-body>
+      <div style="max-height: 500px; overflow-y: auto;">
+        <div v-for="category in facilityCategories" :key="category" style="margin-bottom: 15px;">
+          <h4 style="margin: 0 0 8px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px;">{{ category }}</h4>
+          <el-table :data="getHouseFacilitiesByCategory(category)" size="mini" border v-if="getHouseFacilitiesByCategory(category).length > 0">
+            <el-table-column width="50" align="center">
+              <template slot-scope="scope">
+                <el-checkbox v-model="scope.row.checked" />
+              </template>
+            </el-table-column>
+            <el-table-column label="物品名称" prop="facilityName" width="120" />
+            <el-table-column label="数量" width="100">
+              <template slot-scope="scope">
+                <el-input-number v-model="scope.row.quantity" :min="1" :max="99" size="mini" :disabled="!scope.row.checked" />
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="120">
+              <template slot-scope="scope">
+                <el-select v-model="scope.row.itemStatus" size="mini" :disabled="!scope.row.checked">
+                  <el-option label="完好" value="完好" />
+                  <el-option label="破损" value="破损" />
+                  <el-option label="缺失" value="缺失" />
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column label="说明">
+              <template slot-scope="scope">
+                <el-input v-model="scope.row.remark" size="mini" placeholder="选填" :disabled="!scope.row.checked" />
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+      <div slot="footer">
+        <el-button @click="houseFacilityDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="saveHouseFacilities" :loading="houseFacilitySaving">保 存</el-button>
+      </div>
+    </el-dialog>
+
     <!-- 房源导入对话框 -->
     <el-dialog :title="upload.title" :visible.sync="upload.open" width="500px" append-to-body>
       <el-alert
@@ -793,6 +841,8 @@ import { listProject } from "@/api/gangzhu/project";
 import { listBuilding } from "@/api/gangzhu/building";
 import { listUnit } from "@/api/gangzhu/unit";
 import { listHouseType } from "@/api/gangzhu/houseType";
+import { listFacilityItem } from "@/api/gangzhu/facilityItem";
+import { listHouseFacility, batchSaveHouseFacility, pullFromType } from "@/api/gangzhu/houseFacility";
 import ImageUpload from '@/components/ImageUpload';
 import VrViewer from '@/components/VrViewer';
 
@@ -840,6 +890,13 @@ export default {
       vrViewerVisible: false,
       // VR列表
       vrList: [],
+      // 设施管理相关
+      houseFacilityDialogVisible: false,
+      houseFacilityList: [],
+      allFacilityItems: [],
+      facilityCategories: ['电器类', '门窗类', '灯类', '卫浴区', '家具类', '洗菜池', '其他'],
+      houseFacilityCount: 0,
+      houseFacilitySaving: false,
       // 是否显示导入对话框
       upload: {
         open: false,
@@ -960,15 +1017,27 @@ export default {
         });
       }
     },
-    /** 房型选择变更 - 自动填充户型名称和面积 */
+    /** 房型选择变更 - 自动填充户型名称和面积，提示拉取设施 */
     handleHouseTypeChange(houseTypeId) {
       if (houseTypeId) {
         const selectedHouseType = this.houseTypeList.find(item => item.houseTypeId === houseTypeId);
         if (selectedHouseType) {
           this.form.houseTypeName = selectedHouseType.houseTypeName;
-          this.form.houseTypeDetail = selectedHouseType.remark; // remark字段存储了详细描述
-          // 自动填充面积（来自户型的典型面积）
+          this.form.houseTypeDetail = selectedHouseType.remark;
           this.form.area = selectedHouseType.typicalArea;
+        }
+        // 编辑已有房源时提示拉取设施
+        if (this.form.houseId && houseTypeId) {
+          this.$confirm('是否从该户型拉取房间设施？（将覆盖当前设施配置）', '提示', {
+            confirmButtonText: '拉取',
+            cancelButtonText: '不拉取',
+            type: 'warning'
+          }).then(() => {
+            pullFromType({ houseId: this.form.houseId, houseTypeId: houseTypeId }).then(res => {
+              this.$modal.msgSuccess('已从户型拉取设施配置');
+              this.loadHouseFacilities();
+            });
+          }).catch(() => {});
         }
       } else {
         this.form.houseTypeName = null;
@@ -1038,6 +1107,7 @@ export default {
         vrList: ""
       };
       this.resetForm("form");
+      this.houseFacilityCount = 0;
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -1083,6 +1153,8 @@ export default {
         this.loadHouseImages(houseId);
         // 加载房源VR
         this.loadHouseVrs(houseId);
+        // 加载设施计数
+        this.loadHouseFacilities();
         this.open = true;
         this.title = "修改房源";
       });
@@ -1285,8 +1357,87 @@ export default {
       const houseId = row.houseId;
       getHouseDetail(houseId).then(response => {
         this.detailData = response.data;
+        // 加载设施列表用于详情展示
+        this.loadDetailFacilities(houseId);
         this.detailOpen = true;
       });
+    },
+
+    /** 加载详情页设施数据 */
+    loadDetailFacilities(houseId) {
+      listHouseFacility(houseId).then(res => {
+        const list = res.data || res.rows || [];
+        this.$set(this.detailData, 'facilities', list);
+      });
+    },
+
+    /** 打开设施编辑器 */
+    openFacilityEditor() {
+      if (!this.form.houseId) {
+        this.$modal.msgWarning('请先保存房源基本信息后再配置设施');
+        return;
+      }
+      this.houseFacilityDialogVisible = true;
+      this.loadAllFacilityItems();
+    },
+
+    /** 加载设施总表并合并已有配置 */
+    async loadAllFacilityItems() {
+      if (this.allFacilityItems.length === 0) {
+        const res = await listFacilityItem();
+        this.allFacilityItems = res.data || res.rows || [];
+      }
+      // 构建配置列表
+      this.houseFacilityList = this.allFacilityItems.map(item => ({
+        facilityItemId: item.facilityItemId,
+        facilityName: item.facilityName,
+        facilityCategory: item.facilityCategory,
+        checked: false, quantity: 1, itemStatus: '完好', remark: ''
+      }));
+      // 加载已有配置
+      if (this.form.houseId) {
+        const res = await listHouseFacility(this.form.houseId);
+        const saved = res.data || res.rows || [];
+        saved.forEach(s => {
+          const target = this.houseFacilityList.find(f => f.facilityItemId === s.facilityItemId);
+          if (target) {
+            target.checked = true;
+            target.quantity = s.quantity || 1;
+            target.itemStatus = s.itemStatus || '完好';
+            target.remark = s.remark || '';
+          }
+        });
+        this.houseFacilityCount = saved.length;
+      }
+    },
+
+    /** 按分类获取设施 */
+    getHouseFacilitiesByCategory(category) {
+      return this.houseFacilityList.filter(f => f.facilityCategory === category);
+    },
+
+    /** 保存房源设施 */
+    saveHouseFacilities() {
+      const checkedItems = this.houseFacilityList.filter(f => f.checked);
+      this.houseFacilitySaving = true;
+      batchSaveHouseFacility({
+        houseId: this.form.houseId,
+        facilities: checkedItems
+      }).then(() => {
+        this.$modal.msgSuccess('设施保存成功');
+        this.houseFacilityCount = checkedItems.length;
+        this.houseFacilityDialogVisible = false;
+        this.houseFacilitySaving = false;
+      }).catch(() => { this.houseFacilitySaving = false; });
+    },
+
+    /** 加载房源设施计数 */
+    loadHouseFacilities() {
+      if (this.form.houseId) {
+        listHouseFacility(this.form.houseId).then(res => {
+          this.houseFacilityCount = (res.data || res.rows || []).length;
+        });
+      }
     },
 
     /** 进入VR看房 */

@@ -58,33 +58,23 @@
 					<text class="card-title">配套设备</text>
 				</view>
 
-				<!-- 设备列表 -->
-				<view class="equipment-row" v-for="(item, index) in equipmentList" :key="index">
-					<view class="equipment-check" @click="toggleEquipment(index)">
-						<image class="check-icon" :src="item.checked ? '/static/多选-选中@2x.png' : '/static/多选-未选择@2x.png'"></image>
-					</view>
-					<text class="equipment-name">{{ item.name }}</text>
-					<view class="equipment-status">
-						<view
-							class="status-btn"
-							:class="{ 'active': item.status === 'good' }"
-							@click="setEquipmentStatus(index, 'good')"
-						>
-							<text class="status-text" :class="{ 'active': item.status === 'good' }">完好</text>
-						</view>
-						<view
-							class="status-btn"
-							:class="{ 'active': item.status === 'damaged' }"
-							@click="setEquipmentStatus(index, 'damaged')"
-						>
-							<text class="status-text" :class="{ 'active': item.status === 'damaged' }">破损</text>
-						</view>
-					</view>
+				<view v-if="equipmentList.length === 0" style="text-align: center; color: #999; padding: 30rpx;">
+					暂无设施信息
 				</view>
 
-				<!-- 空状态 -->
-				<view class="empty-state" v-if="equipmentList.length === 0">
-					<text class="empty-text">暂无配套设备信息</text>
+				<!-- 按类别分组展示 -->
+				<view v-for="category in facilityCategories" :key="category" v-if="getEquipmentByCategory(category).length > 0" style="padding: 0 40rpx;">
+					<view style="font-size: 28rpx; color: #666; font-weight: bold; padding: 16rpx 0 8rpx;">{{ category }}</view>
+					<view class="equipment-row" v-for="(item, index) in getEquipmentByCategory(category)" :key="index">
+						<text class="equipment-name">{{ item.facilityName || item.name }}</text>
+						<text style="color: #999; font-size: 24rpx; margin-left: 16rpx;">x{{ item.quantity || 1 }}</text>
+						<view class="equipment-status">
+							<view class="status-tag" :class="item.itemStatus === '完好' ? 'good' : 'damaged'">
+								<text class="status-text">{{ item.itemStatus || '完好' }}</text>
+							</view>
+						</view>
+						<text v-if="item.remark" style="color: #999; font-size: 22rpx; margin-left: 8rpx;">{{ item.remark }}</text>
+					</view>
 				</view>
 			</view>
 		</scroll-view>
@@ -100,6 +90,7 @@
 
 <script>
 	import { getCheckInConfirmInfo } from '@/api/checkin.js'
+	import { get } from '@/utils/request'
 
 	export default {
 		data() {
@@ -116,7 +107,8 @@
 					applyTime: ''
 				},
 
-				equipmentList: []
+				equipmentList: [],
+				facilityCategories: ['电器类', '门窗类', '灯类', '卫浴区', '家具类', '洗菜池', '其他']
 			}
 		},
 		onLoad(options) {
@@ -146,8 +138,10 @@
 						this.formData.applicant = data.userName || '租户'
 						this.formData.applyTime = data.createTime ? data.createTime.substring(0, 19) : ''
 
-						// 解析配套设施
-						this.parseFacilities(data.facilities)
+						// 解析配套设施 — 改为从新API获取
+						if (data.houseId) {
+							this.loadFacilities(data.houseId)
+						}
 					} else {
 						uni.showToast({
 							title: response.msg || '获取信息失败',
@@ -171,100 +165,30 @@
 				}
 			},
 
-			// 解析配套设施
-			parseFacilities(facilitiesStr) {
-				this.equipmentList = []
-
-				if (!facilitiesStr) {
-					return
-				}
-
+			// 加载设施数据（从新API获取）
+			async loadFacilities(houseId) {
 				try {
-					// 尝试解析JSON格式
-					if (facilitiesStr.startsWith('{') || facilitiesStr.startsWith('[')) {
-						const facilities = JSON.parse(facilitiesStr)
-
-						if (Array.isArray(facilities)) {
-							// 数组格式: [{"冰箱": 1}, {"洗衣机": 1}]
-							facilities.forEach(item => {
-								if (typeof item === 'object') {
-									Object.keys(item).forEach(key => {
-										this.equipmentList.push({
-											name: key,
-											checked: false,
-											status: 'good'
-										})
-									})
-								}
-							})
-						} else {
-							// 对象格式: {"冰箱": 1, "洗衣机": 1}
-							Object.keys(facilities).forEach(key => {
-								this.equipmentList.push({
-									name: key,
-									checked: false,
-									status: 'good'
-								})
-							})
-						}
-					} else {
-						// 逗号分隔格式: "冰箱,洗衣机,电视机"
-						const items = facilitiesStr.split(/[,，、]/)
-						items.forEach(item => {
-							const name = item.trim()
-							if (name) {
-								this.equipmentList.push({
-									name: name,
-									checked: false,
-									status: 'good'
-								})
-							}
-						})
-					}
+					const res = await get('/h5/app/house/facilities/' + houseId)
+					const facilities = res.data || res || []
+					this.equipmentList = Array.isArray(facilities) ? facilities : []
 				} catch (e) {
-					console.error('解析设施信息失败:', e)
-					// 如果解析失败，尝试按逗号分隔
-					const items = facilitiesStr.split(/[,，、]/)
-					items.forEach(item => {
-						const name = item.trim()
-						if (name) {
-							this.equipmentList.push({
-								name: name,
-								checked: false,
-								status: 'good'
-							})
-						}
-					})
+					console.log('加载设施失败', e)
+					this.equipmentList = []
 				}
 			},
 
-			// 切换设备勾选
-			toggleEquipment(index) {
-				this.equipmentList[index].checked = !this.equipmentList[index].checked
-			},
-
-			// 设置设备状态
-			setEquipmentStatus(index, status) {
-				this.equipmentList[index].status = status
+			// 按类别过滤设施
+			getEquipmentByCategory(category) {
+				return this.equipmentList.filter(item =>
+					(item.facilityCategory || '其他') === category
+				)
 			},
 
 			// 入住确认 - 跳转到签字页面
 			handleConfirm() {
-				// 检查是否有勾选设备
-				const checkedItems = this.equipmentList.filter(item => item.checked)
-				if (checkedItems.length === 0) {
-					uni.showModal({
-						title: '提示',
-						content: '请至少勾选一项配套设备',
-						showCancel: false
-					})
-					return
-				}
-
 				// 准备传递给签字页面的数据
 				const confirmData = {
-					recordId: this.recordId,
-					equipmentList: this.equipmentList.filter(item => item.checked)
+					recordId: this.recordId
 				}
 
 				// 跳转到签字页面，传递数据
@@ -355,24 +279,10 @@
 	.equipment-row {
 		display: flex;
 		align-items: center;
-		margin: 0 40rpx;
 		margin-bottom: 20rpx;
 	}
 
-	.equipment-check {
-		display: flex;
-		align-items: center;
-		margin-right: 16rpx;
-	}
-
-	.check-icon {
-		width: 30rpx;
-		height: 30rpx;
-		display: block;
-	}
-
 	.equipment-name {
-		width: 120rpx;
 		color: #333333;
 		font-size: 28rpx;
 		font-weight: normal;
@@ -387,30 +297,26 @@
 		gap: 16rpx;
 	}
 
-	.status-btn {
-		width: 150rpx;
-		height: 58rpx;
-		border-radius: 12rpx;
-		background: #f8f8f8;
-		display: flex;
+	.status-tag {
+		display: inline-flex;
 		align-items: center;
-		justify-content: center;
+		padding: 4rpx 16rpx;
+		border-radius: 20rpx;
+		font-size: 22rpx;
 	}
 
-	.status-btn.active {
-		border: 1.5rpx solid #1976f8;
-		background: #f8f8f8;
+	.status-tag.good {
+		background: #f0f9eb;
+		color: #67c23a;
+	}
+
+	.status-tag.damaged {
+		background: #fef0f0;
+		color: #f56c6c;
 	}
 
 	.status-text {
-		color: #333333;
-		font-size: 24rpx;
-		font-weight: normal;
-		font-family: "PingFang SC", "苹方-简", sans-serif;
-	}
-
-	.status-text.active {
-		color: #1976f8;
+		font-size: 22rpx;
 	}
 
 	/* 空状态 */

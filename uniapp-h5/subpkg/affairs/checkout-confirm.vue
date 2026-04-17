@@ -44,13 +44,22 @@
 					<text class="card-title">配套设备</text>
 				</view>
 
-				<view class="equipment-list">
-					<view class="equipment-row" v-for="(item, index) in equipmentList" :key="index">
-						<text class="equipment-name">{{ item.name }}：</text>
-						<text class="equipment-status">{{ item.status }}</text>
-					</view>
-					<view class="empty-equipment" v-if="equipmentList.length === 0">
-						<text class="empty-text">暂无设备信息</text>
+				<view v-if="equipmentList.length === 0" style="text-align: center; color: #999; padding: 30rpx;">
+					暂无设施信息
+				</view>
+
+				<!-- 按类别分组展示 -->
+				<view v-for="category in facilityCategories" :key="category" v-if="getEquipmentByCategory(category).length > 0" style="padding: 0 40rpx;">
+					<view style="font-size: 28rpx; color: #666; font-weight: bold; padding: 16rpx 0 8rpx;">{{ category }}</view>
+					<view class="equipment-row" v-for="(item, index) in getEquipmentByCategory(category)" :key="index">
+						<text class="equipment-name">{{ item.facilityName || item.name }}</text>
+						<text style="color: #999; font-size: 24rpx; margin-left: 16rpx;">x{{ item.quantity || 1 }}</text>
+						<view class="equipment-status">
+							<view class="status-tag" :class="item.itemStatus === '完好' ? 'good' : 'damaged'">
+								<text class="status-text">{{ item.itemStatus || '完好' }}</text>
+							</view>
+						</view>
+						<text v-if="item.remark" style="color: #999; font-size: 22rpx; margin-left: 8rpx;">{{ item.remark }}</text>
 					</view>
 				</view>
 			</view>
@@ -117,6 +126,7 @@
 
 <script>
 	import { getCheckoutConfirm, submitCheckoutConfirm } from '@/api/checkout.js'
+	import { get } from '@/utils/request'
 
 	export default {
 		data() {
@@ -132,6 +142,7 @@
 				},
 
 				equipmentList: [],
+				facilityCategories: ['电器类', '门窗类', '灯类', '卫浴区', '家具类', '洗菜池', '其他'],
 
 				feeData: {
 					depositRefund: '0',
@@ -201,11 +212,10 @@
 							keyReturned: data.keyReturned || false
 						}
 
-						// 配套设备列表（从后端返回的 facilitiesStatusList 转换格式）
-						this.equipmentList = (data.equipmentList || []).map(item => ({
-							name: item.name,
-							status: item.status === '完好' ? '完好' : '损坏'
-						}))
+						// 配套设备列表（从新API获取）
+						if (data.houseId) {
+							this.loadFacilities(data.houseId)
+						}
 					} else {
 						uni.showToast({
 							title: response.msg || '加载失败',
@@ -220,6 +230,25 @@
 						icon: 'none'
 					})
 				}
+			},
+
+			// 加载设施数据（从新API获取）
+			async loadFacilities(houseId) {
+				try {
+					const res = await get('/h5/app/house/facilities/' + houseId)
+					const facilities = res.data || res || []
+					this.equipmentList = Array.isArray(facilities) ? facilities : []
+				} catch (e) {
+					console.log('加载设施失败', e)
+					this.equipmentList = []
+				}
+			},
+
+			// 按类别过滤设施
+			getEquipmentByCategory(category) {
+				return this.equipmentList.filter(item =>
+					(item.facilityCategory || '其他') === category
+				)
 			},
 
 			// 格式化日期
@@ -349,16 +378,9 @@
 	}
 
 	/* 配套设备 */
-	.equipment-list {
-		padding: 0 40rpx;
-		display: flex;
-		flex-wrap: wrap;
-	}
-
 	.equipment-row {
 		display: flex;
 		align-items: center;
-		margin-right: 40rpx;
 		margin-bottom: 20rpx;
 	}
 
@@ -370,16 +392,32 @@
 	}
 
 	.equipment-status {
-		color: #333333;
-		font-size: 24rpx;
-		font-weight: normal;
-		font-family: "PingFang SC", "苹方-简", sans-serif;
+		flex: 1;
+		display: flex;
+		justify-content: flex-end;
+		gap: 16rpx;
 	}
 
-	.empty-equipment {
-		width: 100%;
-		padding: 40rpx 0;
-		text-align: center;
+	.status-tag {
+		display: inline-flex;
+		align-items: center;
+		padding: 4rpx 16rpx;
+		border-radius: 20rpx;
+		font-size: 22rpx;
+	}
+
+	.status-tag.good {
+		background: #f0f9eb;
+		color: #67c23a;
+	}
+
+	.status-tag.damaged {
+		background: #fef0f0;
+		color: #f56c6c;
+	}
+
+	.status-text {
+		font-size: 22rpx;
 	}
 
 	.empty-text {

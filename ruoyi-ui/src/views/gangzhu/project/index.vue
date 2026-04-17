@@ -87,7 +87,7 @@
           <el-tag v-else type="danger" size="small">停用</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="420">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="520">
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -138,6 +138,12 @@
             @click="handleGenerateHouseTypes(scope.row)"
             v-hasPermi="['gangzhu:project:edit']"
           >生成房型</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-setting"
+            @click="handleFacilityManage(scope.row)"
+          >房间设施管理</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -595,11 +601,73 @@
         <el-button type="primary" @click="detailDialogVisible = false">关 闭</el-button>
       </div>
     </el-dialog>
+
+    <!-- 房间设施管理对话框 -->
+    <el-dialog title="房间设施管理" :visible.sync="facilityDialogVisible" width="1000px" append-to-body :close-on-click-modal="false">
+      <div style="display: flex; height: 600px;">
+        <!-- 左侧：户型列表 -->
+        <div style="width: 200px; border-right: 1px solid #eee; overflow-y: auto; padding-right: 10px;">
+          <div v-for="type in facilityHouseTypeList" :key="type.houseTypeId"
+               :class="['type-item', { active: currentFacilityHouseTypeId === type.houseTypeId }]"
+               @click="selectHouseType(type)">
+            {{ type.houseTypeName }}
+          </div>
+          <div v-if="facilityHouseTypeList.length === 0" style="text-align: center; color: #999; padding-top: 50px;">
+            暂无户型
+          </div>
+        </div>
+        <!-- 右侧：设施配置表格 -->
+        <div style="flex: 1; overflow-y: auto; padding-left: 15px;">
+          <div v-if="!currentFacilityHouseTypeId" style="text-align: center; color: #999; padding-top: 200px;">
+            请先选择左侧的户型
+          </div>
+          <div v-else>
+            <div v-for="category in facilityCategories" :key="category" style="margin-bottom: 15px;">
+              <h4 style="margin: 0 0 8px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px;">{{ category }}</h4>
+              <el-table :data="getFacilitiesByCategory(category)" size="mini" border>
+                <el-table-column width="50" align="center">
+                  <template slot-scope="scope">
+                    <el-checkbox v-model="scope.row.checked"></el-checkbox>
+                  </template>
+                </el-table-column>
+                <el-table-column label="物品名称" prop="facilityName" width="120" />
+                <el-table-column label="数量" width="100">
+                  <template slot-scope="scope">
+                    <el-input-number v-model="scope.row.quantity" :min="1" :max="99" size="mini" :disabled="!scope.row.checked" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="状态" width="120">
+                  <template slot-scope="scope">
+                    <el-select v-model="scope.row.itemStatus" size="mini" :disabled="!scope.row.checked">
+                      <el-option label="完好" value="完好" />
+                      <el-option label="破损" value="破损" />
+                      <el-option label="缺失" value="缺失" />
+                    </el-select>
+                  </template>
+                </el-table-column>
+                <el-table-column label="说明">
+                  <template slot-scope="scope">
+                    <el-input v-model="scope.row.remark" size="mini" placeholder="选填" :disabled="!scope.row.checked" />
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div slot="footer">
+        <el-button @click="facilityDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="saveFacilities" :loading="facilitySaving">保 存</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { listProject, getProject, addProject, updateProject, delProject, generateHouseTypes } from "@/api/gangzhu/project";
+import { listHouseType } from "@/api/gangzhu/houseType";
+import { listFacilityItem } from "@/api/gangzhu/facilityItem";
+import { listHouseTypeFacility, batchSaveHouseTypeFacility } from "@/api/gangzhu/houseTypeFacility";
 import BuildingList from '@/views/gangzhu/building/index'
 import UnitList from '@/views/gangzhu/unit/index'
 import HouseTypeList from '@/views/gangzhu/houseType/index'
@@ -648,6 +716,14 @@ export default {
       currentProjectId: null,
       // 当前项目名称
       currentProjectName: '',
+      // 设施管理相关
+      facilityDialogVisible: false,
+      currentFacilityHouseTypeId: null,
+      facilityHouseTypeList: [],
+      allFacilityItems: [],
+      facilityConfigList: [],
+      facilityCategories: ['电器类', '门窗类', '灯类', '卫浴区', '家具类', '洗菜池', '其他'],
+      facilitySaving: false,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -853,6 +929,73 @@ export default {
 
       // 拼接baseUrl + 相对路径
       return baseUrl + (url.startsWith('/') ? url : '/' + url);
+    },
+    /** 房间设施管理按钮操作 */
+    handleFacilityManage(row) {
+      this.currentProjectId = row.projectId
+      this.currentProjectName = row.projectName
+      this.currentFacilityHouseTypeId = null
+      this.facilityConfigList = []
+      this.facilityDialogVisible = true
+      // 加载该项目的户型列表
+      listHouseType({ projectId: row.projectId }).then(res => {
+        this.facilityHouseTypeList = res.rows || res.data || []
+      })
+      // 加载设施总表
+      if (this.allFacilityItems.length === 0) {
+        listFacilityItem().then(res => {
+          this.allFacilityItems = res.data || res.rows || []
+        })
+      }
+    },
+    /** 选择户型 */
+    selectHouseType(type) {
+      this.currentFacilityHouseTypeId = type.houseTypeId
+      // 基于总表构建配置列表，默认全部未勾选
+      this.facilityConfigList = this.allFacilityItems.map(item => ({
+        facilityItemId: item.facilityItemId,
+        facilityName: item.facilityName,
+        facilityCategory: item.facilityCategory,
+        checked: false,
+        quantity: 1,
+        itemStatus: '完好',
+        remark: ''
+      }))
+      // 加载该户型已保存的配置，回填
+      listHouseTypeFacility(type.houseTypeId).then(res => {
+        const saved = res.data || res.rows || []
+        saved.forEach(s => {
+          const target = this.facilityConfigList.find(f => f.facilityItemId === s.facilityItemId)
+          if (target) {
+            target.checked = true
+            target.quantity = s.quantity || 1
+            target.itemStatus = s.itemStatus || '完好'
+            target.remark = s.remark || ''
+          }
+        })
+      })
+    },
+    /** 按类别过滤设施 */
+    getFacilitiesByCategory(category) {
+      return this.facilityConfigList.filter(f => f.facilityCategory === category)
+    },
+    /** 保存设施配置 */
+    saveFacilities() {
+      if (!this.currentFacilityHouseTypeId) {
+        this.$modal.msgWarning('请先选择户型')
+        return
+      }
+      const checkedItems = this.facilityConfigList.filter(f => f.checked)
+      this.facilitySaving = true
+      batchSaveHouseTypeFacility({
+        houseTypeId: this.currentFacilityHouseTypeId,
+        facilities: checkedItems
+      }).then(() => {
+        this.$modal.msgSuccess('保存成功')
+        this.facilitySaving = false
+      }).catch(() => {
+        this.facilitySaving = false
+      })
     }
   },
   computed: {
@@ -1068,5 +1211,22 @@ export default {
   background: linear-gradient(135deg, #e8ecf1 0%, #d4d9e2 100%);
   color: #909399;
   font-size: 48px;
+}
+
+/* 户型列表项 */
+.type-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+.type-item:hover {
+  background: #f5f7fa;
+}
+.type-item.active {
+  background: #ecf5ff;
+  color: #409eff;
+  font-weight: bold;
 }
 </style>
