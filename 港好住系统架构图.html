@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>港好住信息系统平台 — 技术架构图</title>
+<style>
+:root{
+  --c-bg:#f0f4f8;
+  --c-canvas:#ffffff;
+  --c-border:#cbd5e1;
+  --c-text-main:#0f172a;
+  --c-text-sub:#64748b;
+  --font-ui:system-ui,-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  --font-mono:'SF Mono',Monaco,Consolas,'Courier New',monospace;
+  /* layer palette */
+  --l1:#e0f2fe;--l1b:#7dd3fc;
+  --l2:#fef3c7;--l2b:#fbbf24;
+  --l3:#dbeafe;--l3b:#93c5fd;
+  --l4:#ede9fe;--l4b:#a78bfa;
+  --l5:#d1fae5;--l5b:#6ee7b7;
+  --l6:#fee2e2;--l6b:#fca5a5;
+  --l7:#f3e8ff;--l7b:#c4b5fd;
+  --flow:#fef9c3;--flowb:#facc15;
+  --mod:#f1f5f9;--modb:#94a3b8;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--c-bg);font-family:var(--font-ui);color:var(--c-text-main);padding:24px;}
+.canvas{background:var(--c-canvas);border:2px solid var(--c-border);max-width:1400px;margin:0 auto;padding:28px 32px 24px;}
+/* header */
+.hdr{border-bottom:2px solid var(--c-text-main);padding-bottom:10px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end;}
+.hdr h1{font-size:22px;font-weight:700;letter-spacing:1px;}
+.hdr .sub{font-size:11px;font-family:var(--font-mono);color:var(--c-text-sub);text-transform:uppercase;letter-spacing:.5px;}
+/* main grid: left=architecture, right=sidebar */
+.main{display:grid;grid-template-columns:1fr 290px;gap:20px;}
+/* layers */
+.layers{display:flex;flex-direction:column;gap:8px;}
+.layer{border:1px solid var(--c-border);padding:10px 14px;}
+.layer-label{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.layer-tag{font-size:10px;font-family:var(--font-mono);font-weight:700;padding:2px 7px;border:1px solid;display:inline-block;letter-spacing:.3px;white-space:nowrap;}
+.layer-name{font-size:13px;font-weight:600;}
+.layer-tech{font-size:10px;font-family:var(--font-mono);color:var(--c-text-sub);margin-left:auto;white-space:nowrap;}
+/* nodes row */
+.nodes{display:flex;gap:8px;flex-wrap:wrap;}
+.node{border:1px solid;padding:7px 10px;font-size:11px;flex:1;min-width:120px;position:relative;}
+.node-title{font-weight:600;font-size:12px;margin-bottom:3px;}
+.node-desc{font-size:10px;color:var(--c-text-sub);line-height:1.4;}
+.node-badge{position:absolute;top:4px;right:6px;font-size:8px;font-family:var(--font-mono);padding:1px 4px;border:1px solid;opacity:.7;}
+/* arrow between layers */
+.arrow-row{text-align:center;color:var(--c-text-sub);font-size:16px;line-height:1;user-select:none;padding:1px 0;}
+/* layer colors */
+.l1{background:var(--l1);} .l1 .layer-tag,.l1 .node{border-color:var(--l1b);} .l1 .layer-tag{background:var(--l1b);color:#0c4a6e;}
+.l2{background:var(--l2);} .l2 .layer-tag,.l2 .node{border-color:var(--l2b);} .l2 .layer-tag{background:var(--l2b);color:#78350f;}
+.l3{background:var(--l3);} .l3 .layer-tag,.l3 .node{border-color:var(--l3b);} .l3 .layer-tag{background:var(--l3b);color:#1e3a5f;}
+.l4{background:var(--l4);} .l4 .layer-tag,.l4 .node{border-color:var(--l4b);} .l4 .layer-tag{background:var(--l4b);color:#3b0764;}
+.l5{background:var(--l5);} .l5 .layer-tag,.l5 .node{border-color:var(--l5b);} .l5 .layer-tag{background:var(--l5b);color:#064e3b;}
+.l6{background:var(--l6);} .l6 .layer-tag,.l6 .node{border-color:var(--l6b);} .l6 .layer-tag{background:var(--l6b);color:#7f1d1d;}
+.l7{background:var(--l7);} .l7 .layer-tag,.l7 .node{border-color:var(--l7b);} .l7 .layer-tag{background:var(--l7b);color:#4c1d95;}
+/* sidebar */
+.sidebar{display:flex;flex-direction:column;gap:14px;}
+.side-box{border:1px solid var(--c-border);padding:12px 14px;}
+.side-box h3{font-size:12px;font-weight:700;border-bottom:1px solid var(--c-border);padding-bottom:6px;margin-bottom:8px;letter-spacing:.5px;}
+/* flow */
+.flow-steps{display:flex;flex-direction:column;gap:0;}
+.flow-step{display:flex;align-items:center;gap:6px;padding:5px 0;}
+.flow-num{width:20px;height:20px;border:1.5px solid var(--flowb);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);flex-shrink:0;background:var(--flow);}
+.flow-text{font-size:11px;flex:1;}
+.flow-text small{color:var(--c-text-sub);font-size:9px;font-family:var(--font-mono);}
+.flow-arrow{text-align:center;color:var(--flowb);font-size:12px;padding-left:7px;}
+/* module tree */
+.mod-tree{font-size:11px;line-height:1.8;}
+.mod-tree .root{font-weight:700;font-size:12px;margin-bottom:2px;padding:3px 6px;background:var(--mod);border:1px solid var(--modb);}
+.mod-tree .branch{padding-left:16px;border-left:1px solid var(--modb);}
+.mod-tree .leaf{position:relative;padding-left:14px;}
+.mod-tree .leaf::before{content:'├─';position:absolute;left:0;color:var(--modb);font-family:var(--font-mono);font-size:10px;}
+.mod-tree .leaf:last-child::before{content:'└─';}
+.mod-tree .leaf-name{font-weight:600;}
+.mod-tree .leaf-desc{color:var(--c-text-sub);font-size:10px;}
+/* stats */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.stat{border:1px solid var(--c-border);padding:6px 8px;text-align:center;}
+.stat-val{font-size:18px;font-weight:700;font-family:var(--font-mono);}
+.stat-lbl{font-size:9px;color:var(--c-text-sub);text-transform:uppercase;}
+/* footer */
+.ftr{margin-top:14px;border-top:1px solid var(--c-border);padding-top:8px;display:flex;justify-content:space-between;font-size:9px;color:var(--c-text-sub);font-family:var(--font-mono);}
+</style>
+</head>
+<body>
+<div class="canvas">
+
+<!-- HEADER -->
+<div class="hdr">
+  <div>
+    <h1>港好住信息系统平台 · 技术架构图</h1>
+    <div class="sub">GANGHAOZHU INFORMATION SYSTEM — TECHNICAL ARCHITECTURE BLUEPRINT</div>
+  </div>
+  <div style="text-align:right;">
+    <div class="sub">VERSION 3.9.0 · JAVA 17 · SPRING BOOT 3.5.4</div>
+    <div class="sub" style="margin-top:2px;">前后端分离 · 七层架构 · 多端支持</div>
+  </div>
+</div>
+
+<div class="main">
+<!-- LEFT: 7-LAYER ARCHITECTURE -->
+<div class="layers">
+
+  <!-- L1 用户终端层 -->
+  <div class="layer l1">
+    <div class="layer-label">
+      <span class="layer-tag">L1</span>
+      <span class="layer-name">用户终端层</span>
+      <span class="layer-tech">HTTPS · 多端访问</span>
+    </div>
+    <div class="nodes">
+      <div class="node">
+        <div class="node-title">🖥 PC 浏览器</div>
+        <div class="node-desc">管理员 · 后台管理</div>
+        <span class="node-badge">ADMIN</span>
+      </div>
+      <div class="node">
+        <div class="node-title">📱 移动 H5</div>
+        <div class="node-desc">租户 · 业务办理</div>
+        <span class="node-badge">USER</span>
+      </div>
+      <div class="node">
+        <div class="node-title">💬 微信小程序</div>
+        <div class="node-desc">租户 · 即用即走</div>
+        <span class="node-badge">USER</span>
+      </div>
+    </div>
+  </div>
+  <div class="arrow-row">▼ ▼ ▼</div>
+
+  <!-- L2 访问网关层 -->
+  <div class="layer l2">
+    <div class="layer-label">
+      <span class="layer-tag">L2</span>
+      <span class="layer-name">访问网关层</span>
+      <span class="layer-tech">Nginx 1.20+ · Keepalived</span>
+    </div>
+    <div class="nodes">
+      <div class="node">
+        <div class="node-title">负载均衡</div>
+        <div class="node-desc">轮询策略 · 权重分配 · 健康检查</div>
+      </div>
+      <div class="node">
+        <div class="node-title">反向代理</div>
+        <div class="node-desc">/ → 前端静态 · /dev-api/ → 后端API · /profile/ → 文件</div>
+      </div>
+      <div class="node">
+        <div class="node-title">安全防护</div>
+        <div class="node-desc">SSL/TLS 1.2+ · Gzip压缩 · HTTP/2 · 限流</div>
+      </div>
+      <div class="node" style="min-width:80px;flex:.4;">
+        <div class="node-title">主备切换</div>
+        <div class="node-desc">VIP漂移 &lt;3s</div>
+      </div>
+    </div>
+  </div>
+  <div class="arrow-row">▼ ▼ ▼</div>
+
+  <!-- L3 前端表现层 -->
+  <div class="layer l3">
+    <div class="layer-label">
+      <span class="layer-tag">L3</span>
+      <span class="layer-name">前端表现层</span>
+      <span class="layer-tech">Vue.js 2.6.12 · RESTful JSON</span>
+    </div>
+    <div class="nodes">
+      <div class="node">
+        <div class="node-title">PC 管理后台</div>
+        <div class="node-desc">Vue 2 + Element UI 2.15.14<br/>Vuex 3.6 · Vue Router 3.4 · Axios<br/>ruoyi-ui · 33个业务页面</div>
+        <span class="node-badge">ruoyi-ui</span>
+      </div>
+      <div class="node">
+        <div class="node-title">移动 H5 端</div>
+        <div class="node-desc">uni-app + Vue 2<br/>22个功能页面 · 24个API模块<br/>rem适配 · 下拉刷新</div>
+        <span class="node-badge">uniapp-h5</span>
+      </div>
+      <div class="node">
+        <div class="node-title">微信小程序</div>
+        <div class="node-desc">uni-app 编译<br/>分包加载 · 订阅消息<br/>微信登录 · 微信支付</div>
+        <span class="node-badge">uniapp</span>
+      </div>
+    </div>
+  </div>
+  <div class="arrow-row">▼ ▼ ▼ RESTful API · JSON</div>
+
+  <!-- L4 业务服务层 -->
+  <div class="layer l4">
+    <div class="layer-label">
+      <span class="layer-tag">L4</span>
+      <span class="layer-name">业务服务层</span>
+      <span class="layer-tech">Spring Boot 3.5.4 · Security 6.x · MyBatis-Plus 3.5.9</span>
+    </div>
+    <div class="nodes">
+      <div class="node">
+        <div class="node-title">🏠 房源管理</div>
+        <div class="node-desc">项目 · 楼栋 · 单元<br/>房间 · 户型 · VR全景<br/>地图标注</div>
+      </div>
+      <div class="node">
+        <div class="node-title">👤 租户管理</div>
+        <div class="node-desc">租户信息 · 资格校验<br/>资格申诉 · 合住人<br/>企业客户</div>
+      </div>
+      <div class="node">
+        <div class="node-title">📝 合同管理</div>
+        <div class="node-desc">合同生成 · 电子签约<br/>e签宝集成 · 续签<br/>PDF存储</div>
+      </div>
+      <div class="node">
+        <div class="node-title">💰 支付管理</div>
+        <div class="node-desc">账单生成 · 在线支付<br/>支付回调 · 退款<br/>自动对账</div>
+      </div>
+      <div class="node">
+        <div class="node-title">🔧 工单管理</div>
+        <div class="node-desc">预约看房 · 维修报修<br/>投诉建议 · 服务公司</div>
+      </div>
+      <div class="node">
+        <div class="node-title">⚙ 系统管理</div>
+        <div class="node-desc">用户/角色/权限<br/>菜单/字典/日志<br/>系统监控</div>
+      </div>
+    </div>
+  </div>
+  <div class="arrow-row">▼ ▼ ▼</div>
+
+  <!-- L5 核心支撑层 -->
+  <div class="layer l5">
+    <div class="layer-label">
+      <span class="layer-tag">L5</span>
+      <span class="layer-name">核心支撑层</span>
+      <span class="layer-tech">公共基础服务</span>
+    </div>
+    <div class="nodes">
+      <div class="node">
+        <div class="node-title">Redis 缓存</div>
+        <div class="node-desc">JWT Token · 数据字典<br/>验证码 · 会话管理</div>
+      </div>
+      <div class="node">
+        <div class="node-title">文件服务</div>
+        <div class="node-desc">NAS存储 · 图片上传<br/>头像 · 合同PDF · 发票</div>
+      </div>
+      <div class="node">
+        <div class="node-title">消息服务</div>
+        <div class="node-desc">站内消息 · 短信通知<br/>小程序订阅消息</div>
+      </div>
+      <div class="node">
+        <div class="node-title">定时任务</div>
+        <div class="node-desc">Quartz 2.3.x<br/>合同到期 · 账单生成<br/>数据同步</div>
+      </div>
+    </div>
+  </div>
+  <div class="arrow-row">▼ ▼ ▼</div>
+
+  <!-- L6 数据持久层 -->
+  <div class="layer l6">
+    <div class="layer-label">
+      <span class="layer-tag">L6</span>
+      <span class="layer-name">数据持久层</span>
+      <span class="layer-tech">MySQL 8.x · Druid 1.2.23</span>
+    </div>
+    <div class="nodes">
+      <div class="node">
+        <div class="node-title">MySQL 数据库</div>
+        <div class="node-desc">主从复制 · 读写分离 · 69张业务表</div>
+      </div>
+      <div class="node">
+        <div class="node-title">Druid 连接池</div>
+        <div class="node-desc">连接池监控 · SQL防火墙 · 慢SQL统计</div>
+      </div>
+      <div class="node">
+        <div class="node-title">MyBatis-Plus ORM</div>
+        <div class="node-desc">BaseMapper CRUD · 分页插件 · 逻辑删除</div>
+      </div>
+    </div>
+  </div>
+  <div class="arrow-row" style="border-top:1px dashed var(--c-border);padding-top:4px;">⬍ ⬍ 第三方接口调用 ⬍ ⬍</div>
+
+  <!-- L7 第三方接口层 -->
+  <div class="layer l7">
+    <div class="layer-label">
+      <span class="layer-tag">L7</span>
+      <span class="layer-name">第三方接口层</span>
+      <span class="layer-tech">外部系统对接</span>
+    </div>
+    <div class="nodes">
+      <div class="node">
+        <div class="node-title">郑好办</div>
+        <div class="node-desc">OAuth2.0<br/>用户认证</div>
+      </div>
+      <div class="node">
+        <div class="node-title">政务数据</div>
+        <div class="node-desc">社保 · 婚姻<br/>学历 · 住房</div>
+      </div>
+      <div class="node">
+        <div class="node-title">港区支付</div>
+        <div class="node-desc">在线缴费<br/>支付回调</div>
+      </div>
+      <div class="node">
+        <div class="node-title">e签宝 v3</div>
+        <div class="node-desc">电子合同<br/>CA签名</div>
+      </div>
+      <div class="node">
+        <div class="node-title">地图服务</div>
+        <div class="node-desc">高德/百度<br/>地图找房</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /layers -->
+
+<!-- RIGHT SIDEBAR -->
+<div class="sidebar">
+
+  <!-- 核心业务流程 -->
+  <div class="side-box" style="background:var(--flow);border-color:var(--flowb);">
+    <h3>📋 租赁业务主流程</h3>
+    <div class="flow-steps">
+      <div class="flow-step"><span class="flow-num">1</span><span class="flow-text">用户登录 <small>郑好办OAuth</small></span></div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step"><span class="flow-num">2</span><span class="flow-text">资格校验 <small>政务数据核验</small></span></div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step"><span class="flow-num">3</span><span class="flow-text">查看房源 <small>地图/VR/列表</small></span></div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step"><span class="flow-num">4</span><span class="flow-text">在线选房 <small>预约→确认</small></span></div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step"><span class="flow-num">5</span><span class="flow-text">签署合同 <small>e签宝电子签</small></span></div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step"><span class="flow-num">6</span><span class="flow-text">入住确认 <small>资料审核→点验</small></span></div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step"><span class="flow-num">7</span><span class="flow-text">账单缴费 <small>港区支付平台</small></span></div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step"><span class="flow-num">8</span><span class="flow-text">续签 / 退租 <small>合同续签或退租</small></span></div>
+    </div>
+  </div>
+
+  <!-- Maven模块树 -->
+  <div class="side-box">
+    <h3>📦 后端 Maven 模块依赖</h3>
+    <div class="mod-tree">
+      <div class="root">ruoyi (pom 3.9.0)</div>
+      <div class="branch">
+        <div class="leaf"><span class="leaf-name">ruoyi-admin</span> <span class="leaf-desc">· 主入口 · 启动类 · 控制器</span></div>
+        <div class="leaf"><span class="leaf-name">ruoyi-framework</span> <span class="leaf-desc">· Security · AOP · Redis · 拦截器</span></div>
+        <div class="leaf"><span class="leaf-name">ruoyi-system</span> <span class="leaf-desc">· 69实体 · 57服务 · e签宝</span></div>
+        <div class="leaf"><span class="leaf-name">ruoyi-common</span> <span class="leaf-desc">· 注解 · 异常 · 工具类 · XSS</span></div>
+        <div class="leaf"><span class="leaf-name">ruoyi-generator</span> <span class="leaf-desc">· 代码生成器 · Velocity</span></div>
+        <div class="leaf"><span class="leaf-name">ruoyi-quartz</span> <span class="leaf-desc">· 定时任务 · Quartz</span></div>
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:10px;color:var(--c-text-sub);border-top:1px dashed var(--c-border);padding-top:6px;">
+      <div>admin → framework → system → common</div>
+      <div>admin → generator · admin → quartz</div>
+    </div>
+  </div>
+
+  <!-- 关键指标 -->
+  <div class="side-box">
+    <h3>📊 系统关键指标</h3>
+    <div class="stats">
+      <div class="stat"><div class="stat-val">69</div><div class="stat-lbl">数据实体</div></div>
+      <div class="stat"><div class="stat-val">57</div><div class="stat-lbl">业务服务</div></div>
+      <div class="stat"><div class="stat-val">33</div><div class="stat-lbl">管理页面</div></div>
+      <div class="stat"><div class="stat-val">22</div><div class="stat-lbl">H5页面</div></div>
+      <div class="stat"><div class="stat-val">24</div><div class="stat-lbl">API模块</div></div>
+      <div class="stat"><div class="stat-val">6</div><div class="stat-lbl">Maven模块</div></div>
+    </div>
+  </div>
+
+  <!-- 技术栈速览 -->
+  <div class="side-box">
+    <h3>🔧 核心技术栈</h3>
+    <div style="font-size:10px;line-height:1.9;font-family:var(--font-mono);">
+      <div><strong>后端</strong> Spring Boot 3.5.4</div>
+      <div><strong>安全</strong> Spring Security 6.x + JWT</div>
+      <div><strong>ORM</strong> MyBatis-Plus 3.5.9</div>
+      <div><strong>数据库</strong> MySQL 8.x + Druid</div>
+      <div><strong>缓存</strong> Redis (哨兵模式)</div>
+      <div><strong>前端</strong> Vue 2.6 + Element UI</div>
+      <div><strong>移动端</strong> uni-app + Vue 2</div>
+      <div><strong>文档</strong> SpringDoc OpenAPI 2.8</div>
+      <div><strong>构建</strong> Maven + Java 17</div>
+      <div><strong>部署</strong> GitHub Actions CI/CD</div>
+    </div>
+  </div>
+
+</div><!-- /sidebar -->
+</div><!-- /main -->
+
+<!-- FOOTER -->
+<div class="ftr">
+  <span>港好住信息系统平台 · 港区保障性住房综合管理</span>
+  <span>人才公寓 · 保租房 · 市场租赁</span>
+  <span>ARCHITECTURE BLUEPRINT V3.9.0</span>
+</div>
+
+</div><!-- /canvas -->
+</body>
+</html>
