@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -46,6 +46,7 @@ public class EsignServiceImpl implements EsignService {
     private final HzProjectMapper projectMapper;
     private final HzBuildingMapper buildingMapper;
     private final HzUnitMapper unitMapper;
+    private final HzHouseFacilityMapper houseFacilityMapper;
     private final IHzCheckInService checkInService;
     private final IHzUserMessageService messageService;
 
@@ -53,6 +54,7 @@ public class EsignServiceImpl implements EsignService {
                             HzHouseOrderMapper orderMapper, HzBillMapper billMapper,
                             HzHouseMapper houseMapper, HzProjectMapper projectMapper,
                             HzBuildingMapper buildingMapper, HzUnitMapper unitMapper,
+                            HzHouseFacilityMapper houseFacilityMapper,
                             IHzCheckInService checkInService, IHzUserMessageService messageService) {
         this.userMapper = userMapper;
         this.contractMapper = contractMapper;
@@ -62,6 +64,7 @@ public class EsignServiceImpl implements EsignService {
         this.projectMapper = projectMapper;
         this.buildingMapper = buildingMapper;
         this.unitMapper = unitMapper;
+        this.houseFacilityMapper = houseFacilityMapper;
         this.checkInService = checkInService;
         this.messageService = messageService;
     }
@@ -295,6 +298,8 @@ public class EsignServiceImpl implements EsignService {
      *   数字4~6    → 合同起始日期 年/月/日
      *   数字7~9    → 合同终止日期 年/月/日
      *   数字10~12  → 签约日期 年/月/日（当前日期）
+     *   数字13~57  → 设施数量字段（电视、空调、洗衣机...晾衣架）
+     *   单行文本11 → 项目地址
      *
      * ── 默认值控件（2个，不传参）────────────────────────────────────────
      *   单行文本5 (43f58df6..., default:栗毅) → 甲方代表人
@@ -370,48 +375,139 @@ public class EsignServiceImpl implements EsignService {
         String signMonth = String.valueOf(signDate.getMonthValue());
         String signDay   = String.valueOf(signDate.getDayOfMonth());
 
+        // ── 项目地址 ──────────────────────────────────────────────────
+        String projectAddress = "";
+        if (contract.getProjectId() != null) {
+            HzProject project = projectMapper.selectById(contract.getProjectId());
+            if (project != null && project.getAddress() != null) {
+                projectAddress = project.getAddress();
+            }
+        }
+
+        // ── 设施数据（按设施名称汇总数量）──────────────────────────────
+        Map<String, Integer> facilityQtyMap = new HashMap<>();
+        if (contract.getHouseId() != null) {
+            List<HzHouseFacility> facilities = houseFacilityMapper.selectList(
+                    new LambdaQueryWrapper<HzHouseFacility>()
+                            .eq(HzHouseFacility::getHouseId, contract.getHouseId())
+                            .eq(HzHouseFacility::getDelFlag, "0"));
+            for (HzHouseFacility f : facilities) {
+                String name = f.getFacilityName();
+                int qty = f.getQuantity() != null ? f.getQuantity() : 0;
+                facilityQtyMap.merge(name, qty, Integer::sum);
+            }
+        }
+
         // ── 组装控件JSON ────────────────────────────────────────────────
-        return "[\n"
-            // 单行文本3: 地址+房间号
-            + "  {\"componentId\": \"ebfedbda264e446390801f1ba6ee96eb\", \"componentValue\": \"" + escapeJson(addressWithRoom) + "\"},\n"
-            // 单行文本4: 租金大写（中文大写金额）
-            + "  {\"componentId\": \"37fdb4123afb45139912f5dc938d5e3c\", \"componentValue\": \"" + escapeJson(rentPriceChinese) + "\"},\n"
-            // 数字1: 房租单价（元/平方米/月）
-            + "  {\"componentId\": \"d2a93cfe598449c49fac10a5c8d58f08\", \"componentValue\": \"" + unitPrice                   + "\"},\n"
-            // 数字2: 每月租金
-            + "  {\"componentId\": \"ef7ed4f368094d19a52d45369994e7e7\", \"componentValue\": \"" + monthlyRent                 + "\"},\n"
-            // 数字3: 房间平米数（面积）
-            + "  {\"componentId\": \"7af62cd84df944dba1d828dba66ae394\", \"componentValue\": \"" + houseArea                   + "\"},\n"
-            // 单行文本9: 合同编号
-            + "  {\"componentId\": \"23c33b4791934632b6cc8322d8b15fe3\", \"componentValue\": \"" + escapeJson(contractNo)      + "\"},\n"
-            // 单行文本10: 合同编号
-            + "  {\"componentId\": \"fe46bc6ad7c84533949d2c32e75c3182\", \"componentValue\": \"" + escapeJson(contractNo)      + "\"},\n"
-            // 身份证号1
-            + "  {\"componentId\": \"ba2d50d300394daba46764c3f7ca5aec\", \"componentValue\": \"" + escapeJson(idCard)          + "\"},\n"
-            // 手机号1
-            + "  {\"componentId\": \"520eaa1e2b634c0592937bd216a74cf5\", \"componentValue\": \"" + escapeJson(phone)           + "\"},\n"
-            // ── 合同起始日期拆分 ──
-            // 数字4: 起始年
-            + "  {\"componentId\": \"0a17d6c252294058bef7a5959d0444e3\", \"componentValue\": \"" + startYear                   + "\"},\n"
-            // 数字5: 起始月
-            + "  {\"componentId\": \"873b2dca5ffd407c896bc42266b590e2\", \"componentValue\": \"" + startMonth                  + "\"},\n"
-            // 数字6: 起始日
-            + "  {\"componentId\": \"31e87f7e9f1e4ec6a6d9db1301d65f6b\", \"componentValue\": \"" + startDay                    + "\"},\n"
-            // ── 合同终止日期拆分 ──
-            // 数字7: 终止年
-            + "  {\"componentId\": \"2ba6a017f99b42f7ad3a7b90b5f7e021\", \"componentValue\": \"" + endYear                     + "\"},\n"
-            // 数字8: 终止月
-            + "  {\"componentId\": \"75361beac8664e859fa090b9253b7ccf\", \"componentValue\": \"" + endMonth                    + "\"},\n"
-            // 数字9: 终止日
-            + "  {\"componentId\": \"6f93df14d68e4b9e80f58973b6b948e9\", \"componentValue\": \"" + endDay                      + "\"},\n"
-            // ── 签约日期拆分（当前日期）──
-            // 数字10: 签约年
-            + "  {\"componentId\": \"682336d1a20744f888d18c38026cf1ba\", \"componentValue\": \"" + signYear                    + "\"},\n"
-            // 数字11: 签约月
-            + "  {\"componentId\": \"a96cbcb2bb6c469dbce41f2896919423\", \"componentValue\": \"" + signMonth                   + "\"},\n"
-            // 数字12: 签约日
-            + "  {\"componentId\": \"994019cb2cfb41a2ae832f8e106d5282\", \"componentValue\": \"" + signDay                     + "\"}\n"
-            + "]";
+        StringBuilder sb = new StringBuilder();
+        sb.append("[\n");
+        // 单行文本3: 地址+房间号
+        sb.append("  {\"componentId\": \"ebfedbda264e446390801f1ba6ee96eb\", \"componentValue\": \"").append(escapeJson(addressWithRoom)).append("\"},\n");
+        // 单行文本4: 租金大写（中文大写金额）
+        sb.append("  {\"componentId\": \"37fdb4123afb45139912f5dc938d5e3c\", \"componentValue\": \"").append(escapeJson(rentPriceChinese)).append("\"},\n");
+        // 数字1: 房租单价（元/平方米/月）
+        sb.append("  {\"componentId\": \"d2a93cfe598449c49fac10a5c8d58f08\", \"componentValue\": \"").append(unitPrice).append("\"},\n");
+        // 数字2: 每月租金
+        sb.append("  {\"componentId\": \"ef7ed4f368094d19a52d45369994e7e7\", \"componentValue\": \"").append(monthlyRent).append("\"},\n");
+        // 数字3: 房间平米数（面积）
+        sb.append("  {\"componentId\": \"7af62cd84df944dba1d828dba66ae394\", \"componentValue\": \"").append(houseArea).append("\"},\n");
+        // 单行文本9: 合同编号
+        sb.append("  {\"componentId\": \"23c33b4791934632b6cc8322d8b15fe3\", \"componentValue\": \"").append(escapeJson(contractNo)).append("\"},\n");
+        // 单行文本10: 合同编号
+        sb.append("  {\"componentId\": \"fe46bc6ad7c84533949d2c32e75c3182\", \"componentValue\": \"").append(escapeJson(contractNo)).append("\"},\n");
+        // 身份证号1
+        sb.append("  {\"componentId\": \"ba2d50d300394daba46764c3f7ca5aec\", \"componentValue\": \"").append(escapeJson(idCard)).append("\"},\n");
+        // 手机号1
+        sb.append("  {\"componentId\": \"520eaa1e2b634c0592937bd216a74cf5\", \"componentValue\": \"").append(escapeJson(phone)).append("\"},\n");
+        // ── 合同起始日期拆分 ──
+        sb.append("  {\"componentId\": \"0a17d6c252294058bef7a5959d0444e3\", \"componentValue\": \"").append(startYear).append("\"},\n");
+        sb.append("  {\"componentId\": \"873b2dca5ffd407c896bc42266b590e2\", \"componentValue\": \"").append(startMonth).append("\"},\n");
+        sb.append("  {\"componentId\": \"31e87f7e9f1e4ec6a6d9db1301d65f6b\", \"componentValue\": \"").append(startDay).append("\"},\n");
+        // ── 合同终止日期拆分 ──
+        sb.append("  {\"componentId\": \"2ba6a017f99b42f7ad3a7b90b5f7e021\", \"componentValue\": \"").append(endYear).append("\"},\n");
+        sb.append("  {\"componentId\": \"75361beac8664e859fa090b9253b7ccf\", \"componentValue\": \"").append(endMonth).append("\"},\n");
+        sb.append("  {\"componentId\": \"6f93df14d68e4b9e80f58973b6b948e9\", \"componentValue\": \"").append(endDay).append("\"},\n");
+        // ── 签约日期拆分（当前日期）──
+        sb.append("  {\"componentId\": \"682336d1a20744f888d18c38026cf1ba\", \"componentValue\": \"").append(signYear).append("\"},\n");
+        sb.append("  {\"componentId\": \"a96cbcb2bb6c469dbce41f2896919423\", \"componentValue\": \"").append(signMonth).append("\"},\n");
+        sb.append("  {\"componentId\": \"994019cb2cfb41a2ae832f8e106d5282\", \"componentValue\": \"").append(signDay).append("\"},\n");
+
+        // ── 设施数量字段（数字13~57）──────────────────────────────────
+        // 设施名称(DB) → componentId 映射（一对一直接映射）
+        String[][] facilityMapping = {
+            // DB设施名 → componentId (模板控件名)
+            {"空调",         "1346c3069a2a434f920c7b0ed652ca9b"},   // 数字14
+            {"洗衣机",       "e0fe08cd3faa49beb984fea7d67ef55f"},   // 数字15
+            {"冰箱",         "55bea9110f2e4e35aa890351a47f9e8d"},   // 数字16
+            {"热水器",       "af27c759b2774ec0add8e3721c9b58eb"},   // 数字17
+            {"燃气灶",       "085c6aa3fe8b4d7cb57f22f8264ece1c"},   // 数字18
+            {"抽烟机",       "d990367bea0f4d9b9d5bbab7016f5d3b"},   // 数字19 (模板:抽油烟机)
+            {"客厅灯具",     "a24748a0897e458e9c4c60f7c196414e"},   // 数字20
+            {"卧室灯具",     "74196081487f4adfa78bb01c29eb0dd3"},   // 数字21
+            {"厨房灯具",     "f37dcc62d1cf47baaf52904c8aa4f344"},   // 数字22
+            {"卫生间灯",     "d6554b0e934b45aaab3150ff676cb9e5"},   // 数字23
+            {"阳台灯具",     "a9ea4805788344a9b9d6b3be2e74a92d"},   // 数字24
+            {"卫生间淋浴",   "0b85d6ee68194b03b55d60d98b98514c"},   // 数字25
+            {"镜面",         "17e4eca5f3b64f5fb3a3837c0ee778e7"},   // 数字26
+            {"洗漱台",       "8efd42ac7d064572b404419e081bd4a1"},   // 数字27
+            {"水池",         "7799774972024d93bbdca7659c53b59c"},   // 数字28
+            {"软管",         "7089eec143744baa86d21eacb4f63a46"},   // 数字29
+            {"马桶",         "3dd55ec8849c43a0b54be1d3931efd53"},   // 数字30
+            {"厨房水龙头",   "96fadc84185e4a1d93fe8c9806a08368"},   // 数字31
+            {"厨房洗菜池",   "ef259c5b62844c4da2956d20537844e4"},   // 数字32 (模板:洗菜池)
+            {"电闸盒",       "0b53c3e723d9469c93ec342d4f139545"},   // 数字36
+            {"瓷砖",         "7e5e2672996b4c988e146e1bb4e9a6f1"},   // 数字37
+            {"房间防盗门",   "8fbd8eae96124314920024f917efba0d"},   // 数字38 (模板:入户门)
+            {"套房内门",     "6e12233b06114fdcaecea860555b8e6c"},   // 数字40
+            {"客厅窗帘",     "7dce049c63a34c49a032bca9d423f2f9"},   // 数字43
+            {"卧室窗帘",     "28480bbc9c494c40bfdd91484977a752"},   // 数字44
+            {"茶几",         "e461395d06d948cf95dc0d457ecc2479"},   // 数字45 (模板:客厅茶几)
+            {"餐桌",         "cf8bfbf7579444959f8c02e026a26ffd"},   // 数字46
+            {"椅子",         "eb5d547ee12d4c78adc8e1cf0abdaa54"},   // 数字47
+            {"书桌",         "7242352de39c4bcbb79249f7e214af73"},   // 数字48 (模板:桌子)
+            {"电视柜",       "3739cea4aa2d46fa9a2a040e042dbe79"},   // 数字49
+            {"橱柜",         "d8313e95517c450587c5f0f654aa953a"},   // 数字50
+            {"鞋柜",         "ed76e70778a64a7b90e3ff5edf3913b5"},   // 数字51
+            {"衣柜",         "55295008996341bea97d72652f6b69da"},   // 数字52
+            {"床头柜",       "b5168a2851cf49b69a2397dbea906773"},   // 数字53
+            {"客厅沙发",     "ebb3a484b0f24858aa22a78addf7572d"},   // 数字54 (模板:沙发)
+            {"床",           "c47c22ae46dd41bdbdad92d50008bd7f"},   // 数字55
+            {"床垫",         "e27d7ac150c1477aa6c9e3ac03650652"},   // 数字56
+            {"晾衣架",       "0a638a08ce044b128809553f91b3e3bb"},   // 数字57
+        };
+
+        // 一对一设施填充
+        for (String[] mapping : facilityMapping) {
+            int qty = facilityQtyMap.getOrDefault(mapping[0], 0);
+            sb.append("  {\"componentId\": \"").append(mapping[1]).append("\", \"componentValue\": \"").append(qty).append("\"},\n");
+        }
+
+        // 数字13: 电视（DB无此设施，默认0）
+        sb.append("  {\"componentId\": \"df9310d42f124edf986744f92edc78aa\", \"componentValue\": \"0\"},\n");
+        // 数字33: 墙面（汇总: 客厅墙面+卧室墙面+厨房墙面+卫生间墙面）
+        int wallQty = facilityQtyMap.getOrDefault("客厅墙面", 0)
+                    + facilityQtyMap.getOrDefault("卧室墙面", 0)
+                    + facilityQtyMap.getOrDefault("厨房墙面", 0)
+                    + facilityQtyMap.getOrDefault("卫生间墙面", 0);
+        sb.append("  {\"componentId\": \"ab92c18d58614881aaf3bdec381920cd\", \"componentValue\": \"").append(wallQty).append("\"},\n");
+        // 数字34: 地板（DB: 房间地板）
+        sb.append("  {\"componentId\": \"3aaf69df97be45c6aca3ed0632b4dfba\", \"componentValue\": \"").append(facilityQtyMap.getOrDefault("房间地板", 0)).append("\"},\n");
+        // 数字35: 地毯（DB无此设施，默认0）
+        sb.append("  {\"componentId\": \"fe9eaa91e1c64f30b8e503fc61fee38b\", \"componentValue\": \"0\"},\n");
+        // 数字39: 密码锁（DB无此设施，默认0）
+        sb.append("  {\"componentId\": \"bac3286c5f8046ed924291c2e4888ea1\", \"componentValue\": \"0\"},\n");
+        // 数字41: 厨房推拉门（DB无此设施，默认0）
+        sb.append("  {\"componentId\": \"cf3857e2240544819dad9c3501b7f139\", \"componentValue\": \"0\"},\n");
+        // 数字42: 窗户（汇总: 客厅窗户+卧室窗户）
+        int windowQty = facilityQtyMap.getOrDefault("客厅窗户", 0)
+                      + facilityQtyMap.getOrDefault("卧室窗户", 0);
+        sb.append("  {\"componentId\": \"1c395eb1e2534fa0866976ce3d236a56\", \"componentValue\": \"").append(windowQty).append("\"},\n");
+
+        // ── 单行文本11: 项目地址 ──
+        sb.append("  {\"componentId\": \"72bf22dc56d24723a715a1f2546346c2\", \"componentValue\": \"").append(escapeJson(projectAddress)).append("\"}\n");
+
+        sb.append("]");
+        return sb.toString();
         // 单行文本5 (default:栗毅, 甲方代表人)、单行文本7 (default:\) — 保留模板默认值，不传
     }
 
