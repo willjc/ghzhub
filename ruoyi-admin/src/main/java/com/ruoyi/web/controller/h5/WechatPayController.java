@@ -196,10 +196,14 @@ public class WechatPayController extends BaseController {
 
                 // 发送支付成功消息
                 try {
+                    String amount = bill.getBillAmount() != null ? bill.getBillAmount().toString() : "0";
                     if ("1".equals(bill.getBillType())) {
-                        messageService.sendMessage(bill.getTenantId(), "bill", "押金缴纳成功", "您的押金已缴纳成功");
+                        messageService.sendMessage(bill.getTenantId(), "bill", "押金缴纳成功",
+                                "您的押金（¥" + amount + "）已缴纳成功");
                     } else if ("2".equals(bill.getBillType())) {
-                        messageService.sendMessage(bill.getTenantId(), "bill", "房租缴纳成功", "您的房租账单已缴纳成功");
+                        String period = bill.getBillPeriod() != null ? bill.getBillPeriod() : "";
+                        messageService.sendMessage(bill.getTenantId(), "bill", "房租缴纳成功",
+                                "您" + period + "的房租（¥" + amount + "）已缴纳成功");
                     }
                 } catch (Exception msgEx) {
                     logger.warn("【微信回调】发送支付消息失败，不影响主流程: {}", msgEx.getMessage());
@@ -287,10 +291,14 @@ public class WechatPayController extends BaseController {
 
                 // 发送支付成功消息
                 try {
+                    String amount = bill.getBillAmount() != null ? bill.getBillAmount().toString() : "0";
                     if ("1".equals(bill.getBillType())) {
-                        messageService.sendMessage(bill.getTenantId(), "bill", "押金缴纳成功", "您的押金已缴纳成功");
+                        messageService.sendMessage(bill.getTenantId(), "bill", "押金缴纳成功",
+                                "您的押金（¥" + amount + "）已缴纳成功");
                     } else if ("2".equals(bill.getBillType())) {
-                        messageService.sendMessage(bill.getTenantId(), "bill", "房租缴纳成功", "您的房租账单已缴纳成功");
+                        String period = bill.getBillPeriod() != null ? bill.getBillPeriod() : "";
+                        messageService.sendMessage(bill.getTenantId(), "bill", "房租缴纳成功",
+                                "您" + period + "的房租（¥" + amount + "）已缴纳成功");
                     }
                 } catch (Exception msgEx) {
                     logger.warn("主动查单同步-发送支付消息失败，不影响主流程: {}", msgEx.getMessage());

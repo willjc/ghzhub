@@ -94,8 +94,9 @@ public class RentReminderTask {
                         continue;
                     }
 
-                    // 3. 防重复：检查今天是否已对该账单发过催交消息
-                    if (isAlreadySentToday(userId, bill.getBillId(), todayStr)) {
+                    // 3. 防重复：检查今天是否已对该账单周期发过催交消息
+                    String billPeriod = bill.getBillPeriod() != null ? bill.getBillPeriod() : "";
+                    if (isAlreadySentToday(userId, billPeriod, todayStr)) {
                         skipCount++;
                         continue;
                     }
@@ -119,19 +120,22 @@ public class RentReminderTask {
     }
 
     /**
-     * 检查今天是否已向该用户发送过该账单的催交消息
+     * 检查今天是否已向该用户发送过该账单周期的催交消息
+     *
+     * <p>通过 user_id + message_type + message_title + 账单周期关键词 + 当天日期 判断，
+     * 避免在消息内容中嵌入内部标识。
      *
      * @param userId 用户ID
-     * @param billId 账单ID
+     * @param billPeriod 账单周期（如 "2026-07"）
      * @param todayStr 今天日期字符串
      * @return true=已发送过
      */
-    private boolean isAlreadySentToday(Long userId, Long billId, String todayStr) {
-        String billTag = "BILL#" + billId;
+    private boolean isAlreadySentToday(Long userId, String billPeriod, String todayStr) {
         LambdaQueryWrapper<HzUserMessage> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzUserMessage::getUserId, userId)
                 .eq(HzUserMessage::getMessageType, MESSAGE_TYPE_BILL)
-                .like(HzUserMessage::getMessageContent, billTag)
+                .eq(HzUserMessage::getMessageTitle, TITLE_PREFIX)
+                .like(HzUserMessage::getMessageContent, billPeriod)
                 .apply("DATE(create_time) = {0}", todayStr);
         return messageMapper.selectCount(wrapper) > 0;
     }
@@ -144,16 +148,17 @@ public class RentReminderTask {
      */
     private String buildMessageContent(HzBill bill) {
         StringBuilder sb = new StringBuilder();
-        sb.append("您有一笔房租即将到期");
-        if (bill.getDueDate() != null) {
-            sb.append("（到期日：").append(bill.getDueDate()).append("）");
-        }
+        String period = bill.getBillPeriod() != null ? bill.getBillPeriod() : "";
+        sb.append("您").append(period).append("的房租");
         if (bill.getBillAmount() != null) {
-            sb.append("，金额：").append(bill.getBillAmount()).append("元");
+            sb.append("（¥").append(bill.getBillAmount()).append("）");
+        }
+        if (bill.getDueDate() != null) {
+            sb.append("将于").append(bill.getDueDate()).append("到期");
+        } else {
+            sb.append("即将到期");
         }
         sb.append("，请及时缴纳。");
-        // 添加账单唯一标识，用于防重复检查
-        sb.append(" [BILL#").append(bill.getBillId()).append("]");
         return sb.toString();
     }
 }
