@@ -163,6 +163,10 @@ public class HzCheckIn extends BaseEntity {
     @TableField(exist = false)
     private String buildingName;
 
+    /** 单元名 hz_unit.unit_name */
+    @TableField(exist = false)
+    private String unitName;
+
     /** 楼层 hz_house.floor */
     @TableField(exist = false)
     private String floor;
@@ -473,6 +477,14 @@ public class HzCheckIn extends BaseEntity {
 
     public void setBuildingName(String buildingName) {
         this.buildingName = buildingName;
+    }
+
+    public String getUnitName() {
+        return unitName;
+    }
+
+    public void setUnitName(String unitName) {
+        this.unitName = unitName;
     }
 
     public String getFloor() {

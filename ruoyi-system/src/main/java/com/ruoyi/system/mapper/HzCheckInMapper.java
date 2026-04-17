@@ -39,9 +39,10 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  c.status, c.create_by, c.create_time, c.update_by, c.update_time, c.remark, c.del_flag, " +
             "  ct.contract_no AS contractNo, " +
             "  u.nickname AS tenantNickname, " +
-            "  CONCAT(h.house_code, '-', h.house_no) AS houseName, " +
+            "  h.house_no AS houseName, " +
             "  u.real_name AS realName, u.id_card AS idCard, u.phone, " +
             "  p.project_name AS projectName, b.building_name AS buildingName, " +
+            "  un.unit_name AS unitName, " +
             "  h.floor, h.orientation, h.area, " +
             "  ct.start_date AS startDate, ct.end_date AS endDate, " +
             "  DATEDIFF(ct.end_date, CURDATE()) AS remainingDays " +
@@ -50,6 +51,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "LEFT JOIN hz_user u ON c.tenant_id = u.user_id " +
             "LEFT JOIN hz_house h ON c.house_id = h.house_id " +
             "LEFT JOIN hz_building b ON h.building_id = b.building_id " +
+            "LEFT JOIN hz_unit un ON h.unit_id = un.unit_id " +
             "LEFT JOIN hz_project p ON h.project_id = p.project_id " +
             "WHERE c.del_flag = '0' " +
             "<if test='checkIn.tenantId != null'> AND c.tenant_id = #{checkIn.tenantId} </if>" +
@@ -81,9 +83,10 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  c.status, c.create_by, c.create_time, c.update_by, c.update_time, c.remark, c.del_flag, " +
             "  ct.contract_no AS contractNo, " +
             "  u.nickname AS tenantNickname, " +
-            "  CONCAT(h.house_code, '-', h.house_no) AS houseName, " +
+            "  h.house_no AS houseName, " +
             "  u.real_name AS realName, u.id_card AS idCard, u.phone, " +
             "  p.project_name AS projectName, b.building_name AS buildingName, " +
+            "  un.unit_name AS unitName, " +
             "  h.floor, h.orientation, h.area, " +
             "  ct.start_date AS startDate, ct.end_date AS endDate, " +
             "  DATEDIFF(ct.end_date, CURDATE()) AS remainingDays " +
@@ -92,6 +95,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "LEFT JOIN hz_user u ON c.tenant_id = u.user_id " +
             "LEFT JOIN hz_house h ON c.house_id = h.house_id " +
             "LEFT JOIN hz_building b ON h.building_id = b.building_id " +
+            "LEFT JOIN hz_unit un ON h.unit_id = un.unit_id " +
             "LEFT JOIN hz_project p ON h.project_id = p.project_id " +
             "WHERE c.record_id = #{recordId} AND c.del_flag = '0'")
     HzCheckIn selectCheckInByIdWithRelations(@Param("recordId") Long recordId);
@@ -114,9 +118,10 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  c.status, c.create_by, c.create_time, c.update_by, c.update_time, c.remark, c.del_flag, " +
             "  ct.contract_no AS contractNo, " +
             "  u.nickname AS tenantNickname, " +
-            "  CONCAT(h.house_code, '-', h.house_no) AS houseName, " +
+            "  h.house_no AS houseName, " +
             "  u.real_name AS realName, u.id_card AS idCard, u.phone, " +
             "  p.project_name AS projectName, b.building_name AS buildingName, " +
+            "  un.unit_name AS unitName, " +
             "  h.floor, h.orientation, h.area, " +
             "  ct.start_date AS startDate, ct.end_date AS endDate, " +
             "  DATEDIFF(ct.end_date, CURDATE()) AS remainingDays " +
@@ -125,6 +130,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "LEFT JOIN hz_user u ON c.tenant_id = u.user_id " +
             "LEFT JOIN hz_house h ON c.house_id = h.house_id " +
             "LEFT JOIN hz_building b ON h.building_id = b.building_id " +
+            "LEFT JOIN hz_unit un ON h.unit_id = un.unit_id " +
             "LEFT JOIN hz_project p ON h.project_id = p.project_id " +
             "WHERE c.del_flag = '0' " +
             "<if test='tenantId != null'> AND c.tenant_id = #{tenantId} </if>" +

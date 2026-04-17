@@ -197,18 +197,18 @@
         </el-descriptions>
       </div>
 
-      <!-- 租户签字区 -->
+      <!-- 用户合同区 -->
       <div class="detail-section">
-        <div class="detail-section-title">租户签字</div>
+        <div class="detail-section-title">用户合同</div>
         <div class="detail-section-body">
-          <el-image
-            v-if="detailForm.tenantSignature"
-            :src="baseUrl + detailForm.tenantSignature"
-            :preview-src-list="[baseUrl + detailForm.tenantSignature]"
-            fit="contain"
-            style="max-width: 300px; max-height: 150px; border: 1px solid #dcdfe6; border-radius: 4px;"
-          />
-          <span v-else style="color: #909399;">无</span>
+          <el-button
+            v-if="detailForm.contractId"
+            type="primary"
+            size="small"
+            icon="el-icon-view"
+            @click="handleViewContractPdf(detailForm.contractId)"
+          >查看合同</el-button>
+          <span v-else style="color: #909399;">暂无关联合同</span>
         </div>
       </div>
 
@@ -263,6 +263,7 @@
 <script>
 import { listCheckIn, getCheckIn, addCheckIn, updateCheckIn, delCheckIn, auditCheckIn } from "@/api/gangzhu/checkin";
 import { listHouseFacility } from "@/api/gangzhu/houseFacility";
+import { getContractPdfUrl } from "@/api/gangzhu/contract";
 
 export default {
   name: "CheckIn",
@@ -336,13 +337,14 @@ export default {
       this.single = selection.length !== 1;
       this.multiple = !selection.length;
     },
-    /** 格式化房源位置：楼栋-楼层-房源名 */
+    /** 格式化房源位置：楼栋+单元+楼层+房号 */
     formatLocation(row) {
       const parts = [];
       if (row.buildingName) parts.push(row.buildingName);
-      if (row.floor) parts.push(row.floor);
-      if (row.houseName) parts.push(row.houseName);
-      return parts.length > 0 ? parts.join('-') : '-';
+      if (row.unitName) parts.push(row.unitName);
+      if (row.floor) parts.push(row.floor + '层');
+      if (row.houseName) parts.push(row.houseName + '室');
+      return parts.length > 0 ? parts.join('') : '-';
     },
     /** 解析同住人JSON */
     parseRoommates(roommateInfo) {
@@ -389,7 +391,7 @@ export default {
         map[cat].push({
           name: item.facilityName || item.name || '未命名',
           quantity: item.quantity || 1,
-          status: item.facilityStatus || item.status || '未知'
+          status: item.itemStatus || item.facilityStatus || item.status || '完好'
         });
       });
       return Object.keys(map).map(key => ({ category: key, items: map[key] }));
@@ -430,6 +432,19 @@ export default {
       this.download('system/checkin/export', {
         ...this.queryParams
       }, `checkin_${new Date().getTime()}.xlsx`);
+    },
+    /** 查看合同PDF */
+    handleViewContractPdf(contractId) {
+      this.$message({ message: '正在获取合同链接...', type: 'info', duration: 1500 });
+      getContractPdfUrl(contractId).then(res => {
+        if (res.code === 200 && res.data) {
+          window.open(res.data, '_blank');
+        } else {
+          this.$message.error(res.msg || '该合同暂无电子PDF');
+        }
+      }).catch(() => {
+        this.$message.error('获取链接失败，请重试');
+      });
     }
   }
 };
