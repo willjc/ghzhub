@@ -276,10 +276,15 @@ public class HzContractAppController extends BaseController {
                 .eq(HzBill::getContractId, contractId)
                 .eq(HzBill::getBillType, "1")
                 .last("LIMIT 1"));
-        data.put("depositPaid", depositBill != null && "1".equals(depositBill.getBillStatus()));
-        if (depositBill != null) {
-            data.put("depositBillId", depositBill.getBillId());
-            data.put("depositAmount", depositBill.getUnpaidAmount() != null ? depositBill.getUnpaidAmount() : depositBill.getBillAmount());
+        // 续租合同无需押金，直接标记为已缴
+        if ("2".equals(contract.getContractType())) {
+            data.put("depositPaid", true);
+        } else {
+            data.put("depositPaid", depositBill != null && "1".equals(depositBill.getBillStatus()));
+            if (depositBill != null) {
+                data.put("depositBillId", depositBill.getBillId());
+                data.put("depositAmount", depositBill.getUnpaidAmount() != null ? depositBill.getUnpaidAmount() : depositBill.getBillAmount());
+            }
         }
         // 动态查询资料审核状态：0=未提交, 1=审核中, 2=已通过
         List<com.ruoyi.system.domain.HzDocument> docs2 = documentService.selectDocumentListByTenantId(contract.getTenantId());
