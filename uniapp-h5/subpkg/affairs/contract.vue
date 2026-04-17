@@ -15,7 +15,7 @@
 		<!-- 合同列表 -->
 		<scroll-view class="scroll-content" scroll-y>
 			<!-- 提示卡片 -->
-			<view class="tip-card" v-if="currentTab === 'current' && hasUnsignedContract">
+			<view class="tip-card" v-if="currentTab === 'current' && hasUnsignedNewContract">
 				<text class="tip-text">提示：合同签署后30分钟内未支付押金，则合同自动失效！</text>
 			</view>
 			
@@ -137,7 +137,7 @@
 					</view>
 					<!-- 履行中 -->
 					<view class="button-group" v-else-if="item.status === 'active'">
-						<view class="btn btn-renew" @click="handleRenew(item)">
+						<view class="btn btn-renew" @click="handleRenew(item)" v-if="item.isRenewed !== '1'">
 							<text class="btn-text-blue">续租</text>
 						</view>
 						<view class="btn btn-pay" @click="handlePay(item)">
@@ -170,7 +170,7 @@
 					</view>
 					<!-- 全部完成：合约中 -->
 					<view class="button-group" v-else-if="item.status === 'signed' && item.firstRentPaid">
-						<view class="btn btn-renew" @click="handleRenew(item)">
+						<view class="btn btn-renew" @click="handleRenew(item)" v-if="item.isRenewed !== '1'">
 							<text class="btn-text-blue">续租</text>
 						</view>
 						<view class="btn btn-pay" @click="handlePay(item)">
@@ -231,8 +231,12 @@
 					}
 				})
 			},
-			hasUnsignedContract() {
-				return this.allContractList.some(item => item.status === 'pending' || (item.status === 'signed' && !item.depositPaid))
+			hasUnsignedNewContract() {
+				// 只对新签合同(非续租)显示押金提示
+				return this.allContractList.some(item =>
+					item.contractType !== '2' &&
+					(item.status === 'pending' || (item.status === 'signed' && !item.depositPaid))
+				)
 			}
 		},
 		onLoad(options) {
@@ -456,16 +460,20 @@
 				const status = this.getContractStatus(item)
 
 				const signed           = ['2','3','4'].includes(item.contract_status)
-				const depositPaid      = item.deposit_paid === '1'
+				const depositPaid      = item.deposit_paid === '1' || item.contract_type === '2'  // 续租合同无需押金，视为已缴
 				const materialStatus   = item.material_status || '0' // 0未提交 1审核中 2已通过
 				const materialSubmitted = materialStatus !== '0'
 				const materialApproved  = materialStatus === '2'
 				const firstRentPaid    = item.first_rent_paid === '1'
 
+				const isRenewal = item.contract_type === '2'  // 续租合同
+
 				return {
 					type:             'contract',
 					uniqueKey:        'c_' + item.contract_id,
 					contractId:       item.contract_id,
+					contractType:     item.contract_type || '1',  // 1=新签 2=续租
+					isRenewed:        item.is_renewed || '0',     // 1=已续租 0=未续租
 					house_id:         item.house_id,
 					project_id:       item.project_id,
 					houseCode:        item.house_code || item.house_no || '',

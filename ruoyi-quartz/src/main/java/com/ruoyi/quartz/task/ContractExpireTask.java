@@ -149,6 +149,7 @@ public class ContractExpireTask {
                 new LambdaQueryWrapper<HzContract>()
                         .eq(HzContract::getContractStatus, "2")
                         .isNotNull(HzContract::getSignTime)
+                        .ne(HzContract::getContractType, "2")  // 排除续租合同
                         .eq(HzContract::getDelFlag, "0"));
 
         LocalDateTime now = LocalDateTime.now();
@@ -186,6 +187,7 @@ public class ContractExpireTask {
         List<HzContract> contracts = contractMapper.selectList(
                 new LambdaQueryWrapper<HzContract>()
                         .eq(HzContract::getContractStatus, "0")
+                        .ne(HzContract::getContractType, "2")  // 排除续租合同
                         .eq(HzContract::getDelFlag, "0"));
 
         LocalDateTime now = LocalDateTime.now();
@@ -218,6 +220,7 @@ public class ContractExpireTask {
         List<HzContract> contracts = contractMapper.selectList(
                 new LambdaQueryWrapper<HzContract>()
                         .eq(HzContract::getContractStatus, "2")
+                        .ne(HzContract::getContractType, "2")  // 排除续租合同
                         .eq(HzContract::getDelFlag, "0"));
 
         LocalDateTime now = LocalDateTime.now();

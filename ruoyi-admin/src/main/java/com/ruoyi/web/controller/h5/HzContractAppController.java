@@ -105,12 +105,19 @@ public class HzContractAppController extends BaseController {
             Object contractIdObj = contract.get("contract_id");
             if (contractIdObj != null) {
                 Long contractId = Long.parseLong(contractIdObj.toString());
-                // 查询押金账单状态
-                HzBill depositBill = billMapper.selectOne(new LambdaQueryWrapper<HzBill>()
-                        .eq(HzBill::getContractId, contractId)
-                        .eq(HzBill::getBillType, "1")
-                        .last("LIMIT 1"));
-                contract.put("deposit_paid", depositBill != null && "1".equals(depositBill.getBillStatus()) ? "1" : "0");
+                String contractType = contract.get("contract_type") != null ? contract.get("contract_type").toString() : "";
+
+                // 续租合同无需押金，直接标记为已付
+                if ("2".equals(contractType)) {
+                    contract.put("deposit_paid", "1");
+                } else {
+                    // 新签合同：查询押金账单状态
+                    HzBill depositBill = billMapper.selectOne(new LambdaQueryWrapper<HzBill>()
+                            .eq(HzBill::getContractId, contractId)
+                            .eq(HzBill::getBillType, "1")
+                            .last("LIMIT 1"));
+                    contract.put("deposit_paid", depositBill != null && "1".equals(depositBill.getBillStatus()) ? "1" : "0");
+                }
 
                 // 查询第一期租金是否已缴
                 HzBill firstRent = billMapper.selectOne(new LambdaQueryWrapper<HzBill>()
@@ -657,6 +664,20 @@ public class HzContractAppController extends BaseController {
             HzContract oldContract = contractService.selectContractById(oldContractId);
             if (oldContract == null) {
                 return error("原合同不存在");
+            }
+            // 防重复校验：原合同是否已续租
+            if ("1".equals(oldContract.getIsRenewed())) {
+                return error("该合同已续租，不可重复续租");
+            }
+            // 防重复校验：是否已存在该用户该房源的进行中续租合同
+            List<HzContract> existingRenewals = contractMapper.selectList(new LambdaQueryWrapper<HzContract>()
+                    .eq(HzContract::getTenantId, oldContract.getTenantId())
+                    .eq(HzContract::getHouseId, houseId)
+                    .eq(HzContract::getContractType, "2")
+                    .notIn(HzContract::getContractStatus, "5", "6")  // 排除已解约、已失效
+                    .eq(HzContract::getDelFlag, "0"));
+            if (existingRenewals != null && !existingRenewals.isEmpty()) {
+                return error("已存在续租合同，请勿重复提交");
             }
             if (oldContract.getEndDate() != null && !oldContract.getEndDate().isEmpty()) {
                 LocalDate contractEndDate = LocalDate.parse(oldContract.getEndDate().substring(0, 10));
