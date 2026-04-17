@@ -415,6 +415,7 @@ public class HzContractAppController extends BaseController {
         result.put("endDate", endDate);
         result.put("projectName", project.getProjectName());
         result.put("houseAddress", houseAddress);
+        result.put("houseCode", house.getHouseNo());
 
         return success(result);
     }

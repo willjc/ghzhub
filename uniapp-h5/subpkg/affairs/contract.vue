@@ -356,7 +356,7 @@
 			handleRenew(item) {
 				// 跳转到合同签订页面,传递续租标识和合同信息
 				uni.navigateTo({
-					url: `/pages/contract/sign?isRenew=true&oldContractId=${item.contractId}&roomId=${item.house_id || ''}&projectId=${item.project_id || ''}`
+					url: `/pages/contract/sign?isRenew=true&oldContractId=${item.contractId}&roomId=${item.house_id || ''}&projectId=${item.project_id || ''}&houseCode=${encodeURIComponent(item.houseCode || item.room || '')}`
 				})
 			},
 
@@ -468,6 +468,7 @@
 					contractId:       item.contract_id,
 					house_id:         item.house_id,
 					project_id:       item.project_id,
+					houseCode:        item.house_code || item.house_no || '',
 					status:           status.code,
 					statusText:       status.text,
 					community:        item.project_name || '未知小区',
