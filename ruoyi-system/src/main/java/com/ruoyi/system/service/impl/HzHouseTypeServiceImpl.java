@@ -150,11 +150,8 @@ public class HzHouseTypeServiceImpl extends ServiceImpl<HzHouseTypeMapper, HzHou
         // 级联删除户型图片
         hzHouseTypeImageService.deleteImagesByHouseTypeId(houseTypeId);
 
-        // 逻辑删除户型
-        HzHouseType houseType = new HzHouseType();
-        houseType.setHouseTypeId(houseTypeId);
-        houseType.setDelFlag("2");
-        return this.updateById(houseType) ? 1 : 0;
+        // 逻辑删除户型（removeById会自动处理@TableLogic: SET del_flag='2' WHERE del_flag='0'）
+        return this.removeById(houseTypeId) ? 1 : 0;
     }
 
     /**

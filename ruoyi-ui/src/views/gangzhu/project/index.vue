@@ -134,13 +134,6 @@
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-magic-stick"
-            @click="handleGenerateHouseTypes(scope.row)"
-            v-hasPermi="['gangzhu:project:edit']"
-          >生成房型</el-button>
-          <el-button
-            size="mini"
-            type="text"
             icon="el-icon-setting"
             @click="handleFacilityManage(scope.row)"
           >房间设施管理</el-button>
@@ -664,7 +657,7 @@
 </template>
 
 <script>
-import { listProject, getProject, addProject, updateProject, delProject, generateHouseTypes } from "@/api/gangzhu/project";
+import { listProject, getProject, addProject, updateProject, delProject } from "@/api/gangzhu/project";
 import { listHouseType } from "@/api/gangzhu/houseType";
 import { listFacilityItem } from "@/api/gangzhu/facilityItem";
 import { listHouseTypeFacility, batchSaveHouseTypeFacility } from "@/api/gangzhu/houseTypeFacility";
@@ -891,16 +884,6 @@ export default {
       this.currentProjectId = row.projectId;
       this.currentProjectName = row.projectName;
       this.houseTypeDialogVisible = true;
-    },
-    /** 批量生成房型按钮操作 */
-    handleGenerateHouseTypes(row) {
-      this.$modal.confirm('确认为项目"' + row.projectName + '"生成标准房型（一室~六室）吗？').then(() => {
-        return generateHouseTypes(row.projectId);
-      }).then(response => {
-        this.$modal.msgSuccess(response.msg || "生成成功");
-        // 可选：生成后自动打开房型管理对话框
-        // this.handleManageHouseType(row);
-      }).catch(() => {});
     },
     /** 详情按钮操作 */
     handleDetail(row) {
