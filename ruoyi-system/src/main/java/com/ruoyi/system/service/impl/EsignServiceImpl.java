@@ -1047,7 +1047,12 @@ public class EsignServiceImpl implements EsignService {
         checkIn.setMeterReadingWater("0");
         checkIn.setMeterReadingGas("0");
         checkIn.setKeyCount(1);
-        checkIn.setStatus("0");  // 0=待办理
+        // 续租合同(contractType='2')用户已在住，直接设为已确认；新签走正常入住流程
+        if ("2".equals(contract.getContractType())) {
+            checkIn.setStatus("4");  // 4=已入住确认
+        } else {
+            checkIn.setStatus("0");  // 0=待办理
+        }
         checkIn.setDelFlag("0");
         checkIn.setRemark(String.format("项目：%s | 房间：%s | 租期：%s至%s（%d个月） | 月租金：%s元 | 押金：%s元",
                 project.getProjectName() != null ? project.getProjectName() : "",

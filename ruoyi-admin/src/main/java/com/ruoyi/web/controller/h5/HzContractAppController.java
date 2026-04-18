@@ -1163,7 +1163,12 @@ public class HzContractAppController extends BaseController {
         checkIn.setMeterReadingGas("0");
 
         checkIn.setKeyCount(1);  // 默认1把钥匙
-        checkIn.setStatus("0");  // 0=待办理
+        // 续租合同(contractType='2')用户已在住，直接设为已确认；新签走正常入住流程
+        if ("2".equals(contract.getContractType())) {
+            checkIn.setStatus("4");  // 4=已入住确认
+        } else {
+            checkIn.setStatus("0");  // 0=待办理
+        }
         checkIn.setDelFlag("0");
 
         // 在remark中记录项目名、房间号、租期、租金、押金等信息
