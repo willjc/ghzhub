@@ -350,8 +350,22 @@ public class HzContractAppController extends BaseController {
         Long houseId = Long.parseLong(params.get("houseId").toString());
         Integer rentMonths = Integer.parseInt(params.get("rentMonths").toString());
 
-        // 合同生效日期自动计算为当前日期 + 3天
-        LocalDate startDate = LocalDate.now().plusDays(3);
+        // 判断是否续租模式
+        Long oldContractId = params.containsKey("oldContractId") && params.get("oldContractId") != null
+                ? Long.parseLong(params.get("oldContractId").toString()) : null;
+
+        LocalDate startDate;
+        if (oldContractId != null) {
+            // 续租模式：从原合同到期日开始
+            HzContract oldContract = contractService.selectContractById(oldContractId);
+            if (oldContract == null) {
+                return error("原合同不存在");
+            }
+            startDate = LocalDate.parse(oldContract.getEndDate().substring(0, 10));
+        } else {
+            // 新签模式：当前日期+3天
+            startDate = LocalDate.now().plusDays(3);
+        }
         String startDateStr = startDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
         // 1. 获取房源信息
@@ -424,6 +438,7 @@ public class HzContractAppController extends BaseController {
         result.put("deposit", depositAmount);
         result.put("totalRent", house.getRentPrice().multiply(new BigDecimal(rentMonths)));
         result.put("totalAmount", house.getRentPrice().multiply(new BigDecimal(rentMonths)).add(depositAmount));
+        result.put("startDate", startDateStr);
         result.put("endDate", endDate);
         result.put("projectName", project.getProjectName());
         result.put("houseAddress", houseAddress);
@@ -686,14 +701,10 @@ public class HzContractAppController extends BaseController {
             }
             if (oldContract.getEndDate() != null && !oldContract.getEndDate().isEmpty()) {
                 LocalDate contractEndDate = LocalDate.parse(oldContract.getEndDate().substring(0, 10));
-                if (LocalDate.now().isAfter(contractEndDate)) {
-                    return error("合同已到期，房源已释放，无法续租");
+                LocalDate today = LocalDate.now();
+                if (today.isAfter(contractEndDate.plusDays(30))) {
+                    return error("合同已过期超过30天，无法续租");
                 }
-            }
-            // 2. 校验房源状态，空置(0)说明已被释放
-            HzHouse currentHouse = houseMapper.selectById(houseId);
-            if (currentHouse != null && "0".equals(currentHouse.getHouseStatus())) {
-                return error("房源已释放，无法续租");
             }
             // ========== 续租到期校验结束 ==========
 
@@ -710,9 +721,17 @@ public class HzContractAppController extends BaseController {
                 return error("获取用户信息失败，请重新登录");
             }
 
-            // 合同生效日期自动计算为当前日期 + 3天
-            LocalDate startDateLocal = LocalDate.now().plusDays(3);
+            // 续租合同生效日期 = 原合同到期日
+            String oldEndDate = oldContract.getEndDate();
+            LocalDate startDateLocal = LocalDate.parse(oldEndDate.substring(0, 10));
             String startDate = startDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
+            // 结束日期 = 起始日 + 租月
+            LocalDate endDateLocal = startDateLocal.plusMonths(rentMonths);
+            String endDateCalc = endDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
+            // 如果前端未传endDate或为空，使用计算值
+            if (endDate == null || endDate.isEmpty()) {
+                endDate = endDateCalc;
+            }
 
             // 1. 处理签名图片（e签宝模式下签名由e签宝完成）
             String signatureUrl = "";

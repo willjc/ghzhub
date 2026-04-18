@@ -5,7 +5,9 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzCheckoutApply;
+import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.service.IHzCheckoutService;
+import com.ruoyi.system.service.IHzContractService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -29,6 +31,9 @@ public class HzCheckOutAppController extends BaseController {
 
     @Autowired
     private IHzCheckoutService checkoutService;
+
+    @Autowired
+    private IHzContractService contractService;
 
     /**
      * 获取用户的退租申请列表
@@ -139,6 +144,15 @@ public class HzCheckOutAppController extends BaseController {
         // 获取签名数据（base64格式）
         String signature = requestData.get("signature") != null ?
                           requestData.get("signature").toString() : null;
+
+        // 校验合同是否已续租（押金已转移至续租合同）
+        HzContract contract = contractService.selectContractById(contractId);
+        if (contract == null) {
+            return error("合同不存在");
+        }
+        if ("1".equals(contract.getIsRenewed())) {
+            return error("该合同已续租，押金已转移至续租合同，无法办理退租。请从最新的续租合同办理退租。");
+        }
 
         // 从token中获取租户ID
         Long tenantId = getHzUserIdFromToken();
