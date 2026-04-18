@@ -388,10 +388,15 @@ export default {
           await this.callInitSign()
           return
         }
-        const res = await generateContract({
+        const params = {
           houseId: this.roomId,
           rentMonths: this.rentMonths
-        })
+        }
+        // 续租模式下传递 oldContractId
+        if (this.isRenew && this.oldContractId) {
+          params.oldContractId = this.oldContractId
+        }
+        const res = await generateContract(params)
         if (res.code !== 200) throw new Error(res.msg || '获取合同信息失败')
         this.contractContent = res.data.contractContent || ''
         this.templateId = res.data.templateId
@@ -403,9 +408,14 @@ export default {
         if (!this.houseCode) {
           this.houseCode = res.data.houseCode || res.data.roomNo || res.data.roomNumber || res.data.houseNo || ''
         }
-        const start = new Date()
-        start.setDate(start.getDate() + 3)
-        this.startDate = start.toISOString().split('T')[0]
+        // 续租模式使用后端返回的 startDate（原合同到期日），新签模式用当前日期+3天
+        if (res.data.startDate) {
+          this.startDate = res.data.startDate
+        } else {
+          const start = new Date()
+          start.setDate(start.getDate() + 3)
+          this.startDate = start.toISOString().split('T')[0]
+        }
         this.step = 'preview'
       } catch (e) {
         this.step = 'error'
@@ -430,6 +440,7 @@ export default {
               projectId: this.projectId,
               templateId: this.templateId,
               contractContent: this.contractContent,
+              startDate: this.startDate,
               endDate: this.endDate,
               rentMonths: this.rentMonths,
               userId: this.userId
