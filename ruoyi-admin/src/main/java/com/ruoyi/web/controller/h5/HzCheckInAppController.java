@@ -196,6 +196,7 @@ public class HzCheckInAppController extends BaseController {
                 com.ruoyi.system.domain.HzContract contract = contractService.selectContractById(checkIn.getContractId());
                 if (contract != null) {
                     checkIn.setContractNo(contract.getContractNo());
+                    checkIn.setIsRenewed(contract.getIsRenewed());
                 }
             }
         }

@@ -247,9 +247,11 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
             if (contract != null) {
                 item.put("contractNo", contract.getContractNo());
                 item.put("contractType", contract.getContractType());
+                item.put("isRenewed", contract.getIsRenewed());
             } else {
                 item.put("contractNo", "");
                 item.put("contractType", "");
+                item.put("isRenewed", "0");
             }
 
             // 状态映射

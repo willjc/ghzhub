@@ -191,6 +191,10 @@ public class HzCheckIn extends BaseEntity {
     @TableField(exist = false)
     private Integer remainingDays;
 
+    /** 是否续租(0:否 1:是)，来自 hz_contract.is_renewed */
+    @TableField(exist = false)
+    private String isRenewed;
+
     public void setRecordId(Long recordId) {
         this.recordId = recordId;
     }
@@ -533,6 +537,14 @@ public class HzCheckIn extends BaseEntity {
 
     public void setRemainingDays(Integer remainingDays) {
         this.remainingDays = remainingDays;
+    }
+
+    public String getIsRenewed() {
+        return isRenewed;
+    }
+
+    public void setIsRenewed(String isRenewed) {
+        this.isRenewed = isRenewed;
     }
 
 
