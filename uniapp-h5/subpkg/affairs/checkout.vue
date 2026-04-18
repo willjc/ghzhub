@@ -39,43 +39,51 @@
 					<text class="info-value">{{ item.deposit }}</text>
 				</view>
 
-				<!-- 按钮区域 - 已入住确认（显示退租办理按钮） -->
-				<view class="button-group" v-if="item.status === 'confirmed'">
-					<view class="btn btn-primary" @click="handleCheckout(index)">
-						<text class="btn-text-white">退租办理</text>
-					</view>
+				<!-- 已续租合同：显示押金转移提示，不显示操作按钮 -->
+				<view class="renewed-tip" v-if="item.isRenewed === '1'">
+					<text class="renewed-tip-text">押金已转移至续租合同，请从续租合同办理退租</text>
 				</view>
-
-				<!-- 按钮区域 - 审批中 -->
-				<view class="button-group" v-if="item.status === 'pending'">
-					<view class="btn btn-cancel" @click="handleCancel(index)">
-						<text class="btn-text-blue">取消申请</text>
+				
+				<!-- 未续租合同：显示正常操作按钮 -->
+				<template v-else>
+					<!-- 按钮区域 - 已入住确认（显示退租办理按钮） -->
+					<view class="button-group" v-if="item.status === 'confirmed'">
+						<view class="btn btn-primary" @click="handleCheckout(index)">
+							<text class="btn-text-white">退租办理</text>
+						</view>
 					</view>
-				</view>
-
-				<!-- 按钮区域 - 待确认 -->
-				<view class="button-group" v-if="item.status === 'wait_confirm'">
-					<view class="btn btn-primary" @click="handleConfirm(index)">
-						<text class="btn-text-white">确认</text>
+				
+					<!-- 按钮区域 - 审批中 -->
+					<view class="button-group" v-if="item.status === 'pending'">
+						<view class="btn btn-cancel" @click="handleCancel(index)">
+							<text class="btn-text-blue">取消申请</text>
+						</view>
 					</view>
-				</view>
-
-				<!-- 按钮区域 - 审批驳回/已确认 -->
-				<view class="button-group" v-if="item.status === 'rejected' || item.status === 'confirmed_done'">
-					<view class="btn btn-detail" @click="handleDetail(index)">
-						<text class="btn-text-blue">查看详情</text>
+				
+					<!-- 按钮区域 - 待确认 -->
+					<view class="button-group" v-if="item.status === 'wait_confirm'">
+						<view class="btn btn-primary" @click="handleConfirm(index)">
+							<text class="btn-text-white">确认</text>
+						</view>
 					</view>
-				</view>
-
-				<!-- 按钮区域 - 已取消 -->
-				<view class="button-group" v-if="item.status === 'cancelled'">
-					<view class="btn btn-detail" @click="handleDetail(index)">
-						<text class="btn-text-blue">查看详情</text>
+				
+					<!-- 按钮区域 - 审批驳回/已确认 -->
+					<view class="button-group" v-if="item.status === 'rejected' || item.status === 'confirmed_done'">
+						<view class="btn btn-detail" @click="handleDetail(index)">
+							<text class="btn-text-blue">查看详情</text>
+						</view>
 					</view>
-					<view class="btn btn-primary" @click="handleCheckout(index)">
-						<text class="btn-text-white">再次退租</text>
+				
+					<!-- 按钮区域 - 已取消 -->
+					<view class="button-group" v-if="item.status === 'cancelled'">
+						<view class="btn btn-detail" @click="handleDetail(index)">
+							<text class="btn-text-blue">查看详情</text>
+						</view>
+						<view class="btn btn-primary" @click="handleCheckout(index)">
+							<text class="btn-text-white">再次退租</text>
+						</view>
 					</view>
-				</view>
+				</template>
 			</view>
 
 			<!-- 空状态 -->
@@ -212,7 +220,8 @@
 					room: room || '未知房间',
 					rentPeriod: rentPeriod || '-',
 					rent: rent ? rent : '-',
-					deposit: deposit ? deposit : '-'
+					deposit: deposit ? deposit : '-',
+					isRenewed: item.isRenewed || item.is_renewed || '0'
 				}
 			},
 
@@ -239,7 +248,8 @@
 					room: item.room || '未知房间',
 					rentPeriod: item.rentPeriod || '-',
 					rent: item.rent ? item.rent : '-',
-					deposit: item.deposit ? item.deposit : '-'
+					deposit: item.deposit ? item.deposit : '-',
+					isRenewed: item.isRenewed || item.is_renewed || '0'
 				}
 			},
 
@@ -476,5 +486,22 @@
 	.empty-text {
 		color: #999999;
 		font-size: 28rpx;
+	}
+
+	/* 已续租提示 */
+	.renewed-tip {
+		margin-top: 20rpx;
+		padding: 16rpx 20rpx;
+		background: #fff7ed;
+		border-radius: 8rpx;
+		display: flex;
+		align-items: center;
+	}
+
+	.renewed-tip-text {
+		color: #e8890c;
+		font-size: 24rpx;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+		line-height: 36rpx;
 	}
 </style>

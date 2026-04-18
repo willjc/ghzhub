@@ -347,12 +347,38 @@ export default {
       this.rentMonthsIndex = e.detail.value
       const m = this.rentMonthsOptions[this.rentMonthsIndex].value
       this.rentMonths = m
-      const start = new Date()
-      start.setDate(start.getDate() + 3)
-      this.startDate = start.toISOString().split('T')[0]
-      const end = new Date(start)
-      end.setMonth(end.getMonth() + m)
-      this.endDate = end.toISOString().split('T')[0]
+      if (this.isRenew) {
+        // 续租模式：重新调用后端获取基于原合同到期日的起止日期
+        this.refreshContractDates()
+      } else {
+        const start = new Date()
+        start.setDate(start.getDate() + 3)
+        this.startDate = start.toISOString().split('T')[0]
+        const end = new Date(start)
+        end.setMonth(end.getMonth() + m)
+        this.endDate = end.toISOString().split('T')[0]
+      }
+    },
+
+    async refreshContractDates() {
+      try {
+        const params = {
+          houseId: this.roomId,
+          rentMonths: this.rentMonths
+        }
+        if (this.isRenew && this.oldContractId) {
+          params.oldContractId = this.oldContractId
+        }
+        const res = await generateContract(params)
+        if (res.code === 200) {
+          if (res.data.startDate) {
+            this.startDate = res.data.startDate
+          }
+          this.endDate = res.data.endDate || ''
+        }
+      } catch (e) {
+        console.error('刷新合同日期失败', e)
+      }
     },
 
     async init() {
