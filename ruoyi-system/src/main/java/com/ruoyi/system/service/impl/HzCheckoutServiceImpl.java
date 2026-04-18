@@ -12,6 +12,8 @@ import com.ruoyi.system.domain.HzCheckoutRecord;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzProject;
+import com.ruoyi.system.domain.HzBuilding;
+import com.ruoyi.system.domain.HzUnit;
 import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.domain.HzUser;
 import com.ruoyi.system.mapper.HzCheckoutApplyMapper;
@@ -23,6 +25,8 @@ import com.ruoyi.system.mapper.HzCheckInMapper;
 import com.ruoyi.system.mapper.HzBillMapper;
 import com.ruoyi.system.mapper.HzUserMapper;
 import com.ruoyi.system.mapper.HzRefundApplyMapper;
+import com.ruoyi.system.mapper.HzBuildingMapper;
+import com.ruoyi.system.mapper.HzUnitMapper;
 import com.ruoyi.system.domain.HzRefundApply;
 import com.ruoyi.system.service.IHzCheckoutService;
 import com.ruoyi.common.core.page.TableDataInfo;
@@ -76,6 +80,12 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
 
     @Autowired
     private HzRefundApplyMapper refundApplyMapper;
+
+    @Autowired
+    private HzBuildingMapper buildingMapper;
+
+    @Autowired
+    private HzUnitMapper unitMapper;
 
     @Override
     public HzCheckoutApply selectCheckoutApplyByApplyId(Long applyId) {
@@ -172,6 +182,28 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                     vo.setOrientation(house.getOrientation());
                     vo.setDecoration(house.getDecoration());
                     vo.setFacilities(house.getFacilities());
+
+                    // 获取项目信息
+                    if (house.getProjectId() != null) {
+                        HzProject project = projectMapper.selectById(house.getProjectId());
+                        if (project != null) {
+                            vo.setProjectName(project.getProjectName());
+                        }
+                    }
+                    // 获取楼栋信息
+                    if (house.getBuildingId() != null) {
+                        HzBuilding building = buildingMapper.selectById(house.getBuildingId());
+                        if (building != null) {
+                            vo.setBuildingName(building.getBuildingName());
+                        }
+                    }
+                    // 获取单元信息
+                    if (house.getUnitId() != null) {
+                        HzUnit unit = unitMapper.selectById(house.getUnitId());
+                        if (unit != null) {
+                            vo.setUnitName(unit.getUnitName());
+                        }
+                    }
                 }
             }
 
