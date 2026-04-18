@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.ruoyi.system.domain.HzCoTenant;
 import com.ruoyi.system.service.IHzCoTenantService;
+import com.ruoyi.system.service.IHzContractService;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.text.ParseException;
@@ -47,6 +48,9 @@ public class HzCheckInAppController extends BaseController {
 
     @Autowired
     private IHzCoTenantService coTenantService;
+    
+        @Autowired
+        private IHzContractService contractService;
 
     /**
      * 获取用户的房源列表（用于用户端"我的房源"页面）
@@ -185,6 +189,16 @@ public class HzCheckInAppController extends BaseController {
     public AjaxResult getConfirmedCheckInList(@PathVariable Long tenantId) {
         // 查询该用户所有已入住确认的入住单 (status='4' 且 del_flag='0')
         List<HzCheckIn> list = checkInService.selectConfirmedCheckInListByTenantId(tenantId);
+
+        // 补充合同编号和合同类型信息
+        for (HzCheckIn checkIn : list) {
+            if (checkIn.getContractId() != null) {
+                com.ruoyi.system.domain.HzContract contract = contractService.selectContractById(checkIn.getContractId());
+                if (contract != null) {
+                    checkIn.setContractNo(contract.getContractNo());
+                }
+            }
+        }
 
         return success(list);
     }

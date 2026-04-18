@@ -242,6 +242,16 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
             item.put("planCheckoutDate", apply.getPlanCheckoutDate());
             item.put("checkoutReason", apply.getCheckoutReason());
 
+            // 查询合同信息，获取合同编号和合同类型
+            HzContract contract = contractMapper.selectById(apply.getContractId());
+            if (contract != null) {
+                item.put("contractNo", contract.getContractNo());
+                item.put("contractType", contract.getContractType());
+            } else {
+                item.put("contractNo", "");
+                item.put("contractType", "");
+            }
+
             // 状态映射
             String statusText = getStatusText(apply.getApplyStatus());
             item.put("statusText", statusText);

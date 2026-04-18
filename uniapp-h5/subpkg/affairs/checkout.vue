@@ -9,6 +9,12 @@
 					<text class="info-value" :class="statusClassMap[item.status] || ''">{{ item.statusText }}</text>
 				</view>
 
+				<!-- 合同编号 -->
+				<view class="info-row" v-if="item.contractNo">
+					<text class="info-label">合同编号</text>
+					<text class="info-value">{{ item.contractNo }}</text>
+				</view>
+
 				<!-- 小区 -->
 				<view class="info-row">
 					<text class="info-label">小区</text>
@@ -214,6 +220,7 @@
 				return {
 					recordId: item.recordId,
 					contractId: item.contractId,
+					contractNo: item.contractNo || '',
 					status: 'confirmed',  // 已入住确认（可退租）
 					statusText: '已入住',
 					community: community || '未知小区',
@@ -242,6 +249,7 @@
 					recordId: item.recordId, // 入住记录ID，用于再次退租
 					applyId: item.applyId,
 					contractId: item.contractId,
+					contractNo: item.contractNo || '',
 					status: statusMap[item.applyStatus] || 'pending',
 					statusText: item.statusText || '审批中',
 					community: item.community || '未知小区',
