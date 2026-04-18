@@ -118,7 +118,7 @@
 					</view>
 
 					<!-- 3日资料上传提示 -->
-					<view class="material-alert" v-if="item.status !== 'voided' && item.depositPaid && !item.materialSubmitted">
+					<view class="material-alert" v-if="item.status !== 'voided' && item.depositPaid && !item.materialSubmitted && item.contractType !== '2'">
 						<text class="material-alert-text">⚠ 请在3日内上传工作证明和学历证明，逾期合同将失效，房源将被释放</text>
 					</view>
 
@@ -151,7 +151,7 @@
 						</view>
 					</view>
 					<!-- 押金已缴但未提交资料 -->
-					<view class="button-group" v-else-if="item.status === 'signed' && item.depositPaid && !item.materialSubmitted">
+					<view class="button-group" v-else-if="item.status === 'signed' && item.depositPaid && !item.materialSubmitted && item.contractType !== '2'">
 						<view class="btn btn-pay" @click="handleSubmitMaterial(item)">
 							<text class="btn-text-white">提交资料</text>
 						</view>

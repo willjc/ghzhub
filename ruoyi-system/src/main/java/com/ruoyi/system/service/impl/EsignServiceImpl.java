@@ -672,8 +672,8 @@ public class EsignServiceImpl implements EsignService {
         HzContract contract = contractMapper.selectById(contractId);
         if (contract == null) throw new RuntimeException("合同不存在: " + contractId);
 
-        // 已签署，直接返回
-        if ("2".equals(contract.getContractStatus())) {
+        // 已签署或履行中，直接返回
+        if ("2".equals(contract.getContractStatus()) || "3".equals(contract.getContractStatus())) {
             log.info("合同已签署，无需再查 contractId={}", contractId);
             return true;
         }
@@ -807,13 +807,14 @@ public class EsignServiceImpl implements EsignService {
 
         HzContract contract = contractMapper.selectOne(new LambdaQueryWrapper<HzContract>().eq(HzContract::getEsignFlowId, flowId).last("LIMIT 1"));
         if (contract == null) { log.warn("e签宝回调未找到对应合同 flowId={}", flowId); return; }
-        if ("2".equals(contract.getContractStatus())) { log.info("合同已处理，忽略重复回调 flowId={}", flowId); return; }
+        if ("2".equals(contract.getContractStatus()) || "3".equals(contract.getContractStatus())) { log.info("合同已处理，忽略重复回调 flowId={}", flowId); return; }
 
-        // 1. 更新合同状态为已签署，同时记录签署时间
+        // 1. 更新合同状态：续租合同直接进入履行中(3)，新签合同进入已签署(2)
+        String newStatus = "2".equals(contract.getContractType()) ? "3" : "2";
         contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
                 .eq(HzContract::getContractId, contract.getContractId())
-                .set(HzContract::getContractStatus, "2")
-                .set(HzContract::getSignTime, new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()))); // 2=已签署
+                .set(HzContract::getContractStatus, newStatus)
+                .set(HzContract::getSignTime, new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date())));
 
         // 2. 获取已签合同PDF下载链接
         try {
