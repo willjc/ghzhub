@@ -702,9 +702,11 @@ public class EsignServiceImpl implements EsignService {
         }
 
         // 签署完成，执行与回调相同的后续逻辑
+        // 续租合同直接进入履行中(3)，新签合同进入已签署(2)
+        String newStatus = "2".equals(contract.getContractType()) ? "3" : "2";
         contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
                 .eq(HzContract::getContractId, contractId)
-                .set(HzContract::getContractStatus, "2")
+                .set(HzContract::getContractStatus, newStatus)
                 .set(HzContract::getSignTime, new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date())));
 
         // 获取 PDF 下载链接

@@ -134,8 +134,12 @@ public class HzContractAppController extends BaseController {
             // 动态查询资料审核状态：0=未提交, 1=审核中, 2=已通过
             // 按合同维度查，每个合同独立判断，不跨合同共享
             Object _contractIdObj = contract.get("contract_id");
+            String contractType = contract.get("contract_type") != null ? contract.get("contract_type").toString() : "";
             String materialStatus = "0";
-            if (_contractIdObj != null) {
+            if ("2".equals(contractType)) {
+                // 续租合同无需上传资料，直接视为已审批
+                materialStatus = "2";
+            } else if (_contractIdObj != null) {
                 Long cId = Long.parseLong(_contractIdObj.toString());
                 List<com.ruoyi.system.domain.HzDocument> docs = documentService.selectDocumentListByContractId(cId);
                 if (docs != null && !docs.isEmpty()) {
