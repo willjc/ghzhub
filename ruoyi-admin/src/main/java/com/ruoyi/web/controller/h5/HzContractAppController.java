@@ -702,8 +702,8 @@ public class HzContractAppController extends BaseController {
             if (oldContract.getEndDate() != null && !oldContract.getEndDate().isEmpty()) {
                 LocalDate contractEndDate = LocalDate.parse(oldContract.getEndDate().substring(0, 10));
                 LocalDate today = LocalDate.now();
-                if (today.isAfter(contractEndDate.plusDays(30))) {
-                    return error("合同已过期超过30天，无法续租");
+                if (today.isAfter(contractEndDate)) {
+                    return error("合同已到期，无法续租");
                 }
             }
             // ========== 续租到期校验结束 ==========
