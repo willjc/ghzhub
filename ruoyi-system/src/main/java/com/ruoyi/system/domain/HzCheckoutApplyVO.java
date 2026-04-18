@@ -111,6 +111,15 @@ public class HzCheckoutApplyVO {
     @Excel(name = "房间设施")
     private String facilities;
 
+    /** 项目名称 */
+    private String projectName;
+
+    /** 楼栋名称 */
+    private String buildingName;
+
+    /** 单元名称 */
+    private String unitName;
+
     // ========== 费用信息 ==========
 
     /** 违约金 */
@@ -383,6 +392,30 @@ public class HzCheckoutApplyVO {
 
     public void setFacilities(String facilities) {
         this.facilities = facilities;
+    }
+
+    public String getProjectName() {
+        return projectName;
+    }
+
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
+
+    public String getBuildingName() {
+        return buildingName;
+    }
+
+    public void setBuildingName(String buildingName) {
+        this.buildingName = buildingName;
+    }
+
+    public String getUnitName() {
+        return unitName;
+    }
+
+    public void setUnitName(String unitName) {
+        this.unitName = unitName;
     }
 
     public BigDecimal getPenaltyAmount() {

@@ -31,9 +31,9 @@
     <el-table v-loading="loading" :data="checkOutList" @selection-change="handleSelectionChange">
       <el-table-column label="申请ID" align="center" prop="applyId" width="80" />
       <el-table-column label="合同编号" align="center" prop="contractNo" width="150" show-overflow-tooltip />
-      <el-table-column label="房源" align="center" min-width="150">
+      <el-table-column label="房源" align="center" min-width="220" show-overflow-tooltip>
         <template slot-scope="scope">
-          {{ scope.row.houseCode }} / {{ scope.row.houseNo }}
+          {{ formatHouseInfo(scope.row) }}
         </template>
       </el-table-column>
       <el-table-column label="退租原因" align="center" prop="checkoutReason" show-overflow-tooltip min-width="120" />
@@ -409,8 +409,8 @@
         <el-descriptions-item label="申请ID">{{ detailForm.applyId }}</el-descriptions-item>
         <el-descriptions-item label="合同编号">{{ detailForm.contractNo || '-' }}</el-descriptions-item>
         <el-descriptions-item label="房源">
-          <span v-if="detailForm.houseCode || detailForm.houseNo">
-            {{ detailForm.houseCode }} / {{ detailForm.houseNo }}
+          <span v-if="detailForm.projectName || detailForm.buildingName || detailForm.houseNo">
+            {{ formatHouseInfo(detailForm) }}
           </span>
           <span v-else>-</span>
         </el-descriptions-item>
@@ -724,6 +724,16 @@ export default {
     }
   },
   methods: {
+    /** 格式化房源信息 */
+    formatHouseInfo(row) {
+      const parts = [];
+      if (row.projectName) parts.push(row.projectName);
+      if (row.buildingName) parts.push(row.buildingName);
+      if (row.unitName) parts.push(row.unitName);
+      if (row.floor) parts.push(row.floor + '楼');
+      if (row.houseNo) parts.push(row.houseNo + '室');
+      return parts.length > 0 ? parts.join(' ') : (row.houseCode || '-');
+    },
     getImageUrl(url) {
       if (!url) return '';
       // 微信小程序临时路径（http://tmp/...），会话结束后即失效，无法在浏览器中访问
