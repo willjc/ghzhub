@@ -62,6 +62,7 @@
 
 <script>
 	import { getProjectListByType } from '@/api/project'
+	import config from '@/config/index'
 
 	export default {
 		data() {
@@ -174,8 +175,14 @@
 					return imagePath
 				}
 
-				// 直接返回相对路径，由manifest.json中的代理转发到后端
-				return imagePath
+				// 本地静态资源直接返回
+				if (imagePath.startsWith('/static/')) {
+					return imagePath
+				}
+
+				// RuoYi标准：数据库存储相对路径，前端拼接后端域名
+				const baseUrl = config.staticUrl
+				return baseUrl + (imagePath.startsWith('/') ? imagePath : '/' + imagePath)
 			},
 
 			goToDetail(item) {
