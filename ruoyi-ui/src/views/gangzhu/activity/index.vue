@@ -294,7 +294,7 @@
         <el-row>
           <el-col :span="12">
             <el-form-item label="报名范围" prop="registrationScope">
-              <el-radio-group v-model="form.registrationScope" @change="handleScopeChange">
+              <el-radio-group :value="form.registrationScope" @input="val => $set(form, 'registrationScope', val)" @change="handleScopeChange">
                 <el-radio label="0">全部租户</el-radio>
                 <el-radio label="1">指定小区租户</el-radio>
               </el-radio-group>
@@ -600,15 +600,16 @@ export default {
       this.reset();
       const activityId = row.activityId || this.ids[0];
       getActivity(activityId).then(response => {
-        this.form = response.data;
+        // 使用 Object.assign 确保新增字段也是响应式的（Vue 2 无法检测直接赋值的新属性）
+        this.form = Object.assign({}, this.form, response.data);
         // 将逗号分隔的 scopeProjectIds 转为数组供多选框使用
         if (this.form.scopeProjectIds) {
-          this.form.scopeProjectIdsArr = this.form.scopeProjectIds.split(',').map(id => Number(id.trim())).filter(id => !isNaN(id));
+          this.$set(this.form, 'scopeProjectIdsArr', this.form.scopeProjectIds.split(',').map(id => Number(id.trim())).filter(id => !isNaN(id)));
         } else {
-          this.form.scopeProjectIdsArr = [];
+          this.$set(this.form, 'scopeProjectIdsArr', []);
         }
         if (!this.form.registrationScope) {
-          this.form.registrationScope = '0';
+          this.$set(this.form, 'registrationScope', '0');
         }
         this.open = true;
         this.title = "修改活动";
@@ -686,8 +687,8 @@ export default {
     /** 报名范围切换 */
     handleScopeChange(val) {
       if (val === '0') {
-        this.form.scopeProjectIdsArr = [];
-        this.form.scopeProjectIds = null;
+        this.$set(this.form, 'scopeProjectIdsArr', []);
+        this.$set(this.form, 'scopeProjectIds', null);
       }
     },
     /** 项目选择变化 */

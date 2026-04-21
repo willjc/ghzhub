@@ -28,6 +28,10 @@
 						<text class="info-label">报名人数：</text>
 						<text class="info-value">{{ detailData.currentParticipants || 0 }} / {{ detailData.maxParticipants }}人</text>
 					</view>
+					<view class="info-item" v-if="detailData.registrationScope === '1'">
+						<text class="info-label">报名范围：</text>
+						<text class="info-value" style="color: #e6a23c;">仅限指定小区租户</text>
+					</view>
 				</view>
 
 				<!-- 正文内容 -->
@@ -43,6 +47,7 @@
 		<view class="bottom-action" v-if="detailData.activityTitle">
 			<button v-if="registrationStatus === 'not_started'" class="btn-register" disabled>报名未开始</button>
 			<button v-else-if="registrationStatus === 'registered'" class="btn-registered" disabled>已报名</button>
+			<button v-else-if="registrationStatus === 'scope_restricted'" class="btn-register" disabled>仅限指定小区租户报名</button>
 			<button v-else-if="registrationStatus === 'full'" class="btn-register" disabled>报名已满</button>
 			<button v-else-if="registrationStatus === 'ended'" class="btn-register" disabled>报名已结束</button>
 			<button v-else-if="registering" class="btn-register-active" disabled>报名中...</button>
@@ -71,16 +76,28 @@
 					activityContent: '',
 					// 原始时间字段，用于报名状态判断
 					registrationStartTime: null,
-					registrationEndTime: null
+					registrationEndTime: null,
+					// 报名范围
+					registrationScope: '0',
+					scopeProjectIds: null
 				},
 				isRegistered: false,
-				registering: false
+				registering: false,
+				// 当前用户的项目ID列表
+				userProjectIds: []
 			}
 		},
 		computed: {
 			registrationStatus() {
 				if (!this.detailData.activityTitle) return 'loading'
 				if (this.isRegistered) return 'registered'
+
+				// 检查报名范围（指定项目租户）
+				if (this.detailData.registrationScope === '1' && this.detailData.scopeProjectIds) {
+					const allowedIds = this.detailData.scopeProjectIds.split(',').map(s => s.trim())
+					const match = this.userProjectIds.some(pid => allowedIds.includes(String(pid)))
+					if (!match) return 'scope_restricted'
+				}
 
 				const now = new Date().getTime()
 
@@ -149,7 +166,10 @@
 								activityContent: this.processHtmlContent(data.activityContent),
 								// 保留原始时间用于报名状态判断
 								registrationStartTime: data.registrationStartTime,
-								registrationEndTime: data.registrationEndTime
+								registrationEndTime: data.registrationEndTime,
+								// 报名范围
+								registrationScope: data.registrationScope || '0',
+								scopeProjectIds: data.scopeProjectIds || null
 							};
 
 							// 加载详情后检查报名状态
@@ -178,8 +198,38 @@
 					if (!userInfo || !userInfo.userId) return // 未登录不检查
 					const res = await checkRegistered(this.activityId, userInfo.userId)
 					this.isRegistered = res.registered === true
+					// 加载用户关联的项目ID（通过合同）
+					await this.loadUserProjectIds(userInfo.userId)
 				} catch (e) {
 					console.log('检查报名状态失败', e)
+				}
+			},
+
+			/** 加载当前用户关联的项目ID列表 */
+			async loadUserProjectIds(userId) {
+				try {
+					const token = uni.getStorageSync('token')
+					if (!token) return
+					// 查询用户有效合同关联的项目
+					const res = await new Promise((resolve, reject) => {
+						uni.request({
+							url: config.baseUrl + '/h5/contract/list',
+							method: 'GET',
+							data: { userId: userId, pageNum: 1, pageSize: 200 },
+							header: { Authorization: 'Bearer ' + token },
+							success: (r) => resolve(r.data),
+							fail: reject
+						})
+					})
+					if (res.code === 200 && res.rows) {
+						const ids = res.rows
+							.filter(c => c.projectId)
+							.map(c => c.projectId)
+						// 去重
+						this.userProjectIds = [...new Set(ids)]
+					}
+				} catch (e) {
+					console.log('加载用户项目ID失败', e)
 				}
 			},
 

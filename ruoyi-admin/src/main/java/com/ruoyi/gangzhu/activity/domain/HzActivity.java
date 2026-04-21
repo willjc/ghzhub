@@ -76,6 +76,12 @@ public class HzActivity extends BaseEntity {
     @TableLogic
     private String delFlag;
 
+    /** 报名范围（0=全部租户 1=指定项目租户） */
+    private String registrationScope;
+
+    /** 允许报名的项目ID列表，逗号分隔 */
+    private String scopeProjectIds;
+
     public Long getActivityId() {
         return activityId;
     }
@@ -218,6 +224,22 @@ public class HzActivity extends BaseEntity {
 
     public void setDelFlag(String delFlag) {
         this.delFlag = delFlag;
+    }
+
+    public String getRegistrationScope() {
+        return registrationScope;
+    }
+
+    public void setRegistrationScope(String registrationScope) {
+        this.registrationScope = registrationScope;
+    }
+
+    public String getScopeProjectIds() {
+        return scopeProjectIds;
+    }
+
+    public void setScopeProjectIds(String scopeProjectIds) {
+        this.scopeProjectIds = scopeProjectIds;
     }
 
     @Override
