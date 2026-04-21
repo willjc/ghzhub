@@ -1,5 +1,7 @@
 package com.ruoyi.web.controller.h5;
 
+import java.math.BigDecimal;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
@@ -131,7 +133,9 @@ public class HzInvoiceController extends BaseController
             Map<String, Object> houseInfo = new HashMap<>();
             houseInfo.put("community", project.getProjectName());
             houseInfo.put("room", house.getHouseNo());
-            houseInfo.put("deposit", house.getDeposit() != null ? house.getDeposit().toString() : "0");
+            // 优先使用合同表的押金（实际缴纳金额），其次使用房源表的押金（标准金额）
+            BigDecimal deposit = contract.getDeposit() != null ? contract.getDeposit() : house.getDeposit();
+            houseInfo.put("deposit", deposit != null ? deposit.toString() : "0");
             houseInfo.put("houseId", house.getHouseId());
             houseInfo.put("projectId", project.getProjectId());
             houseInfo.put("contractId", contractId);

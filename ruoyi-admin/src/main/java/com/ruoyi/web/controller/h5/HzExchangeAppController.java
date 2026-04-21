@@ -106,33 +106,37 @@ public class HzExchangeAppController extends BaseController {
 
     /**
      * 获取用户已确认的合同列表（可调换的房源）
+     * 兼容老数据迁移场景：优先查入住记录，同时补充通过合同直接查询的方式
      *
      * @param tenantId 租户ID
      * @return 已确认的合同列表
      */
     @GetMapping("/confirmed/{tenantId}")
     public AjaxResult getConfirmedContractList(@PathVariable Long tenantId) {
-        // 查询该用户所有已入住确认的入住单 (status='4')
+        // 方式1：查询该用户所有已入住确认的入住单 (status='4')
         List<HzCheckIn> checkInList = checkInService.selectConfirmedCheckInListByTenantId(tenantId);
 
-        // 转换为前端需要的格式（展示合同信息）
-        // 过滤掉已删除的合同（del_flag='2'）
-        List<Map<String, Object>> result = checkInList.stream().map(checkIn -> {
-            // 根据合同ID查询合同信息
-            HzContract contract = null;
-            if (checkIn.getContractId() != null) {
-                contract = contractService.selectContractById(checkIn.getContractId());
+        // 用合同ID去重，避免重复
+        java.util.Set<Long> addedContractIds = new java.util.HashSet<>();
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+
+        // 处理入住记录中的合同
+        for (HzCheckIn checkIn : checkInList) {
+            if (checkIn.getContractId() == null || addedContractIds.contains(checkIn.getContractId())) {
+                continue;
+            }
+
+            HzContract contract = contractService.selectContractById(checkIn.getContractId());
+            if (contract == null || contract.getContractNo() == null) {
+                continue;
             }
 
             Map<String, Object> item = new HashMap<>();
             item.put("recordId", checkIn.getRecordId());
             item.put("contractId", checkIn.getContractId());
-
-            if (contract != null) {
-                item.put("contractNo", contract.getContractNo());
-                item.put("houseAddress", contract.getHouseAddress());
-                item.put("rentPrice", contract.getRentPrice());
-            }
+            item.put("contractNo", contract.getContractNo());
+            item.put("houseAddress", contract.getHouseAddress());
+            item.put("rentPrice", contract.getRentPrice());
 
             // 从备注中解析房源信息
             String remark = checkIn.getRemark();
@@ -140,16 +144,41 @@ public class HzExchangeAppController extends BaseController {
             item.put("room", extractInfo(remark, "房间："));
             item.put("rentPeriod", extractInfo(remark, "租期："));
 
-            return item;
-        }).filter(item -> {
-            // 过滤掉合同不存在或已删除的记录
-            Object contractId = item.get("contractId");
-            if (contractId == null) {
-                return false;
+            // 如果备注中没有房源信息，从合同中补充
+            if (item.get("community") == null || ((String) item.get("community")).isEmpty()) {
+                item.put("community", contract.getHouseAddress() != null ? contract.getHouseAddress() : "");
             }
-            // 如果没有 contractNo，说明合同已被删除或不存在
-            return item.get("contractNo") != null;
-        }).toList();
+
+            addedContractIds.add(checkIn.getContractId());
+            result.add(item);
+        }
+
+        // 方式2：通过合同表补充（兼容老数据迁移场景，无入住记录但有已签署合同）
+        // 查询该用户所有合同，筛选状态为已签署(2)/生效中(3)/续签(4)/退租中(5)的合同
+        List<HzContract> allContracts = contractService.selectContractListByTenantId(tenantId);
+        List<HzContract> activeContracts = allContracts.stream()
+                .filter(c -> "2".equals(c.getContractStatus()) || "3".equals(c.getContractStatus())
+                        || "4".equals(c.getContractStatus()) || "5".equals(c.getContractStatus()))
+                .toList();
+
+        for (HzContract contract : activeContracts) {
+            if (addedContractIds.contains(contract.getContractId())) {
+                continue; // 已通过入住记录添加，跳过
+            }
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("contractId", contract.getContractId());
+            item.put("contractNo", contract.getContractNo());
+            item.put("houseAddress", contract.getHouseAddress());
+            item.put("rentPrice", contract.getRentPrice());
+
+            // 从合同地址中提取小区名和房间号
+            item.put("community", contract.getHouseAddress() != null ? contract.getHouseAddress() : "");
+            item.put("room", contract.getHouseCode() != null ? contract.getHouseCode() : "");
+
+            addedContractIds.add(contract.getContractId());
+            result.add(item);
+        }
 
         return success(result);
     }
