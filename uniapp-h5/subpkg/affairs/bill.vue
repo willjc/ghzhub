@@ -46,6 +46,10 @@
 							<text class="bill-label">账单周期：</text>
 							<text class="bill-value">{{ bill.dateRange }}</text>
 						</view>
+						<view class="bill-info" v-if="bill.payTime">
+							<text class="bill-label">缴费时间：</text>
+							<text class="bill-value">{{ bill.payTime }}</text>
+						</view>
 						<!-- 遮罩：押金未缴或资料未提交时覆盖整张账单卡片 -->
 						<view class="bill-lock-mask" v-if="bill.locked" @click.stop="onLockedBillTap(bill)">
 							<text class="bill-lock-tip">{{ !depositPaid ? '请先缴纳押金' : '请先上传入住资料' }}</text>
@@ -323,6 +327,22 @@
 					fullRoomNo = bill.houseCode
 				}
 
+				// 格式化缴费时间
+				let payTimeStr = ''
+				if (bill.payTime) {
+					try {
+						const t = new Date(bill.payTime.replace(' ', 'T'))
+						const y = t.getFullYear()
+						const mo = String(t.getMonth() + 1).padStart(2, '0')
+						const d = String(t.getDate()).padStart(2, '0')
+						const h = String(t.getHours()).padStart(2, '0')
+						const mi = String(t.getMinutes()).padStart(2, '0')
+						payTimeStr = `${y}-${mo}-${d} ${h}:${mi}`
+					} catch(e) {
+						payTimeStr = bill.payTime
+					}
+				}
+
 				return {
 					id: bill.billId,
 					billNo: bill.billNo,        // 微信支付按 billNo 查账单
@@ -336,6 +356,7 @@
 					room: fullRoomNo || '-',
 					amount: parseFloat(bill.billAmount),
 					dateRange: dateRange,
+					payTime: payTimeStr,
 					selected: false
 				}
 			},
