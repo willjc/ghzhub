@@ -129,6 +129,12 @@
           {{ scope.row.currentParticipants || 0 }} / {{ scope.row.maxParticipants || 0 }}
         </template>
       </el-table-column>
+      <el-table-column label="报名范围" width="110" align="center">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.registrationScope === '1'" type="warning" size="small">限指定小区</el-tag>
+          <el-tag v-else size="small">全部租户</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="浏览次数" prop="viewCount" width="100" align="center" />
       <el-table-column label="状态" prop="status" width="80" align="center">
         <template slot-scope="scope">
@@ -287,6 +293,34 @@
         </el-row>
         <el-row>
           <el-col :span="12">
+            <el-form-item label="报名范围" prop="registrationScope">
+              <el-radio-group v-model="form.registrationScope" @change="handleScopeChange">
+                <el-radio label="0">全部租户</el-radio>
+                <el-radio label="1">指定小区租户</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12" v-if="form.registrationScope === '1'">
+            <el-form-item label="选择小区" prop="scopeProjectIds">
+              <el-select
+                v-model="form.scopeProjectIdsArr"
+                multiple
+                placeholder="请选择允许报名的小区"
+                style="width: 100%"
+                @change="handleProjectSelect"
+              >
+                <el-option
+                  v-for="p in projectOptions"
+                  :key="p.projectId"
+                  :label="p.projectName"
+                  :value="p.projectId"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="12">
             <el-form-item label="联系人" prop="contactPerson">
               <el-input v-model="form.contactPerson" placeholder="请输入联系人" maxlength="50" />
             </el-form-item>
@@ -340,6 +374,13 @@
         <el-descriptions-item label="报名结束时间">{{ detailData.registrationEndTime }}</el-descriptions-item>
         <el-descriptions-item label="最大参与人数">{{ detailData.maxParticipants }}</el-descriptions-item>
         <el-descriptions-item label="当前报名人数">{{ detailData.currentParticipants || 0 }}</el-descriptions-item>
+        <el-descriptions-item label="报名范围">
+          <template v-if="detailData.registrationScope === '1'">
+            <el-tag type="warning" size="small">限指定小区</el-tag>
+            <span style="margin-left:8px; color:#909399; font-size:12px;">{{ getScopeProjectNames(detailData.scopeProjectIds) }}</span>
+          </template>
+          <el-tag v-else size="small">全部租户</el-tag>
+        </el-descriptions-item>
         <el-descriptions-item label="联系人">{{ detailData.contactPerson }}</el-descriptions-item>
         <el-descriptions-item label="联系电话">{{ detailData.contactPhone }}</el-descriptions-item>
         <el-descriptions-item label="浏览次数">{{ detailData.viewCount }}</el-descriptions-item>
@@ -391,6 +432,7 @@
 
 <script>
 import { listActivity, getActivity, addActivity, updateActivity, delActivity, getRegistrations } from "@/api/gangzhu/activity";
+import { listProject } from "@/api/gangzhu/project";
 import Editor from '@/components/Editor';
 import ImageUpload from '@/components/ImageUpload';
 
@@ -430,6 +472,8 @@ export default {
       registrationList: [],
       registrationLoading: false,
       currentActivityTitle: '',
+      // 项目/小区选项
+      projectOptions: [],
       // 日期范围
       dateRange: [],
       // 查询参数
@@ -484,6 +528,7 @@ export default {
   },
   created() {
     this.getList();
+    this.loadProjectOptions();
   },
   methods: {
     /** 查询活动列表 */
@@ -520,6 +565,9 @@ export default {
         activityContent: null,
         viewCount: 0,
         status: "0",
+        registrationScope: "0",
+        scopeProjectIds: null,
+        scopeProjectIdsArr: [],
         remark: null
       };
       this.resetForm("form");
@@ -553,6 +601,15 @@ export default {
       const activityId = row.activityId || this.ids[0];
       getActivity(activityId).then(response => {
         this.form = response.data;
+        // 将逗号分隔的 scopeProjectIds 转为数组供多选框使用
+        if (this.form.scopeProjectIds) {
+          this.form.scopeProjectIdsArr = this.form.scopeProjectIds.split(',').map(id => Number(id.trim())).filter(id => !isNaN(id));
+        } else {
+          this.form.scopeProjectIdsArr = [];
+        }
+        if (!this.form.registrationScope) {
+          this.form.registrationScope = '0';
+        }
         this.open = true;
         this.title = "修改活动";
       });
@@ -569,6 +626,12 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          // 提交前：把项目ID数组转为逗号分隔字符串
+          if (this.form.registrationScope === '1' && this.form.scopeProjectIdsArr && this.form.scopeProjectIdsArr.length > 0) {
+            this.form.scopeProjectIds = this.form.scopeProjectIdsArr.join(',');
+          } else {
+            this.form.scopeProjectIds = null;
+          }
           if (this.form.activityId != null) {
             updateActivity(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -613,6 +676,32 @@ export default {
       }).catch(() => {
         this.registrationLoading = false;
       });
+    },
+    /** 加载项目/小区选项 */
+    loadProjectOptions() {
+      listProject({ pageNum: 1, pageSize: 200, status: '0' }).then(response => {
+        this.projectOptions = response.rows || [];
+      });
+    },
+    /** 报名范围切换 */
+    handleScopeChange(val) {
+      if (val === '0') {
+        this.form.scopeProjectIdsArr = [];
+        this.form.scopeProjectIds = null;
+      }
+    },
+    /** 项目选择变化 */
+    handleProjectSelect(val) {
+      // scopeProjectIds 在提交时由 submitForm 统一转换
+    },
+    /** 根据项目ID列表获取项目名称 */
+    getScopeProjectNames(scopeProjectIds) {
+      if (!scopeProjectIds) return '';
+      const ids = scopeProjectIds.split(',').map(id => Number(id.trim()));
+      return this.projectOptions
+        .filter(p => ids.includes(p.projectId))
+        .map(p => p.projectName)
+        .join('、');
     },
     /** 获取图片完整URL - 遵循RuoYi标准 */
     getImageUrl(url) {
