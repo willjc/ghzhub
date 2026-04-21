@@ -34,6 +34,10 @@
 							<text class="bill-label">小区：</text>
 							<text class="bill-value">{{ bill.community }}</text>
 						</view>
+						<view class="bill-info" v-if="bill.contractNo">
+							<text class="bill-label">合同编号：</text>
+							<text class="bill-value">{{ bill.contractNo }}</text>
+						</view>
 						<view class="bill-info">
 							<text class="bill-label">房间：</text>
 							<text class="bill-value">{{ bill.room }}</text>
@@ -353,6 +357,7 @@
 					// 押金未缴或资料未提交时，租金账单锁定（不可选）
 					locked: bill.billType === '2' && (!this.depositPaid || !this.materialSubmitted),
 					community: bill.projectName || '港好住',
+					contractNo: bill.contractNo || '',
 					room: fullRoomNo || '-',
 					amount: parseFloat(bill.billAmount),
 					dateRange: dateRange,

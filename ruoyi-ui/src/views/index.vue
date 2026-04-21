@@ -1,20 +1,22 @@
 <template>
-  <div class="dashboard-container">
-    <!-- 顶部标题区域 -->
-    <div class="header-section">
-      <div class="header-content">
-        <div class="page-header">
-          <div class="title-wrapper">
-            <div class="title-icon">
-              <i class="el-icon-s-marketing"></i>
-            </div>
-            <div class="title-text">
-              <h1 class="page-title">港好住数据统计仪表板</h1>
-              <p class="page-subtitle">{{ getCurrentMonthText() }}</p>
-            </div>
+  <div class="ghz-dash">
+    <!-- ====== 顶部 Header ====== -->
+    <div class="ghz-header">
+      <div class="ghz-header-inner">
+        <div class="ghz-header-left">
+          <div class="ghz-logo-mark">
+            <i class="el-icon-s-marketing"></i>
+          </div>
+          <div class="ghz-header-text">
+            <h1 class="ghz-header-title">港好住数据管理驾驶舱</h1>
+            <p class="ghz-header-sub">{{ getMonthText() }} · 综合数据概览</p>
           </div>
         </div>
-        <div class="filter-section">
+        <div class="ghz-header-right">
+          <span class="live-badge">
+            <span class="live-dot"></span>
+            实时数据
+          </span>
           <el-date-picker
             v-model="currentMonth"
             type="month"
@@ -22,163 +24,117 @@
             format="yyyy年MM月"
             value-format="yyyy-MM"
             @change="handleMonthChange"
-            prefix-icon="el-icon-date"
-            class="month-picker"
+            class="ghz-month-picker"
           />
+          <el-button size="small" icon="el-icon-refresh" class="ghz-refresh-btn" :loading="loading" @click="loadAll">刷新</el-button>
         </div>
       </div>
     </div>
 
-    <!-- 主要内容区域 -->
-    <div class="main-content">
+    <!-- ====== 主体内容 ====== -->
+    <div class="ghz-body" v-loading="loading" element-loading-text="数据加载中...">
 
-      <!-- 项目台账管理 - 置顶 -->
-      <div class="ledger-section top-section">
-        <div class="section-header">
-          <div class="section-title-wrapper">
-            <div class="section-icon primary">
-              <i class="el-icon-folder-opened"></i>
+      <!-- ① 财务指标 -->
+      <div class="ghz-panel">
+        <div class="ghz-panel-head">
+          <span class="panel-accent blue"></span>
+          <span class="panel-title">本月财务指标</span>
+          <el-tag size="mini" class="panel-tag">{{ currentMonth }}</el-tag>
+        </div>
+        <div class="fin-grid">
+          <div class="fin-card" v-for="f in financialList" :key="f.key" :class="'fin-' + f.theme">
+            <div class="fin-icon"><i :class="f.icon"></i></div>
+            <div class="fin-info">
+              <div class="fin-amount">{{ formatYuan(financialData[f.key]) }}</div>
+              <div class="fin-label">{{ f.label }}</div>
             </div>
-            <span class="section-text">项目管理台账</span>
-            <el-tag size="mini" effect="plain" class="section-tag">核心业务</el-tag>
+            <div class="fin-deco"></div>
           </div>
         </div>
-        <el-card class="ledger-card featured-card" shadow="never">
-          <project-ledger :month="currentMonth" ref="projectLedger" />
-        </el-card>
       </div>
 
-      <!-- 核心指标卡片 -->
-      <el-row :gutter="20" class="metrics-row">
-        <el-col :xs="24" :sm="12" :lg="6">
-          <div class="stat-card blue">
-            <div class="stat-icon">
-              <i class="el-icon-money"></i>
+      <!-- ② 房源统计 -->
+      <div class="ghz-panel">
+        <div class="ghz-panel-head">
+          <span class="panel-accent teal"></span>
+          <span class="panel-title">房源管理概览</span>
+          <el-tag size="mini" type="success" class="panel-tag">实时</el-tag>
+        </div>
+        <!-- 数量卡片 -->
+        <el-row :gutter="16" class="house-count-row">
+          <el-col :xs="12" :sm="12" :md="6" v-for="h in houseCountList" :key="h.key">
+            <div class="hc-card" :class="'hc-' + h.theme">
+              <i :class="h.icon" class="hc-icon"></i>
+              <div class="hc-num">{{ houseData[h.key] }}</div>
+              <div class="hc-label">{{ h.label }}</div>
             </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ formatAmount(financialData.receivedAmount) }}</div>
-              <div class="stat-label">实收金额</div>
-              <div class="stat-trend up">
-                <i class="el-icon-top"></i>
-                <span>本月</span>
-              </div>
+          </el-col>
+        </el-row>
+        <!-- 出租率仪表 -->
+        <el-row :gutter="16" class="house-rate-row">
+          <el-col :xs="24" :sm="8" v-for="r in houseRateList" :key="r.key">
+            <div class="hr-card">
+              <el-progress
+                type="circle"
+                :percentage="+(houseData[r.key] || 0)"
+                :stroke-width="10"
+                :color="r.color"
+                :width="110"
+              />
+              <div class="hr-label">{{ r.label }}</div>
             </div>
-          </div>
-        </el-col>
-        <el-col :xs="24" :sm="12" :lg="6">
-          <div class="stat-card green">
-            <div class="stat-icon">
-              <i class="el-icon-s-finance"></i>
-            </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ formatAmount(financialData.receivableAmount) }}</div>
-              <div class="stat-label">应收金额</div>
-              <div class="stat-trend">
-                <i class="el-icon-minus"></i>
-                <span>累计</span>
-              </div>
-            </div>
-          </div>
-        </el-col>
-        <el-col :xs="24" :sm="12" :lg="6">
-          <div class="stat-card orange">
-            <div class="stat-icon">
-              <i class="el-icon-house"></i>
-            </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ houseData.rentedRooms }}/{{ houseData.totalRooms }}</div>
-              <div class="stat-label">已租房源</div>
-              <div class="stat-trend up">
-                <i class="el-icon-top"></i>
-                <span>出租率 {{ houseData.currentRentRate }}%</span>
-              </div>
-            </div>
-          </div>
-        </el-col>
-        <el-col :xs="24" :sm="12" :lg="6">
-          <div class="stat-card purple">
-            <div class="stat-icon">
-              <i class="el-icon-user"></i>
-            </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ houseData.userConversionRate }}%</div>
-              <div class="stat-label">转化率</div>
-              <div class="stat-trend">
-                <i class="el-icon-data-line"></i>
-                <span>用户转化</span>
-              </div>
-            </div>
-          </div>
-        </el-col>
-      </el-row>
+          </el-col>
+        </el-row>
+      </div>
 
-      <!-- 数据分析区域 -->
-      <el-row :gutter="20" class="analysis-row">
-        <!-- 财务指标详情 -->
-        <el-col :xs="24" :lg="12">
-          <div class="section-card">
-            <div class="section-header">
-              <div class="section-title-wrapper">
-                <div class="section-icon blue">
-                  <i class="el-icon-coin"></i>
-                </div>
-                <span class="section-text">财务指标分析</span>
-              </div>
-            </div>
-            <el-card class="content-card" shadow="never">
-              <financial-stats :data="financialData" v-loading="loading" />
-            </el-card>
-          </div>
-        </el-col>
+      <!-- ③ 项目收款台账 -->
+      <div class="ghz-panel">
+        <div class="ghz-panel-head">
+          <span class="panel-accent amber"></span>
+          <span class="panel-title">项目收款台账</span>
+          <el-tag size="mini" type="warning" class="panel-tag">{{ currentMonth }}</el-tag>
+        </div>
+        <project-ledger :month="currentMonth" ref="projectLedger" />
+      </div>
 
-        <!-- 房源状态分析 -->
+      <!-- ④ 租户画像 -->
+      <el-row :gutter="16">
         <el-col :xs="24" :lg="12">
-          <div class="section-card">
-            <div class="section-header">
-              <div class="section-title-wrapper">
-                <div class="section-icon green">
-                  <i class="el-icon-office-building"></i>
+          <div class="ghz-panel">
+            <div class="ghz-panel-head">
+              <span class="panel-accent rose"></span>
+              <span class="panel-title">婚姻状态分布</span>
+            </div>
+            <div class="profile-bars">
+              <div class="pb-row" v-for="m in marriageList" :key="m.key">
+                <span class="pb-label">{{ m.label }}</span>
+                <div class="pb-track">
+                  <div class="pb-fill" :class="'pbf-' + m.theme"
+                       :style="{ width: getPct(tenantData.marriageStatus, m.key) + '%' }"></div>
                 </div>
-                <span class="section-text">房源状态分析</span>
+                <span class="pb-val">{{ (tenantData.marriageStatus && tenantData.marriageStatus[m.key]) || 0 }}人</span>
+                <span class="pb-pct">{{ getPct(tenantData.marriageStatus, m.key) }}%</span>
               </div>
             </div>
-            <el-card class="content-card" shadow="never">
-              <house-stats :data="houseData" v-loading="loading" />
-            </el-card>
-          </div>
-        </el-col>
-      </el-row>
-
-      <!-- 用户画像区域 -->
-      <el-row :gutter="20" class="profile-row">
-        <el-col :xs="24" :lg="12">
-          <div class="section-card">
-            <div class="section-header">
-              <div class="section-title-wrapper">
-                <div class="section-icon orange">
-                  <i class="el-icon-user-solid"></i>
-                </div>
-                <span class="section-text">租户画像分析</span>
-              </div>
-            </div>
-            <el-card class="content-card" shadow="never">
-              <tenant-profile :data="tenantData" v-loading="loading" />
-            </el-card>
           </div>
         </el-col>
         <el-col :xs="24" :lg="12">
-          <div class="section-card">
-            <div class="section-header">
-              <div class="section-title-wrapper">
-                <div class="section-icon purple">
-                  <i class="el-icon-s-data"></i>
+          <div class="ghz-panel">
+            <div class="ghz-panel-head">
+              <span class="panel-accent cyan"></span>
+              <span class="panel-title">户籍来源分布</span>
+            </div>
+            <div class="profile-bars">
+              <div class="pb-row" v-for="hh in householdList" :key="hh.key">
+                <span class="pb-label">{{ hh.label }}</span>
+                <div class="pb-track">
+                  <div class="pb-fill" :class="'pbf-' + hh.theme"
+                       :style="{ width: getPct(tenantData.household, hh.key) + '%' }"></div>
                 </div>
-                <span class="section-text">用户构成分析</span>
+                <span class="pb-val">{{ (tenantData.household && tenantData.household[hh.key]) || 0 }}人</span>
+                <span class="pb-pct">{{ getPct(tenantData.household, hh.key) }}%</span>
               </div>
             </div>
-            <el-card class="content-card" shadow="never">
-              <education-job :data="educationData" v-loading="loading" />
-            </el-card>
           </div>
         </el-col>
       </el-row>
@@ -188,25 +144,16 @@
 </template>
 
 <script>
-import FinancialStats from '@/components/Dashboard/FinancialStats'
-import HouseStats from '@/components/Dashboard/HouseStats'
-import TenantProfile from '@/components/Dashboard/TenantProfile'
-import EducationJob from '@/components/Dashboard/EducationJob'
 import ProjectLedger from '@/components/Dashboard/ProjectLedger'
 
 export default {
   name: 'Dashboard',
-  components: {
-    FinancialStats,
-    HouseStats,
-    TenantProfile,
-    EducationJob,
-    ProjectLedger
-  },
+  components: { ProjectLedger },
   data() {
+    const now = new Date()
     return {
       loading: false,
-      currentMonth: new Date().toISOString().substr(0, 7), // 默认当前月份
+      currentMonth: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
       financialData: {
         receivableAmount: 0,
         receivedAmount: 0,
@@ -227,443 +174,367 @@ export default {
         marriageStatus: {},
         household: {}
       },
-      educationData: {
-        education: {},
-        profession: {}
-      }
+      // 财务指标定义
+      financialList: [
+        { key: 'receivableAmount',  label: '应收金额',     icon: 'el-icon-coin',           theme: 'blue'   },
+        { key: 'receivedAmount',    label: '实收金额',     icon: 'el-icon-wallet',         theme: 'green'  },
+        { key: 'expectedAmount',    label: '预计应收金额', icon: 'el-icon-s-finance',      theme: 'amber'  },
+        { key: 'overdueAmount',     label: '逾期金额',     icon: 'el-icon-warning-outline',theme: 'red'    },
+        { key: 'refundAmount',      label: '退款金额',     icon: 'el-icon-refresh-left',   theme: 'gray'   }
+      ],
+      // 房源数量指标
+      houseCountList: [
+        { key: 'totalRooms',       label: '总房间数',   icon: 'el-icon-s-home',         theme: 'slate'  },
+        { key: 'rentedRooms',      label: '已租房间数', icon: 'el-icon-user-solid',     theme: 'green'  },
+        { key: 'emptyRooms',       label: '空房间数',   icon: 'el-icon-office-building',theme: 'amber'  },
+        { key: 'maintenanceRooms', label: '维修房间数', icon: 'el-icon-tools',          theme: 'red'    }
+      ],
+      // 出租率仪表
+      houseRateList: [
+        { key: 'currentRentRate',    label: '当前出租率', color: '#0891b2' },
+        { key: 'cumulativeRentRate', label: '累计出租率', color: '#16a34a' },
+        { key: 'userConversionRate', label: '用户转化率', color: '#7c3aed' }
+      ],
+      // 婚姻状态
+      marriageList: [
+        { key: 'married',   label: '已婚', theme: 'blue'  },
+        { key: 'unmarried', label: '未婚', theme: 'teal'  },
+        { key: 'divorced',  label: '离异', theme: 'amber' },
+        { key: 'other',     label: '其他', theme: 'gray'  }
+      ],
+      // 户籍
+      householdList: [
+        { key: 'local',    label: '本地户籍', theme: 'green' },
+        { key: 'nonlocal', label: '外地户籍', theme: 'blue'  },
+        { key: 'unknown',  label: '未知户籍', theme: 'gray'  }
+      ]
     }
   },
   mounted() {
-    this.loadDashboardData()
+    this.loadAll()
   },
   methods: {
-    async loadDashboardData() {
+    async loadAll() {
       this.loading = true
       try {
-        // 获取首页统计数据
-        await this.loadFinancialData()
-        await this.loadHouseData()
-        await this.loadTenantData()
-        await this.loadEducationData()
-      } catch (error) {
-        console.error('加载仪表板数据失败:', error)
+        const { mockGetDashboardStats, mockGetHouseStats, mockGetTenantProfile } = await import('@/api/mock/dashboard')
+        const [finRes, houseRes, tenantRes] = await Promise.all([
+          mockGetDashboardStats(this.currentMonth),
+          mockGetHouseStats(),
+          mockGetTenantProfile()
+        ])
+        this.financialData = finRes.data.financial
+        this.houseData     = houseRes.data
+        this.tenantData    = tenantRes.data
+      } catch (e) {
+        console.error('加载仪表板数据失败', e)
         this.$message.error('数据加载失败，请稍后重试')
       } finally {
         this.loading = false
       }
     },
-
-    async loadFinancialData() {
-      // 使用模拟数据
-      const { mockGetDashboardStats } = await import('@/api/mock/dashboard')
-      const response = await mockGetDashboardStats(this.currentMonth)
-      this.financialData = response.data.financial
+    handleMonthChange() {
+      this.loadAll()
+      this.$nextTick(() => {
+        if (this.$refs.projectLedger) this.$refs.projectLedger.loadData()
+      })
     },
-
-    async loadHouseData() {
-      const { mockGetHouseStats } = await import('@/api/mock/dashboard')
-      const response = await mockGetHouseStats()
-      this.houseData = response.data
+    getMonthText() {
+      const d = new Date()
+      return `${d.getFullYear()}年${d.getMonth() + 1}月`
     },
-
-    async loadTenantData() {
-      const { mockGetTenantProfile } = await import('@/api/mock/dashboard')
-      const response = await mockGetTenantProfile()
-      this.tenantData = response.data
+    formatYuan(val) {
+      if (!val) return '¥0'
+      if (val >= 100000000) return `¥${(val / 100000000).toFixed(2)}亿`
+      if (val >= 10000) return `¥${(val / 10000).toFixed(1)}万`
+      return `¥${Number(val).toLocaleString()}`
     },
-
-    async loadEducationData() {
-      const { mockGetEducationJob } = await import('@/api/mock/dashboard')
-      const response = await mockGetEducationJob()
-      this.educationData = response.data
-    },
-
-    handleMonthChange(month) {
-      console.log('切换月份:', month)
-      this.loadDashboardData()
-    },
-
-    getCurrentMonthText() {
-      const date = new Date()
-      const year = date.getFullYear()
-      const month = date.getMonth() + 1
-      return `${year}年${month}月 港好住保租房业务数据概览`
-    },
-
-    formatAmount(amount) {
-      if (!amount) return '¥0'
-      if (amount >= 10000) {
-        return `¥${(amount / 10000).toFixed(1)}万`
-      }
-      return `¥${amount.toLocaleString()}`
+    getPct(obj, key) {
+      if (!obj) return 0
+      const total = Object.values(obj).reduce((s, v) => s + (v || 0), 0)
+      if (!total) return 0
+      return Math.round(((obj[key] || 0) / total) * 100)
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.dashboard-container {
-  padding: 0;
-  background: #f0f2f5;
+// ====== 全局变量 ======
+$navy:  #1e3a5f;
+$teal:  #0891b2;
+$green: #16a34a;
+$amber: #d97706;
+$red:   #dc2626;
+$gray:  #6b7280;
+$cyan:  #0e7490;
+$rose:  #be185d;
+$bg:    #f1f5f9;
+$card:  #ffffff;
+$radius: 12px;
+
+.ghz-dash {
+  background: $bg;
   min-height: calc(100vh - 84px);
+  font-family: 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
 }
 
-// 顶部标题区域
-.header-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 0;
-
-  .header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 24px 32px;
-    max-width: 1600px;
-    margin: 0 auto;
-  }
-
-  .page-header {
-    flex: 1;
-
-    .title-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .title-icon {
-      width: 56px;
-      height: 56px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(10px);
-
-      i {
-        font-size: 28px;
-        color: #fff;
-      }
-    }
-
-    .title-text {
-      .page-title {
-        margin: 0;
-        font-size: 26px;
-        color: #fff;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-      }
-
-      .page-subtitle {
-        margin: 4px 0 0 0;
-        color: rgba(255, 255, 255, 0.85);
-        font-size: 13px;
-      }
-    }
-  }
-
-  .filter-section {
-    .month-picker {
-      width: 200px;
-
-      ::v-deep .el-input__inner {
-        border: none;
-        border-radius: 24px;
-        background: rgba(255, 255, 255, 0.95);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-
-        &:focus {
-          box-shadow: 0 4px 20px rgba(255, 255, 255, 0.3);
-        }
-      }
-
-      ::v-deep .el-input__icon {
-        color: #667eea;
-      }
-    }
-  }
-}
-
-// 主内容区域
-.main-content {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 24px 32px 40px;
-}
-
-// 统计卡片
-.metrics-row {
-  margin-bottom: 20px;
-}
-
-.stat-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-bottom: 20px;
+// ====== Header ======
+.ghz-header {
+  background: linear-gradient(135deg, #0f2444 0%, #1e3a6e 60%, #1a4a80 100%);
   position: relative;
   overflow: hidden;
-
   &::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-  }
-
-  &.blue::before { background: linear-gradient(180deg, #409EFF, #66b3ff); }
-  &.green::before { background: linear-gradient(180deg, #67C23A, #85d64d); }
-  &.orange::before { background: linear-gradient(180deg, #E6A23C, #f0b857); }
-  &.purple::before { background: linear-gradient(180deg, #9C27B0, #b654d1); }
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  }
-
-  .stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-
-    i {
-      font-size: 28px;
-      color: #fff;
-    }
-  }
-
-  &.blue .stat-icon { background: linear-gradient(135deg, #409EFF 0%, #66b3ff 100%); }
-  &.green .stat-icon { background: linear-gradient(135deg, #67C23A 0%, #85d64d 100%); }
-  &.orange .stat-icon { background: linear-gradient(135deg, #E6A23C 0%, #f0b857 100%); }
-  &.purple .stat-icon { background: linear-gradient(135deg, #9C27B0 0%, #b654d1 100%); }
-
-  .stat-content {
-    flex: 1;
-  }
-
-  .stat-value {
-    font-size: 24px;
-    font-weight: 700;
-    color: #303133;
-    line-height: 1.2;
-  }
-
-  .stat-label {
-    font-size: 13px;
-    color: #909399;
-    margin-top: 4px;
-  }
-
-  .stat-trend {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    margin-top: 6px;
-    padding: 2px 8px;
-    border-radius: 10px;
-
-    &.up {
-      color: #67C23A;
-      background: rgba(103, 194, 58, 0.1);
-    }
-
-    &:not(.up) {
-      color: #909399;
-      background: rgba(144, 147, 153, 0.1);
-    }
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,0.02) 0px,
+      rgba(255,255,255,0.02) 1px,
+      transparent 1px,
+      transparent 20px
+    );
   }
 }
+.ghz-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px;
+  position: relative;
+  z-index: 1;
+}
+.ghz-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ghz-logo-mark {
+  width: 52px; height: 52px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(10px);
+  i { font-size: 26px; color: #fff; }
+}
+.ghz-header-title {
+  margin: 0;
+  font-size: 24px; font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+.ghz-header-sub {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+}
+.ghz-header-right {
+  display: flex; align-items: center; gap: 12px;
+}
+.live-badge {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 4px 12px;
+  color: #fff; font-size: 12px;
+}
+.live-dot {
+  width: 7px; height: 7px;
+  background: #4ade80;
+  border-radius: 50%;
+  animation: livePulse 1.5s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+.ghz-month-picker {
+  width: 160px;
+  ::v-deep .el-input__inner {
+    border: none;
+    background: rgba(255,255,255,0.9);
+    border-radius: 20px;
+    height: 34px; line-height: 34px;
+  }
+}
+.ghz-refresh-btn {
+  border-radius: 20px;
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.3);
+  color: #fff;
+  &:hover { background: rgba(255,255,255,0.25); }
+}
 
-// 区块样式
-.section-card {
+// ====== Body ======
+.ghz-body {
+  padding: 24px 32px 40px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+// ====== Panel 通用 ======
+.ghz-panel {
+  background: $card;
+  border-radius: $radius;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+}
+.ghz-panel-head {
+  display: flex; align-items: center; gap: 10px;
   margin-bottom: 20px;
 }
+.panel-accent {
+  display: inline-block;
+  width: 4px; height: 20px;
+  border-radius: 2px;
+  &.blue  { background: #2563eb; }
+  &.teal  { background: $teal; }
+  &.amber { background: $amber; }
+  &.rose  { background: $rose; }
+  &.cyan  { background: $cyan; }
+}
+.panel-title {
+  font-size: 16px; font-weight: 600;
+  color: #1e293b;
+}
+.panel-tag { margin-left: 4px; }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+// ====== 财务指标 5卡片 ======
+.fin-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  @media (max-width: 1200px) { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 768px)  { grid-template-columns: repeat(2, 1fr); }
+}
+.fin-card {
+  background: $card;
+  border-radius: 10px;
+  padding: 18px 20px;
+  border: 1px solid #e8edf5;
+  display: flex; align-items: center; gap: 14px;
+  position: relative; overflow: hidden;
+  transition: box-shadow 0.25s, transform 0.25s;
+  &:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.1); transform: translateY(-2px); }
+}
+.fin-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  i { font-size: 22px; color: #fff; }
+}
+.fin-amount {
+  font-size: 22px; font-weight: 700; color: #1e293b;
+  line-height: 1.2;
+}
+.fin-label { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+.fin-deco {
+  position: absolute; right: -20px; bottom: -20px;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  opacity: 0.06;
+}
+
+.fin-blue  .fin-icon { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+.fin-green .fin-icon { background: linear-gradient(135deg, $green, #4ade80); }
+.fin-amber .fin-icon { background: linear-gradient(135deg, $amber, #fcd34d); }
+.fin-red   .fin-icon { background: linear-gradient(135deg, $red, #f87171); }
+.fin-gray  .fin-icon { background: linear-gradient(135deg, $gray, #9ca3af); }
+.fin-blue  .fin-deco { background: #2563eb; }
+.fin-green .fin-deco { background: $green; }
+.fin-amber .fin-deco { background: $amber; }
+.fin-red   .fin-deco { background: $red; }
+.fin-gray  .fin-deco { background: $gray; }
+.fin-blue  { border-top: 3px solid #2563eb; }
+.fin-green { border-top: 3px solid $green; }
+.fin-amber { border-top: 3px solid $amber; }
+.fin-red   { border-top: 3px solid $red; }
+.fin-gray  { border-top: 3px solid $gray; }
+
+// ====== 房源数量卡片 ======
+.house-count-row { margin-bottom: 0; }
+.hc-card {
+  background: $card;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid #e8edf5;
+  transition: all 0.25s;
   margin-bottom: 16px;
+  &:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
 }
-
-.section-title-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  .section-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    i {
-      font-size: 18px;
-      color: #fff;
-    }
-
-    &.primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-    &.blue { background: linear-gradient(135deg, #409EFF 0%, #66b3ff 100%); }
-    &.green { background: linear-gradient(135deg, #67C23A 0%, #85d64d 100%); }
-    &.orange { background: linear-gradient(135deg, #E6A23C 0%, #f0b857 100%); }
-    &.purple { background: linear-gradient(135deg, #9C27B0 0%, #b654d1 100%); }
-  }
-
-  .section-text {
-    font-size: 16px;
-    font-weight: 600;
-    color: #303133;
-    padding-left: 12px;
-    border-left: 3px solid #1890ff;
-  }
-
-  .section-tag {
-    margin-left: 8px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    color: #fff;
-  }
+.hc-icon {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 8px;
 }
-
-.ledger-section.top-section {
-  margin-bottom: 24px;
-
-  .featured-card {
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
-
-    ::v-deep .el-card__body {
-      padding: 0;
-    }
-  }
+.hc-num {
+  font-size: 32px; font-weight: 700; color: #1e293b;
+  line-height: 1;
 }
+.hc-label { font-size: 13px; color: #94a3b8; margin-top: 6px; }
 
-.content-card {
-  border-radius: 14px;
-  border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+.hc-slate .hc-icon { color: #475569; }
+.hc-green .hc-icon { color: $green; }
+.hc-amber .hc-icon { color: $amber; }
+.hc-red   .hc-icon { color: $red; }
+.hc-slate { border-top: 3px solid #475569; }
+.hc-green { border-top: 3px solid $green; }
+.hc-amber { border-top: 3px solid $amber; }
+.hc-red   { border-top: 3px solid $red; }
 
-  &:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  }
-
-  ::v-deep .el-card__body {
-    padding: 20px;
-  }
+// ====== 出租率仪表 ======
+.house-rate-row { margin-bottom: 0; }
+.hr-card {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid #e8edf5;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
 }
+.hr-label { font-size: 14px; font-weight: 500; color: #475569; }
 
-.analysis-row,
-.profile-row {
-  margin-bottom: 0;
+// ====== 租户画像进度条 ======
+.profile-bars { display: flex; flex-direction: column; gap: 16px; }
+.pb-row {
+  display: flex; align-items: center; gap: 10px;
 }
-
-// 响应式设计
-@media (max-width: 1200px) {
-  .main-content {
-    padding: 20px;
-  }
+.pb-label {
+  width: 70px; font-size: 13px; color: #64748b; text-align: right; flex-shrink: 0;
 }
+.pb-track {
+  flex: 1;
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.pb-fill {
+  height: 100%; border-radius: 5px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.pb-val  { width: 48px; font-size: 13px; color: #475569; text-align: right; }
+.pb-pct  { width: 40px; font-size: 12px; color: #94a3b8; text-align: right; }
 
+.pbf-blue  { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+.pbf-teal  { background: linear-gradient(90deg, $teal, #22d3ee); }
+.pbf-amber { background: linear-gradient(90deg, $amber, #fcd34d); }
+.pbf-gray  { background: linear-gradient(90deg, $gray, #d1d5db); }
+.pbf-green { background: linear-gradient(90deg, $green, #86efac); }
+
+// ====== 响应式 ======
 @media (max-width: 768px) {
-  .header-section {
-    .header-content {
-      flex-direction: column;
-      padding: 20px;
-      gap: 16px;
-    }
-
-    .page-header {
-      text-align: left;
-
-      .title-wrapper {
-        gap: 12px;
-      }
-
-      .title-icon {
-        width: 48px;
-        height: 48px;
-
-        i {
-          font-size: 24px;
-        }
-      }
-
-      .title-text .page-title {
-        font-size: 20px;
-      }
-    }
-
-    .filter-section .month-picker {
-      width: 100%;
-    }
-  }
-
-  .main-content {
-    padding: 16px;
-  }
-
-  .stat-card {
-    padding: 16px;
-
-    .stat-icon {
-      width: 50px;
-      height: 50px;
-
-      i {
-        font-size: 24px;
-      }
-    }
-
-    .stat-value {
-      font-size: 20px;
-    }
-  }
-
-  .section-title-wrapper {
-    .section-text {
-      font-size: 14px;
-    }
-  }
-}
-
-@media (max-width: 576px) {
-  .header-section {
-    .header-content {
-      padding: 16px;
-    }
-
-    .title-icon {
-      width: 42px;
-      height: 42px;
-    }
-
-    .title-text .page-title {
-      font-size: 18px;
-    }
-  }
-
-  .stat-card {
-    .stat-value {
-      font-size: 18px;
-    }
-  }
+  .ghz-header-inner { flex-direction: column; padding: 16px 20px; gap: 14px; }
+  .ghz-header-right { flex-wrap: wrap; justify-content: center; }
+  .ghz-body { padding: 16px; }
+  .ghz-header-title { font-size: 18px; }
+  .fin-amount { font-size: 18px; }
+  .hc-num { font-size: 26px; }
 }
 </style>

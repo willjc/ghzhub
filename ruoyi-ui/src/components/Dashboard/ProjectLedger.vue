@@ -14,10 +14,15 @@
         </div>
       </div>
 
+      <!-- 横向柱状图 -->
+      <div ref="barChart" class="bar-chart-wrap" v-show="tableData.length > 0"></div>
+
       <el-table
         :data="tableData"
         style="width: 100%"
         :header-cell-style="{background: '#f5f7fa', color: '#606266'}"
+        @row-click="handleDetail"
+        class="ledger-table"
       >
         <el-table-column prop="projectName" label="项目名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="projectCode" label="项目编码" width="120" />
@@ -127,6 +132,7 @@ export default {
       detailVisible: false,
       currentProject: null,
       trendChart: null,
+      barChart: null,
       loading: false
     }
   },
@@ -145,24 +151,60 @@ export default {
     this.loadData()
   },
   beforeDestroy() {
-    if (this.trendChart) {
-      this.trendChart.dispose()
-    }
+    if (this.trendChart) this.trendChart.dispose()
+    if (this.barChart) this.barChart.dispose()
   },
   methods: {
     async loadData() {
       this.loading = true
       try {
-        // 使用模拟数据
         const { mockGetProjectLedger } = await import('@/api/mock/dashboard')
         const response = await mockGetProjectLedger(this.month)
         this.tableData = response.rows || []
+        this.$nextTick(() => this.initBarChart())
       } catch (error) {
         console.error('加载数据失败:', error)
         this.$message.error('数据加载失败')
       } finally {
         this.loading = false
       }
+    },
+    initBarChart() {
+      if (!this.$refs.barChart || !this.tableData.length) return
+      if (this.barChart) this.barChart.dispose()
+      this.barChart = echarts.init(this.$refs.barChart)
+      const names = this.tableData.map(r => r.projectName)
+      const monthly = this.tableData.map(r => r.monthlyAmount)
+      const ytd = this.tableData.map(r => r.yearToDateAmount)
+      this.barChart.setOption({
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          formatter: params => {
+            return params.map(p => `${p.seriesName}: ¥${p.value.toLocaleString()}`).join('<br/>')
+          }
+        },
+        legend: { data: ['本月金额', '累计金额'], top: 0, right: 0 },
+        grid: { left: '2%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'value', axisLabel: { formatter: v => v >= 10000 ? (v / 10000).toFixed(0) + '万' : v } },
+        yAxis: { type: 'category', data: names, axisLabel: { width: 120, overflow: 'truncate' } },
+        series: [
+          {
+            name: '本月金额', type: 'bar', data: monthly, barMaxWidth: 22,
+            itemStyle: { color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+              { offset: 0, color: '#1d4ed8' }, { offset: 1, color: '#60a5fa' }
+            ])},
+            label: { show: true, position: 'right', formatter: p => '¥' + (p.value / 10000).toFixed(0) + '万', fontSize: 11, color: '#1d4ed8' }
+          },
+          {
+            name: '累计金额', type: 'bar', data: ytd, barMaxWidth: 22,
+            itemStyle: { color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+              { offset: 0, color: '#15803d' }, { offset: 1, color: '#86efac' }
+            ])},
+            label: { show: true, position: 'right', formatter: p => '¥' + (p.value / 10000).toFixed(0) + '万', fontSize: 11, color: '#15803d' }
+          }
+        ]
+      })
     },
     handleRefresh() {
       this.loadData()
@@ -266,6 +308,18 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+// 横向柱状图容器
+.bar-chart-wrap {
+  height: 260px;
+  padding: 12px 16px 0;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+// 表格行可点击样式
+.ledger-table {
+  ::v-deep tr { cursor: pointer; }
+}
+
 // 项目台账卡片样式
 .ledger-card {
   background: #fff;

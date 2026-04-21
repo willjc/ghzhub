@@ -1,9 +1,6 @@
 <template>
 	<view class="page">
 		<scroll-view class="scroll-content" scroll-y>
-			<!-- 封面图 -->
-			<image v-if="detailData.coverImage" class="header-image" :src="getImageUrl(detailData.coverImage)" mode="widthFix"></image>
-
 			<!-- 内容区域 -->
 			<view class="content-wrapper">
 				<!-- 标题 -->
@@ -315,11 +312,6 @@
 	.scroll-content {
 		flex: 1;
 		overflow-y: auto;
-	}
-
-	.header-image {
-		width: 100%;
-		display: block;
 	}
 
 	.content-wrapper {
