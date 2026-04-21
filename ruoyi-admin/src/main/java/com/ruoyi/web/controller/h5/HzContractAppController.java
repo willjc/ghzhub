@@ -135,9 +135,13 @@ public class HzContractAppController extends BaseController {
             // 按合同维度查，每个合同独立判断，不跨合同共享
             Object _contractIdObj = contract.get("contract_id");
             String contractType = contract.get("contract_type") != null ? contract.get("contract_type").toString() : "";
+            String contractStatus2 = contract.get("contract_status") != null ? contract.get("contract_status").toString() : "";
             String materialStatus = "0";
             if ("2".equals(contractType)) {
                 // 续租合同无需上传资料，直接视为已审批
+                materialStatus = "2";
+            } else if ("3".equals(contractStatus2) || "4".equals(contractStatus2) || "5".equals(contractStatus2)) {
+                // 履行中/已到期/已解约合同，资料审核视为已完成（含老数据迁移合同，这些用户已入住，无需再要求上传资料）
                 materialStatus = "2";
             } else if (_contractIdObj != null) {
                 Long cId = Long.parseLong(_contractIdObj.toString());
