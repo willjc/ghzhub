@@ -153,18 +153,19 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
      * @return 房源列表
      */
     @Select("SELECT " +
-            "  c.record_id, c.tenant_id, c.house_id, " +
-            "  c.status AS checkin_status, c.checkin_date, c.create_time, " +
+            "  ct.contract_id AS record_id, ct.tenant_id, h.house_id, " +
+            "  ct.contract_status AS checkin_status, ct.start_date AS checkin_date, ct.create_time, " +
             "  p.project_name, p.cover_image, p.facilities, " +
             "  h.orientation, h.area, h.house_no, h.floor, h.house_code, " +
             "  ct.start_date, ct.end_date, " +
             "  CASE WHEN chr.record_id IS NOT NULL THEN 1 ELSE 0 END AS is_checked_out " +
-            "FROM hz_checkin_record c " +
-            "LEFT JOIN hz_contract ct ON c.contract_id = ct.contract_id " +
-            "LEFT JOIN hz_house h ON c.house_id = h.house_id " +
+            "FROM hz_contract ct " +
+            "LEFT JOIN hz_house h ON ct.house_id = h.house_id " +
             "LEFT JOIN hz_project p ON h.project_id = p.project_id " +
-            "LEFT JOIN hz_checkout_record chr ON c.contract_id = chr.contract_id " +
-            "WHERE c.tenant_id = #{tenantId} " +
-            "ORDER BY c.create_time DESC")
+            "LEFT JOIN hz_checkout_record chr ON ct.contract_id = chr.contract_id " +
+            "WHERE ct.tenant_id = #{tenantId} " +
+            "  AND ct.del_flag = '0' " +
+            "  AND ct.contract_status IN ('2','3','4','5') " +
+            "ORDER BY ct.create_time DESC")
     List<Map<String, Object>> selectMyListingsByTenantId(@Param("tenantId") Long tenantId);
 }

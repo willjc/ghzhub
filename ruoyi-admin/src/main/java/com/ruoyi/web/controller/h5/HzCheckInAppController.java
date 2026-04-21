@@ -105,9 +105,9 @@ public class HzCheckInAppController extends BaseController {
 
                 listing.put("detail", detail.toString());
 
-                // 状态判断
+                // 状态判断（基于合同状态）
                 Integer isCheckedOut = ((Number) item.get("is_checked_out")).intValue();
-                String checkinStatus = (String) item.get("checkin_status");
+                String contractStatus = (String) item.get("checkin_status");
 
                 String status;
                 String statusText;
@@ -116,27 +116,23 @@ public class HzCheckInAppController extends BaseController {
                     status = "checked_out";
                     statusText = "已退租";
                 } else {
-                    // 根据入住状态判断
-                    switch (checkinStatus) {
-                        case "4":
+                    // 根据合同状态判断
+                    switch (contractStatus) {
+                        case "3":
                             status = "renting";
                             statusText = "在租中";
                             break;
-                        case "0":
-                            status = "pending";
-                            statusText = "待办理";
-                            break;
-                        case "1":
-                            status = "reviewing";
-                            statusText = "待审核";
-                            break;
                         case "2":
-                            status = "confirming";
-                            statusText = "待确认";
+                            status = "pending";
+                            statusText = "待生效";
                             break;
-                        case "3":
-                            status = "rejected";
-                            statusText = "已拒绝";
+                        case "4":
+                            status = "confirming";
+                            statusText = "即将到期";
+                            break;
+                        case "5":
+                            status = "checked_out";
+                            statusText = "已解约";
                             break;
                         default:
                             status = "unknown";
