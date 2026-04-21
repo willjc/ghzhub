@@ -1,9 +1,12 @@
 package com.ruoyi.web.controller.h5;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzDocument;
 import com.ruoyi.system.domain.HzTenant;
+import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.service.IHzDocumentService;
 import com.ruoyi.system.service.IHzHouseOrderService;
 import com.ruoyi.system.service.IHzTenantService;
@@ -39,6 +42,9 @@ public class HzDocumentController extends BaseController {
 
     @Autowired
     private IHzUserMessageService messageService;
+
+    @Autowired
+    private HzContractMapper contractMapper;
 
     /**
      * 查询当前用户的资料列表
@@ -179,8 +185,24 @@ public class HzDocumentController extends BaseController {
      */
     @GetMapping("/status/{userId}")
     public AjaxResult getDocumentStatus(@PathVariable Long userId) {
-        // hz_document.tenant_id 直接存储 hz_user.user_id，不经过 hz_tenant
         Map<String, Object> result = new HashMap<>();
+
+        // 短路判断：若该用户有处于履行中/已到期/已解约状态的合同，则资料视为已完成
+        // 适用于老数据迁移用户（已实际入住，无需再补传资料）
+        long activeContractCount = contractMapper.selectCount(
+            new LambdaQueryWrapper<HzContract>()
+                .eq(HzContract::getTenantId, userId)
+                .in(HzContract::getContractStatus, "3", "4", "5")
+                .eq(HzContract::getDelFlag, "0")
+        );
+        if (activeContractCount > 0) {
+            result.put("submitted", true);
+            result.put("count", 1);
+            result.put("approved", true);
+            return success(result);
+        }
+
+        // hz_document.tenant_id 直接存储 hz_user.user_id，不经过 hz_tenant
         List<HzDocument> docs = documentService.selectDocumentListByTenantId(userId);
         int count = docs != null ? docs.size() : 0;
         boolean approved = docs != null && docs.stream().anyMatch(d -> "1".equals(d.getAuditStatus()));
