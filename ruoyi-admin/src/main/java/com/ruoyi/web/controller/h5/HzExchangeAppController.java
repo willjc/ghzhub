@@ -5,10 +5,13 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzHouseExchange;
 import com.ruoyi.system.service.IHzCheckInService;
 import com.ruoyi.system.service.IHzContractService;
 import com.ruoyi.system.service.IHzHouseExchangeService;
+import com.ruoyi.system.service.IHzHouseService;
+import com.ruoyi.system.service.IHzProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +34,12 @@ public class HzExchangeAppController extends BaseController {
 
     @Autowired
     private IHzContractService contractService;
+
+    @Autowired
+    private IHzProjectService projectService;
+
+    @Autowired
+    private IHzHouseService houseService;
 
     /**
      * 获取用户的调换房申请列表
@@ -140,14 +149,40 @@ public class HzExchangeAppController extends BaseController {
 
             // 从备注中解析房源信息
             String remark = checkIn.getRemark();
-            item.put("community", extractInfo(remark, "项目："));
-            item.put("room", extractInfo(remark, "房间："));
-            item.put("rentPeriod", extractInfo(remark, "租期："));
+            String community = extractInfo(remark, "项目：");
+            String room = extractInfo(remark, "房间：");
+            String rentPeriod = extractInfo(remark, "租期：");
 
-            // 如果备注中没有房源信息，从合同中补充
-            if (item.get("community") == null || ((String) item.get("community")).isEmpty()) {
-                item.put("community", contract.getHouseAddress() != null ? contract.getHouseAddress() : "");
+            // 如果备注中没有房源信息，从项目表/房源表补充
+            if ((community == null || community.isEmpty()) && contract.getProjectId() != null) {
+                com.ruoyi.system.domain.HzProject project = projectService.selectProjectById(contract.getProjectId());
+                if (project != null && project.getProjectName() != null) {
+                    community = project.getProjectName();
+                }
             }
+            if ((community == null || community.isEmpty())) {
+                community = contract.getHouseAddress() != null ? contract.getHouseAddress() : "";
+            }
+
+            if ((room == null || room.isEmpty()) && contract.getHouseId() != null) {
+                HzHouse house = houseService.selectHouseById(contract.getHouseId());
+                if (house != null) {
+                    StringBuilder roomBuilder = new StringBuilder();
+                    if (house.getBuildingName() != null && !house.getBuildingName().isEmpty()) {
+                        roomBuilder.append(house.getBuildingName());
+                    }
+                    if (house.getHouseNo() != null && !house.getHouseNo().isEmpty()) {
+                        roomBuilder.append(house.getHouseNo());
+                    }
+                    if (roomBuilder.length() > 0) {
+                        room = roomBuilder.toString();
+                    }
+                }
+            }
+
+            item.put("community", community);
+            item.put("room", room);
+            item.put("rentPeriod", rentPeriod);
 
             addedContractIds.add(checkIn.getContractId());
             result.add(item);
@@ -172,9 +207,40 @@ public class HzExchangeAppController extends BaseController {
             item.put("houseAddress", contract.getHouseAddress());
             item.put("rentPrice", contract.getRentPrice());
 
-            // 从合同地址中提取小区名和房间号
-            item.put("community", contract.getHouseAddress() != null ? contract.getHouseAddress() : "");
-            item.put("room", contract.getHouseCode() != null ? contract.getHouseCode() : "");
+            // 从项目表获取小区名
+            String community = "";
+            if (contract.getProjectId() != null) {
+                com.ruoyi.system.domain.HzProject project = projectService.selectProjectById(contract.getProjectId());
+                if (project != null && project.getProjectName() != null) {
+                    community = project.getProjectName();
+                }
+            }
+            if (community.isEmpty() && contract.getHouseAddress() != null) {
+                community = contract.getHouseAddress();
+            }
+            item.put("community", community);
+
+            // 从房源表获取房间号
+            String room = "";
+            if (contract.getHouseId() != null) {
+                HzHouse house = houseService.selectHouseById(contract.getHouseId());
+                if (house != null) {
+                    StringBuilder roomBuilder = new StringBuilder();
+                    if (house.getBuildingName() != null && !house.getBuildingName().isEmpty()) {
+                        roomBuilder.append(house.getBuildingName());
+                    }
+                    if (house.getHouseNo() != null && !house.getHouseNo().isEmpty()) {
+                        roomBuilder.append(house.getHouseNo());
+                    }
+                    if (roomBuilder.length() > 0) {
+                        room = roomBuilder.toString();
+                    }
+                }
+            }
+            if (room.isEmpty() && contract.getHouseCode() != null) {
+                room = contract.getHouseCode();
+            }
+            item.put("room", room);
 
             addedContractIds.add(contract.getContractId());
             result.add(item);

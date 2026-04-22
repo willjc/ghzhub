@@ -48,9 +48,12 @@ public class HzCheckInAppController extends BaseController {
 
     @Autowired
     private IHzCoTenantService coTenantService;
-    
-        @Autowired
-        private IHzContractService contractService;
+
+    @Autowired
+    private IHzContractService contractService;
+
+    @Autowired
+    private com.ruoyi.system.service.IHzProjectService projectService;
 
     /**
      * 获取用户的房源列表（用于用户端"我的房源"页面）
@@ -176,28 +179,145 @@ public class HzCheckInAppController extends BaseController {
     }
 
     /**
-     * 获取用户的已入住确认的入住单列表 (用于续租页面)
+     * 获取用户的已入住确认的入住单列表 (用于退租/续租页面)
+     * 兼容老数据迁移场景：无入住记录时从合同表兜底查询
      *
      * @param tenantId 租户ID
-     * @return 已入住确认的入住单列表 (status='4')
+     * @return 已入住确认的入住单/合同列表
      */
     @GetMapping("/confirmed/{tenantId}")
     public AjaxResult getConfirmedCheckInList(@PathVariable Long tenantId) {
-        // 查询该用户所有已入住确认的入住单 (status='4' 且 del_flag='0')
+        // 用合同ID去重，避免重复
+        java.util.Set<Long> addedContractIds = new java.util.HashSet<>();
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+
+        // 方式1：查询该用户所有已入住确认的入住单 (status='4' 且 del_flag='0')
         List<HzCheckIn> list = checkInService.selectConfirmedCheckInListByTenantId(tenantId);
 
-        // 补充合同编号和合同类型信息
         for (HzCheckIn checkIn : list) {
+            if (checkIn.getContractId() == null || addedContractIds.contains(checkIn.getContractId())) {
+                continue;
+            }
+
+            // 获取合同信息
+            com.ruoyi.system.domain.HzContract contract = null;
             if (checkIn.getContractId() != null) {
-                com.ruoyi.system.domain.HzContract contract = contractService.selectContractById(checkIn.getContractId());
-                if (contract != null) {
-                    checkIn.setContractNo(contract.getContractNo());
-                    checkIn.setIsRenewed(contract.getIsRenewed());
+                contract = contractService.selectContractById(checkIn.getContractId());
+            }
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("recordId", checkIn.getRecordId());
+            item.put("contractId", checkIn.getContractId());
+            item.put("contractNo", contract != null ? contract.getContractNo() : "");
+            item.put("isRenewed", contract != null ? contract.getIsRenewed() : "0");
+
+            // 优先从合同/项目/房源表获取可读信息
+            fillReadableInfo(item, contract, checkIn.getRemark());
+
+            addedContractIds.add(checkIn.getContractId());
+            result.add(item);
+        }
+
+        // 方式2：通过合同表补充（兼容老数据迁移场景，无入住记录但有已签署合同）
+        List<com.ruoyi.system.domain.HzContract> allContracts = contractService.selectContractListByTenantId(tenantId);
+        List<com.ruoyi.system.domain.HzContract> activeContracts = allContracts.stream()
+                .filter(c -> "2".equals(c.getContractStatus()) || "3".equals(c.getContractStatus())
+                        || "4".equals(c.getContractStatus()) || "5".equals(c.getContractStatus()))
+                .toList();
+
+        for (com.ruoyi.system.domain.HzContract contract : activeContracts) {
+            if (addedContractIds.contains(contract.getContractId())) {
+                continue; // 已通过入住记录添加，跳过
+            }
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("contractId", contract.getContractId());
+            item.put("contractNo", contract.getContractNo());
+            item.put("isRenewed", contract.getIsRenewed() != null ? contract.getIsRenewed() : "0");
+
+            // 从合同/项目/房源表获取可读信息
+            fillReadableInfo(item, contract, null);
+
+            addedContractIds.add(contract.getContractId());
+            result.add(item);
+        }
+
+        return success(result);
+    }
+
+    /**
+     * 填充可读的房源信息（小区名、房间号、租期、租金、押金）
+     * 优先从项目表/房源表获取真实数据，remark解析作为兜底
+     *
+     * @param item 要填充的Map
+     * @param contract 合同对象（可能为null）
+     * @param remark 入住记录备注（可能为null）
+     */
+    private void fillReadableInfo(Map<String, Object> item, com.ruoyi.system.domain.HzContract contract, String remark) {
+        String community = "";
+        String room = "";
+        String rentPeriod = "";
+        String rent = "";
+        String deposit = "";
+
+        // 先从remark中尝试解析
+        if (remark != null && !remark.isEmpty()) {
+            community = extractInfo(remark, "项目：");
+            room = extractInfo(remark, "房间：");
+            rentPeriod = extractInfo(remark, "租期：");
+            rent = extractInfo(remark, "月租金：");
+            deposit = extractInfo(remark, "押金：");
+        }
+
+        // 从合同/项目/房源表补充缺失的信息
+        if (contract != null) {
+            // 小区名：优先remark，其次从项目表查询
+            if ((community == null || community.isEmpty()) && contract.getProjectId() != null) {
+                com.ruoyi.system.domain.HzProject project = projectService.selectProjectById(contract.getProjectId());
+                if (project != null && project.getProjectName() != null) {
+                    community = project.getProjectName();
                 }
+            }
+
+            // 房间号：优先remark，其次从房源表查询
+            if ((room == null || room.isEmpty()) && contract.getHouseId() != null) {
+                HzHouse house = houseService.selectHouseById(contract.getHouseId());
+                if (house != null) {
+                    // 拼接楼栋-房号
+                    StringBuilder roomBuilder = new StringBuilder();
+                    if (house.getBuildingName() != null && !house.getBuildingName().isEmpty()) {
+                        roomBuilder.append(house.getBuildingName());
+                    }
+                    if (house.getHouseNo() != null && !house.getHouseNo().isEmpty()) {
+                        roomBuilder.append(house.getHouseNo());
+                    }
+                    if (roomBuilder.length() > 0) {
+                        room = roomBuilder.toString();
+                    }
+                }
+            }
+
+            // 租期：优先remark，其次从合同起止日期拼接
+            if ((rentPeriod == null || rentPeriod.isEmpty()) && contract.getStartDate() != null && contract.getEndDate() != null) {
+                rentPeriod = contract.getStartDate() + " 至 " + contract.getEndDate();
+            }
+
+            // 租金：优先remark，其次从合同表
+            if ((rent == null || rent.isEmpty()) && contract.getRentPrice() != null) {
+                rent = contract.getRentPrice().toString() + "元/月";
+            }
+
+            // 押金：优先remark，其次从合同表
+            if ((deposit == null || deposit.isEmpty()) && contract.getDeposit() != null) {
+                deposit = contract.getDeposit().toString() + "元";
             }
         }
 
-        return success(list);
+        item.put("community", community);
+        item.put("room", room);
+        item.put("rentPeriod", rentPeriod);
+        item.put("rent", rent);
+        item.put("deposit", deposit);
     }
 
     /**

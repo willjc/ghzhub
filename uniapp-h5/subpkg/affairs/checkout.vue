@@ -209,25 +209,18 @@
 
 			// 转换入住单数据为前端显示格式
 			convertCheckInData(item) {
-				// 解析备注中的房源信息
-				const remark = item.remark || ''
-				const community = this.extractInfo(remark, '项目：')
-				const room = this.extractInfo(remark, '房间：')
-				const rentPeriod = this.extractInfo(remark, '租期：')
-				const rent = this.extractInfo(remark, '月租金：')
-				const deposit = this.extractInfo(remark, '押金：')
-
+				// 后端已返回可读字段（community, room, rentPeriod, rent, deposit），优先使用
 				return {
 					recordId: item.recordId,
 					contractId: item.contractId,
 					contractNo: item.contractNo || '',
 					status: 'confirmed',  // 已入住确认（可退租）
 					statusText: '已入住',
-					community: community || '未知小区',
-					room: room || '未知房间',
-					rentPeriod: rentPeriod || '-',
-					rent: rent ? rent : '-',
-					deposit: deposit ? deposit : '-',
+					community: item.community || '未知小区',
+					room: item.room || '未知房间',
+					rentPeriod: item.rentPeriod || '-',
+					rent: item.rent || '-',
+					deposit: item.deposit || '-',
 					isRenewed: item.isRenewed || item.is_renewed || '0'
 				}
 			},
