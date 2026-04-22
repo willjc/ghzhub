@@ -90,8 +90,8 @@
 				// 格式化报名时间
 				let registrationTime = '';
 				if (item.registrationStartTime && item.registrationEndTime) {
-					const startDate = this.formatDate(item.registrationStartTime);
-					const endDate = this.formatDate(item.registrationEndTime);
+					const startDate = this.formatDateTime(item.registrationStartTime);
+					const endDate = this.formatDateTime(item.registrationEndTime);
 					registrationTime = `${startDate} 至 ${endDate}`;
 				}
 
@@ -99,8 +99,18 @@
 				let activityTime = '';
 				if (item.activityStartTime && item.activityEndTime) {
 					const startDateTime = this.formatDateTime(item.activityStartTime);
-					const endTime = this.formatTime(item.activityEndTime);
-					activityTime = `${startDateTime} - ${endTime}`;
+					const endDateTime = this.formatDateTime(item.activityEndTime);
+					const startDate = this.formatDate(item.activityStartTime);
+					const endDate = this.formatDate(item.activityEndTime);
+					const endTimeOnly = this.formatTime(item.activityEndTime);
+
+					if (startDate === endDate) {
+						// 同一天：2026-04-23 17:00 至 18:45
+						activityTime = `${startDateTime} 至 ${endTimeOnly}`;
+					} else {
+						// 跨天：2026-04-23 17:00 至 2026-04-24 18:45
+						activityTime = `${startDateTime} 至 ${endDateTime}`;
+					}
 				}
 
 				return {
@@ -137,7 +147,7 @@
 			/** 格式化日期 YYYY-MM-DD */
 			formatDate(dateStr) {
 				if (!dateStr) return '';
-				const date = new Date(dateStr);
+				const date = new Date(dateStr.replace(/-/g, '/'));
 				const year = date.getFullYear();
 				const month = String(date.getMonth() + 1).padStart(2, '0');
 				const day = String(date.getDate()).padStart(2, '0');
@@ -147,11 +157,11 @@
 			/** 格式化日期时间 YYYY-MM-DD HH:mm */
 			formatDateTime(dateStr) {
 				if (!dateStr) return '';
-				const date = new Date(dateStr);
+				const date = new Date(dateStr.replace(/-/g, '/'));
 				const datepart = this.formatDate(dateStr);
 				const hour = String(date.getHours()).padStart(2, '0');
 				const minute = String(date.getMinutes()).padStart(2, '0');
-				return `${datepart} ${hour}:${minute}`;
+				return `${datepart}\u00A0${hour}:${minute}`;
 			},
 
 			/** 格式化时间 HH:mm */
