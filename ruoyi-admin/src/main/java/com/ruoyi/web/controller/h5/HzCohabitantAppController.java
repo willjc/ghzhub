@@ -102,11 +102,11 @@ public class HzCohabitantAppController extends BaseController {
      */
     @GetMapping("/confirmed/{tenantId}")
     public AjaxResult getConfirmedContractList(@PathVariable Long tenantId) {
-        // 查询该用户所有已入住确认的入住单 (status='4')
+        // 查询该用户所有已入住确认的入住单 (status='2','3','4'，兼容老数据)
         List<HzCheckIn> checkInList = checkInService.selectConfirmedCheckInListByTenantId(tenantId);
 
         // 转换为前端需要的格式（展示合同信息）
-        // 过滤掉已删除的合同（del_flag='2'）
+        // 只保留履行中的合同（contract_status='3'）
         List<Map<String, Object>> result = checkInList.stream().map(checkIn -> {
             // 根据合同ID查询合同信息
             HzContract contract = null;
@@ -122,6 +122,7 @@ public class HzCohabitantAppController extends BaseController {
                 item.put("contractNo", contract.getContractNo());
                 item.put("houseAddress", contract.getHouseAddress());
                 item.put("rentPrice", contract.getRentPrice());
+                item.put("contractStatus", contract.getContractStatus());
             }
 
             // 从备注中解析房源信息
@@ -138,7 +139,11 @@ public class HzCohabitantAppController extends BaseController {
                 return false;
             }
             // 如果没有 contractNo，说明合同已被删除或不存在
-            return item.get("contractNo") != null;
+            if (item.get("contractNo") == null) {
+                return false;
+            }
+            // 合住人申请：只保留履行中的合同（contract_status='3'）
+            return "3".equals(item.get("contractStatus"));
         }).toList();
 
         return success(result);
