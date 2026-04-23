@@ -40,7 +40,7 @@ public class HzCheckInServiceImpl extends ServiceImpl<HzCheckInMapper, HzCheckIn
     public List<HzCheckIn> selectConfirmedCheckInListByTenantId(Long tenantId) {
         LambdaQueryWrapper<HzCheckIn> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzCheckIn::getTenantId, tenantId)
-               .eq(HzCheckIn::getStatus, "4")  // 4=已入住确认
+               .in(HzCheckIn::getStatus, "2", "3", "4")  // 兼容老数据：2=已完成入住确认, 3=已确认资料, 4=已入住确认
                .eq(HzCheckIn::getDelFlag, "0")
                .orderByDesc(HzCheckIn::getCreateTime);
         return this.list(wrapper);
