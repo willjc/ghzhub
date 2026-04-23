@@ -299,12 +299,58 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                 item.put("rent", extractInfo(remark, "月租金："));
                 item.put("deposit", extractInfo(remark, "押金："));
             } else {
-                // 如果入住单没有备注信息，设置默认值
-                item.put("community", "");
-                item.put("room", "");
-                item.put("rentPeriod", "");
-                item.put("rent", "");
-                item.put("deposit", "");
+                // 兼容老数据：remark为空时，从合同/房源表补充
+                String community = "";
+                String room = "";
+                String rentPeriod = "";
+                String rent = "";
+                String deposit = "";
+
+                HzContract contract = contractMapper.selectById(apply.getContractId());
+                if (contract != null) {
+                    // 小区名
+                    if (contract.getProjectId() != null) {
+                        HzProject project = projectMapper.selectById(contract.getProjectId());
+                        if (project != null && project.getProjectName() != null) {
+                            community = project.getProjectName();
+                        }
+                    }
+                    // 房间号
+                    if (contract.getHouseId() != null) {
+                        HzHouse house = houseMapper.selectById(contract.getHouseId());
+                        if (house != null) {
+                            StringBuilder roomBuilder = new StringBuilder();
+                            if (house.getBuildingId() != null) {
+                                HzBuilding building = buildingMapper.selectById(house.getBuildingId());
+                                if (building != null && building.getBuildingName() != null) {
+                                    roomBuilder.append(building.getBuildingName());
+                                }
+                            }
+                            if (house.getHouseNo() != null) {
+                                roomBuilder.append(house.getHouseNo());
+                            }
+                            room = roomBuilder.toString();
+                        }
+                    }
+                    // 租期
+                    if (contract.getStartDate() != null && contract.getEndDate() != null) {
+                        rentPeriod = contract.getStartDate() + " 至 " + contract.getEndDate();
+                    }
+                    // 租金
+                    if (contract.getRentPrice() != null) {
+                        rent = contract.getRentPrice().toString() + "元/月";
+                    }
+                    // 押金
+                    if (contract.getDeposit() != null) {
+                        deposit = contract.getDeposit().toString() + "元";
+                    }
+                }
+
+                item.put("community", community);
+                item.put("room", room);
+                item.put("rentPeriod", rentPeriod);
+                item.put("rent", rent);
+                item.put("deposit", deposit);
             }
 
             resultList.add(item);

@@ -3,6 +3,7 @@ package com.ruoyi.web.controller.h5;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.DateUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.mapper.HzCheckInMapper;
@@ -249,6 +250,19 @@ public class HzCheckInAppController extends BaseController {
             item.put("contractNo", contract.getContractNo());
             item.put("isRenewed", contract.getIsRenewed() != null ? contract.getIsRenewed() : "0");
 
+            // 兼容老数据：查找合同对应的入住记录，补充 recordId
+            if (contract.getContractId() != null) {
+                LambdaQueryWrapper<HzCheckIn> wrapper = new LambdaQueryWrapper<>();
+                wrapper.eq(HzCheckIn::getContractId, contract.getContractId());
+                wrapper.eq(HzCheckIn::getDelFlag, "0");
+                wrapper.orderByDesc(HzCheckIn::getCreateTime);
+                wrapper.last("LIMIT 1");
+                List<HzCheckIn> checkIns = checkInMapper.selectList(wrapper);
+                if (!checkIns.isEmpty()) {
+                    item.put("recordId", checkIns.get(0).getRecordId());
+                }
+            }
+
             // 从合同/项目/房源表获取可读信息
             fillReadableInfo(item, contract, null);
 
@@ -363,7 +377,25 @@ public class HzCheckInAppController extends BaseController {
         result.put("emergencyContactPhone", checkIn.getEmergencyContactPhone());
         result.put("status", checkIn.getStatus());
         result.put("statusText", getStatusText(checkIn.getStatus()));
-        result.put("remark", checkIn.getRemark());
+
+        // 兼容老数据：remark为空时，从合同/房源表构造remark
+        String remark = checkIn.getRemark();
+        if (remark == null || remark.isEmpty()) {
+            if (checkIn.getContractId() != null) {
+                com.ruoyi.system.domain.HzContract contract = contractService.selectContractById(checkIn.getContractId());
+                Map<String, Object> infoMap = new HashMap<>();
+                fillReadableInfo(infoMap, contract, null);
+                StringBuilder sb = new StringBuilder();
+                sb.append("项目：").append(infoMap.getOrDefault("community", "")).append("|");
+                sb.append("房间：").append(infoMap.getOrDefault("room", "")).append("|");
+                sb.append("租期：").append(infoMap.getOrDefault("rentPeriod", "")).append("|");
+                sb.append("月租金：").append(infoMap.getOrDefault("rent", "")).append("|");
+                sb.append("押金：").append(infoMap.getOrDefault("deposit", ""));
+                remark = sb.toString();
+            }
+        }
+        result.put("remark", remark);
+
         result.put("auditBy", checkIn.getAuditBy());
         result.put("auditTime", checkIn.getAuditTime());
         result.put("auditRemark", checkIn.getAuditRemark());
