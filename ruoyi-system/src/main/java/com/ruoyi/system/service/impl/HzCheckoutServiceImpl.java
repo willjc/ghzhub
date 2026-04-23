@@ -306,7 +306,7 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                 String rent = "";
                 String deposit = "";
 
-                HzContract contract = contractMapper.selectById(apply.getContractId());
+                // contract 已在前面查询
                 if (contract != null) {
                     // 小区名
                     if (contract.getProjectId() != null) {
