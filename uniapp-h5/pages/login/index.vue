@@ -7,7 +7,7 @@
 		<view class="logo-section">
 			<image class="logo" src="/static/logo.png" mode="aspectFit"></image>
 			<text class="app-name">港好住</text>
-			<text class="app-desc">港区保租房·人才公寓服务平台</text>
+			<text class="app-desc">郑州航空港区人才公寓服务平台</text>
 		</view>
 
 		<!-- 登录卡片 -->
@@ -17,7 +17,7 @@
 			<!-- #ifdef MP-WEIXIN -->
 			<!-- 微信小程序：授权手机号登录 -->
 			<button class="login-btn wechat-btn" open-type="getPhoneNumber" @getphonenumber="onGetPhoneNumber" :disabled="loading">
-				<text class="btn-text">{{ loading ? '登录中...' : '微信授权登录' }}</text>
+				<text class="btn-text">{{ loading ? '登录中...' : '手机号快捷登录' }}</text>
 			</button>
 			<!-- #endif -->
 
