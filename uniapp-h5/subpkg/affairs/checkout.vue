@@ -150,7 +150,7 @@
 					this.loading = true
 
 					// 1. 获取已入住确认的入住单
-					const checkinResponse = await getConfirmedCheckInList(this.tenantId)
+					const checkinResponse = await getConfirmedCheckInList(this.tenantId, 'checkout')
 					let checkinList = []
 					if (checkinResponse.code === 200 && checkinResponse.data) {
 						checkinList = checkinResponse.data.map(item => this.convertCheckInData(item))

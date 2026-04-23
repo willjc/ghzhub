@@ -12,11 +12,15 @@ export function getCheckInList(tenantId) {
 }
 
 /**
- * 获取用户的已入住确认的入住单列表 (用于续租页面)
+ * 获取用户的已入住确认的入住单列表 (用于续租/退租页面)
  * @param {Number} tenantId 租户ID
+ * @param {String} type 页面类型：renew=续租, checkout=退租
  */
-export function getConfirmedCheckInList(tenantId) {
-  return get(`/h5/app/checkin/confirmed/${tenantId}`)
+export function getConfirmedCheckInList(tenantId, type) {
+  const url = type
+    ? `/h5/app/checkin/confirmed/${tenantId}?type=${type}`
+    : `/h5/app/checkin/confirmed/${tenantId}`
+  return get(url)
 }
 
 /**

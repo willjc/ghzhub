@@ -183,10 +183,12 @@ public class HzCheckInAppController extends BaseController {
      * 兼容老数据迁移场景：无入住记录时从合同表兜底查询
      *
      * @param tenantId 租户ID
+     * @param type     页面类型：renew=续租(仅履行中), checkout=退租(已签署/履行中/已到期)
      * @return 已入住确认的入住单/合同列表
      */
     @GetMapping("/confirmed/{tenantId}")
-    public AjaxResult getConfirmedCheckInList(@PathVariable Long tenantId) {
+    public AjaxResult getConfirmedCheckInList(@PathVariable Long tenantId,
+                                              @RequestParam(required = false) String type) {
         // 用合同ID去重，避免重复
         java.util.Set<Long> addedContractIds = new java.util.HashSet<>();
         List<Map<String, Object>> result = new java.util.ArrayList<>();
@@ -205,6 +207,11 @@ public class HzCheckInAppController extends BaseController {
                 contract = contractService.selectContractById(checkIn.getContractId());
             }
 
+            // 续租场景：只保留履行中的合同
+            if ("renew".equals(type) && (contract == null || !"3".equals(contract.getContractStatus()))) {
+                continue;
+            }
+
             Map<String, Object> item = new HashMap<>();
             item.put("recordId", checkIn.getRecordId());
             item.put("contractId", checkIn.getContractId());
@@ -221,8 +228,15 @@ public class HzCheckInAppController extends BaseController {
         // 方式2：通过合同表补充（兼容老数据迁移场景，无入住记录但有已签署合同）
         List<com.ruoyi.system.domain.HzContract> allContracts = contractService.selectContractListByTenantId(tenantId);
         List<com.ruoyi.system.domain.HzContract> activeContracts = allContracts.stream()
-                .filter(c -> "2".equals(c.getContractStatus()) || "3".equals(c.getContractStatus())
-                        || "4".equals(c.getContractStatus()) || "5".equals(c.getContractStatus()))
+                .filter(c -> {
+                    String status = c.getContractStatus();
+                    if ("renew".equals(type)) {
+                        // 续租：只保留履行中的合同
+                        return "3".equals(status);
+                    }
+                    // 退租/默认：保留已签署、履行中、已到期，排除已解约
+                    return "2".equals(status) || "3".equals(status) || "4".equals(status);
+                })
                 .toList();
 
         for (com.ruoyi.system.domain.HzContract contract : activeContracts) {

@@ -95,7 +95,7 @@
 					this.loading = true
 					console.log('加载续租列表，租户ID:', this.tenantId)
 
-					const response = await getConfirmedCheckInList(this.tenantId)
+					const response = await getConfirmedCheckInList(this.tenantId, 'renew')
 
 					if (response.code === 200 && response.data) {
 						// 转换后端数据格式为前端需要的格式
