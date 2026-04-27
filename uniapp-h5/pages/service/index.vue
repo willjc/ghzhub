@@ -35,13 +35,13 @@
 			return {
 				serviceList: [
 					{ key: 'complaint', name: '投诉与建议', icon: '/static/fuwu/投诉及建议@2x.png' },
-					{ key: 'cleaning', name: '保洁服务', icon: '/static/fuwu/保洁@2x.png' },
-					{ key: 'moving', name: '搬家服务', icon: '/static/fuwu/搬家@2x.png' },
+					// { key: 'cleaning', name: '保洁服务', icon: '/static/fuwu/保洁@2x.png' },
+					// { key: 'moving', name: '搬家服务', icon: '/static/fuwu/搬家@2x.png' },
 					{ key: 'repair', name: '物业报修', icon: '/static/fuwu/物业报修@2x.png' },
-					{ key: 'enterprise', name: '企业客户', icon: '/static/fuwu/企业客户@2x.png' },
-					{ key: 'face', name: '人脸门禁', icon: '/static/fuwu/人脸门禁@2x.png' },
-					{ key: 'contract', name: '合同备案', icon: '/static/fuwu/合同@2x.png' },
-					{ key: 'purchase', name: '代购补贴', icon: '/static/fuwu/代购@2x.png' }
+					{ key: 'enterprise', name: '企业客户', icon: '/static/fuwu/企业客户@2x.png' }
+					// { key: 'face', name: '人脸门禁', icon: '/static/fuwu/人脸门禁@2x.png' },
+					// { key: 'contract', name: '合同备案', icon: '/static/fuwu/合同@2x.png' },
+					// { key: 'purchase', name: '代购补贴', icon: '/static/fuwu/代购@2x.png' }
 				]
 			}
 		},

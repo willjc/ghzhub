@@ -252,34 +252,26 @@
 			}
 		},
 		onLoad() {
-			// 检查登录状态
-			const token = uni.getStorageSync('token')
-			if (!token) {
-				// 未登录，跳转登录页
-				uni.reLaunch({
-					url: '/pages/login/index'
-				})
-				return
-			}
-
-			// 检查用户是否已填写个人信息
-			const userInfo = uni.getStorageSync('userInfo')
-			if (userInfo && userInfo.isInfoCompleted !== '1') {
-				this.showModal = true
-				this.formData.phone = userInfo.phone || ''
-			} else {
-				this.showModal = false
-			}
-
-			// 获取人才公寓项目列表
+			// 获取人才公寓项目列表（公开数据，无需登录）
 			this.loadProjectList()
 
-			// 加载轮播图
+			// 加载轮播图（公开数据，无需登录）
 			this.loadBanners()
 
-			// 加载最新通知
+			// 加载最新通知（公开数据，无需登录）
 			this.loadLatestNotice()
 
+			// 已登录用户：检查是否已填写个人信息
+			const token = uni.getStorageSync('token')
+			if (token) {
+				const userInfo = uni.getStorageSync('userInfo')
+				if (userInfo && userInfo.isInfoCompleted !== '1') {
+					this.showModal = true
+					this.formData.phone = userInfo.phone || ''
+				} else {
+					this.showModal = false
+				}
+			}
 		},
 		methods: {
 			closeModal() {
@@ -298,6 +290,13 @@
 				if (!this.formData.identity || !this.formData.name || !this.formData.idCard ||
 					!this.formData.phone || !this.formData.workUnit || !this.formData.workPhone) {
 					uni.showToast({ title: '请填写必填项', icon: 'none' })
+					return
+				}
+				// 单位联系方式不能与当前登录账号的手机号一致
+				const loginUserInfo = uni.getStorageSync('userInfo') || {}
+				const loginPhone = loginUserInfo.phone || ''
+				if (loginPhone && this.formData.workPhone === loginPhone) {
+					uni.showToast({ title: '单位联系方式不能与本人手机号一致', icon: 'none' })
 					return
 				}
 				try {
@@ -498,57 +497,50 @@
 					url: '/pages/house/all'
 				})
 			},
-			handleIconClick(item) {
-				const authRequiredKeys = ['talent', 'guaranteed', 'market', 'map', 'home']
-				// 人才公寓跳转
-				if (item.key === 'talent') {
-					uni.navigateTo({
-						url: '/pages/talent/index'
-					})
-				} else if (item.key === 'home') {
-					// 人才家园跳转
-					uni.navigateTo({
-						url: '/pages/home/index'
-					})
-				}else if (item.key === 'guaranteed') {
-					// 保租房跳转
-					uni.navigateTo({
-						url: '/pages/rental/index'
-					})
-				} else if (item.key === 'market') {
-					// 市场租赁跳转
-					uni.navigateTo({
-						url: '/pages/market/index'
-					})
-					
-				} else if (item.key === 'coupon') {
-					// 优惠券跳转
-					uni.navigateTo({
-						url: '/pages/coupon/index'
-					})
-				} else if (item.key === 'upload') {
-					// 资料上传跳转
-					uni.navigateTo({
-						url: '/pages/upload/index'
-					})
-				} else if (item.key === 'message') {
-					// 我的消息跳转
-					uni.navigateTo({
-						url: '/pages/message/index'
-					})	
-				} else if (item.key === 'policy') {
-					// 政策文件跳转
-					uni.navigateTo({
-						url: '/pages/policy/index'
-					})
-				} else if (item.key === 'map') {
-					// 地图找房跳转
-					uni.navigateTo({
-						url: '/pages/map/index'
-					})
-				} else {
-					console.log('点击图标:', item.name)
+			// 检查登录并跳转
+			checkLoginThenNavigate(url) {
+				const token = uni.getStorageSync('token')
+				if (!token) {
+					uni.navigateTo({ url: '/pages/login/index' })
+					return
 				}
+				uni.navigateTo({ url })
+			},
+
+			handleIconClick(item) {
+				// 需要登录的功能：人才公寓、保租房、市场租赁、地图找房、人才家园、资料上传、优惠券、我的消息
+				const authRequiredKeys = ['talent', 'guaranteed', 'market', 'map', 'home', 'upload', 'coupon', 'message']
+				if (authRequiredKeys.includes(item.key)) {
+					this.checkLoginThenNavigate(this.getIconUrl(item.key))
+					return
+				}
+				// 公开功能：政策文件等无需登录
+				if (item.key === 'policy') {
+					uni.navigateTo({ url: '/pages/policy/index' })
+				}
+			},
+
+			getIconUrl(key) {
+				const urlMap = {
+					talent: '/pages/talent/index',
+					guaranteed: '/pages/rental/index',
+					market: '/pages/market/index',
+					map: '/pages/map/index',
+					home: '/pages/home/index',
+					upload: '/pages/upload/index',
+					coupon: '/pages/coupon/index',
+					message: '/pages/message/index'
+				}
+				return urlMap[key] || ''
+			},
+
+			goToDetail(item) {
+				// 房源/项目详情需要登录
+				this.checkLoginThenNavigate(
+					item.type === 'house'
+						? `/pages/room/detail?roomId=${item.houseId}&projectId=${item.projectId}`
+						: `/pages/project/detail?id=${item.projectId}`
+				)
 			},
 			switchCategory(key) {
 				this.activeCategory = key

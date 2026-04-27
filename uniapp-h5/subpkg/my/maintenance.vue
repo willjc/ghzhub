@@ -170,6 +170,13 @@
 					uni.showToast({ title: '请输入单位联系电话', icon: 'none' })
 					return
 				}
+				// 单位联系方式不能与当前登录账号的手机号一致
+				const loginUserInfo = uni.getStorageSync('userInfo') || {}
+				const loginPhone = loginUserInfo.phone || ''
+				if (loginPhone && this.formData.companyPhone === loginPhone) {
+					uni.showToast({ title: '单位联系方式不能与本人手机号一致', icon: 'none' })
+					return
+				}
 				if (!this.formData.spouse) {
 					uni.showToast({ title: '请输入配偶名字', icon: 'none' })
 					return

@@ -1,0 +1,12 @@
+server:
+  port: 9001
+
+# 代理服务安全配置
+gov:
+  proxy:
+    # API Key（业务系统调用时需在请求头 X-Api-Key 传入）
+    api-key: ghz-gov-proxy-key-2026
+
+logging:
+  level:
+    com.ghz.gov: DEBUG

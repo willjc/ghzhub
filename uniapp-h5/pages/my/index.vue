@@ -2,19 +2,23 @@
 	<view class="page">
 		<scroll-view class="scroll-content" scroll-y>
 			<!-- 顶部用户信息区域 -->
-			<view class="header-section" @click="goToProfile">
+			<view class="header-section" @click="isLogin ? goToProfile() : goToLogin()">
 				<image class="avatar" :src="userInfo.avatar || '/static/my/头像@2x.png'" mode="aspectFill"></image>
-				<view class="user-info">
+				<view class="user-info" v-if="isLogin">
 					<text class="nickname">{{ userInfo.nickname || '未设置昵称' }}</text>
 					<text class="phone">{{ maskedPhone }}</text>
 					<!-- 认证状态标签 -->
 					<view class="auth-tag" v-if="userInfo.authStatus === '2'">
 						<text class="auth-tag-text verified">已实名</text>
 					</view>
-					<view class="auth-tag" v-else @click="goToAuth">
+					<view class="auth-tag" v-else @click.stop="goToAuth">
 						<text class="auth-tag-text unverified">未实名认证</text>
 						<text class="auth-go">去认证 ></text>
 					</view>
+				</view>
+				<view class="user-info" v-else>
+					<text class="nickname">点击登录</text>
+					<text class="phone">登录后查看个人信息</text>
 				</view>
 				<image class="arrow" src="/static/my/youjiantou@2x.png"></image>
 			</view>
@@ -44,6 +48,7 @@
 	export default {
 		data() {
 			return {
+				isLogin: false,
 				userInfo: {
 					nickname: '',
 					phone: '',
@@ -62,10 +67,13 @@
 			}
 		},
 		onLoad() {
-			// 使用统一的登录检查
-			authCheck.checkLogin.call(this, {}, () => {
+			const token = uni.getStorageSync('token')
+			const userInfo = uni.getStorageSync('userInfo')
+			this.isLogin = !!(token && userInfo && userInfo.userId)
+			if (this.isLogin) {
+				this.userId = userInfo.userId
 				this.loadUserInfo(this.userId)
-			})
+			}
 		},
 		methods: {
 			// 加载用户信息
@@ -102,10 +110,18 @@
 					url: '/subpkg/my/profile'
 				})
 			},
+			goToLogin() {
+				uni.navigateTo({ url: '/pages/login/index' })
+			},
 			goToAuth() {
 				uni.navigateTo({ url: '/subpkg/my/profile' })
 			},
 			handleMenuClick(key) {
+				// 关于我们无需登录，其他菜单需要登录
+				if (key !== 'about' && !this.isLogin) {
+					uni.navigateTo({ url: '/pages/login/index' })
+					return
+				}
 				console.log('点击菜单:', key)
 				if (key === 'message') {
 					uni.navigateTo({

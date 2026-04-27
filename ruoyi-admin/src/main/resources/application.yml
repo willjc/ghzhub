@@ -216,3 +216,11 @@ esign:
   auth-redirect-url: "https://app.caigon.cn/#/pages/auth/verify?auth_done=1"
   # 前端H5地址（签署完成跳转用）
   frontend-url: "https://app.caigon.cn/#/pages/affairs/contract?esign_done=1"
+
+# 政务数据接口代理服务配置
+gov:
+  proxy:
+    # 代理服务地址（部署后修改为实际政务外网IP:9001）
+    base-url: http://127.0.0.1:9001
+    # API Key（需与代理服务端配置一致）
+    api-key: ghz-gov-proxy-key-2026

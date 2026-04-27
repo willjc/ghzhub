@@ -1,20 +1,27 @@
 <template>
 	<view class="page">
-		<scroll-view class="scroll-content" scroll-y>
-			<!-- 优惠券列表 -->
+		<!-- 优惠券功能未启用时的占位提示 -->
+		<view class="empty-coupon" v-if="!couponEnabled">
+			<image class="empty-icon" src="/static/fangyaun/优惠券@2x.png" mode="aspectFit"></image>
+			<text class="empty-text">暂无优惠券</text>
+			<text class="empty-desc">优惠券功能即将上线，敬请期待</text>
+		</view>
+
+		<!-- 优惠券列表（功能启用后显示） -->
+		<scroll-view class="scroll-content" scroll-y v-if="couponEnabled">
 			<view class="coupon-list">
-				<view 
+				<view
 					class="coupon-item"
-					v-for="(item, index) in couponList" 
+					v-for="(item, index) in couponList"
 					:key="index"
 				>
-					<view 
-						class="coupon-card" 
+					<view
+						class="coupon-card"
 						:class="{ expired: item.isExpired }"
 					>
 						<view class="coupon-card-content">
 							<!-- 左侧金额区域 -->
-							<view 
+							<view
 								class="coupon-left"
 								:class="{ 'coupon-bg-expired': item.isExpired, 'coupon-bg-normal': !item.isExpired }"
 							>
@@ -24,7 +31,7 @@
 								</view>
 								<text class="coupon-condition">{{ item.condition }}</text>
 							</view>
-							
+
 							<!-- 右侧信息区域 -->
 							<view class="coupon-right">
 								<view class="coupon-info-wrapper">
@@ -32,11 +39,11 @@
 										<text class="coupon-scope">{{ item.scope }}</text>
 										<text class="coupon-validity">有效期至{{ item.validity }}</text>
 									</view>
-									
+
 									<!-- 操作按钮 -->
 									<view class="coupon-action">
-										<view 
-											class="action-btn" 
+										<view
+											class="action-btn"
 											:class="{ expired: item.isExpired }"
 											@click="handleClaim(item, index)"
 										>
@@ -46,7 +53,7 @@
 								</view>
 							</view>
 						</view>
-						
+
 						<!-- 详细信息（如果有） -->
 						<view class="coupon-details" v-if="item.communities || item.types">
 							<text class="detail-item" v-if="item.communities">可用小区: {{ item.communities }}</text>
@@ -63,6 +70,7 @@
 	export default {
 		data() {
 			return {
+				couponEnabled: false,  // 优惠券功能开关，后续接入时改为 true
 				couponList: [
 					{
 						amount: 200,
@@ -98,7 +106,7 @@
 			}
 		},
 		onLoad() {
-			
+
 		},
 		methods: {
 			handleClaim(item, index) {
@@ -124,6 +132,34 @@
 		min-height: 100vh;
 	}
 
+	/* 空状态 */
+	.empty-coupon {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		flex: 1;
+		gap: 16rpx;
+	}
+
+	.empty-icon {
+		width: 120rpx;
+		height: 120rpx;
+		opacity: 0.4;
+	}
+
+	.empty-text {
+		color: #999999;
+		font-size: 28rpx;
+		font-weight: 500;
+	}
+
+	.empty-desc {
+		color: #cccccc;
+		font-size: 24rpx;
+	}
+
+	/* 优惠券列表 */
 	.scroll-content {
 		flex: 1;
 		overflow-y: auto;

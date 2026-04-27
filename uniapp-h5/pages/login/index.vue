@@ -3,6 +3,12 @@
 		<!-- 背景装饰 -->
 		<view class="bg-decoration"></view>
 
+		<!-- 返回按钮 -->
+		<view class="back-btn" @click="goBack">
+			<text class="back-icon">←</text>
+			<text class="back-text">返回</text>
+		</view>
+
 		<!-- Logo区域 -->
 		<view class="logo-section">
 			<image class="logo" src="/static/logo.png" mode="aspectFit"></image>
@@ -16,7 +22,7 @@
 
 			<!-- #ifdef MP-WEIXIN -->
 			<!-- 微信小程序：授权手机号登录 -->
-			<button class="login-btn wechat-btn" open-type="getPhoneNumber" @getphonenumber="onGetPhoneNumber" :disabled="loading">
+			<button class="login-btn wechat-btn" open-type="getPhoneNumber" @getphonenumber="onGetPhoneNumber" :disabled="loading || !agreed">
 				<text class="btn-text">{{ loading ? '登录中...' : '手机号快捷登录' }}</text>
 			</button>
 			<!-- #endif -->
@@ -33,12 +39,23 @@
 					placeholder-class="phone-placeholder"
 				/>
 			</view>
-			<view class="login-btn phone-btn" :class="{ disabled: loading }" @click="handlePhoneLogin">
+			<view class="login-btn phone-btn" :class="{ disabled: loading || !agreed }" @click="handlePhoneLogin">
 				<text class="btn-text">{{ loading ? '登录中...' : '登录' }}</text>
 			</view>
 			<!-- #endif -->
 
-			<text class="tips">登录即表示同意《用户协议》和《隐私政策》</text>
+			<!-- 隐私协议勾选 -->
+			<view class="agreement-row">
+				<view class="checkbox" :class="{ checked: agreed }" @click="toggleAgree">
+					<text v-if="agreed" class="check-icon">✓</text>
+				</view>
+				<view class="agreement-text">
+					<text>我已阅读并同意</text>
+					<text class="link" @click="openAgreement('user')">《用户服务协议》</text>
+					<text>和</text>
+					<text class="link" @click="openAgreement('privacy')">《隐私政策》</text>
+				</view>
+			</view>
 		</view>
 	</view>
 </template>
@@ -55,19 +72,49 @@
 	export default {
 		data() {
 			return {
-				loading: false,
+					loading: false,
+				agreed: false,
 				// #ifdef H5
 				phone: ''
 				// #endif
 			}
 		},
 		methods: {
+			// 返回上一页
+			goBack() {
+				uni.navigateBack({ delta: 1 })
+			},
+			// 勾选/取消勾选协议
+			toggleAgree() {
+				this.agreed = !this.agreed
+			},
+			// 打开协议页面
+			openAgreement(type) {
+				const url = type === 'user'
+					? '/pages/agreement/user'
+					: '/pages/agreement/privacy'
+				uni.navigateTo({ url })
+			},
+			// 登录前检查协议
+			checkAgreement() {
+				if (!this.agreed) {
+					uni.showToast({
+						title: '请先阅读并同意协议',
+						icon: 'none'
+					})
+					return false
+				}
+				return true
+			},
 			// #ifdef MP-WEIXIN
 			/**
 			 * 微信小程序：获取手机号回调
 			 */
 			async onGetPhoneNumber(e) {
 				if (this.loading) return
+
+				// 检查是否同意协议
+				if (!this.checkAgreement()) return
 
 				// 用户拒绝授权
 				if (e.detail.errMsg !== 'getPhoneNumber:ok') {
@@ -135,6 +182,9 @@
 			async handlePhoneLogin() {
 				if (this.loading) return
 
+				// 检查是否同意协议
+				if (!this.checkAgreement()) return
+
 				const phone = this.phone.trim()
 				if (!phone || phone.length !== 11) {
 					uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
@@ -187,6 +237,30 @@
 		padding: 40rpx;
 		position: relative;
 		overflow: hidden;
+	}
+
+	.back-btn {
+		position: absolute;
+		top: 80rpx;
+		left: 30rpx;
+		z-index: 10;
+		display: flex;
+		align-items: center;
+		padding: 16rpx 24rpx;
+		background: rgba(255, 255, 255, 0.2);
+		border-radius: 40rpx;
+		backdrop-filter: blur(10rpx);
+	}
+
+	.back-icon {
+		font-size: 32rpx;
+		color: #ffffff;
+		margin-right: 8rpx;
+	}
+
+	.back-text {
+		font-size: 28rpx;
+		color: #ffffff;
 	}
 
 	.bg-decoration {
@@ -317,12 +391,46 @@
 		opacity: 0.6;
 	}
 
-	.tips {
+	.agreement-row {
+		display: flex;
+		align-items: flex-start;
+		margin-top: 30rpx;
+		padding: 0 10rpx;
+	}
+
+	.checkbox {
+		width: 32rpx;
+		height: 32rpx;
+		border: 2rpx solid #cccccc;
+		border-radius: 6rpx;
+		margin-right: 12rpx;
+		margin-top: 4rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		background: #ffffff;
+	}
+
+	.checkbox.checked {
+		background: #4A90E2;
+		border-color: #4A90E2;
+	}
+
+	.check-icon {
+		font-size: 22rpx;
+		color: #ffffff;
+		font-weight: bold;
+	}
+
+	.agreement-text {
 		font-size: 24rpx;
-		color: #999999;
-		text-align: center;
-		display: block;
-		margin-top: 40rpx;
-		line-height: 36rpx;
+		color: #666666;
+		line-height: 40rpx;
+		flex: 1;
+	}
+
+	.link {
+		color: #4A90E2;
 	}
 </style>

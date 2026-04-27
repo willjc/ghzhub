@@ -1,6 +1,12 @@
 {
 	"pages": [
 		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "首页"
+			}
+		},
+		{
 			"path": "pages/login/index",
 			"style": {
 				"navigationBarTitleText": "登录",
@@ -8,9 +14,15 @@
 			}
 		},
 		{
-			"path": "pages/index/index",
+			"path": "pages/agreement/user",
 			"style": {
-				"navigationBarTitleText": "首页"
+				"navigationBarTitleText": "用户服务协议"
+			}
+		},
+		{
+			"path": "pages/agreement/privacy",
+			"style": {
+				"navigationBarTitleText": "隐私政策"
 			}
 		},
 		{
