@@ -37,11 +37,21 @@
           <el-option label="已关闭" value="4" />
         </el-select>
       </el-form-item>
-      <el-form-item label="是否逾期" prop="isOverdue">
-        <el-select v-model="queryParams.isOverdue" placeholder="请选择" clearable>
-          <el-option label="否" value="0" />
-          <el-option label="是" value="1" />
-        </el-select>
+      <el-form-item label="合同编号" prop="contractNo">
+        <el-input
+          v-model="queryParams.contractNo"
+          placeholder="请输入合同编号"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="房源编号" prop="houseCode">
+        <el-input
+          v-model="queryParams.houseCode"
+          placeholder="请输入房源编号"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="账单日期" prop="billDateRange">
         <el-date-picker
@@ -72,38 +82,6 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-          v-hasPermi="['gangzhu:bill:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="mini"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['gangzhu:bill:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="mini"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['gangzhu:bill:remove']"
-        >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
           type="warning"
           plain
           icon="el-icon-download"
@@ -115,8 +93,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="billList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
+    <el-table v-loading="loading" :data="billList">
       <el-table-column label="账单编号" align="center" prop="billNo" min-width="180" show-overflow-tooltip />
       <el-table-column label="租户姓名" align="center" prop="tenantName" width="120" show-overflow-tooltip />
       <el-table-column label="所属合同" align="center" prop="contractNo" width="160" show-overflow-tooltip />
@@ -151,7 +128,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100">
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -160,20 +137,6 @@
             @click="handleDetail(scope.row)"
             v-hasPermi="['gangzhu:bill:query']"
           >详情</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['gangzhu:bill:edit']"
-          >修改</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['gangzhu:bill:remove']"
-          >删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -185,78 +148,6 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
-
-    <!-- 添加或修改账单对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="800px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="110px">
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="账单类型" prop="billType">
-              <el-select v-model="form.billType" placeholder="请选择账单类型">
-                <el-option label="押金" value="1" />
-                <el-option label="租金" value="2" />
-                <el-option label="水费" value="3" />
-                <el-option label="电费" value="4" />
-                <el-option label="燃气费" value="5" />
-                <el-option label="物业费" value="6" />
-                <el-option label="其他" value="7" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="账单金额(元)" prop="billAmount">
-              <el-input-number v-model="form.billAmount" controls-position="right" :min="0" :precision="2" :step="100" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="账期开始" prop="periodStart">
-              <el-date-picker
-                v-model="form.periodStart"
-                type="date"
-                placeholder="选择日期"
-                value-format="yyyy-MM-dd"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="账期结束" prop="periodEnd">
-              <el-date-picker
-                v-model="form.periodEnd"
-                type="date"
-                placeholder="选择日期"
-                value-format="yyyy-MM-dd"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="应付日期" prop="dueDate">
-          <el-date-picker
-            v-model="form.dueDate"
-            type="date"
-            placeholder="选择日期"
-            value-format="yyyy-MM-dd"
-          />
-        </el-form-item>
-        <el-form-item label="账单状态" prop="billStatus">
-          <el-select v-model="form.billStatus" placeholder="请选择账单状态">
-            <el-option label="待支付" value="0" />
-            <el-option label="已支付" value="1" />
-            <el-option label="部分支付" value="2" />
-            <el-option label="已逾期" value="3" />
-            <el-option label="已关闭" value="4" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" :rows="3" />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
-      </div>
-    </el-dialog>
 
     <!-- 账单详情对话框 -->
     <el-dialog title="账单详情" :visible.sync="detailOpen" width="900px" append-to-body>
@@ -307,21 +198,16 @@
 </template>
 
 <script>
-import { listBill, getBill, addBill, updateBill, delBill } from "@/api/gangzhu/bill";
+import { listBill, getBill } from "@/api/gangzhu/bill";
 
 export default {
   name: "Bill",
   data() {
     return {
       loading: true,
-      ids: [],
-      single: true,
-      multiple: true,
       showSearch: true,
       total: 0,
       billList: [],
-      title: "",
-      open: false,
       detailOpen: false,
       billDateRange: [],
       dueDateRange: [],
@@ -332,27 +218,10 @@ export default {
         tenantName: null,
         billType: null,
         billStatus: null,
-        isOverdue: null,
+        contractNo: null,
+        houseCode: null,
       },
-      detailData: {},
-      form: {},
-      rules: {
-        billType: [
-          { required: true, message: "账单类型不能为空", trigger: "change" }
-        ],
-        billAmount: [
-          { required: true, message: "账单金额不能为空", trigger: "blur" }
-        ],
-        periodStart: [
-          { required: true, message: "账期开始日期不能为空", trigger: "change" }
-        ],
-        periodEnd: [
-          { required: true, message: "账期结束日期不能为空", trigger: "change" }
-        ],
-        dueDate: [
-          { required: true, message: "应付日期不能为空", trigger: "change" }
-        ]
-      }
+      detailData: {}
     };
   },
   created() {
@@ -361,7 +230,7 @@ export default {
   methods: {
     getList() {
       this.loading = true;
-      // 处理日期范围参数
+      // 处理日期范围参数和合同编号/房源编号参数（后端通过 params 读取）
       this.queryParams.params = {};
       if (this.billDateRange && this.billDateRange.length === 2) {
         this.queryParams.params["beginBillDate"] = this.billDateRange[0];
@@ -371,28 +240,17 @@ export default {
         this.queryParams.params["beginDueDate"] = this.dueDateRange[0];
         this.queryParams.params["endDueDate"] = this.dueDateRange[1];
       }
+      if (this.queryParams.contractNo) {
+        this.queryParams.params["contractNo"] = this.queryParams.contractNo;
+      }
+      if (this.queryParams.houseCode) {
+        this.queryParams.params["houseCode"] = this.queryParams.houseCode;
+      }
       listBill(this.queryParams).then(response => {
         this.billList = response.rows;
         this.total = response.total;
         this.loading = false;
       });
-    },
-    cancel() {
-      this.open = false;
-      this.reset();
-    },
-    reset() {
-      this.form = {
-        billId: null,
-        billType: null,
-        billAmount: null,
-        periodStart: null,
-        periodEnd: null,
-        dueDate: null,
-        billStatus: "0",
-        remark: null
-      };
-      this.resetForm("form");
     },
     handleQuery() {
       this.queryParams.pageNum = 1;
@@ -404,59 +262,12 @@ export default {
       this.resetForm("queryForm");
       this.handleQuery();
     },
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.billId)
-      this.single = selection.length !== 1
-      this.multiple = !selection.length
-    },
-    handleAdd() {
-      this.reset();
-      this.open = true;
-      this.title = "添加账单";
-    },
-    handleUpdate(row) {
-      this.reset();
-      const billId = row.billId || this.ids
-      getBill(billId).then(response => {
-        this.form = response.data;
-        this.open = true;
-        this.title = "修改账单";
-      });
-    },
     handleDetail(row) {
       const billId = row.billId;
       getBill(billId).then(response => {
         this.detailData = response.data;
         this.detailOpen = true;
       });
-    },
-    submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          if (this.form.billId != null) {
-            updateBill(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
-          } else {
-            addBill(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
-            });
-          }
-        }
-      });
-    },
-    handleDelete(row) {
-      const billIds = row.billId || this.ids;
-      this.$modal.confirm('是否确认删除账单编号为"' + billIds + '"的数据项？').then(function() {
-        return delBill(billIds);
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("删除成功");
-      }).catch(() => {});
     },
     handleExport() {
       this.download('system/bill/export', {

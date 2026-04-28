@@ -87,11 +87,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="bill.billType != null and bill.billType != ''">
                 AND b.bill_type = #{bill.billType}
             </if>
+            <!-- 账单状态筛选：状态=3(已逾期)走动态判定，避免 is_overdue/bill_status 字段未刷新导致查不出 -->
             <if test="bill.billStatus != null and bill.billStatus != ''">
-                AND b.bill_status = #{bill.billStatus}
+                <choose>
+                    <when test='bill.billStatus == "3"'>
+                        AND b.bill_status IN ('0','2') AND b.due_date IS NOT NULL AND CURDATE() &gt; DATE(b.due_date)
+                    </when>
+                    <otherwise>
+                        AND b.bill_status = #{bill.billStatus}
+                    </otherwise>
+                </choose>
             </if>
-            <if test="bill.isOverdue != null and bill.isOverdue != ''">
-                AND b.is_overdue = #{bill.isOverdue}
+            <!-- 合同编号（模糊查询） -->
+            <if test="bill.params.contractNo != null and bill.params.contractNo != ''">
+                AND c.contract_no LIKE CONCAT('%', #{bill.params.contractNo}, '%')
+            </if>
+            <!-- 房源编号（模糊查询） -->
+            <if test="bill.params.houseCode != null and bill.params.houseCode != ''">
+                AND b.house_code LIKE CONCAT('%', #{bill.params.houseCode}, '%')
             </if>
             <!-- 账单日期范围查询 -->
             <if test="bill.params.beginBillDate != null and bill.params.beginBillDate != ''">
@@ -134,11 +147,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="bill.billType != null and bill.billType != ''">
                 AND b.bill_type = #{bill.billType}
             </if>
+            <!-- 账单状态筛选：状态=3(已逾期)走动态判定，避免 is_overdue/bill_status 字段未刷新导致查不出 -->
             <if test="bill.billStatus != null and bill.billStatus != ''">
-                AND b.bill_status = #{bill.billStatus}
+                <choose>
+                    <when test='bill.billStatus == "3"'>
+                        AND b.bill_status IN ('0','2') AND b.due_date IS NOT NULL AND CURDATE() &gt; DATE(b.due_date)
+                    </when>
+                    <otherwise>
+                        AND b.bill_status = #{bill.billStatus}
+                    </otherwise>
+                </choose>
             </if>
-            <if test="bill.isOverdue != null and bill.isOverdue != ''">
-                AND b.is_overdue = #{bill.isOverdue}
+            <!-- 合同编号（模糊查询） -->
+            <if test="bill.params.contractNo != null and bill.params.contractNo != ''">
+                AND c.contract_no LIKE CONCAT('%', #{bill.params.contractNo}, '%')
+            </if>
+            <!-- 房源编号（模糊查询） -->
+            <if test="bill.params.houseCode != null and bill.params.houseCode != ''">
+                AND b.house_code LIKE CONCAT('%', #{bill.params.houseCode}, '%')
             </if>
             <!-- 账单日期范围查询 -->
             <if test="bill.params.beginBillDate != null and bill.params.beginBillDate != ''">
