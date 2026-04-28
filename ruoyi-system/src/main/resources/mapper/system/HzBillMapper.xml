@@ -49,7 +49,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             b.house_id, b.house_code, b.bill_type, b.bill_period, b.bill_amount,
             b.paid_amount, b.unpaid_amount, b.bill_date, b.due_date, b.late_fee,
             b.bill_status, b.pay_time, b.pay_method, b.transaction_no,
-            b.del_flag, b.is_overdue, b.overdue_days,
+            b.del_flag,
+            <!-- is_overdue / overdue_days 动态计算：仅对待支付(0)和部分支付(2)的账单，若今天晚于应付日期则按天差数计算 -->
+            CASE
+                WHEN b.bill_status IN ('0','2')
+                     AND b.due_date IS NOT NULL
+                     AND CURDATE() &gt; DATE(b.due_date)
+                THEN '1'
+                ELSE '0'
+            END AS is_overdue,
+            CASE
+                WHEN b.bill_status IN ('0','2')
+                     AND b.due_date IS NOT NULL
+                     AND CURDATE() &gt; DATE(b.due_date)
+                THEN DATEDIFF(CURDATE(), DATE(b.due_date))
+                ELSE 0
+            END AS overdue_days,
             b.create_by, b.create_time, b.update_by, b.update_time, b.remark,
             c.contract_no,
             p.project_name,
