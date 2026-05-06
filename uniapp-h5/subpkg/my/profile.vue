@@ -1,6 +1,6 @@
 <template>
 	<view class="page">
-		<scroll-view class="scroll-content" scroll-y>
+		<view class="scroll-content" scroll-y>
 			<view class="card">
 				<!-- 头像 -->
 				<view class="form-row1" @click="changeAvatar">
@@ -69,7 +69,12 @@
 					</view>
 				</view>
 			</view>
-		</scroll-view>
+
+			<!-- 退出登录按钮 -->
+			<view class="logout-btn" @click="handleLogout">
+				<text class="logout-text">退出登录</text>
+			</view>
+		</view>
 
 		<!-- 性别选择器 -->
 		<view class="picker-mask" v-if="showGenderPicker" @click="showGenderPicker = false"></view>
@@ -279,6 +284,26 @@
 					console.error('保存失败:', err)
 					uni.showToast({ title: '保存失败', icon: 'none' })
 				})
+			},
+
+			// 退出登录
+			handleLogout() {
+				uni.showModal({
+					title: '提示',
+					content: '确定退出登录吗？',
+					success: (res) => {
+						if (res.confirm) {
+							uni.removeStorageSync('token')
+							uni.removeStorageSync('userId')
+							uni.removeStorageSync('userInfo')
+							uni.removeStorageSync('esign_auth_status')
+							uni.showToast({ title: '已退出登录', icon: 'success' })
+							setTimeout(() => {
+								uni.reLaunch({ url: '/pages/index/index' })
+							}, 1000)
+						}
+					}
+				})
 			}
 		}
 	}
@@ -376,4 +401,21 @@
 		.verified-text {
 			color: #12a566 !important;
 		}
+
+	.logout-btn {
+		width: 702rpx;
+		height: 88rpx;
+		border-radius: 44rpx;
+		background: #ffffff;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin: 40rpx auto 60rpx;
+	}
+
+	.logout-text {
+		font-size: 32rpx;
+		color: #e64340;
+		font-weight: 500;
+	}
 </style>

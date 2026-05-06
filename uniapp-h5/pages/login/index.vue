@@ -5,7 +5,7 @@
 
 		<!-- 返回按钮 -->
 		<view class="back-btn" @click="goBack">
-			<text class="back-icon">←</text>
+			
 			<text class="back-text">返回</text>
 		</view>
 
@@ -80,9 +80,15 @@
 			}
 		},
 		methods: {
-			// 返回上一页
+			// 返回上一页（小程序审核规范：登录页必须有可用的取消/返回出口）
 			goBack() {
-				uni.navigateBack({ delta: 1 })
+				const pages = getCurrentPages()
+				if (pages.length > 1) {
+					uni.navigateBack({ delta: 1 })
+				} else {
+					// 无页面可返回时，回到首页（tabBar页需用switchTab）
+					uni.switchTab({ url: '/pages/index/index' })
+				}
 			},
 			// 勾选/取消勾选协议
 			toggleAgree() {

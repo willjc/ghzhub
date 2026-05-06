@@ -389,7 +389,12 @@ export default {
     /** 查询户型列表 */
     getList() {
       this.loading = true;
-      listHouseType(this.queryParams).then(response => {
+      // el-input-number 设了 :min="0" 会将 null 自动设为 0，需要清理
+      const params = { ...this.queryParams };
+      if (!params.bedroomCount) params.bedroomCount = null;
+      if (!params.livingroomCount) params.livingroomCount = null;
+      if (!params.bathroomCount) params.bathroomCount = null;
+      listHouseType(params).then(response => {
         this.houseTypeList = response.rows || response.data || [];
         this.total = response.total || 0;
         this.loading = false;
