@@ -93,7 +93,7 @@ public class HzQualificationController extends BaseController {
     /**
      * 获取资格审核详细信息
      */
-    @GetMapping("/{qualificationId}")
+    @GetMapping("/{qualificationId:\\d+}")
     public AjaxResult getInfo(@PathVariable("qualificationId") Long qualificationId) {
         HzQualification qualification = qualificationService.selectQualificationById(qualificationId);
         return success(qualification);
@@ -160,7 +160,7 @@ public class HzQualificationController extends BaseController {
     /**
      * 查询申诉详情
      */
-    @GetMapping("/appeal/{appealId}")
+    @GetMapping("/appeal/{appealId:\\d+}")
     public AjaxResult appealDetail(@PathVariable("appealId") Long appealId) {
         HzQualificationAppeal appeal = appealService.selectAppealById(appealId);
         return success(appeal);
