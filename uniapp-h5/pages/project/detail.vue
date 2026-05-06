@@ -90,6 +90,7 @@
 
 <script>
 import { getProjectDetail } from '@/api/project'
+import { ensureQualified } from '@/api/qualification'
 
 export default {
 	data() {
@@ -192,10 +193,18 @@ export default {
 			})
 		},
 		selectRoom() {
-			// 先跳转到承诺书签署页面
-			uni.navigateTo({
-				url: `/pages/commitment/sign?projectId=${this.projectId}`
-			})
+			// 资格前置守卫：通过后才跳承诺书签署页；未校验→进度页；未通过→失败页
+			ensureQualified(
+				() => {
+					uni.navigateTo({
+						url: `/pages/commitment/sign?projectId=${this.projectId}`
+					})
+				},
+				{
+					redirectAfterPass: `/pages/commitment/sign`,
+					redirectParams: { projectId: this.projectId }
+				}
+			)
 		}
 	}
 }

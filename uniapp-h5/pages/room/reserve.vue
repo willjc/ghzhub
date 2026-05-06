@@ -77,6 +77,7 @@
 
 <script>
 	import { get, post } from '@/utils/request'
+	import { guardOrRedirect } from '@/api/qualification'
 
 	export default {
 		data() {
@@ -104,6 +105,8 @@
 			}
 		},
 		onLoad(options) {
+			// 兜底：若用户已校验未通过，直接跳失败页
+			guardOrRedirect()
 			// 初始化日期范围：明天到90天后
 			const tomorrow = new Date()
 			tomorrow.setDate(tomorrow.getDate() + 1)

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,7 +43,26 @@ public class MarriageService {
         return doQuery(token, reqBody.toJSONString().getBytes(StandardCharsets.UTF_8));
     }
 
+    private static final int MAX_RETRY = 3;
+
     private Map<String, Object> doQuery(String token, byte[] body) {
+        RuntimeException lastError = null;
+        for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
+            try {
+                return doQueryOnce(token, body);
+            } catch (RuntimeException e) {
+                lastError = e;
+                if (isRetryable(e) && attempt < MAX_RETRY) {
+                    log.warn("婚姻接口SHD-1004超时，第{}次失败，即将重试", attempt);
+                    continue;
+                }
+                throw e;
+            }
+        }
+        throw lastError;
+    }
+
+    private Map<String, Object> doQueryOnce(String token, byte[] body) {
         try {
             ApiResponse response = app.query(body, token);
 
@@ -57,19 +77,21 @@ public class MarriageService {
             log.debug("婚姻接口响应: {}", respJson);
 
             JSONObject json = JSON.parseObject(respJson);
-            // 返回原始数据，由调用方解析
             Map<String, Object> result = new LinkedHashMap<>();
-            result.put("hasRecord", json.containsKey("女方姓名") || json.containsKey("男方姓名"));
+            List<?> data = json.get("data") instanceof List ? json.getObject("data", List.class) : null;
+            boolean hasRecord = (data != null && !data.isEmpty()) || json.getIntValue("total") > 0;
+            result.put("hasRecord", hasRecord);
             result.put("raw", json);
             return result;
 
         } catch (Exception e) {
-            log.error("婚姻查询异常 idCard={} name={}", idCardBody() != null ? "***" : "", nameBody() != null ? "***" : "", e);
+            log.error("婚姻查询异常", e);
             throw new RuntimeException("婚姻查询失败: " + e.getMessage(), e);
         }
     }
 
-    // 仅用于日志脱敏
-    private String idCardBody() { return ""; }
-    private String nameBody() { return ""; }
+    private static boolean isRetryable(Throwable e) {
+        String msg = e.getMessage();
+        return msg != null && (msg.contains("SHD-1004") || msg.contains("网关连接后端服务超时"));
+    }
 }

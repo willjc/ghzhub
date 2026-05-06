@@ -13,6 +13,9 @@ public class SdkHousingApp extends BaseApp {
 
     public SdkHousingApp() {
         this.apiClient = new ApiClient();
+        this.apiClient.setConnTimeoutMillis(10000);
+        this.apiClient.setReadTimeoutMills(30000);
+        this.apiClient.setWriteTimeoutMills(30000);
         this.apiClient.init();
         this.appId = "1edf6f91befa4d87b92ee172bec75a0f";
         this.appSecret = "1A829B00B8BC996FA3C33F679C61BF28";

@@ -119,6 +119,7 @@
 <script>
 import { getHouseDetail, getHouseVR, getHouseImages } from '@/api/house'
 import { createOrder } from '@/api/order'
+import { guardOrRedirect } from '@/api/qualification'
 import config from '@/config/index'
 
 	export default {
@@ -165,6 +166,8 @@ import config from '@/config/index'
 			}
 		},
 		onLoad(options) {
+			// 兜底：若用户已校验未通过，直接跳失败页
+			guardOrRedirect()
 			if (options.roomId) {
 				this.roomId = options.roomId
 			}

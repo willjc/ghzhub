@@ -65,11 +65,13 @@ public class TokenService {
     private void refreshToken() {
         log.info("开始获取 access_token ...");
         try {
-            // grant_type=client_credentials, client_id和client_secret使用Token App的AppId/AppSecret
+            // grant_type=client_credentials
+            // 注意：这里的 client_id / client_secret 是政务平台 OAuth2 专用凭证（UUID 格式），
+            // 与 SDK 层的 AppID/AppSecret（网关签名用）不同，不可混用。由管理方提供。
             ApiResponse response = tokenApp.getToken(
                     "client_credentials",
-                    "b2619ca04a2446dea85f741328ddc238",
-                    "763F673675DE32D1DFA9D2F2F11A2916"
+                    "15c9019b-15cf-4a0c-bf6a-21254c4015a6",
+                    "e4e111c7-dbca-4734-9899-91f7bd1c5c7a"
             );
 
             if (response.getStatusCode() != 200) {
@@ -84,12 +86,23 @@ public class TokenService {
 
             JSONObject json = JSON.parseObject(body);
             // 响应格式: {"controls":[],"custom":{"access_token":"xxx","expires_in":"1800"},"status":{"code":"1"}}
+
+            // 先看 status 有没有错误（如 invalid_client/非法的ClientID）
+            JSONObject status = json.getJSONObject("status");
+            String statusText = status != null ? status.getString("text") : null;
+            String statusCode = status != null ? status.getString("code") : null;
+
             JSONObject custom = json.getJSONObject("custom");
-            if (custom == null) {
-                throw new RuntimeException("Token响应格式异常，缺少custom字段: " + body);
+            String token = custom != null ? custom.getString("access_token") : null;
+
+            // 必须同时满足：custom.access_token 非空，才算真正成功
+            if (token == null || token.isEmpty()) {
+                log.error("获取Token失败, status.code={}, status.text={}, 完整响应={}",
+                        statusCode, statusText, body);
+                throw new RuntimeException("获取Token失败: " + (statusText != null ? statusText : body));
             }
 
-            this.accessToken = custom.getString("access_token");
+            this.accessToken = token;
             Integer expiresIn = custom.getInteger("expires_in");
             if (expiresIn == null) {
                 expiresIn = 1800; // 默认30分钟

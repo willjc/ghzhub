@@ -64,14 +64,14 @@ public class GovDataClient {
     // ==================== 社保查询 ====================
 
     /**
-     * 查询单位社保缴费信息
-     * @param companyName 单位名称
-     * @param creditCode  统一社会信用代码
+     * 查询个人社保缴费信息（个人维度，新版接口）
+     * @param idCard 身份证号
+     * @param name   姓名
      */
-    public Map<String, Object> querySocialInsurance(String companyName, String creditCode) {
+    public Map<String, Object> querySocialInsurance(String idCard, String name) {
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("companyName", companyName);
-        params.put("creditCode", creditCode);
+        params.put("idCard", idCard);
+        params.put("name", name);
         return doPost("/api/v1/gov/social/query", params);
     }
 

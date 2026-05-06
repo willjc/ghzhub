@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -41,7 +42,26 @@ public class RealEstateService {
         return doQuery(token, reqBody.toJSONString().getBytes(StandardCharsets.UTF_8));
     }
 
+    private static final int MAX_RETRY = 3;
+
     private Map<String, Object> doQuery(String token, byte[] body) {
+        RuntimeException lastError = null;
+        for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
+            try {
+                return doQueryOnce(token, body);
+            } catch (RuntimeException e) {
+                lastError = e;
+                if (isRetryable(e) && attempt < MAX_RETRY) {
+                    log.warn("不动产接口SHD-1004超时，第{}次失败，即将重试", attempt);
+                    continue;
+                }
+                throw e;
+            }
+        }
+        throw lastError;
+    }
+
+    private Map<String, Object> doQueryOnce(String token, byte[] body) {
         try {
             ApiResponse response = app.query(body, token);
 
@@ -57,8 +77,9 @@ public class RealEstateService {
 
             JSONObject json = JSON.parseObject(respJson);
             Map<String, Object> result = new LinkedHashMap<>();
-            // 接口返回字段：DJSJ、FWZL、SUBSYSTEMID（具体含义调通后确认）
-            result.put("hasRecord", json.containsKey("DJSJ") || json.containsKey("FWZL"));
+            List<?> data = json.get("data") instanceof List ? json.getObject("data", List.class) : null;
+            boolean hasRecord = (data != null && !data.isEmpty()) || json.getIntValue("total") > 0;
+            result.put("hasRecord", hasRecord);
             result.put("raw", json);
             return result;
 
@@ -66,5 +87,10 @@ public class RealEstateService {
             log.error("不动产查询异常", e);
             throw new RuntimeException("不动产查询失败: " + e.getMessage(), e);
         }
+    }
+
+    private static boolean isRetryable(Throwable e) {
+        String msg = e.getMessage();
+        return msg != null && (msg.contains("SHD-1004") || msg.contains("网关连接后端服务超时"));
     }
 }

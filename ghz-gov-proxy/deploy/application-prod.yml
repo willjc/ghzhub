@@ -1,0 +1,25 @@
+# ===========================================================
+# 生产环境配置
+# 部署位置：172.19.25.77:/opt/ghz-gov-proxy/application-prod.yml
+# 启动方式：java -jar ghz-gov-proxy-1.0.0.jar --spring.config.location=./application-prod.yml
+# ===========================================================
+
+server:
+  # 端口与开发环境一致
+  port: 9001
+
+# 代理服务安全配置
+gov:
+  proxy:
+    # 正式环境 API Key（港好住后端调用时需在请求头 X-Api-Key 传入此值）
+    # ⚠️ 请告诉港好住后端开发者此 key，勿外泄
+    api-key: lWo1XjpwMfxpPqq52bCztCP-olV-dRaL
+
+logging:
+  level:
+    com.ghz.gov: INFO
+  # 日志文件输出（默认输出到 nohup 的 run.log，这里再落一份结构化日志）
+  file:
+    name: /opt/ghz-gov-proxy/logs/ghz-gov-proxy.log
+    max-size: 100MB
+    max-history: 30

@@ -92,6 +92,14 @@
 			]
 		},
 		{
+			"root": "subpkg/qualification",
+			"name": "pkg-qualification",
+			"pages": [
+				{ "path": "check", "style": { "navigationBarTitleText": "资格校验", "navigationStyle": "custom" } },
+				{ "path": "fail", "style": { "navigationBarTitleText": "资格校验未通过" } }
+			]
+		},
+		{
 			"root": "subpkg/affairs",
 			"name": "pkg-affairs",
 			"pages": [

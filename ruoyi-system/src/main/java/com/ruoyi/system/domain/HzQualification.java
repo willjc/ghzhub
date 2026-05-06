@@ -111,6 +111,51 @@ public class HzQualification extends BaseEntity {
     @TableField("del_flag")
     private String delFlag;
 
+    // ========== 政务资格校验扩展字段 ==========
+
+    /** 配偶身份证号 */
+    @TableField("spouse_id_card")
+    private String spouseIdCard;
+
+    /** 配偶姓名 */
+    @TableField("spouse_name")
+    private String spouseName;
+
+    /** 本人是否享受公租房(0:否 1:是) */
+    @TableField("self_has_housing")
+    private String selfHasHousing;
+
+    /** 配偶名下是否有不动产(0:否 1:是) */
+    @TableField("spouse_has_estate")
+    private String spouseHasEstate;
+
+    /** 配偶是否享受公租房(0:否 1:是) */
+    @TableField("spouse_has_housing")
+    private String spouseHasHousing;
+
+    /** 社保是否达标：近3连续月+港区单位(0:否 1:是) */
+    @TableField("social_valid")
+    private String socialValid;
+
+    /** 最近一次校验时间 */
+    @TableField("last_check_time")
+    private String lastCheckTime;
+
+    public String getSpouseIdCard() { return spouseIdCard; }
+    public void setSpouseIdCard(String spouseIdCard) { this.spouseIdCard = spouseIdCard; }
+    public String getSpouseName() { return spouseName; }
+    public void setSpouseName(String spouseName) { this.spouseName = spouseName; }
+    public String getSelfHasHousing() { return selfHasHousing; }
+    public void setSelfHasHousing(String selfHasHousing) { this.selfHasHousing = selfHasHousing; }
+    public String getSpouseHasEstate() { return spouseHasEstate; }
+    public void setSpouseHasEstate(String spouseHasEstate) { this.spouseHasEstate = spouseHasEstate; }
+    public String getSpouseHasHousing() { return spouseHasHousing; }
+    public void setSpouseHasHousing(String spouseHasHousing) { this.spouseHasHousing = spouseHasHousing; }
+    public String getSocialValid() { return socialValid; }
+    public void setSocialValid(String socialValid) { this.socialValid = socialValid; }
+    public String getLastCheckTime() { return lastCheckTime; }
+    public void setLastCheckTime(String lastCheckTime) { this.lastCheckTime = lastCheckTime; }
+
     public void setQualificationId(Long qualificationId) {
         this.qualificationId = qualificationId;
     }

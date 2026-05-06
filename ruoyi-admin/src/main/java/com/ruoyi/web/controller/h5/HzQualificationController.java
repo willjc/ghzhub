@@ -7,6 +7,8 @@ import com.ruoyi.system.domain.HzQualification;
 import com.ruoyi.system.domain.HzQualificationAppeal;
 import com.ruoyi.system.domain.HzQualificationAppealVO;
 import com.ruoyi.system.domain.HzTenant;
+import com.ruoyi.system.gov.dto.QualificationCheckResult;
+import com.ruoyi.system.gov.service.QualificationCheckService;
 import com.ruoyi.system.service.IHzCommitmentService;
 import com.ruoyi.system.service.IHzQualificationAppealService;
 import com.ruoyi.system.service.IHzQualificationService;
@@ -36,6 +38,41 @@ public class HzQualificationController extends BaseController {
 
     @Autowired
     private IHzQualificationAppealService appealService;
+
+    @Autowired
+    private QualificationCheckService qualificationCheckService;
+
+    /**
+     * 查询资格校验状态（是否已校验 / 是否通过 / 各项结果）
+     * - 未校验：checked=false
+     * - 已校验：返回最近一次快照（passed / items / failReasons / lastCheckTime）
+     */
+    @GetMapping("/status")
+    public AjaxResult status(@RequestParam Long userId) {
+        if (userId == null) {
+            return error("用户未登录");
+        }
+        QualificationCheckResult result = qualificationCheckService.getStatus(userId);
+        return success(result);
+    }
+
+    /**
+     * 触发一次资格校验（同步），失败时返回模糊的失败原因
+     */
+    @PostMapping("/check")
+    public AjaxResult check(@RequestParam Long userId) {
+        if (userId == null) {
+            return error("用户未登录");
+        }
+        try {
+            QualificationCheckResult result = qualificationCheckService.check(userId);
+            return success(result);
+        } catch (IllegalStateException e) {
+            return error(e.getMessage());
+        } catch (Exception e) {
+            return error("资格校验失败，请稍后重试");
+        }
+    }
 
     /**
      * 查询当前用户的资格审核列表

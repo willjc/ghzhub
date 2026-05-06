@@ -13,6 +13,9 @@ public class SdkMarriageApp extends BaseApp {
 
     public SdkMarriageApp() {
         this.apiClient = new ApiClient();
+        this.apiClient.setConnTimeoutMillis(10000);
+        this.apiClient.setReadTimeoutMills(30000);
+        this.apiClient.setWriteTimeoutMills(30000);
         this.apiClient.init();
         this.appId = "1284f00407ef40ba8a4586756269b973";
         this.appSecret = "AEF5838F7BF54915EEE2FFD4939C4330";

@@ -13,6 +13,9 @@ public class SdkTokenApp extends BaseApp {
 
     public SdkTokenApp() {
         this.apiClient = new ApiClient();
+        this.apiClient.setConnTimeoutMillis(10000);
+        this.apiClient.setReadTimeoutMills(30000);
+        this.apiClient.setWriteTimeoutMills(30000);
         this.apiClient.init();
         this.appId = "b2619ca04a2446dea85f741328ddc238";
         this.appSecret = "763F673675DE32D1DFA9D2F2F11A2916";

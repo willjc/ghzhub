@@ -13,6 +13,10 @@ public class SdkEstateApp extends BaseApp {
 
     public SdkEstateApp() {
         this.apiClient = new ApiClient();
+        // 政务后端响应慢（不动产/婚姻可达 20+ 秒），超时配大一些
+        this.apiClient.setConnTimeoutMillis(10000);
+        this.apiClient.setReadTimeoutMills(30000);
+        this.apiClient.setWriteTimeoutMills(30000);
         this.apiClient.init();
         this.appId = "90da9695616a408c85a31edb51a0da7b";
         this.appSecret = "07834BC97F21886E59A3BE86DEAEBDB9";

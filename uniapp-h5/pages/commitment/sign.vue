@@ -32,6 +32,7 @@
 
 <script>
 import { getCommitmentContent, signCommitment } from '@/api/commitment'
+import { guardOrRedirect } from '@/api/qualification'
 
 export default {
 	data() {
@@ -55,6 +56,8 @@ export default {
 		}
 	},
 	onLoad(options) {
+		// 兜底：若用户已校验但未通过，直接劝返至失败页
+		guardOrRedirect()
 		// 从本地存储获取登录用户信息
 		const userInfo = uni.getStorageSync('userInfo');
 		if (!userInfo || !userInfo.userId) {

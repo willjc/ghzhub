@@ -34,6 +34,16 @@ public class GovApiController {
     @Autowired
     private GovProxyConfig config;
 
+    // ==================== 健康检查（不需要 API Key）====================
+    @GetMapping("/ping")
+    public ApiResponse<?> ping() {
+        java.util.Map<String, Object> data = new java.util.LinkedHashMap<>();
+        data.put("status", "UP");
+        data.put("service", "ghz-gov-proxy");
+        data.put("timestamp", System.currentTimeMillis());
+        return ApiResponse.success(data);
+    }
+
     // ==================== 婚姻信息查询 ====================
     @PostMapping("/marriage/query")
     public ApiResponse<?> queryMarriage(@RequestBody Map<String, String> params, HttpServletRequest request) {
@@ -61,12 +71,12 @@ public class GovApiController {
         if (!checkApiKey(request)) return authError();
         long start = System.currentTimeMillis();
         try {
-            String companyName = params.get("companyName");
-            String creditCode = params.get("creditCode");
-            if (companyName == null || creditCode == null) {
-                return ApiResponse.error(400, "缺少必填参数: companyName, creditCode");
+            String idCard = params.get("idCard");
+            String name = params.get("name");
+            if (idCard == null || name == null) {
+                return ApiResponse.error(400, "缺少必填参数: idCard, name");
             }
-            Map<String, Object> result = socialInsuranceService.query(companyName, creditCode);
+            Map<String, Object> result = socialInsuranceService.query(idCard, name);
             log.info("社保查询完成, 耗时{}ms, hasRecord={}", System.currentTimeMillis() - start,
                     result.get("hasRecord"));
             return ApiResponse.success(result);
