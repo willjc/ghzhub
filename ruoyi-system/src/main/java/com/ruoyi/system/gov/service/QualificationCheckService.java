@@ -251,11 +251,55 @@ public class QualificationCheckService {
         if (resp == null || !Boolean.TRUE.equals(resp.get("success"))) {
             return new CheckItem(code, label, "error", "政务不动产接口暂不可用，请稍后重试");
         }
-        boolean has = Boolean.TRUE.equals(resp.get("hasRecord"));
-        if (has) {
-            return new CheckItem(code, label, "failed", spouse ? "配偶名下已有房产" : "名下已有房产");
+        // 业务规则：只校验航空港区内的房产，其他区域的房产不影响通过
+        // 字段参考 ghz-gov-proxy/deploy/港好住后端对接指南.md §4.4
+        //   SUBSYSTEMID = "航空港区"，FWZL = 房屋坐落
+        List<?> records = extractEstateRecords(resp);
+        boolean hasInHangzone = false;
+        if (records != null) {
+            for (Object rec : records) {
+                if (!(rec instanceof Map)) continue;
+                Map<?, ?> r = (Map<?, ?>) rec;
+                if (isHangzoneEstate(r)) {
+                    hasInHangzone = true;
+                    break;
+                }
+            }
         }
-        return new CheckItem(code, label, "passed", spouse ? "配偶名下无房产" : "名下无房产");
+        if (hasInHangzone) {
+            return new CheckItem(code, label, "failed",
+                    spouse ? "配偶名下在郑州航空港区已有房产" : "名下在郑州航空港区已有房产");
+        }
+        return new CheckItem(code, label, "passed",
+                spouse ? "配偶在郑州航空港区无房产" : "在郑州航空港区无房产");
+    }
+
+    /** 从代理返回里抽取不动产 records 列表（兼容 records 顶层 / raw.data 两种） */
+    private List<?> extractEstateRecords(Map<String, Object> resp) {
+        Object recs = resp.get("records");
+        if (recs instanceof List) return (List<?>) recs;
+        Object raw = resp.get("raw");
+        if (raw instanceof JSONObject) {
+            Object data = ((JSONObject) raw).get("data");
+            if (data instanceof List) return (List<?>) data;
+        }
+        return null;
+    }
+
+    /** 判断一条不动产记录是否属于航空港区：优先看 SUBSYSTEMID，兜底看 FWZL 前缀 */
+    private boolean isHangzoneEstate(Map<?, ?> rec) {
+        Object sub = rec.get("SUBSYSTEMID");
+        if (sub != null) {
+            String s = String.valueOf(sub).trim();
+            if (s.contains("航空港")) return true;
+        }
+        Object fwzl = rec.get("FWZL");
+        if (fwzl != null) {
+            String addr = String.valueOf(fwzl).trim();
+            // FWZL 通常以"航空港区..."开头
+            if (addr.startsWith("航空港") || addr.contains("郑州航空港")) return true;
+        }
+        return false;
     }
 
     private CheckItem checkHousing(Map<String, Object> resp, String code, String label, boolean spouse) {
@@ -434,7 +478,7 @@ public class QualificationCheckService {
         // 本人不动产
         list.add(new CheckItem("selfEstate", "名下不动产",
                 "1".equals(q.getHasLocalHouse()) ? "failed" : "passed",
-                "1".equals(q.getHasLocalHouse()) ? "名下已有房产" : "名下无房产"));
+                "1".equals(q.getHasLocalHouse()) ? "名下在郑州航空港区已有房产" : "在郑州航空港区无房产"));
         // 本人公租房
         list.add(new CheckItem("selfHousing", "公租房记录",
                 "1".equals(q.getSelfHasHousing()) ? "failed" : "passed",
@@ -443,7 +487,7 @@ public class QualificationCheckService {
         if (hasSpouse) {
             list.add(new CheckItem("spouseEstate", "配偶名下不动产",
                     "1".equals(q.getSpouseHasEstate()) ? "failed" : "passed",
-                    "1".equals(q.getSpouseHasEstate()) ? "配偶名下已有房产" : "配偶名下无房产"));
+                    "1".equals(q.getSpouseHasEstate()) ? "配偶名下在郑州航空港区已有房产" : "配偶在郑州航空港区无房产"));
             list.add(new CheckItem("spouseHousing", "配偶公租房记录",
                     "1".equals(q.getSpouseHasHousing()) ? "failed" : "passed",
                     "1".equals(q.getSpouseHasHousing()) ? "配偶已享受公租房保障" : "配偶无公租房记录"));
