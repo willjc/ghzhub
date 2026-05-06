@@ -220,12 +220,10 @@ esign:
 # 政务数据接口代理服务配置
 gov:
   proxy:
-    # 代理服务地址
-    # 生产环境（港好住后端 36.133.39.148 / 36.133.39.49 出口）必须走 L1 公网入口：
-    #   http://42.228.16.25:8088
-    # 通过环境变量 GOV_PROXY_BASE_URL 或启动参数 -Dgov.proxy.base-url=... 覆盖
+    # 代理服务地址（L1 公网入口，港好住后端 36.133.39.148 / 36.133.39.49 已加入白名单）
     # 参考文档：ghz-gov-proxy/deploy/港好住后端对接指南.md
-    base-url: ${GOV_PROXY_BASE_URL:http://127.0.0.1:9001}
+    # 如需覆盖可用环境变量 GOV_PROXY_BASE_URL
+    base-url: ${GOV_PROXY_BASE_URL:http://42.228.16.25:8088}
     # API Key（需与代理服务端 application-prod.yml 中 gov.proxy.api-key 一致）
-    # 生产 Key：lWo1XjpwMfxpPqq52bCztCP-olV-dRaL（请通过 GOV_PROXY_API_KEY 注入，不要提交到 Git）
-    api-key: ${GOV_PROXY_API_KEY:ghz-gov-proxy-key-2026}
+    # 如需覆盖可用环境变量 GOV_PROXY_API_KEY
+    api-key: ${GOV_PROXY_API_KEY:lWo1XjpwMfxpPqq52bCztCP-olV-dRaL}

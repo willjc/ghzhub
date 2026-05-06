@@ -10,11 +10,11 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "gov.proxy")
 public class GovDataConfig {
 
-    /** 代理服务地址，如 http://政务外网IP:9001 */
-    private String baseUrl = "http://127.0.0.1:9001";
+    /** 代理服务地址（默认走 L1 公网入口，可被 application.yml / 环境变量覆盖） */
+    private String baseUrl = "http://42.228.16.25:8088";
 
-    /** API Key */
-    private String apiKey = "ghz-gov-proxy-key-2026";
+    /** API Key（默认生产 Key，可被 application.yml / 环境变量覆盖） */
+    private String apiKey = "lWo1XjpwMfxpPqq52bCztCP-olV-dRaL";
 
     /** 连接超时（毫秒） */
     private int connectTimeout = 10000;
