@@ -289,12 +289,32 @@ public class QualificationCheckService {
 
         // 身份证第 17 位奇男偶女
         boolean selfIsMale = isMale(selfIdCard);
-        String spouseIdKey = selfIsMale ? "女方身份证" : "男方身份证";
+        // 政务婚姻接口字段名参考 ghz-gov-proxy/deploy/港好住后端对接指南.md §4.1
+        String spouseIdKey = selfIsMale ? "女方身份证件号码" : "男方身份证件号码";
         String spouseNameKey = selfIsMale ? "女方姓名" : "男方姓名";
         Object sid = rec.get(spouseIdKey);
         Object sname = rec.get(spouseNameKey);
-        if (sid == null || sname == null) return none;
-        return new String[]{String.valueOf(sid).trim(), String.valueOf(sname).trim()};
+        // 兼容政务方字段命名的潜在差异：身份证号码 / 身份证 / 身份证件号
+        if (sid == null) {
+            String[] fallback = selfIsMale
+                    ? new String[]{"女方身份证号码", "女方身份证号", "女方身份证"}
+                    : new String[]{"男方身份证号码", "男方身份证号", "男方身份证"};
+            for (String k : fallback) {
+                Object v = rec.get(k);
+                if (v != null && !String.valueOf(v).trim().isEmpty()) {
+                    sid = v;
+                    break;
+                }
+            }
+        }
+        if (sid == null || sname == null) {
+            log.warn("婚姻接口返回缺少配偶字段，keys={}", rec.keySet());
+            return none;
+        }
+        String sidStr = String.valueOf(sid).trim();
+        String snameStr = String.valueOf(sname).trim();
+        if (sidStr.isEmpty() || snameStr.isEmpty()) return none;
+        return new String[]{sidStr, snameStr};
     }
 
     private boolean isMale(String idCard) {
