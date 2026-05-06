@@ -1,7 +1,6 @@
 package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -73,7 +72,7 @@ public class HzHouseTypeServiceImpl extends ServiceImpl<HzHouseTypeMapper, HzHou
     }
 
     /**
-     * 分页查询户型列表
+     * 分页查询户型列表(使用XML自定义SQL,带项目名称)
      *
      * @param houseType 户型查询条件
      * @param pageNum 当前页码
@@ -84,17 +83,7 @@ public class HzHouseTypeServiceImpl extends ServiceImpl<HzHouseTypeMapper, HzHou
     public IPage<HzHouseType> selectHouseTypePage(HzHouseType houseType, int pageNum, int pageSize)
     {
         Page<HzHouseType> page = new Page<>(pageNum, pageSize);
-        LambdaQueryWrapper<HzHouseType> wrapper = new LambdaQueryWrapper<>();
-        wrapper.like(StringUtils.isNotEmpty(houseType.getHouseTypeName()), HzHouseType::getHouseTypeName, houseType.getHouseTypeName())
-               .eq(StringUtils.isNotEmpty(houseType.getHouseTypeCode()), HzHouseType::getHouseTypeCode, houseType.getHouseTypeCode())
-               .eq(houseType.getBedroomCount() != null, HzHouseType::getBedroomCount, houseType.getBedroomCount())
-               .eq(houseType.getLivingroomCount() != null, HzHouseType::getLivingroomCount, houseType.getLivingroomCount())
-               .eq(houseType.getBathroomCount() != null, HzHouseType::getBathroomCount, houseType.getBathroomCount())
-               .eq(StringUtils.isNotEmpty(houseType.getStatus()), HzHouseType::getStatus, houseType.getStatus())
-               .eq(HzHouseType::getDelFlag, "0")
-               .orderByAsc(HzHouseType::getSortOrder)
-               .orderByDesc(HzHouseType::getCreateTime);
-        return this.page(page, wrapper);
+        return this.baseMapper.selectHouseTypeListPage(page, houseType);
     }
 
     /**

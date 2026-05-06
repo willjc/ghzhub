@@ -67,4 +67,34 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ORDER BY ht.sort_order ASC, ht.create_time DESC
     </select>
 
+    <!-- 分页查询户型列表(带项目名称) -->
+    <select id="selectHouseTypeListPage" resultMap="HzHouseTypeResult">
+        <include refid="selectHouseTypeVo"/>
+        <where>
+            ht.del_flag = '0'
+            <if test="ht.projectId != null">
+                AND ht.project_id = #{ht.projectId}
+            </if>
+            <if test="ht.houseTypeName != null and ht.houseTypeName != ''">
+                AND ht.house_type_name LIKE CONCAT('%', #{ht.houseTypeName}, '%')
+            </if>
+            <if test="ht.houseTypeCode != null and ht.houseTypeCode != ''">
+                AND ht.house_type_code = #{ht.houseTypeCode}
+            </if>
+            <if test="ht.bedroomCount != null">
+                AND ht.bedroom_count = #{ht.bedroomCount}
+            </if>
+            <if test="ht.livingroomCount != null">
+                AND ht.livingroom_count = #{ht.livingroomCount}
+            </if>
+            <if test="ht.bathroomCount != null">
+                AND ht.bathroom_count = #{ht.bathroomCount}
+            </if>
+            <if test="ht.status != null and ht.status != ''">
+                AND ht.status = #{ht.status}
+            </if>
+        </where>
+        ORDER BY ht.sort_order ASC, ht.create_time DESC
+    </select>
+
 </mapper>
