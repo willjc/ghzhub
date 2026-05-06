@@ -508,15 +508,18 @@
 			},
 
 			handleIconClick(item) {
-				// 需要登录的功能：人才公寓、保租房、市场租赁、地图找房、人才家园、资料上传、优惠券、我的消息
-				const authRequiredKeys = ['talent', 'guaranteed', 'market', 'map', 'home', 'upload', 'coupon', 'message']
+				// 公开浏览类页面：无需登录即可进入（符合小程序审核规范：先体验再登录）
+				const publicKeys = ['talent', 'guaranteed', 'market', 'policy']
+				if (publicKeys.includes(item.key)) {
+					const url = item.key === 'policy' ? '/pages/policy/index' : this.getIconUrl(item.key)
+					uni.navigateTo({ url })
+					return
+				}
+				// 需要登录的功能：地图找房、人才家园、资料上传、优惠券、我的消息
+				const authRequiredKeys = ['map', 'home', 'upload', 'coupon', 'message']
 				if (authRequiredKeys.includes(item.key)) {
 					this.checkLoginThenNavigate(this.getIconUrl(item.key))
 					return
-				}
-				// 公开功能：政策文件等无需登录
-				if (item.key === 'policy') {
-					uni.navigateTo({ url: '/pages/policy/index' })
 				}
 			},
 
@@ -535,12 +538,11 @@
 			},
 
 			goToDetail(item) {
-				// 房源/项目详情需要登录
-				this.checkLoginThenNavigate(
-					item.type === 'house'
-						? `/pages/room/detail?roomId=${item.houseId}&projectId=${item.projectId}`
-						: `/pages/project/detail?id=${item.projectId}`
-				)
+				// 项目/房源详情页公开浏览，业务操作（选房源）时再由 ensureQualified 触发登录
+				const url = item.type === 'house'
+					? `/pages/room/detail?roomId=${item.houseId}&projectId=${item.projectId}`
+					: `/pages/project/detail?id=${item.projectId}`
+				uni.navigateTo({ url })
 			},
 			switchCategory(key) {
 				this.activeCategory = key
