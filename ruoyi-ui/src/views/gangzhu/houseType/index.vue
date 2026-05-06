@@ -172,15 +172,32 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="户型图片" prop="imageList">
-          <image-upload
-            v-model="form.imageList"
-            :limit="10"
-            :fileSize="5"
-            :fileType="['png', 'jpg', 'jpeg']"
-            :isShowTip="true"
-          />
+        <!-- 房型图片 - 分类上传（与房源页面对齐） -->
+        <el-divider content-position="left">房型图片</el-divider>
+
+        <el-form-item label="主图">
+          <image-upload v-model="form.mainImageList" :limit="9" :fileSize="5" :fileType="['png', 'jpg', 'jpeg']" />
+          <div class="form-tip">用于列表封面展示，同房型的房源可直接继承</div>
         </el-form-item>
+        <el-form-item label="户型图">
+          <image-upload v-model="form.layoutImageList" :limit="5" :fileSize="5" :fileType="['png', 'jpg', 'jpeg']" />
+          <div class="form-tip">房屋平面布局图</div>
+        </el-form-item>
+        <el-form-item label="卧室">
+          <image-upload v-model="form.bedroomImageList" :limit="9" :fileSize="5" :fileType="['png', 'jpg', 'jpeg']" />
+        </el-form-item>
+        <el-form-item label="卫生间">
+          <image-upload v-model="form.bathroomImageList" :limit="5" :fileSize="5" :fileType="['png', 'jpg', 'jpeg']" />
+        </el-form-item>
+        <el-form-item label="室内">
+          <image-upload v-model="form.indoorImageList" :limit="9" :fileSize="5" :fileType="['png', 'jpg', 'jpeg']" />
+          <div class="form-tip">客厅、厨房等室内其他区域照片</div>
+        </el-form-item>
+        <el-form-item label="室外">
+          <image-upload v-model="form.outdoorImageList" :limit="9" :fileSize="5" :fileType="['png', 'jpg', 'jpeg']" />
+          <div class="form-tip">阳台、外景等室外照片</div>
+        </el-form-item>
+
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
             <el-radio label="0">正常</el-radio>
@@ -216,19 +233,33 @@
       </el-descriptions>
 
       <div style="margin-top: 20px;" v-if="viewImages.length > 0">
-        <el-divider content-position="left">户型图片</el-divider>
-        <el-image
-          v-for="(img, index) in viewImages"
-          :key="index"
-          :src="getImageUrl(img.imageUrl)"
-          :preview-src-list="viewImages.map(i => getImageUrl(i.imageUrl))"
-          style="width: 150px; height: 150px; margin-right: 10px; margin-bottom: 10px; border-radius: 4px;"
-          fit="cover"
-        >
-          <div slot="error" class="image-slot">
-            <i class="el-icon-picture-outline"></i>
-          </div>
-        </el-image>
+        <el-divider content-position="left">房型图片</el-divider>
+        <el-tabs type="border-card">
+          <el-tab-pane v-if="getViewImagesByType('1').length > 0">
+            <span slot="label"><i class="el-icon-picture-outline"></i> 主图 ({{ getViewImagesByType('1').length }})</span>
+            <el-image v-for="(img, i) in getViewImagesByType('1')" :key="'m'+i" :src="getImageUrl(img.imageUrl)" :preview-src-list="getViewPreviewList('1')" style="width:150px;height:150px;margin-right:10px;margin-bottom:10px;border-radius:4px;" fit="cover" />
+          </el-tab-pane>
+          <el-tab-pane v-if="getViewImagesByType('2').length > 0">
+            <span slot="label"><i class="el-icon-tickets"></i> 户型图 ({{ getViewImagesByType('2').length }})</span>
+            <el-image v-for="(img, i) in getViewImagesByType('2')" :key="'l'+i" :src="getImageUrl(img.imageUrl)" :preview-src-list="getViewPreviewList('2')" style="width:150px;height:150px;margin-right:10px;margin-bottom:10px;border-radius:4px;" fit="cover" />
+          </el-tab-pane>
+          <el-tab-pane v-if="getViewImagesByType('3').length > 0">
+            <span slot="label"><i class="el-icon-s-home"></i> 卧室 ({{ getViewImagesByType('3').length }})</span>
+            <el-image v-for="(img, i) in getViewImagesByType('3')" :key="'b'+i" :src="getImageUrl(img.imageUrl)" :preview-src-list="getViewPreviewList('3')" style="width:150px;height:150px;margin-right:10px;margin-bottom:10px;border-radius:4px;" fit="cover" />
+          </el-tab-pane>
+          <el-tab-pane v-if="getViewImagesByType('4').length > 0">
+            <span slot="label"><i class="el-icon-toilet-paper"></i> 卫生间 ({{ getViewImagesByType('4').length }})</span>
+            <el-image v-for="(img, i) in getViewImagesByType('4')" :key="'w'+i" :src="getImageUrl(img.imageUrl)" :preview-src-list="getViewPreviewList('4')" style="width:150px;height:150px;margin-right:10px;margin-bottom:10px;border-radius:4px;" fit="cover" />
+          </el-tab-pane>
+          <el-tab-pane v-if="getViewImagesByType('5').length > 0">
+            <span slot="label"><i class="el-icon-office-building"></i> 室内 ({{ getViewImagesByType('5').length }})</span>
+            <el-image v-for="(img, i) in getViewImagesByType('5')" :key="'i'+i" :src="getImageUrl(img.imageUrl)" :preview-src-list="getViewPreviewList('5')" style="width:150px;height:150px;margin-right:10px;margin-bottom:10px;border-radius:4px;" fit="cover" />
+          </el-tab-pane>
+          <el-tab-pane v-if="getViewImagesByType('6').length > 0">
+            <span slot="label"><i class="el-icon-sunny"></i> 室外 ({{ getViewImagesByType('6').length }})</span>
+            <el-image v-for="(img, i) in getViewImagesByType('6')" :key="'o'+i" :src="getImageUrl(img.imageUrl)" :preview-src-list="getViewPreviewList('6')" style="width:150px;height:150px;margin-right:10px;margin-bottom:10px;border-radius:4px;" fit="cover" />
+          </el-tab-pane>
+        </el-tabs>
       </div>
       <div style="margin-top: 20px;" v-else>
         <el-divider content-position="left">户型图片</el-divider>
@@ -381,7 +412,12 @@ export default {
         kitchenCount: 0,
         balconyCount: 0,
         typicalArea: null,
-        imageList: "",
+        mainImageList: "",
+        layoutImageList: "",
+        bedroomImageList: "",
+        bathroomImageList: "",
+        indoorImageList: "",
+        outdoorImageList: "",
         status: "0",
         sortOrder: 0,
         remark: null
@@ -451,30 +487,30 @@ export default {
         this.title = "修改户型";
       });
     },
-    /** 加载户型图片 */
+    /** 加载户型图片（按类型分组回填到表单） */
     loadImages(houseTypeId) {
       request({
         url: '/gangzhu/houseType/' + houseTypeId + '/images',
         method: 'get'
       }).then(response => {
-        console.log('loadImages 响应数据:', response);
         if (response.data && response.data.length > 0) {
-          // 将图片URL拼接成逗号分隔的字符串
-          const imageUrls = response.data.map(item => item.imageUrl).join(',');
-          console.log('拼接后的imageList:', imageUrls);
-
-          // 使用$nextTick确保在下一个DOM更新周期赋值
-          this.$nextTick(() => {
-            this.form.imageList = imageUrls;
-            console.log('form.imageList赋值后:', this.form.imageList);
+          // 按图片类型分组（与房源页面对齐：1=主图 2=户型图 3=卧室 4=卫生间 5=室内 6=室外）
+          const byType = { '1': [], '2': [], '3': [], '4': [], '5': [], '6': [] };
+          response.data.forEach(item => {
+            const t = item.imageType || '1';
+            if (byType[t]) byType[t].push(item.imageUrl);
           });
-        } else {
-          console.log('没有图片数据');
-          this.form.imageList = "";
+          this.$nextTick(() => {
+            this.form.mainImageList = byType['1'].join(',');
+            this.form.layoutImageList = byType['2'].join(',');
+            this.form.bedroomImageList = byType['3'].join(',');
+            this.form.bathroomImageList = byType['4'].join(',');
+            this.form.indoorImageList = byType['5'].join(',');
+            this.form.outdoorImageList = byType['6'].join(',');
+          });
         }
       }).catch(error => {
-        console.error('加载图片失败:', error);
-        this.form.imageList = "";
+        console.error('加载房型图片失败:', error);
       });
     },
     /** 提交按钮 */
@@ -486,9 +522,8 @@ export default {
 
           saveHouseType(this.form).then(response => {
             // 保存户型成功后,保存图片
-            const houseTypeId = this.form.houseTypeId || response.data.houseTypeId;
-            if (houseTypeId && this.form.imageList) {
-              // 等待图片保存完成
+            const houseTypeId = this.form.houseTypeId || response.data;
+            if (houseTypeId) {
               this.saveImages(houseTypeId).then(() => {
                 this.$modal.msgSuccess(successMsg);
                 this.open = false;
@@ -499,34 +534,45 @@ export default {
                 this.resetQuery();
               });
             } else {
-              // 没有图片直接关闭
               this.$modal.msgSuccess(successMsg);
               this.open = false;
               this.resetQuery();
             }
-          }).catch(() => {
-            // 保存失败时不关闭弹出框,让用户看到错误信息
-          });
+          }).catch(() => {});
         }
       });
     },
-    /** 保存户型图片 */
+    /** 保存户型图片（分类型，与房源页面对齐） */
     saveImages(houseTypeId) {
-      if (!this.form.imageList) return Promise.resolve();
+      const allImages = [];
+      const imageTypeConfig = [
+        { field: 'mainImageList', type: '1' },
+        { field: 'layoutImageList', type: '2' },
+        { field: 'bedroomImageList', type: '3' },
+        { field: 'bathroomImageList', type: '4' },
+        { field: 'indoorImageList', type: '5' },
+        { field: 'outdoorImageList', type: '6' }
+      ];
 
-      // 将逗号分隔的图片URL字符串转换为图片对象数组
-      const imageUrls = this.form.imageList.split(',').filter(url => url.trim());
-      const imageList = imageUrls.map((url, index) => ({
-        imageUrl: url.trim(),
-        imageType: '1', // 1:户型图
-        isCover: index === 0 ? '1' : '0', // 第一张为封面
-        sortOrder: index + 1
-      }));
+      imageTypeConfig.forEach(config => {
+        const imageList = this.form[config.field];
+        if (imageList && imageList.trim()) {
+          const urls = imageList.split(',').filter(url => url.trim());
+          urls.forEach((url, index) => {
+            allImages.push({
+              imageUrl: url.trim(),
+              imageType: config.type,
+              isCover: (config.type === '1' && index === 0) ? '1' : '0',
+              sortOrder: allImages.length + 1
+            });
+          });
+        }
+      });
 
       return request({
         url: '/gangzhu/houseType/' + houseTypeId + '/images',
         method: 'post',
-        data: imageList
+        data: allImages
       });
     },
     /** 删除按钮操作 */
@@ -538,7 +584,24 @@ export default {
         this.getList();
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
+    },
+    /** 按类型筛选查看图片 */
+    getViewImagesByType(type) {
+      if (!this.viewImages || this.viewImages.length === 0) return [];
+      return this.viewImages.filter(img => img.imageType === type);
+    },
+    /** 获取指定类型图片的预览列表 */
+    getViewPreviewList(type) {
+      return this.getViewImagesByType(type).map(img => this.getImageUrl(img.imageUrl));
     }
   }
 };
 </script>
+
+<style scoped>
+.form-tip {
+  font-size: 12px;
+  color: #999;
+  line-height: 1.5;
+}
+</style>

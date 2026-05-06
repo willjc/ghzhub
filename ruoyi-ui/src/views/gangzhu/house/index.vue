@@ -845,6 +845,7 @@ import { listFacilityItem } from "@/api/gangzhu/facilityItem";
 import { listHouseFacility, batchSaveHouseFacility, pullFromType } from "@/api/gangzhu/houseFacility";
 import ImageUpload from '@/components/ImageUpload';
 import VrViewer from '@/components/VrViewer';
+import request from '@/utils/request';
 
 export default {
   name: "House",
@@ -1017,7 +1018,7 @@ export default {
         });
       }
     },
-    /** 房型选择变更 - 自动填充户型名称和面积，提示拉取设施 */
+    /** 房型选择变更 - 自动填充户型名称和面积，拉取房型图片和设施 */
     handleHouseTypeChange(houseTypeId) {
       if (houseTypeId) {
         const selectedHouseType = this.houseTypeList.find(item => item.houseTypeId === houseTypeId);
@@ -1025,6 +1026,21 @@ export default {
           this.form.houseTypeName = selectedHouseType.houseTypeName;
           this.form.houseTypeDetail = selectedHouseType.remark;
           this.form.area = selectedHouseType.typicalArea;
+        }
+        // 拉取房型图片：仅在图片字段全部为空时自动预填
+        const hasAnyImage = this.form.mainImageList || this.form.layoutImageList ||
+          this.form.bedroomImageList || this.form.bathroomImageList ||
+          this.form.indoorImageList || this.form.outdoorImageList;
+        if (!hasAnyImage) {
+          this.pullHouseTypeImages(houseTypeId);
+        } else {
+          this.$confirm('是否从该房型拉取图片？（将覆盖当前已上传的图片）', '提示', {
+            confirmButtonText: '拉取',
+            cancelButtonText: '不拉取',
+            type: 'warning'
+          }).then(() => {
+            this.pullHouseTypeImages(houseTypeId);
+          }).catch(() => {});
         }
         // 编辑已有房源时提示拉取设施
         if (this.form.houseId && houseTypeId) {
@@ -1044,6 +1060,33 @@ export default {
         this.form.houseTypeDetail = null;
         this.form.area = null;
       }
+    },
+    /** 从房型拉取分类图片并预填到房源表单 */
+    pullHouseTypeImages(houseTypeId) {
+      request({
+        url: '/gangzhu/houseType/' + houseTypeId + '/images',
+        method: 'get'
+      }).then(response => {
+        if (response.data && response.data.length > 0) {
+          const byType = { '1': [], '2': [], '3': [], '4': [], '5': [], '6': [] };
+          response.data.forEach(item => {
+            const t = item.imageType || '1';
+            if (byType[t]) byType[t].push(item.imageUrl);
+          });
+          let count = 0;
+          this.$nextTick(() => {
+            if (byType['1'].length) { this.form.mainImageList = byType['1'].join(','); count += byType['1'].length; }
+            if (byType['2'].length) { this.form.layoutImageList = byType['2'].join(','); count += byType['2'].length; }
+            if (byType['3'].length) { this.form.bedroomImageList = byType['3'].join(','); count += byType['3'].length; }
+            if (byType['4'].length) { this.form.bathroomImageList = byType['4'].join(','); count += byType['4'].length; }
+            if (byType['5'].length) { this.form.indoorImageList = byType['5'].join(','); count += byType['5'].length; }
+            if (byType['6'].length) { this.form.outdoorImageList = byType['6'].join(','); count += byType['6'].length; }
+            if (count > 0) {
+              this.$modal.msgSuccess('已从房型拉取 ' + count + ' 张图片，可按需修改');
+            }
+          });
+        }
+      }).catch(() => {});
     },
     /** 查询条件-项目变更 - 加载对应楼栋 */
     handleQueryProjectChange(projectId) {
