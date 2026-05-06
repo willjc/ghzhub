@@ -3,11 +3,13 @@ package com.ruoyi.system.gov.client;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.system.gov.config.GovDataConfig;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -34,9 +36,15 @@ public class GovDataClient {
     @Autowired
     private GovDataConfig config;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private RestTemplate restTemplate;
 
-    {
+    @PostConstruct
+    private void init() {
+        // 使用 GovDataConfig 的超时（connectTimeout=10s, readTimeout=30s，不动产接口可能耗时 3~8s）
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(config.getConnectTimeout());
+        factory.setReadTimeout(config.getReadTimeout());
+        this.restTemplate = new RestTemplate(factory);
         // 不抛4xx/5xx异常，由业务代码自行判断
         restTemplate.setErrorHandler(new org.springframework.web.client.DefaultResponseErrorHandler() {
             @Override
@@ -44,6 +52,8 @@ public class GovDataClient {
                 return false;
             }
         });
+        log.info("GovDataClient 初始化完成: baseUrl={}, connectTimeout={}ms, readTimeout={}ms",
+                config.getBaseUrl(), config.getConnectTimeout(), config.getReadTimeout());
     }
 
     // ==================== 婚姻查询 ====================
