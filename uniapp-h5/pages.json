@@ -95,7 +95,7 @@
 			"root": "subpkg/qualification",
 			"name": "pkg-qualification",
 			"pages": [
-				{ "path": "check", "style": { "navigationBarTitleText": "资格校验", "navigationStyle": "custom" } },
+				{ "path": "check", "style": { "navigationBarTitleText": "资格校验" } },
 				{ "path": "fail", "style": { "navigationBarTitleText": "资格校验未通过" } }
 			]
 		},
