@@ -648,16 +648,33 @@
 			},
 
 			/**
-			 * 去除 HTML 标签
+			 * 去除 HTML 标签（多端兼容：小程序/H5/App 均可用）
 			 * @param {String} html 包含 HTML 标签的字符串
 			 * @returns {String} 纯文本
 			 */
 			stripHtmlTags(html) {
 				if (!html) return ''
-				// 创建临时 DOM 元素提取纯文本
-				const temp = document.createElement('div')
-				temp.innerHTML = html
-				return temp.textContent || temp.innerText || ''
+				// 1. 去除 script/style 整段
+				let text = String(html)
+					.replace(/<script[\s\S]*?<\/script>/gi, '')
+					.replace(/<style[\s\S]*?<\/style>/gi, '')
+				// 2. 块级标签转换行
+				text = text.replace(/<\/?(br|p|div|li|tr|h[1-6])[^>]*>/gi, '\n')
+				// 3. 其余标签直接删除
+				text = text.replace(/<[^>]+>/g, '')
+				// 4. 常见 HTML 实体解码
+				const entities = {
+					'&nbsp;': ' ',
+					'&amp;': '&',
+					'&lt;': '<',
+					'&gt;': '>',
+					'&quot;': '"',
+					'&#39;': "'",
+					'&apos;': "'"
+				}
+				text = text.replace(/&(nbsp|amp|lt|gt|quot|#39|apos);/g, m => entities[m] || m)
+				// 5. 压缩连续空白
+				return text.replace(/[\t\r\f]+/g, ' ').replace(/\n{2,}/g, '\n').trim()
 			}
 		}
 	}

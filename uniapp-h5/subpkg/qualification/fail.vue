@@ -180,7 +180,6 @@ export default {
   padding: 20rpx 30rpx calc(20rpx + env(safe-area-inset-bottom));
   background: #fff;
   display: flex;
-  gap: 20rpx;
   box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.04);
 }
 .btn-secondary, .btn-primary {
@@ -195,6 +194,7 @@ export default {
 .btn-secondary {
   background: #f0f2f7;
   color: #333;
+  margin-right: 20rpx;
 }
 .btn-primary {
   background: linear-gradient(270deg, #4fc7ff 0%, #0f73ff 100%);
