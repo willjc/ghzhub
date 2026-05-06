@@ -108,6 +108,7 @@
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
+      :auto-scroll="false"
       @pagination="getList"
     />
 
