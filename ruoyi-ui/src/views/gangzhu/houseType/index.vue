@@ -382,7 +382,7 @@ export default {
     },
     /** 查询项目列表 */
     getProjectList() {
-      listProject().then(response => {
+      listProject({ pageNum: 1, pageSize: 1000, status: "0" }).then(response => {
         this.projectList = response.rows;
       });
     },
