@@ -1,0 +1,59 @@
+================================================================================
+航港南苑试点数据导入 DRY-RUN 报告
+生成时间: 2026-05-08 12:13:05.818255
+DRY_RUN = False
+================================================================================
+
+【Excel 源数据】
+  合同(常规+集中) 共: 86 条
+  账单共:            2144 条
+
+【将要执行的写入计划】
+  新建 hz_user:              23 条
+  补空字段 UPDATE hz_user:   0 条
+  新建 hz_contract:          86 条
+  新建 hz_checkin_record:    15 条
+  新建 hz_checkout_record:   22 条
+  新建 hz_bill:              2144 条
+
+【合同状态分布（将写入）】
+  {'3': 66, '5': 20}  (3=履行中 5=已解约)
+
+【账单类型/状态分布（将写入）】
+  bill_type:   {'1': 107, '2': 2037}  (1=押金 2=租金)
+  bill_status: {'1': 1241, '0': 903}  (0=待支付 1=已支付)
+  is_overdue:  {'1': 30, '0': 2114}
+  账单金额合计: 2043706.04   实收合计: 152322.54
+
+--------------------------------------------------------------------------------
+【异常 / 需要关注】
+--------------------------------------------------------------------------------
+  room_not_found: 0 条
+  unknown_contract_status: 0 条
+  unknown_education: 0 条
+  dup_contract_no: 0 条
+  dup_bill_no: 0 条
+  bill_contract_not_found: 0 条
+  bill_status_unknown: 0 条
+  user_conflict: 0 条
+
+【新建用户样例（前 5 条）】
+  {'placeholder': '__NEW__1', 'real_name': '廉棋凯', 'id_card': '410823199606048611', 'phone': '15221000101', 'education': '4'}
+  {'placeholder': '__NEW__2', 'real_name': '许巍', 'id_card': '410221198511224811', 'phone': '13983935550', 'education': '3'}
+  {'placeholder': '__NEW__3', 'real_name': '任骥', 'id_card': '41152119900620837X', 'phone': '18300685670', 'education': '3'}
+  {'placeholder': '__NEW__4', 'real_name': '梁远路', 'id_card': '360781200102283633', 'phone': '17770749797', 'education': '3'}
+  {'placeholder': '__NEW__5', 'real_name': '李峰', 'id_card': '410182198410106055', 'phone': '18037685303', 'education': '4'}
+
+【将写入合同样例（前 3 条）】
+  {"contract_no": "1104429179400761344", "contract_type": "1", "contract_status": "3", "tenant_id": "__NEW__1", "tenant_name": "廉棋凯", "tenant_id_card": "410823199606048611", "tenant_phone": "15221000101", "project_id": 23, "house_id": 1830, "house_code": "2029088079129743519", "house_address": "航港南苑-1号楼-2单元-2901", "rent_price": 994.56, "deposit": 1000.0, "start_date": "2026-05-08 15:27:16", "end_date": "2027-05-07 15:27:16", "sign_time": "2026-05-08 15:27:16", "remark": "常规分配"}
+  {"contract_no": "1103352580240728064", "contract_type": "1", "contract_status": "5", "tenant_id": 24608, "tenant_name": "孙江南", "tenant_id_card": "412721199703035429", "tenant_phone": "17638194571", "project_id": 23, "house_id": 1831, "house_code": "2029088079129743520", "house_address": "航港南苑-1号楼-2单元-2902", "rent_price": 1113.3, "deposit": 1000.0, "start_date": "2026-05-05 16:09:14", "end_date": "2027-05-04 16:09:14", "sign_time": "2026-05-05 16:09:14", "remark": "常规分配 | 退租原因:个人发展及工作变动"}
+  {"contract_no": "1103328761639743488", "contract_type": "1", "contract_status": "3", "tenant_id": 74734, "tenant_name": "邢森", "tenant_id_card": "411422199705200079", "tenant_phone": "18639042513", "project_id": 23, "house_id": 1832, "house_code": "2029088079129743521", "house_address": "航港南苑-1号楼-2单元-2903", "rent_price": 1113.3, "deposit": 1000.0, "start_date": "2026-05-05 14:34:36", "end_date": "2029-05-04 14:34:36", "sign_time": "2026-05-05 14:34:36", "remark": "常规分配"}
+
+【将写入账单样例（前 3 条）】
+  {"bill_no": "HG-B-20260508-000001", "contract_no": "1100782222107086848", "tenant_id": "__NEW__4", "tenant_name": "梁远路", "house_id": 1703, "house_code": "2029088079129743392", "bill_type": "1", "bill_amount": 1000.0, "paid_amount": 1000.0, "unpaid_amount": 0.0, "bill_date": "2026-04-28 13:55:33", "due_date": "2028-04-27 13:55:33", "bill_status": "1", "pay_method": "2", "pay_time": "2026-05-07 14:54:12", "is_overdue": "1", "remark": "已退费"}
+  {"bill_no": "HG-B-20260508-000002", "contract_no": "1104429179400761344", "tenant_id": "__NEW__1", "tenant_name": "廉棋凯", "house_id": 1830, "house_code": "2029088079129743519", "bill_type": "1", "bill_amount": 1000.0, "paid_amount": 1000.0, "unpaid_amount": 0.0, "bill_date": "2026-05-08 15:27:16", "due_date": "2027-05-07 15:27:16", "bill_status": "1", "pay_method": "2", "pay_time": "2026-05-06 15:31:38", "is_overdue": "0", "remark": null}
+  {"bill_no": "HG-B-20260508-000003", "contract_no": "1104429179400761344", "tenant_id": "__NEW__1", "tenant_name": "廉棋凯", "house_id": 1830, "house_code": "2029088079129743519", "bill_type": "2", "bill_amount": 994.56, "paid_amount": 0.0, "unpaid_amount": 0.0, "bill_date": "2026-05-08 15:27:16", "due_date": "2026-06-07 15:27:16", "bill_status": "1", "pay_method": null, "pay_time": null, "is_overdue": "0", "remark": null}
+
+================================================================================
+DRY-RUN 结束。确认无误后将 DRY_RUN 改为 False 重新运行即可正式落库。
+================================================================================

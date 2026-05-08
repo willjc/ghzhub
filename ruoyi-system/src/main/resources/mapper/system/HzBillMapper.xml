@@ -121,6 +121,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="bill.params.houseCode != null and bill.params.houseCode != ''">
                 AND b.house_code LIKE CONCAT('%', #{bill.params.houseCode}, '%')
             </if>
+            <!-- 所属项目（通过房源所属项目过滤） -->
+            <if test="bill.params.projectId != null and bill.params.projectId != ''">
+                AND h.project_id = #{bill.params.projectId}
+            </if>
             <!-- 账单日期范围查询 -->
             <if test="bill.params.beginBillDate != null and bill.params.beginBillDate != ''">
                 AND DATE(b.bill_date) &gt;= #{bill.params.beginBillDate}
@@ -180,6 +184,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <!-- 房源编号（模糊查询） -->
             <if test="bill.params.houseCode != null and bill.params.houseCode != ''">
                 AND b.house_code LIKE CONCAT('%', #{bill.params.houseCode}, '%')
+            </if>
+            <!-- 所属项目（通过房源所属项目过滤） -->
+            <if test="bill.params.projectId != null and bill.params.projectId != ''">
+                AND h.project_id = #{bill.params.projectId}
             </if>
             <!-- 账单日期范围查询 -->
             <if test="bill.params.beginBillDate != null and bill.params.beginBillDate != ''">

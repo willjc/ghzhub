@@ -37,6 +37,16 @@
           <el-option label="已关闭" value="4" />
         </el-select>
       </el-form-item>
+      <el-form-item label="所属项目" prop="projectId">
+        <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable filterable style="width: 200px">
+          <el-option
+            v-for="project in projectList"
+            :key="project.projectId"
+            :label="project.projectName"
+            :value="project.projectId"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item label="合同编号" prop="contractNo">
         <el-input
           v-model="queryParams.contractNo"
@@ -96,6 +106,7 @@
     <el-table v-loading="loading" :data="billList">
       <el-table-column label="账单编号" align="center" prop="billNo" min-width="180" show-overflow-tooltip />
       <el-table-column label="租户姓名" align="center" prop="tenantName" width="120" show-overflow-tooltip />
+      <el-table-column label="所属项目" align="center" prop="projectName" width="140" show-overflow-tooltip />
       <el-table-column label="所属合同" align="center" prop="contractNo" width="160" show-overflow-tooltip />
       <el-table-column label="账单类型" align="center" prop="billType" width="100">
         <template slot-scope="scope">
@@ -199,6 +210,7 @@
 
 <script>
 import { listBill, getBill } from "@/api/gangzhu/bill";
+import { listProject } from "@/api/gangzhu/project";
 
 export default {
   name: "Bill",
@@ -211,6 +223,7 @@ export default {
       detailOpen: false,
       billDateRange: [],
       dueDateRange: [],
+      projectList: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -220,12 +233,14 @@ export default {
         billStatus: null,
         contractNo: null,
         houseCode: null,
+        projectId: null,
       },
       detailData: {}
     };
   },
   created() {
     this.getList();
+    this.getProjectList();
   },
   methods: {
     getList() {
@@ -246,10 +261,19 @@ export default {
       if (this.queryParams.houseCode) {
         this.queryParams.params["houseCode"] = this.queryParams.houseCode;
       }
+      if (this.queryParams.projectId) {
+        this.queryParams.params["projectId"] = this.queryParams.projectId;
+      }
       listBill(this.queryParams).then(response => {
         this.billList = response.rows;
         this.total = response.total;
         this.loading = false;
+      });
+    },
+    /** 查询项目列表（筛选下拉） */
+    getProjectList() {
+      listProject({ pageNum: 1, pageSize: 1000, status: "0" }).then(response => {
+        this.projectList = response.rows || response.data || [];
       });
     },
     handleQuery() {

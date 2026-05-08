@@ -17,6 +17,16 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="所属项目" prop="projectId">
+        <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable filterable style="width: 200px">
+          <el-option
+            v-for="project in projectList"
+            :key="project.projectId"
+            :label="project.projectName"
+            :value="project.projectId"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item label="合同类型" prop="contractType">
         <el-select v-model="queryParams.contractType" placeholder="请选择合同类型" clearable>
           <el-option label="首次签约" value="1" />
@@ -618,6 +628,7 @@
 <script>
 import { listContract, getContract, addContract, updateContract, delContract, approveContract,
          getContractBills, getContractDocuments, auditDocument, getContractPdfUrl } from "@/api/gangzhu/contract";
+import { listProject } from "@/api/gangzhu/project";
 
 export default {
   name: "Contract",
@@ -652,7 +663,9 @@ export default {
         contractNo: null,
         contractType: null,
         contractStatus: null,
+        projectId: null,
       },
+      projectList: [],
       form: {},
       rules: {
         contractType: [
@@ -687,6 +700,7 @@ export default {
   },
   created() {
     this.getList();
+    this.getProjectList();
   },
   methods: {
     /** 查看合同 PDF（调接口获取实时链接，新标签打开） */
@@ -867,6 +881,12 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.handleQuery();
+    },
+    /** 查询项目列表（筛选下拉） */
+    getProjectList() {
+      listProject({ pageNum: 1, pageSize: 1000, status: "0" }).then(response => {
+        this.projectList = response.rows || response.data || [];
+      });
     },
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.contractId)
