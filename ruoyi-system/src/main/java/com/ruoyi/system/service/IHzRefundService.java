@@ -17,7 +17,7 @@ public interface IHzRefundService {
     /**
      * 查询退款申请列表（包含关联信息，带分页）
      */
-    TableDataInfo selectRefundList(Page<HzCheckoutApply> page, String refundNo, String contractNo, String refundStatus);
+    TableDataInfo selectRefundList(Page<HzCheckoutApply> page, String refundNo, String contractNo, String refundStatus, Long projectId);
 
     /**
      * 查询退款申请详情

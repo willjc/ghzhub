@@ -22,6 +22,9 @@ public class HzRefundApplyVO implements Serializable {
     /** 退款编号（实际是退租申请ID） */
     private String refundNo;
 
+    /** 所属项目ID（仅用于查询过滤） */
+    private Long projectId;
+
     /** 合同编号 */
     private String contractNo;
 
@@ -125,6 +128,14 @@ public class HzRefundApplyVO implements Serializable {
 
     public void setRefundNo(String refundNo) {
         this.refundNo = refundNo;
+    }
+
+    public Long getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(Long projectId) {
+        this.projectId = projectId;
     }
 
     public String getContractNo() {

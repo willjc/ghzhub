@@ -8,11 +8,13 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.system.domain.HzCheckoutApply;
 import com.ruoyi.system.domain.HzCheckoutRecord;
 import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzRefundApply;
 import com.ruoyi.system.domain.HzRefundApplyVO;
 import com.ruoyi.system.mapper.HzCheckoutApplyMapper;
 import com.ruoyi.system.mapper.HzCheckoutRecordMapper;
 import com.ruoyi.system.mapper.HzContractMapper;
+import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzRefundApplyMapper;
 import com.ruoyi.system.service.IHzRefundService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,8 +42,11 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
     @Autowired
     private HzCheckoutRecordMapper checkoutRecordMapper;
 
+    @Autowired
+    private HzHouseMapper houseMapper;
+
     @Override
-    public TableDataInfo selectRefundList(Page<HzCheckoutApply> page, String refundNo, String contractNo, String refundStatus) {
+    public TableDataInfo selectRefundList(Page<HzCheckoutApply> page, String refundNo, String contractNo, String refundStatus, Long projectId) {
         // 构建退租申请查询条件（已确认且有退款金额）
         LambdaQueryWrapper<HzCheckoutApply> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzCheckoutApply::getApplyStatus, "5")
@@ -64,6 +69,18 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
                 return emptyResult();
             }
             wrapper.in(HzCheckoutApply::getContractId, contractIds);
+        }
+
+        // 项目过滤：通过 house.project_id 查出 house_id 集合，再按 apply.house_id 过滤
+        if (projectId != null) {
+            LambdaQueryWrapper<HzHouse> houseWrapper = new LambdaQueryWrapper<>();
+            houseWrapper.eq(HzHouse::getProjectId, projectId);
+            List<Long> houseIds = houseMapper.selectList(houseWrapper)
+                    .stream().map(HzHouse::getHouseId).collect(Collectors.toList());
+            if (houseIds.isEmpty()) {
+                return emptyResult();
+            }
+            wrapper.in(HzCheckoutApply::getHouseId, houseIds);
         }
 
         // 退款状态过滤：先查出匹配的 applyId 集合

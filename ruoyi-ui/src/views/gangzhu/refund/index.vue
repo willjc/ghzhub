@@ -27,6 +27,16 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item label="所属项目" prop="projectId">
+        <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable filterable style="width: 200px">
+          <el-option
+            v-for="project in projectList"
+            :key="project.projectId"
+            :label="project.projectName"
+            :value="project.projectId"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -191,6 +201,7 @@
 
 <script>
 import { listRefund, getRefund, submitPayment, wechatRefund, delRefund } from "@/api/gangzhu/refund";
+import { listProject } from "@/api/gangzhu/project";
 
 export default {
   name: "Refund",
@@ -201,12 +212,14 @@ export default {
       showSearch: true,
       total: 0,
       refundList: [],
+      projectList: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         refundNo: null,
         contractNo: null,
-        refundStatus: null
+        refundStatus: null,
+        projectId: null
       },
       // 详情
       detailOpen: false,
@@ -233,8 +246,14 @@ export default {
   },
   created() {
     this.getList();
+    this.getProjectList();
   },
   methods: {
+    getProjectList() {
+      listProject({ pageNum: 1, pageSize: 1000, status: "0" }).then(response => {
+        this.projectList = response.rows || response.data || [];
+      });
+    },
     getList() {
       this.loading = true;
       listRefund(this.queryParams).then(response => {
