@@ -62,6 +62,7 @@
 
 <script>
 	import { getProjectListByType } from '@/api/project'
+	import config from '@/config/index'
 
 	export default {
 		data() {
@@ -174,7 +175,17 @@
 					return imagePath
 				}
 
-				// 直接返回相对路径，由manifest.json中的代理转发到后端
+				// 本地静态资源直接返回
+				if (imagePath.startsWith('/static/')) {
+					return imagePath
+				}
+
+				// /profile/ 开头的后端图片路径，需要拼接 staticUrl
+				if (imagePath.startsWith('/profile/')) {
+					return config.staticUrl + imagePath
+				}
+
+				// 直接返回相对路径
 				return imagePath
 			},
 

@@ -31,6 +31,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateTime"      column="update_time"     />
         <result property="remark"          column="remark"          />
         <result property="delFlag"         column="del_flag"        />
+        <result property="distribution"    column="distribution"    />
+        <result property="houseType"       column="house_type"      />
+        <result property="area"            column="area"            />
+        <result property="rentDetail"      column="rent_detail"     />
+        <result property="propertyCompany" column="property_company"/>
+        <result property="propertyFee"     column="property_fee"    />
+        <result property="electricFee"     column="electric_fee"    />
+        <result property="waterFee"        column="water_fee"       />
+        <result property="gasFee"          column="gas_fee"         />
     </resultMap>
 
     <sql id="selectProjectVo">
@@ -43,6 +52,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             p.project_intro, p.cover_image, p.price, p.facilities, p.transportation,
             p.manager_id, p.manager_name, p.manager_phone,
             p.status, p.sort_order,
+            p.distribution, p.house_type, p.area, p.rent_detail,
+            p.property_company, p.property_fee, p.electric_fee, p.water_fee, p.gas_fee,
             p.create_by, p.create_time, p.update_by, p.update_time, p.remark, p.del_flag
         FROM hz_project p
     </sql>
