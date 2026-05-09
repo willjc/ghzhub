@@ -35,9 +35,22 @@
 			maskClosable: { type: Boolean, default: true }
 		},
 		computed: {
-			// rich-text 对空串会渲染 "null"，做一层保护
+			// rich-text 对空串会渲染 "null"，做一层保护；
+			// 同时给正文里所有 <img> 注入行内 style，确保图片宽度不超出弹框（rich-text 不认外部 CSS，仅识别行内样式，且单位只支持 px/%）
 			htmlContent() {
-				return this.content || ''
+				const raw = this.content || ''
+				if (!raw) return ''
+				return raw.replace(/<img\b([^>]*)>/gi, (match, attrs) => {
+					const injected = 'max-width:100%;height:auto;display:block;margin:10px auto;'
+					if (/\sstyle\s*=/i.test(attrs)) {
+						// 已有 style → 追加（小程序 rich-text 后写的属性生效）
+						return '<img' + attrs.replace(/(\sstyle\s*=\s*")([^"]*)(")/i, (m, p1, css, p3) => {
+							const sep = css && !/;\s*$/.test(css) ? ';' : ''
+							return p1 + css + sep + injected + p3
+						}) + '>'
+					}
+					return '<img' + attrs + ' style="' + injected + '">'
+				})
 			}
 		},
 		methods: {

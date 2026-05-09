@@ -198,20 +198,20 @@ wechat:
 
 # e签宝配置
 esign:
-  app-id: "7439105666"
-  app-secret: "eed1af15e2f693c248077c7f91a23079"
+  app-id: "5112061749"
+  app-secret: "0d76219647c86a41e13c2f78c31f0458"
   # 沙箱环境（联调使用）
-  host: "https://smlopenapi.esign.cn"
+  # host: "https://smlopenapi.esign.cn"
   # 生产环境（上线时切换）
-  # host: "https://openapi.esign.cn"
+  host: "https://openapi.esign.cn"
   # 签署完成后回调地址（公网可访问）
   notify-url: "https://app.caigon.cn/h5/esign/notify"
   # 签署后跳回的页面（后端中间页，自动跳转到前端H5）
   redirect-url: "https://app.caigon.cn/h5/esign/sign-done"
   # 平台企业（甲方）在 e签宝 的 orgId
-  org-id: "eeffbc60d8bd4c03a68126a32da9cd4e"
+  org-id: "89146ce3372146ada5db75241d9c9a84"
   # 文档模板 ID（在 e签宝 SaaS 后台配置）
-  template-id: "a7e3e9e70d3543b3b221ec0770ed3666"
+  template-id: "4027bb6b226147b0820527a9d41609a5"
   # 实名认证完成后跳回（部署时改为: https://api.caigon.cn/h5/esign/auth-done）
   auth-redirect-url: "https://app.caigon.cn/#/pages/auth/verify?auth_done=1"
   # 前端H5地址（签署完成跳转用）
