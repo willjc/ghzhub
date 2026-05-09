@@ -63,6 +63,12 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="配租方式" prop="allocationType">
+        <el-select v-model="queryParams.allocationType" placeholder="请选择配租方式" clearable style="width: 160px">
+          <el-option label="常规分配" value="常规分配" />
+          <el-option label="集中分配" value="集中分配" />
+        </el-select>
+      </el-form-item>
       <el-form-item label="账单日期" prop="billDateRange">
         <el-date-picker
           v-model="billDateRange"
@@ -108,6 +114,12 @@
       <el-table-column label="租户姓名" align="center" prop="tenantName" width="120" show-overflow-tooltip />
       <el-table-column label="所属项目" align="center" prop="projectName" width="140" show-overflow-tooltip />
       <el-table-column label="所属合同" align="center" prop="contractNo" width="160" show-overflow-tooltip />
+      <el-table-column label="配租方式" align="center" prop="allocationType" width="100">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.allocationType === '集中分配'" type="warning">集中分配</el-tag>
+          <el-tag v-else type="info">常规分配</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="账单类型" align="center" prop="billType" width="100">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.billType === '1'" type="warning">押金</el-tag>
@@ -234,6 +246,7 @@ export default {
         contractNo: null,
         houseCode: null,
         projectId: null,
+        allocationType: null,
       },
       detailData: {}
     };
@@ -263,6 +276,9 @@ export default {
       }
       if (this.queryParams.projectId) {
         this.queryParams.params["projectId"] = this.queryParams.projectId;
+      }
+      if (this.queryParams.allocationType) {
+        this.queryParams.params["allocationType"] = this.queryParams.allocationType;
       }
       listBill(this.queryParams).then(response => {
         this.billList = response.rows;

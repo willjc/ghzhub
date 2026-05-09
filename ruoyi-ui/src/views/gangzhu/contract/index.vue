@@ -44,6 +44,12 @@
           <el-option label="已解约" value="5" />
         </el-select>
       </el-form-item>
+      <el-form-item label="配租方式" prop="allocationType">
+        <el-select v-model="queryParams.allocationType" placeholder="请选择配租方式" clearable style="width: 160px">
+          <el-option label="常规分配" value="常规分配" />
+          <el-option label="集中分配" value="集中分配" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -133,6 +139,12 @@
           <el-tag v-else-if="scope.row.contractStatus === '3'" type="success">履行中</el-tag>
           <el-tag v-else-if="scope.row.contractStatus === '4'" type="danger">已到期</el-tag>
           <el-tag v-else type="info">已解约</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="配租方式" align="center" prop="allocationType" width="100">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.allocationType === '集中分配'" type="warning">集中分配</el-tag>
+          <el-tag v-else type="info">常规分配</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="合同生效日期" align="center" prop="startDate" width="120" />
@@ -664,6 +676,7 @@ export default {
         contractType: null,
         contractStatus: null,
         projectId: null,
+        allocationType: null,
       },
       projectList: [],
       form: {},

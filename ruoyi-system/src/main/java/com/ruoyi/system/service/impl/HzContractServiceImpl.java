@@ -152,7 +152,39 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
                .like(StringUtils.isNotEmpty(contract.getTenantName()), HzContract::getTenantName, contract.getTenantName())
                .eq(HzContract::getDelFlag, "0")
                .orderByDesc(HzContract::getContractId);
-        return this.page(page, wrapper);
+
+        // 配租方式筛选：batch_id 非空 或 remark 首段是"集中分配" -> 集中分配；否则常规分配
+        String allocType = contract.getAllocationType();
+        if (StringUtils.isNotEmpty(allocType)) {
+            if ("集中分配".equals(allocType)) {
+                wrapper.and(w -> w.isNotNull(HzContract::getBatchId)
+                        .or().likeRight(HzContract::getRemark, "集中分配"));
+            } else if ("常规分配".equals(allocType)) {
+                wrapper.and(w -> w.isNull(HzContract::getBatchId))
+                       .and(w -> w.isNull(HzContract::getRemark)
+                               .or().notLikeRight(HzContract::getRemark, "集中分配"));
+            }
+        }
+
+        IPage<HzContract> result = this.page(page, wrapper);
+        // 回填 allocationType 虚拟字段
+        if (result.getRecords() != null) {
+            for (HzContract c : result.getRecords()) {
+                c.setAllocationType(computeAllocationType(c.getBatchId(), c.getRemark()));
+            }
+        }
+        return result;
+    }
+
+    /** 根据 batch_id 和 remark 首段推断配租方式 */
+    private String computeAllocationType(Long batchId, String remark) {
+        if (batchId != null) {
+            return "集中分配";
+        }
+        if (remark != null && remark.startsWith("集中分配")) {
+            return "集中分配";
+        }
+        return "常规分配";
     }
 
     @Override

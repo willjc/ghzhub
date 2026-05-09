@@ -30,6 +30,10 @@ public class HzBillVO extends HzBill {
     @TableField(exist = false)
     private String houseNo;
 
+    /** 配租方式（常规分配/集中分配，由合同表 batch_id + remark 推断） */
+    @TableField(exist = false)
+    private String allocationType;
+
     public String getContractNo() {
         return contractNo;
     }
@@ -68,5 +72,13 @@ public class HzBillVO extends HzBill {
 
     public void setHouseNo(String houseNo) {
         this.houseNo = houseNo;
+    }
+
+    public String getAllocationType() {
+        return allocationType;
+    }
+
+    public void setAllocationType(String allocationType) {
+        this.allocationType = allocationType;
     }
 }

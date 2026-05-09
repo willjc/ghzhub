@@ -192,6 +192,10 @@ public class HzContract extends BaseEntity {
     @TableField(exist = false)
     private String facilities;
 
+    /** 配租方式（常规分配/集中分配，由 batch_id + remark 首段推断，非持久化） */
+    @TableField(exist = false)
+    private String allocationType;
+
     public void setContractId(Long contractId) {
         this.contractId = contractId;
     }
@@ -534,6 +538,14 @@ public class HzContract extends BaseEntity {
 
     public void setFacilities(String facilities) {
         this.facilities = facilities;
+    }
+
+    public String getAllocationType() {
+        return allocationType;
+    }
+
+    public void setAllocationType(String allocationType) {
+        this.allocationType = allocationType;
     }
 
     @Override

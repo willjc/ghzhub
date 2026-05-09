@@ -40,6 +40,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="buildingName" column="building_name"/>
         <result property="unitName" column="unit_name"/>
         <result property="houseNo" column="house_no"/>
+        <!-- 扩展字段：配租方式（常规分配/集中分配） -->
+        <result property="allocationType" column="allocation_type"/>
     </resultMap>
 
     <!-- 查询账单列表SQL -->
@@ -67,6 +69,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             END AS overdue_days,
             b.create_by, b.create_time, b.update_by, b.update_time, b.remark,
             c.contract_no,
+            <!-- 配租方式：合同表 batch_id 非空 或 remark 首段为"集中分配" 视为集中分配，否则常规分配 -->
+            CASE
+                WHEN c.batch_id IS NOT NULL THEN '集中分配'
+                WHEN c.remark LIKE '集中分配%' THEN '集中分配'
+                ELSE '常规分配'
+            END AS allocation_type,
             p.project_name,
             bu.building_name,
             u.unit_name,
@@ -124,6 +132,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <!-- 所属项目（通过房源所属项目过滤） -->
             <if test="bill.params.projectId != null and bill.params.projectId != ''">
                 AND h.project_id = #{bill.params.projectId}
+            </if>
+            <!-- 配租方式筛选 -->
+            <if test="bill.params.allocationType != null and bill.params.allocationType != ''">
+                <choose>
+                    <when test='bill.params.allocationType == "集中分配"'>
+                        AND (c.batch_id IS NOT NULL OR c.remark LIKE '集中分配%')
+                    </when>
+                    <when test='bill.params.allocationType == "常规分配"'>
+                        AND (c.batch_id IS NULL AND (c.remark IS NULL OR c.remark NOT LIKE '集中分配%'))
+                    </when>
+                </choose>
             </if>
             <!-- 账单日期范围查询 -->
             <if test="bill.params.beginBillDate != null and bill.params.beginBillDate != ''">
@@ -188,6 +207,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <!-- 所属项目（通过房源所属项目过滤） -->
             <if test="bill.params.projectId != null and bill.params.projectId != ''">
                 AND h.project_id = #{bill.params.projectId}
+            </if>
+            <!-- 配租方式筛选 -->
+            <if test="bill.params.allocationType != null and bill.params.allocationType != ''">
+                <choose>
+                    <when test='bill.params.allocationType == "集中分配"'>
+                        AND (c.batch_id IS NOT NULL OR c.remark LIKE '集中分配%')
+                    </when>
+                    <when test='bill.params.allocationType == "常规分配"'>
+                        AND (c.batch_id IS NULL AND (c.remark IS NULL OR c.remark NOT LIKE '集中分配%'))
+                    </when>
+                </choose>
             </if>
             <!-- 账单日期范围查询 -->
             <if test="bill.params.beginBillDate != null and bill.params.beginBillDate != ''">

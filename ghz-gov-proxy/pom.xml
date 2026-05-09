@@ -20,6 +20,8 @@
 
     <properties>
         <java.version>1.8</java.version>
+        <!-- 覆盖 Spring Boot 2.5.14 自带的 Spring Framework 5.3.20，升级到 5.3.31 以修复 CVE-2023-20860 -->
+        <spring-framework.version>5.3.31</spring-framework.version>
     </properties>
 
     <dependencies>
