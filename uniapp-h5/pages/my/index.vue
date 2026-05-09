@@ -75,6 +75,22 @@
 				this.loadUserInfo(this.userId)
 			}
 		},
+		onShow() {
+			// 从其他页面（如实名认证页）返回时刷新用户信息，onLoad 不会重新触发
+			// 首次进入（onLoad → onShow）时 onLoad 已拉取，跳过以避免重复请求
+			if (!this._firstShown) {
+				this._firstShown = true
+				return
+			}
+			const token = uni.getStorageSync('token')
+			const userInfo = uni.getStorageSync('userInfo')
+			const logged = !!(token && userInfo && userInfo.userId)
+			this.isLogin = logged
+			if (logged) {
+				this.userId = userInfo.userId
+				this.loadUserInfo(this.userId)
+			}
+		},
 		methods: {
 			// 加载用户信息
 			loadUserInfo(userId) {

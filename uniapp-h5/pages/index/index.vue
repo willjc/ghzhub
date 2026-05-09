@@ -439,7 +439,7 @@
 					type: 'project', // 标记为项目类型
 					title: project.projectName || '未命名项目', // 项目名称
 					hasUnits: (project.availableHouses || 0) > 0, // 是否有房源
-					totalUnits: project.totalHouses || 0, // 总套数
+					totalUnits: project.availableHouses || 0, // 空置套数（可租）
 					distance: '', // 距离（暂时固定值，后续可根据经纬度计算）
 					address: project.address || '地址未填写', // 地址
 					tags: this.parseFacilities(project.facilities), // 设施标签
@@ -1253,28 +1253,35 @@ margin-right: 24rpx;
 		text-align: left;
 		line-height: 40rpx;
 		margin-bottom: 6rpx;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.listing-tags {
 		display: flex;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 		gap: 10rpx;
 		margin-bottom: 12rpx;
+		max-width: 400rpx;
+		max-height: 36rpx;
+		overflow: hidden;
 	}
 
 	.tag {
-		width: 60rpx;
-		height: 32rpx;
 		opacity: 1;
 		color: #4c617d;
 		font-size: 20rpx;
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
 		text-align: left;
-		line-height: 32rpx;
+		line-height: 28rpx;
 		background-color: #f5f5f5;
 		padding: 4rpx 12rpx;
 		border-radius: 8rpx;
+		white-space: nowrap;
+		flex-shrink: 0;
+		box-sizing: border-box;
 	}
 
 	.listing-price {
