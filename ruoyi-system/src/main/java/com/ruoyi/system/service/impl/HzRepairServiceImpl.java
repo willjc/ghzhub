@@ -119,11 +119,7 @@ public class HzRepairServiceImpl extends ServiceImpl<HzRepairMapper, HzRepair> i
     @Override
     public int deleteRepairById(Long repairId)
     {
-        HzRepair repair = new HzRepair();
-        repair.setRepairId(repairId);
-        repair.setDelFlag("2");
-        repair.setUpdateTime(DateUtils.getNowDate());
-        return this.updateById(repair) ? 1 : 0;
+        return this.removeById(repairId) ? 1 : 0;
     }
 
     @Override

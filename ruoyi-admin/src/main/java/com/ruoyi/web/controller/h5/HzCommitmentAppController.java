@@ -133,6 +133,28 @@ public class HzCommitmentAppController extends BaseController {
     }
 
     /**
+     * 获取小程序首次打开的友情提醒公告（模板编码固定为 gonggao）
+     * - 免登录接口（/h5/** 已整体 permitAll）
+     * - 未配置或已下架时返回 empty=true，前端不弹窗
+     */
+    @GetMapping("/notice")
+    public AjaxResult getNotice() {
+        HzCommitmentTemplate template = commitmentTemplateService.selectTemplateByCode("gonggao");
+        Map<String, Object> result = new HashMap<>();
+        if (template == null) {
+            result.put("empty", true);
+            return success(result);
+        }
+        result.put("empty", false);
+        result.put("templateId", template.getTemplateId());
+        result.put("templateName", template.getTemplateName());
+        result.put("templateCode", template.getTemplateCode());
+        result.put("content", template.getTemplateContent());
+        result.put("version", template.getVersion());
+        return success(result);
+    }
+
+    /**
      * 查询用户是否已签署过某类型承诺书
      */
     @GetMapping("/checkSigned")

@@ -24,3 +24,11 @@ export function signCommitment(data) {
 export function checkSigned(tenantId, commitmentType) {
   return get('/h5/app/commitment/checkSigned', { tenantId, commitmentType })
 }
+
+/**
+ * 获取小程序首页友情提醒公告（承诺书模板 template_code='gonggao'）
+ * 免登录接口，首次打开小程序时调用
+ */
+export function getStartupNotice() {
+  return get('/h5/app/commitment/notice')
+}

@@ -89,10 +89,7 @@ public class HzTransactionServiceImpl extends ServiceImpl<HzTransactionMapper, H
 
     @Override
     public int deleteTransactionById(Long transactionId) {
-        HzTransaction transaction = new HzTransaction();
-        transaction.setTransactionId(transactionId);
-        transaction.setDelFlag("2");
-        return this.updateById(transaction) ? 1 : 0;
+        return this.removeById(transactionId) ? 1 : 0;
     }
 
     @Override

@@ -127,21 +127,13 @@ public class HzComplaintServiceImpl extends ServiceImpl<HzComplaintMapper, HzCom
             return 0;
         }
 
-        HzComplaint complaint = new HzComplaint();
-        complaint.setComplaintId(complaintId);
-        complaint.setDelFlag("2"); // 逻辑删除
-        complaint.setUpdateTime(DateUtils.getNowDate());
-        return this.updateById(complaint) ? 1 : 0;
+        return this.removeById(complaintId) ? 1 : 0;
     }
 
     @Override
     public int deleteComplaintById(Long complaintId)
     {
-        HzComplaint complaint = new HzComplaint();
-        complaint.setComplaintId(complaintId);
-        complaint.setDelFlag("2");
-        complaint.setUpdateTime(DateUtils.getNowDate());
-        return this.updateById(complaint) ? 1 : 0;
+        return this.removeById(complaintId) ? 1 : 0;
     }
 
     /**

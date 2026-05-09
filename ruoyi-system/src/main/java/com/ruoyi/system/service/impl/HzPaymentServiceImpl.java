@@ -75,10 +75,7 @@ public class HzPaymentServiceImpl extends ServiceImpl<HzPaymentMapper, HzPayment
 
     @Override
     public int deletePaymentById(Long paymentId) {
-        HzPayment payment = new HzPayment();
-        payment.setPaymentId(paymentId);
-        payment.setDelFlag("2");
-        return this.updateById(payment) ? 1 : 0;
+        return this.removeById(paymentId) ? 1 : 0;
     }
 
     @Override

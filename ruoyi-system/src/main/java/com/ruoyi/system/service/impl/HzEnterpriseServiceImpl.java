@@ -65,10 +65,7 @@ public class HzEnterpriseServiceImpl extends ServiceImpl<HzEnterpriseMapper, HzE
     @Override
     public int deleteEnterpriseById(Long enterpriseId) {
         // 逻辑删除
-        HzEnterprise enterprise = new HzEnterprise();
-        enterprise.setEnterpriseId(enterpriseId);
-        enterprise.setDelFlag("2");
-        return this.updateById(enterprise) ? 1 : 0;
+        return this.removeById(enterpriseId) ? 1 : 0;
     }
 
     @Override

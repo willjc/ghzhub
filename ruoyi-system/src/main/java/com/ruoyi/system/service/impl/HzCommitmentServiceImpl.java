@@ -61,10 +61,7 @@ public class HzCommitmentServiceImpl extends ServiceImpl<HzCommitmentMapper, HzC
 
     @Override
     public int deleteCommitmentById(Long commitmentId) {
-        HzCommitment commitment = new HzCommitment();
-        commitment.setCommitmentId(commitmentId);
-        commitment.setDelFlag("2");
-        return this.updateById(commitment) ? 1 : 0;
+        return this.removeById(commitmentId) ? 1 : 0;
     }
 
     @Override

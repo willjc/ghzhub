@@ -1,5 +1,12 @@
 <template>
 	<view class="page">
+		<!-- 启动友情提醒公告弹窗（承诺书 template_code='gonggao'） -->
+		<notice-popup
+			:visible="noticeVisible"
+			:title="noticeTitle"
+			:content="noticeContent"
+			@close="handleNoticeClose"
+		/>
 		<!-- 个人信息弹窗 -->
 		<view class="modal-overlay" v-if="showModal" @click="closeModal">
 			<view class="modal-content" @click.stop>
@@ -202,8 +209,10 @@
 	import { updateUserInfo } from '@/api/auth'
 	import { BASE_URL, get } from '@/utils/request'
 	import config from '@/config/index'
+	import NoticePopup from '@/components/notice-popup/notice-popup.vue'
 
 	export default {
+		components: { NoticePopup },
 		data() {
 			return {
 				noticeText: '', // 最新通知内容
@@ -235,6 +244,11 @@
 				],
 				listingData: [], // 项目列表数据（从API加载）
 				showModal: false,
+				// 启动公告弹窗（承诺书 template_code='gonggao'）
+				noticeVisible: false,
+				noticeTitle: '',
+				noticeContent: '',
+				noticeTemplateId: null,
 				formData: {
 					identity: '',
 					name: '',
@@ -272,10 +286,48 @@
 					this.showModal = false
 				}
 			}
+
+			// 启动公告：消费 App.onLaunch 已拉到的公告 + 监听事件
+			this.tryShowStartupNotice()
+			uni.$on('app:pendingNotice', this.tryShowStartupNotice)
+		},
+		onUnload() {
+			uni.$off('app:pendingNotice', this.tryShowStartupNotice)
 		},
 		methods: {
 			closeModal() {
 				// 不允许关闭弹窗（必须填写信息）
+			},
+			// 尝试弹出启动公告（已看过 / 内容为空 / 数据还未就绪均静默跳过）
+			tryShowStartupNotice(data) {
+				let notice = data
+				if (!notice) {
+					const app = getApp({ allowDefault: true })
+					notice = app && app.globalData ? app.globalData.pendingNotice : null
+				}
+				if (!notice || !notice.templateId || !notice.content) {
+					return
+				}
+				const shownKey = 'noticeShown_' + notice.templateId
+				if (uni.getStorageSync(shownKey)) {
+					return
+				}
+				this.noticeTemplateId = notice.templateId
+				this.noticeTitle = notice.templateName || '友情提醒'
+				this.noticeContent = notice.content || ''
+				this.noticeVisible = true
+			},
+			// 关闭公告 + 本地记忆（按 templateId 维度，后台换一条新模板后会再次弹出）
+			handleNoticeClose() {
+				if (this.noticeTemplateId) {
+					uni.setStorageSync('noticeShown_' + this.noticeTemplateId, 1)
+				}
+				this.noticeVisible = false
+				// 消费掉全局数据，避免重复弹
+				const app = getApp({ allowDefault: true })
+				if (app && app.globalData) {
+					app.globalData.pendingNotice = null
+				}
 			},
 			onIdentityChange(e) {
 				this.selectedIdentityIndex = e.detail.value

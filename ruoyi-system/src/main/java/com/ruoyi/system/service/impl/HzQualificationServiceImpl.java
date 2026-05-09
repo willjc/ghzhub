@@ -86,9 +86,6 @@ public class HzQualificationServiceImpl extends ServiceImpl<HzQualificationMappe
 
     @Override
     public int deleteQualificationById(Long qualificationId) {
-        HzQualification qualification = new HzQualification();
-        qualification.setQualificationId(qualificationId);
-        qualification.setDelFlag("2");
-        return this.updateById(qualification) ? 1 : 0;
+        return this.removeById(qualificationId) ? 1 : 0;
     }
 }

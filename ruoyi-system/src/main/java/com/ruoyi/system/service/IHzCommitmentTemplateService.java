@@ -37,6 +37,14 @@ public interface IHzCommitmentTemplateService {
     HzCommitmentTemplate selectDefaultTemplateByType(String commitmentType);
 
     /**
+     * 根据模板编码查询最新可用的模板（status=0 且 del_flag=0），用于小程序公告等免登录场景
+     *
+     * @param templateCode 模板编码
+     * @return 承诺书模板
+     */
+    HzCommitmentTemplate selectTemplateByCode(String templateCode);
+
+    /**
      * 新增承诺书模板
      *
      * @param template 承诺书模板

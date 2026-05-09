@@ -122,11 +122,7 @@ public class HzUserMessageServiceImpl extends ServiceImpl<HzUserMessageMapper, H
     @Override
     public int deleteMessageById(Long messageId)
     {
-        HzUserMessage message = new HzUserMessage();
-        message.setMessageId(messageId);
-        message.setDelFlag("2");
-        message.setUpdateTime(DateUtils.getNowDate());
-        return this.updateById(message) ? 1 : 0;
+        return this.removeById(messageId) ? 1 : 0;
     }
 
     @Override

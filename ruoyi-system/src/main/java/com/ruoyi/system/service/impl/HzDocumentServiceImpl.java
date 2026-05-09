@@ -80,9 +80,6 @@ public class HzDocumentServiceImpl extends ServiceImpl<HzDocumentMapper, HzDocum
 
     @Override
     public int deleteDocumentById(Long documentId) {
-        HzDocument document = new HzDocument();
-        document.setDocumentId(documentId);
-        document.setDelFlag("2");
-        return this.updateById(document) ? 1 : 0;
+        return this.removeById(documentId) ? 1 : 0;
     }
 }

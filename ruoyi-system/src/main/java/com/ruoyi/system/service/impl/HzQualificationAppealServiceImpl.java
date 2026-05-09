@@ -140,9 +140,6 @@ public class HzQualificationAppealServiceImpl extends ServiceImpl<HzQualificatio
 
     @Override
     public int deleteAppealById(Long appealId) {
-        HzQualificationAppeal appeal = new HzQualificationAppeal();
-        appeal.setAppealId(appealId);
-        appeal.setDelFlag("2");
-        return this.updateById(appeal) ? 1 : 0;
+        return this.removeById(appealId) ? 1 : 0;
     }
 }

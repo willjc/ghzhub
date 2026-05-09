@@ -68,10 +68,6 @@ public class HzInvoiceServiceImpl extends ServiceImpl<HzInvoiceMapper, HzInvoice
     @Override
     public int deleteInvoiceById(Long invoiceId)
     {
-        HzInvoice invoice = new HzInvoice();
-        invoice.setInvoiceId(invoiceId);
-        invoice.setDelFlag("2");
-        invoice.setUpdateTime(DateUtils.getNowDate());
-        return this.updateById(invoice) ? 1 : 0;
+        return this.removeById(invoiceId) ? 1 : 0;
     }
 }

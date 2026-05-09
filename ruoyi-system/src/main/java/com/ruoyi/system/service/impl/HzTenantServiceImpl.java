@@ -80,9 +80,6 @@ public class HzTenantServiceImpl extends ServiceImpl<HzTenantMapper, HzTenant> i
 
     @Override
     public int deleteTenantById(Long tenantId) {
-        HzTenant tenant = new HzTenant();
-        tenant.setTenantId(tenantId);
-        tenant.setDelFlag("2");
-        return this.updateById(tenant) ? 1 : 0;
+        return this.removeById(tenantId) ? 1 : 0;
     }
 }

@@ -52,6 +52,20 @@ public class HzCommitmentTemplateServiceImpl extends ServiceImpl<HzCommitmentTem
     }
 
     @Override
+    public HzCommitmentTemplate selectTemplateByCode(String templateCode) {
+        if (StringUtils.isBlank(templateCode)) {
+            return null;
+        }
+        LambdaQueryWrapper<HzCommitmentTemplate> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(HzCommitmentTemplate::getTemplateCode, templateCode)
+               .eq(HzCommitmentTemplate::getStatus, "0")
+               .eq(HzCommitmentTemplate::getDelFlag, "0")
+               .orderByDesc(HzCommitmentTemplate::getCreateTime)
+               .last("LIMIT 1");
+        return this.getOne(wrapper);
+    }
+
+    @Override
     public int insertTemplate(HzCommitmentTemplate template) {
         template.setDelFlag("0");
         if (StringUtils.isBlank(template.getStatus())) {
@@ -73,10 +87,7 @@ public class HzCommitmentTemplateServiceImpl extends ServiceImpl<HzCommitmentTem
 
     @Override
     public int deleteTemplateById(Long templateId) {
-        HzCommitmentTemplate template = new HzCommitmentTemplate();
-        template.setTemplateId(templateId);
-        template.setDelFlag("2");
-        return this.updateById(template) ? 1 : 0;
+        return this.removeById(templateId) ? 1 : 0;
     }
 
     @Override

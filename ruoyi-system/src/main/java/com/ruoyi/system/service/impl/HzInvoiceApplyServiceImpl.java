@@ -85,11 +85,7 @@ public class HzInvoiceApplyServiceImpl extends ServiceImpl<HzInvoiceApplyMapper,
     @Override
     public int deleteInvoiceApplyById(Long applyId)
     {
-        HzInvoiceApply invoiceApply = new HzInvoiceApply();
-        invoiceApply.setApplyId(applyId);
-        invoiceApply.setDelFlag("2");
-        invoiceApply.setUpdateTime(DateUtils.getNowDate());
-        return this.updateById(invoiceApply) ? 1 : 0;
+        return this.removeById(applyId) ? 1 : 0;
     }
 
     @Override
