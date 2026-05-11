@@ -45,12 +45,23 @@ public class QualificationCheckService {
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM");
 
-    /** 港区行政区划代码白名单（可通过配置覆盖），默认郑州航空港经济综合实验区 410126 */
-    @Value("${gov.proxy.hangzone-codes:410126}")
+    /**
+     * 港区行政区划代码白名单（可通过配置覆盖）。
+     * 默认 410173,410126：410173 是政务接口当前实际返回值（航空港经济综合实验区），
+     * 410126 为老区划代码兼容保留。支持前缀匹配。
+     */
+    @Value("${gov.proxy.hangzone-codes:410173,410126}")
     private String hangzoneCodesRaw;
 
     /** 申请人在港区单位连续缴纳社保所需月份数 */
     private static final int REQUIRED_SOCIAL_MONTHS = 3;
+
+    /**
+     * 社保基准月偏移：以 T-SOCIAL_MONTH_OFFSET 为最新需校验月。
+     * 政务社保接口每月底 3~4 天内分批入库 T-1 月数据，T-1 全月大部分时间不可靠，
+     * 因此从 T-2 起步往前取 3 连月（T-2、T-3、T-4），规避更新延迟。
+     */
+    private static final int SOCIAL_MONTH_OFFSET = 2;
 
     /** 政务查询专用线程池（守护线程） */
     private static final ExecutorService EXECUTOR = new ThreadPoolExecutor(
@@ -210,10 +221,12 @@ public class QualificationCheckService {
             return new CheckItem("social", "社保缴纳", "failed", "近 3 个月社保缴纳不满足");
         }
 
-        // 需要最近 3 个完整月连续：以当前月-1 为基准（当月社保往往滞后），检查 T-1、T-2、T-3
+        // 需要最近 3 个完整月连续：以 T-SOCIAL_MONTH_OFFSET（默认 T-2）为基准往前取 3 连月。
+        // 例如今日 2026-05-xx → needMonths = {202603, 202602, 202601}
+        // 规避政务社保 T-1 月底才入库的延迟期。
         LocalDate now = LocalDate.now();
         Set<String> needMonths = new HashSet<>();
-        for (int i = 1; i <= REQUIRED_SOCIAL_MONTHS; i++) {
+        for (int i = SOCIAL_MONTH_OFFSET; i < SOCIAL_MONTH_OFFSET + REQUIRED_SOCIAL_MONTHS; i++) {
             needMonths.add(now.minusMonths(i).format(YM));
         }
 
@@ -237,6 +250,9 @@ public class QualificationCheckService {
 
         boolean continuous = paidMonths.containsAll(needMonths);
         boolean inHangzone = needMonths.stream().anyMatch(hangzoneMonths::contains);
+
+        log.info("[checkSocial] needMonths={}, paidMonths={}, hangzoneMonths={}, hangzoneCodes={}, continuous={}, inHangzone={}",
+                needMonths, paidMonths, hangzoneMonths, hangzoneCodes, continuous, inHangzone);
 
         if (!continuous) {
             return new CheckItem("social", "社保缴纳", "failed", "近 3 个月社保缴纳不连续");

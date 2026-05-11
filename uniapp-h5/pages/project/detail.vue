@@ -217,12 +217,20 @@ export default {
 		// 一键拨号（服务电话 / 物业电话）
 		callPhone(phoneNumber) {
 			if (!phoneNumber) return
+			const num = String(phoneNumber).replace(/\s+/g, '')
+			// #ifdef H5
+			// H5 端 uni.makePhoneCall 只会弹"仅为模拟"，改用 tel: 协议唤起系统拨号
+			window.location.href = `tel:${num}`
+			return
+			// #endif
+			// #ifndef H5
 			uni.makePhoneCall({
-				phoneNumber: String(phoneNumber),
+				phoneNumber: num,
 				fail: (err) => {
 					console.error('拨号失败:', err)
 				}
 			})
+			// #endif
 		},
 		selectRoom() {
 			// 资格前置守卫：通过后才跳承诺书签署页；未校验→进度页；未通过→失败页
@@ -464,24 +472,25 @@ export default {
 	/* 一键拨号区 */
 	.call-row {
 		display: flex;
-		gap: 20rpx;
-		padding: 0 20rpx 20rpx;
+		gap: 16rpx;
+		padding: 0 20rpx 16rpx;
 	}
 	.call-btn {
 		flex: 1;
+		min-width: 0;
 		display: flex;
 		align-items: center;
-		padding: 20rpx 24rpx;
-		border-radius: 16rpx;
+		padding: 12rpx 16rpx;
+		border-radius: 12rpx;
 		background: linear-gradient(270deg, #4fc7ff 0%, #0f73ff 100%);
 	}
 	.call-btn.property {
 		background: linear-gradient(270deg, #ffb347 0%, #ff7a45 100%);
 	}
 	.call-icon {
-		width: 48rpx;
-		height: 48rpx;
-		margin-right: 16rpx;
+		width: 32rpx;
+		height: 32rpx;
+		margin-right: 10rpx;
 		flex-shrink: 0;
 	}
 	.call-text {
@@ -492,15 +501,21 @@ export default {
 	}
 	.call-title {
 		color: #ffffff;
-		font-size: 24rpx;
-		line-height: 1.4;
+		font-size: 20rpx;
+		line-height: 1.2;
 		opacity: 0.9;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 	.call-number {
 		color: #ffffff;
-		font-size: 30rpx;
+		font-size: 24rpx;
 		font-weight: 600;
-		line-height: 1.3;
+		line-height: 1.2;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 </style>
 
