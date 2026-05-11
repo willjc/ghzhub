@@ -279,6 +279,31 @@
               />
             </el-form-item>
           </el-col>
+          <el-col :span="12" v-if="form.activityId">
+            <el-form-item label="当前报名人数" prop="currentParticipants">
+              <el-input-number
+                v-model="form.currentParticipants"
+                :min="0"
+                :max="9999"
+                controls-position="right"
+                placeholder="可手动调整报名人数"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12" v-else>
+            <el-form-item label="状态" prop="status">
+              <el-radio-group v-model="form.status">
+                <el-radio
+                  v-for="dict in dict.type.sys_normal_disable"
+                  :key="dict.value"
+                  :label="dict.value"
+                >{{dict.label}}</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row v-if="form.activityId">
           <el-col :span="12">
             <el-form-item label="状态" prop="status">
               <el-radio-group v-model="form.status">

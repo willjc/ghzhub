@@ -312,7 +312,7 @@
 			closeModal() {
 				// 不允许关闭弹窗（必须填写信息）
 			},
-			// 尝试弹出启动公告（已看过 / 内容为空 / 数据还未就绪均静默跳过）
+			// 尝试弹出启动公告（内容为空 / 数据未就绪则静默跳过；每次启动均弹一次）
 			tryShowStartupNotice(data) {
 				let notice = data
 				if (!notice) {
@@ -322,22 +322,15 @@
 				if (!notice || !notice.templateId || !notice.content) {
 					return
 				}
-				const shownKey = 'noticeShown_' + notice.templateId
-				if (uni.getStorageSync(shownKey)) {
-					return
-				}
 				this.noticeTemplateId = notice.templateId
 				this.noticeTitle = notice.templateName || '友情提醒'
 				this.noticeContent = notice.content || ''
 				this.noticeVisible = true
 			},
-			// 关闭公告 + 本地记忆（按 templateId 维度，后台换一条新模板后会再次弹出）
+			// 关闭公告（不再本地记忆，每次启动都会重新弹）
 			handleNoticeClose() {
-				if (this.noticeTemplateId) {
-					uni.setStorageSync('noticeShown_' + this.noticeTemplateId, 1)
-				}
 				this.noticeVisible = false
-				// 消费掉全局数据，避免重复弹
+				// 消费掉全局数据，避免本次会话内重复弹
 				const app = getApp({ allowDefault: true })
 				if (app && app.globalData) {
 					app.globalData.pendingNotice = null

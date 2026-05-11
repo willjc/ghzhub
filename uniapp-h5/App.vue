@@ -24,11 +24,7 @@
 					if (!data || data.empty || !data.templateId || !data.content) {
 						return
 					}
-					// 本轮是否已看过（按 templateId 记忆；后台换一条新模板 → 用户重新弹一次）
-					const shownKey = 'noticeShown_' + data.templateId
-					if (uni.getStorageSync(shownKey)) {
-						return
-					}
+					// 每次启动小程序都弹一次（不再本地记忆）
 					// 挂到全局 + 广播事件（双通道保证首页必然能拿到）
 					const app = getApp({ allowDefault: true })
 					if (app) {
