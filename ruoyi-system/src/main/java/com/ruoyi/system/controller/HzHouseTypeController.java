@@ -193,4 +193,16 @@ public class HzHouseTypeController extends BaseController
     {
         return toAjax(hzHouseTypeImageService.deleteImageById(imageId));
     }
+
+    /**
+     * 将户型的 6 类图片与 VR 一键下发到该户型所有房源（仅填空，不覆盖房源已有数据）。
+     * 返回: total 该户型下房源总数, imageFilled 补了图片的房源数, vrFilled 补了VR的房源数
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:houseType:edit')")
+    @Log(title = "户型图片/VR下发", businessType = BusinessType.UPDATE)
+    @PostMapping("/{houseTypeId}/pushToHouses")
+    public AjaxResult pushToHouses(@PathVariable("houseTypeId") Long houseTypeId)
+    {
+        return success(hzHouseTypeService.pushImagesAndVrToHouses(houseTypeId));
+    }
 }

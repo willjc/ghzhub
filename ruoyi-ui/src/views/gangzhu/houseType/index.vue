@@ -76,7 +76,7 @@
           <el-tag v-else type="danger" size="small">停用</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300">
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -92,6 +92,13 @@
             @click="handleUpdate(scope.row)"
             v-hasPermi="['gangzhu:houseType:edit']"
           >修改</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-upload2"
+            @click="handlePushToHouses(scope.row)"
+            v-hasPermi="['gangzhu:houseType:edit']"
+          >下发到房源</el-button>
           <el-button
             size="mini"
             type="text"
@@ -594,6 +601,29 @@ export default {
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("删除成功");
+      }).catch(() => {});
+    },
+    /** 一键下发户型图片与 VR 到该户型所有房源（仅填空，不覆盖） */
+    handlePushToHouses(row) {
+      const typeName = row.houseTypeName || '';
+      this.$modal.confirm('将把【' + typeName + '】户型的 6 类图片与 VR 下发到该户型下所有房源。<br/>仅对「房源该分类无图片 / 房源无 VR」的情况进行补齐，不会覆盖房源已有数据。是否继续？', '下发确认', {
+        dangerouslyUseHTMLString: true,
+        confirmButtonText: '确定下发',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        const loading = this.$loading({ lock: true, text: '下发中...', spinner: 'el-icon-loading' });
+        return request({
+          url: '/gangzhu/houseType/' + row.houseTypeId + '/pushToHouses',
+          method: 'post'
+        }).then(res => {
+          loading.close();
+          const d = res.data || {};
+          this.$modal.msgSuccess('下发完成：共 ' + (d.total || 0) + ' 间房源，补图 ' + (d.imageFilled || 0) + ' 间，补 VR ' + (d.vrFilled || 0) + ' 间');
+        }).catch(err => {
+          loading.close();
+          throw err;
+        });
       }).catch(() => {});
     },
     /** 按类型筛选查看图片 */

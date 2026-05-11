@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.ruoyi.system.domain.HzHouseType;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 户型Service接口
@@ -71,4 +72,14 @@ public interface IHzHouseTypeService extends IService<HzHouseType>
      * @return 结果
      */
     int deleteHouseTypeByIds(Long[] houseTypeIds);
+
+    /**
+     * 将户型的 6 类图片与 VR 下发到该户型所有房源。
+     * 仅填空：房源对应类别无图片则补齐；房源无 VR 才补 VR。
+     * 不覆盖房源已有数据。
+     *
+     * @param houseTypeId 户型ID
+     * @return 统计结果: total 该户型下房源总数, imageFilled 补了图片的房源数, vrFilled 补了VR的房源数
+     */
+    Map<String, Integer> pushImagesAndVrToHouses(Long houseTypeId);
 }
