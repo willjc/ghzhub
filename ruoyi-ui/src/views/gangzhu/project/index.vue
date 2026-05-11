@@ -158,7 +158,6 @@
               <el-input v-model="form.projectName" placeholder="请输入项目名称" />
             </el-form-item>
           </el-col>
-          </el-col>
         </el-row>
         <el-row>
           <el-col :span="12">
@@ -200,23 +199,6 @@
             </template>
           </el-alert>
         </el-form-item>
-        <el-row>
-          <el-col :span="8">
-            <el-form-item label="总楼栋数" prop="totalBuildings">
-              <el-input-number v-model="form.totalBuildings" controls-position="right" :min="0" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="总房源数" prop="totalHouses">
-              <el-input-number v-model="form.totalHouses" controls-position="right" :min="0" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="可用房源数" prop="availableHouses">
-              <el-input-number v-model="form.availableHouses" controls-position="right" :min="0" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
         <el-row>
           <el-col :span="12">
             <el-form-item label="负责人姓名" prop="managerName">
@@ -778,9 +760,6 @@ export default {
         address: null,
         longitude: null,
         latitude: null,
-        totalBuildings: 0,
-        totalHouses: 0,
-        availableHouses: 0,
         projectIntro: null,
         coverImage: null,
         price: null,
