@@ -1026,6 +1026,10 @@ export default {
           this.form.houseTypeName = selectedHouseType.houseTypeName;
           this.form.houseTypeDetail = selectedHouseType.remark;
           this.form.area = selectedHouseType.typicalArea;
+          // 继承户型级 VR：仅在房源端 VR 为空时自动填充，避免覆盖用户已配置的 VR
+          if (selectedHouseType.vrUrl && !this.form.vrList) {
+            this.form.vrList = selectedHouseType.vrUrl;
+          }
         }
         // 拉取房型图片：仅在图片字段全部为空时自动预填
         const hasAnyImage = this.form.mainImageList || this.form.layoutImageList ||

@@ -17,6 +17,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="balconyCount"     column="balcony_count"    />
         <result property="typicalArea"      column="typical_area"     />
         <result property="layoutImage"      column="layout_image"     />
+        <result property="vrUrl"            column="vr_url"           />
         <result property="status"           column="status"           />
         <result property="sortOrder"        column="sort_order"       />
         <result property="createBy"         column="create_by"        />
@@ -32,7 +33,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             ht.house_type_id, ht.project_id, p.project_name, ht.house_type_name, ht.house_type_code,
             ht.bedroom_count, ht.livingroom_count, ht.bathroom_count,
             ht.kitchen_count, ht.balcony_count, ht.typical_area,
-            ht.layout_image, ht.status, ht.sort_order,
+            ht.layout_image, ht.vr_url, ht.status, ht.sort_order,
             ht.create_by, ht.create_time, ht.update_by, ht.update_time, ht.remark, ht.del_flag
         FROM hz_house_type ht
         LEFT JOIN hz_project p ON ht.project_id = p.project_id

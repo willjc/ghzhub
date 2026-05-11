@@ -59,6 +59,9 @@ public class HzHouseType extends BaseEntity
     /** 户型图URL */
     private String layoutImage;
 
+    /** 户型VR链接(新增房源选中该户型时自动继承) */
+    private String vrUrl;
+
     /** 状态(0:正常 1:停用) */
     private String status;
 
@@ -190,6 +193,16 @@ public class HzHouseType extends BaseEntity
         return layoutImage;
     }
 
+    public void setVrUrl(String vrUrl)
+    {
+        this.vrUrl = vrUrl;
+    }
+
+    public String getVrUrl()
+    {
+        return vrUrl;
+    }
+
     public void setStatus(String status)
     {
         this.status = status;
@@ -234,6 +247,7 @@ public class HzHouseType extends BaseEntity
                 ", balconyCount=" + balconyCount +
                 ", typicalArea=" + typicalArea +
                 ", layoutImage='" + layoutImage + '\'' +
+                ", vrUrl='" + vrUrl + '\'' +
                 ", status='" + status + '\'' +
                 ", sortOrder=" + sortOrder +
                 ", delFlag='" + delFlag + '\'' +

@@ -198,6 +198,10 @@
           <image-upload v-model="form.outdoorImageList" :limit="9" :fileSize="5" :fileType="['png', 'jpg', 'jpeg']" />
           <div class="form-tip">阳台、外景等室外照片</div>
         </el-form-item>
+        <el-form-item label="VR看房">
+          <image-upload v-model="form.vrUrl" :limit="1" :fileSize="50" />
+          <div class="form-tip">户型级 VR，房源选中该户型时自动继承（仅支持 1 张/链接）</div>
+        </el-form-item>
 
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
@@ -424,6 +428,7 @@ export default {
         bathroomImageList: "",
         indoorImageList: "",
         outdoorImageList: "",
+        vrUrl: "",
         status: "0",
         sortOrder: 0,
         remark: null
