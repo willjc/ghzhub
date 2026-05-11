@@ -80,6 +80,10 @@ public class HzUser extends BaseEntity {
     @Excel(name = "单位联系方式")
     private String unitContact;
 
+    /** 单位性质（1=机关事业单位 2=国有企业 3=私营企业 4=其他） */
+    @Excel(name = "单位性质", dictType = "hz_unit_nature")
+    private String unitNature;
+
     /** 配偶姓名 */
     @Excel(name = "配偶姓名")
     private String spouseName;
@@ -243,6 +247,14 @@ public class HzUser extends BaseEntity {
 
     public void setUnitContact(String unitContact) {
         this.unitContact = unitContact;
+    }
+
+    public String getUnitNature() {
+        return unitNature;
+    }
+
+    public void setUnitNature(String unitNature) {
+        this.unitNature = unitNature;
     }
 
     public String getSpouseName() {

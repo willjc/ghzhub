@@ -59,6 +59,19 @@
 					<view class="form-item">
 						<view class="form-label">
 							<text class="required-mark">*</text>
+							<text class="label-text">单位性质</text>
+						</view>
+						<view class="form-input-wrapper">
+							<picker class="form-input picker-input" :range="unitNatureOptions" range-key="label" @change="onUnitNatureChange">
+								<view class="picker-input form-input">
+									<text :class="!formData.unitNature ? 'placeholder' : ''">{{ getUnitNatureLabel() || '请选择单位性质' }}</text>
+								</view>
+							</picker>
+						</view>
+					</view>
+					<view class="form-item">
+						<view class="form-label">
+							<text class="required-mark">*</text>
 							<text class="label-text">单位联系电话</text>
 						</view>
 						<input class="form-input" placeholder="请输入单位联系电话" v-model="formData.workPhone" />
@@ -251,12 +264,19 @@
 					idCard: '',
 					phone: '',
 					workUnit: '',
+					unitNature: '',
 					workPhone: '',
 					spouse: ''
 				},
 				identityTypes: [
 					{ label: '在职人员', value: '1' },
 					{ label: '应届毕业生', value: '2' }
+				],
+				unitNatureOptions: [
+					{ label: '机关事业单位', value: '1' },
+					{ label: '国有企业', value: '2' },
+					{ label: '私营企业', value: '3' },
+					{ label: '其他', value: '4' }
 				],
 				selectedIdentityIndex: -1
 			}
@@ -345,9 +365,17 @@
 				const type = this.identityTypes.find(item => item.value === this.formData.identity)
 				return type ? type.label : ''
 			},
+			onUnitNatureChange(e) {
+				this.formData.unitNature = this.unitNatureOptions[e.detail.value].value
+			},
+			getUnitNatureLabel() {
+				if (!this.formData.unitNature) return ''
+				const type = this.unitNatureOptions.find(item => item.value === this.formData.unitNature)
+				return type ? type.label : ''
+			},
 			async handleConfirm() {
 				if (!this.formData.identity || !this.formData.name || !this.formData.idCard ||
-					!this.formData.phone || !this.formData.workUnit || !this.formData.workPhone) {
+					!this.formData.phone || !this.formData.workUnit || !this.formData.unitNature || !this.formData.workPhone) {
 					uni.showToast({ title: '请填写必填项', icon: 'none' })
 					return
 				}
@@ -369,6 +397,7 @@
 						idCard: this.formData.idCard,
 						workUnit: this.formData.workUnit,
 						unitContact: this.formData.workPhone,
+						unitNature: this.formData.unitNature,
 						spouseName: this.formData.spouse
 					})
 					uni.hideLoading()
@@ -379,6 +408,7 @@
 					userInfo.contactPhone = this.formData.phone
 					userInfo.workUnit = this.formData.workUnit
 					userInfo.unitContact = this.formData.workPhone
+					userInfo.unitNature = this.formData.unitNature
 					userInfo.spouseName = this.formData.spouse
 					uni.setStorageSync('userInfo', userInfo)
 					uni.showToast({ title: '提交成功', icon: 'success' })

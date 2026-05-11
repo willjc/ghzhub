@@ -21,6 +21,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="identityType"     column="identity_type"    />
         <result property="workUnit"         column="work_unit"        />
         <result property="unitContact"      column="unit_contact"     />
+        <result property="unitNature"       column="unit_nature"      />
         <result property="spouseName"       column="spouse_name"      />
         <result property="status"           column="status"           />
         <result property="lastLoginTime"    column="last_login_time"  />
@@ -38,7 +39,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectHzUserVo">
         SELECT user_id, phone, contact_phone, source_type, wechat_openid, wechat_unionid, zhaohao_user_id,
                nickname, avatar, real_name, gender, id_card, education, identity_type,
-               work_unit, unit_contact, spouse_name, status,
+               work_unit, unit_contact, unit_nature, spouse_name, status,
                last_login_time, last_login_ip, del_flag, create_by, create_time, update_by, update_time, remark,
                esign_psn_id, auth_status
         FROM hz_user

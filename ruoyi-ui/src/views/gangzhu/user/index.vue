@@ -178,6 +178,10 @@
         <el-descriptions-item label="单位联系方式">
           {{ userData.unitContact || '-' }}
         </el-descriptions-item>
+        <el-descriptions-item label="单位性质">
+          <dict-tag :options="dict.type.hz_unit_nature" :value="userData.unitNature" v-if="userData.unitNature"/>
+          <span v-else style="color: #909399">未填写</span>
+        </el-descriptions-item>
         <el-descriptions-item label="配偶姓名">
           {{ userData.spouseName || '-' }}
         </el-descriptions-item>
@@ -279,6 +283,16 @@
         <el-form-item label="单位联系方式">
           <el-input v-model="form.unitContact" placeholder="请输入单位联系方式" />
         </el-form-item>
+        <el-form-item label="单位性质">
+          <el-select v-model="form.unitNature" placeholder="请选择单位性质" clearable style="width: 100%">
+            <el-option
+              v-for="dict in dict.type.hz_unit_nature"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="配偶姓名">
           <el-input v-model="form.spouseName" placeholder="请输入配偶姓名" />
         </el-form-item>
@@ -296,7 +310,7 @@ import { listUser, getUser, updateUser, changeUserStatus, delUser } from "@/api/
 
 export default {
   name: "HzUser",
-  dicts: ['sys_user_sex', 'hz_user_source_type', 'hz_education_type', 'hz_identity_type'],
+  dicts: ['sys_user_sex', 'hz_user_source_type', 'hz_education_type', 'hz_identity_type', 'hz_unit_nature'],
   data() {
     return {
       loading: true,
@@ -385,6 +399,7 @@ export default {
         identityType: null,
         workUnit: null,
         unitContact: null,
+        unitNature: null,
         spouseName: null
       };
       this.resetForm("form");

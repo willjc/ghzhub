@@ -265,6 +265,7 @@ public class HzAuthController extends BaseController {
             if (params.containsKey("contactPhone"))   existUser.setContactPhone((String) params.get("contactPhone"));
             if (params.containsKey("workUnit"))       existUser.setWorkUnit((String) params.get("workUnit"));
             if (params.containsKey("unitContact"))    existUser.setUnitContact((String) params.get("unitContact"));
+            if (params.containsKey("unitNature"))     existUser.setUnitNature((String) params.get("unitNature"));
             if (params.containsKey("spouseName"))     existUser.setSpouseName((String) params.get("spouseName"));
             existUser.setIsInfoCompleted("1");
 

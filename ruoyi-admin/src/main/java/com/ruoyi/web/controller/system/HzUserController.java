@@ -80,6 +80,19 @@ public class HzUserController extends BaseController {
     }
 
     /**
+     * 修改用户信息（管理端编辑）
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:user:edit')")
+    @Log(title = "用户信息", businessType = BusinessType.UPDATE)
+    @PutMapping
+    public AjaxResult edit(@RequestBody HzUser hzUser) {
+        if (hzUser == null || hzUser.getUserId() == null) {
+            return error("用户ID不能为空");
+        }
+        return toAjax(hzUserService.updateById(hzUser) ? 1 : 0);
+    }
+
+    /**
      * 删除用户
      */
     @PreAuthorize("@ss.hasPermi('gangzhu:user:remove')")

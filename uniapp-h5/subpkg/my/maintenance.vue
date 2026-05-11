@@ -59,11 +59,22 @@
 					<view class="form-value-wrap">
 						<input
 							class="form-input"
-							type="number"
+							type="text"
 							v-model="formData.companyPhone"
 							placeholder="请输入单位联系电话"
 							placeholder-class="placeholder"
 						/>
+					</view>
+				</view>
+
+				<view class="form-row">
+					<text class="form-label"><text class="required">*</text>单位性质</text>
+					<view class="form-value-wrap">
+						<picker :range="unitNatureOptions" range-key="label" @change="onUnitNatureChange">
+							<view class="form-input">
+								<text :class="!formData.unitNature ? 'placeholder' : ''">{{ unitNatureLabel || '请选择单位性质' }}</text>
+							</view>
+						</picker>
 					</view>
 				</view>
 
@@ -111,9 +122,16 @@
 					phone: '',
 					company: '',
 					companyPhone: '',
+					unitNature: '',
 					education: '',
 					spouse: ''
-				}
+				},
+				unitNatureOptions: [
+					{ label: '机关事业单位', value: '1' },
+					{ label: '国有企业', value: '2' },
+					{ label: '私营企业', value: '3' },
+					{ label: '其他', value: '4' }
+				]
 			}
 		},
 		computed: {
@@ -122,6 +140,11 @@
 			},
 			maskedIdCard() {
 				return maskIdCard(this.formData.idCard)
+			},
+			unitNatureLabel() {
+				if (!this.formData.unitNature) return ''
+				const opt = this.unitNatureOptions.find(i => i.value === this.formData.unitNature)
+				return opt ? opt.label : ''
 			}
 		},
 		onLoad() {
@@ -131,6 +154,10 @@
 			})
 		},
 		methods: {
+			// 单位性质选择
+			onUnitNatureChange(e) {
+				this.formData.unitNature = this.unitNatureOptions[e.detail.value].value
+			},
 			// 加载用户信息
 			loadUserInfo() {
 				getUserInfo(this.userId).then(res => {
@@ -142,6 +169,7 @@
 							phone: data.contactPhone || '',
 							company: data.workUnit || '',
 							companyPhone: data.unitContact || '',
+							unitNature: data.unitNature || '',
 							education: data.education || '',
 							spouse: data.spouseName || ''
 						}
@@ -170,6 +198,10 @@
 					uni.showToast({ title: '请输入单位联系电话', icon: 'none' })
 					return
 				}
+				if (!this.formData.unitNature) {
+					uni.showToast({ title: '请选择单位性质', icon: 'none' })
+					return
+				}
 				// 单位联系方式不能与当前登录账号的手机号一致
 				const loginUserInfo = uni.getStorageSync('userInfo') || {}
 				const loginPhone = loginUserInfo.phone || ''
@@ -188,6 +220,7 @@
 					contactPhone: this.formData.phone,
 					workUnit: this.formData.company,
 					unitContact: this.formData.companyPhone,
+					unitNature: this.formData.unitNature,
 					spouseName: this.formData.spouse
 				}
 
