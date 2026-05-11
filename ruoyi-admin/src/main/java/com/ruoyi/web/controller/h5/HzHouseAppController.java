@@ -217,12 +217,13 @@ public class HzHouseAppController extends BaseController {
                 .eq("status", "0")  // 正常状态
                 .eq("del_flag", "0");  // 未删除
 
-        // 房源可见性：普通用户只看空置(house_status='0')；批量配租用户额外看到分配给自己的房源
+        // 房源可见性：
+        // - 普通用户：只看空置房源(house_status='0')
+        // - 批量配租用户：只看分配给自己的房源（绕过资格校验，不看其他空置房源）
         if (finalAssignedHouseIds.isEmpty()) {
             wrapper.eq("house_status", "0");
         } else {
-            wrapper.and(w -> w.eq("house_status", "0")
-                    .or().in("house_id", finalAssignedHouseIds));
+            wrapper.in("house_id", finalAssignedHouseIds);
         }
 
         // 筛选条件
