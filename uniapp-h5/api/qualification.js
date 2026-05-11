@@ -2,8 +2,9 @@
  * 资格校验相关 API + 前置守卫工具
  *
  * 后端接口：
- * - GET  /h5/qualification/status   查询最近一次校验结果（是否已校验 / 是否通过 / 各项明细）
- * - POST /h5/qualification/check    同步触发一次完整校验并返回结果
+ * - GET  /h5/qualification/status           查询最近一次校验结果（是否已校验 / 是否通过 / 各项明细）
+ * - POST /h5/qualification/check            同步触发一次完整校验并返回结果
+ * - GET  /h5/qualification/is-batch-tenant  查询当前用户是否为批量配租用户（免资格校验）
  */
 import { get, post } from '@/utils/request'
 
@@ -25,6 +26,16 @@ export function runQualificationCheck(userId) {
 }
 
 /**
+ * 查询当前用户是否为"批量配租"用户
+ * 命中即可豁免资格校验（由管理端批次审批保证，无需再走政务数据核验）
+ * @param {Number} userId 当前登录用户 ID
+ * @returns {Promise<{code, data: { isBatchTenant: boolean }}>}
+ */
+export function getIsBatchTenant(userId) {
+  return get('/h5/qualification/is-batch-tenant', { userId })
+}
+
+/**
  * 从本地存储读取当前登录用户 ID
  * - 复用现有登录态 key: 'userInfo'
  */
@@ -35,6 +46,7 @@ export function getCurrentUserId() {
 
 /**
  * 资格前置守卫：
+ * 0. 批量配租用户 → 直接放行（无需走资格校验）
  * 1. 未登录 → 跳登录
  * 2. 已校验通过 → onPass 回调（放行）
  * 3. 已校验未通过 → 跳 fail 页
@@ -56,20 +68,30 @@ export function ensureQualified(onPass, options = {}) {
   }
 
   uni.showLoading({ title: '校验中...', mask: true })
-  getQualificationStatus(userId)
+  // 先判断批量配租豁免，命中则直接放行（不再调资格校验）
+  getIsBatchTenant(userId)
     .then((res) => {
-      uni.hideLoading()
-      const data = (res && res.data) || {}
-      if (data.checked && data.passed) {
+      const isBatch = !!(res && res.data && res.data.isBatchTenant)
+      if (isBatch) {
+        uni.hideLoading()
         if (typeof onPass === 'function') onPass()
         return
       }
-      if (data.checked && !data.passed) {
-        goFailPage(data)
-        return
-      }
-      // 未校验过 → 跳进度页
-      goCheckPage(options)
+      // 未命中批量配租 → 走原资格校验流程
+      return getQualificationStatus(userId).then((res2) => {
+        uni.hideLoading()
+        const data = (res2 && res2.data) || {}
+        if (data.checked && data.passed) {
+          if (typeof onPass === 'function') onPass()
+          return
+        }
+        if (data.checked && !data.passed) {
+          goFailPage(data)
+          return
+        }
+        // 未校验过 → 跳进度页
+        goCheckPage(options)
+      })
     })
     .catch(() => {
       uni.hideLoading()
@@ -101,6 +123,7 @@ function goFailPage(data) {
 
 /**
  * 轻量兜底守卫（用于下游页面的 onLoad）
+ * - 批量配租用户：直接放行
  * - 未登录 / 读不到状态：不做任何拦截（让原页面自己处理登录态）
  * - 已校验且未通过：redirect 到 fail 页
  * - 其余情况：放行
@@ -108,16 +131,21 @@ function goFailPage(data) {
 export function guardOrRedirect() {
   const userId = getCurrentUserId()
   if (!userId) return
-  getQualificationStatus(userId)
+  // 先判断批量配租豁免
+  getIsBatchTenant(userId)
     .then((res) => {
-      const data = (res && res.data) || {}
-      if (data.checked && !data.passed) {
-        const reasons = encodeURIComponent(JSON.stringify(data.failReasons || []))
-        const items = encodeURIComponent(JSON.stringify(data.items || []))
-        uni.redirectTo({
-          url: `/subpkg/qualification/fail?reasons=${reasons}&items=${items}`
-        })
-      }
+      const isBatch = !!(res && res.data && res.data.isBatchTenant)
+      if (isBatch) return
+      return getQualificationStatus(userId).then((res2) => {
+        const data = (res2 && res2.data) || {}
+        if (data.checked && !data.passed) {
+          const reasons = encodeURIComponent(JSON.stringify(data.failReasons || []))
+          const items = encodeURIComponent(JSON.stringify(data.items || []))
+          uni.redirectTo({
+            url: `/subpkg/qualification/fail?reasons=${reasons}&items=${items}`
+          })
+        }
+      })
     })
     .catch(() => {})
 }
@@ -125,6 +153,7 @@ export function guardOrRedirect() {
 export default {
   getQualificationStatus,
   runQualificationCheck,
+  getIsBatchTenant,
   getCurrentUserId,
   ensureQualified,
   guardOrRedirect

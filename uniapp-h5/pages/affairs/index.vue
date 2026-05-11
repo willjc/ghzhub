@@ -23,7 +23,7 @@
 			</view>
 
 			<!-- 保租房 -->
-			<view class="section">
+			<view class="section" v-if="featureFlags.guaranteed">
 				<view class="section-header">
 					<image class="section-indicator" src="/static/banshi/保租房@2x.png"></image>
 					<text class="section-title">保租房</text>
@@ -44,7 +44,7 @@
 			</view>
 
 			<!-- 市场租赁 -->
-			<view class="section">
+			<view class="section" v-if="featureFlags.market">
 				<view class="section-header">
 					<image class="section-indicator" src="/static/banshi/市场租赁@2x.png"></image>
 					<text class="section-title">市场租赁</text>
@@ -68,9 +68,12 @@
 </template>
 
 <script>
+	import featureFlags from '@/config/feature-flags'
+
 	export default {
 		data() {
 			return {
+				featureFlags,
 				functionList: [
 					{ key: 'appeal', name: '资格申诉' },
 					{ key: 'select', name: '选房' },

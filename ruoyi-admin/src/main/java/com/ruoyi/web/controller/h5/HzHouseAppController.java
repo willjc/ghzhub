@@ -181,12 +181,49 @@ public class HzHouseAppController extends BaseController {
             @RequestParam(required = false) Integer floorMax,
             @RequestParam(required = false) String orientation  // 朝向
     ) {
+        // 先获取当前登录用户"分配给我"的房源ID集合（批量配租房源），用于后续 SQL 过滤 + available 标记
+        Set<Long> assignedHouseIds = new HashSet<>();
+        Long userId = getHzUserIdFromToken();
+        if (userId != null) {
+            HzUser user = userMapper.selectById(userId);
+            if (user != null && StringUtils.isNotEmpty(user.getIdCard())) {
+                // 根据身份证查询批次租户
+                QueryWrapper<HzBatchTenant> tenantWrapper = new QueryWrapper<>();
+                tenantWrapper.eq("id_card", user.getIdCard())
+                        .eq("del_flag", "0");
+                List<HzBatchTenant> batchTenants = batchTenantMapper.selectList(tenantWrapper);
+
+                if (!batchTenants.isEmpty()) {
+                    List<Long> tenantIds = batchTenants.stream()
+                            .map(HzBatchTenant::getId)
+                            .collect(Collectors.toList());
+
+                    QueryWrapper<HzBatchHouse> batchHouseWrapper = new QueryWrapper<>();
+                    batchHouseWrapper.in("tenant_id", tenantIds);
+                    List<HzBatchHouse> batchHouses = batchHouseMapper.selectList(batchHouseWrapper);
+
+                    assignedHouseIds = batchHouses.stream()
+                            .map(HzBatchHouse::getHouseId)
+                            .collect(Collectors.toSet());
+                }
+            }
+        }
+        final Set<Long> finalAssignedHouseIds = assignedHouseIds;
+
         QueryWrapper<HzHouse> wrapper = new QueryWrapper<>();
         wrapper.eq("project_id", projectId)
                 .eq("building_id", buildingId)
                 .eq("unit_id", unitId)
                 .eq("status", "0")  // 正常状态
                 .eq("del_flag", "0");  // 未删除
+
+        // 房源可见性：普通用户只看空置(house_status='0')；批量配租用户额外看到分配给自己的房源
+        if (finalAssignedHouseIds.isEmpty()) {
+            wrapper.eq("house_status", "0");
+        } else {
+            wrapper.and(w -> w.eq("house_status", "0")
+                    .or().in("house_id", finalAssignedHouseIds));
+        }
 
         // 筛选条件
         if (houseType != null && !houseType.isEmpty()) {
@@ -211,39 +248,6 @@ public class HzHouseAppController extends BaseController {
         wrapper.orderByAsc("floor", "house_no");
 
         List<HzHouse> houses = houseMapper.selectList(wrapper);
-
-        // 获取当前登录用户分配的房源ID列表（用于判断已预订房源是否对当前用户可见）
-        Set<Long> assignedHouseIds = new HashSet<>();
-        Long userId = getHzUserIdFromToken();
-        if (userId != null) {
-            HzUser user = userMapper.selectById(userId);
-            if (user != null && StringUtils.isNotEmpty(user.getIdCard())) {
-                // 根据身份证查询批次租户
-                QueryWrapper<HzBatchTenant> tenantWrapper = new QueryWrapper<>();
-                tenantWrapper.eq("id_card", user.getIdCard())
-                        .eq("del_flag", "0");
-                List<HzBatchTenant> batchTenants = batchTenantMapper.selectList(tenantWrapper);
-
-                if (!batchTenants.isEmpty()) {
-                    // 获取租户ID列表
-                    List<Long> tenantIds = batchTenants.stream()
-                            .map(HzBatchTenant::getId)
-                            .collect(Collectors.toList());
-
-                    // 查询分配给这些租户的房源
-                    QueryWrapper<HzBatchHouse> batchHouseWrapper = new QueryWrapper<>();
-                    batchHouseWrapper.in("tenant_id", tenantIds);
-                    List<HzBatchHouse> batchHouses = batchHouseMapper.selectList(batchHouseWrapper);
-
-                    assignedHouseIds = batchHouses.stream()
-                            .map(HzBatchHouse::getHouseId)
-                            .collect(Collectors.toSet());
-                }
-            }
-        }
-
-        // 用于lambda表达式
-        final Set<Long> finalAssignedHouseIds = assignedHouseIds;
 
         // 按楼层分组
         Map<Integer, List<HzHouse>> floorGroupMap = houses.stream()

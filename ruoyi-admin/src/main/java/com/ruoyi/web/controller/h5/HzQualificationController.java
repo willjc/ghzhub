@@ -1,14 +1,20 @@
 package com.ruoyi.web.controller.h5;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.system.domain.HzBatchTenant;
 import com.ruoyi.system.domain.HzCommitment;
 import com.ruoyi.system.domain.HzQualification;
 import com.ruoyi.system.domain.HzQualificationAppeal;
 import com.ruoyi.system.domain.HzQualificationAppealVO;
 import com.ruoyi.system.domain.HzTenant;
+import com.ruoyi.system.domain.HzUser;
 import com.ruoyi.system.gov.dto.QualificationCheckResult;
 import com.ruoyi.system.gov.service.QualificationCheckService;
+import com.ruoyi.system.mapper.HzBatchTenantMapper;
+import com.ruoyi.system.mapper.HzUserMapper;
 import com.ruoyi.system.service.IHzCommitmentService;
 import com.ruoyi.system.service.IHzQualificationAppealService;
 import com.ruoyi.system.service.IHzQualificationService;
@@ -16,7 +22,9 @@ import com.ruoyi.system.service.IHzTenantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * H5端资格审核Controller
@@ -41,6 +49,38 @@ public class HzQualificationController extends BaseController {
 
     @Autowired
     private QualificationCheckService qualificationCheckService;
+
+    @Autowired
+    private HzUserMapper userMapper;
+
+    @Autowired
+    private HzBatchTenantMapper batchTenantMapper;
+
+    /**
+     * 判断当前用户是否为"批量配租"用户
+     * 依据：hz_user.id_card 命中 hz_batch_tenant（未删除）任一记录
+     * 返回：{ isBatchTenant: true/false }
+     * 用途：前端资格守卫豁免（批量配租用户免资格校验）
+     */
+    @GetMapping("/is-batch-tenant")
+    public AjaxResult isBatchTenant(@RequestParam Long userId) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("isBatchTenant", false);
+        if (userId == null) {
+            return success(data);
+        }
+        HzUser user = userMapper.selectById(userId);
+        if (user == null || StringUtils.isEmpty(user.getIdCard())) {
+            return success(data);
+        }
+        QueryWrapper<HzBatchTenant> wrapper = new QueryWrapper<>();
+        wrapper.eq("id_card", user.getIdCard())
+                .eq("del_flag", "0")
+                .last("LIMIT 1");
+        Long count = batchTenantMapper.selectCount(wrapper);
+        data.put("isBatchTenant", count != null && count > 0);
+        return success(data);
+    }
 
     /**
      * 查询资格校验状态（是否已校验 / 是否通过 / 各项结果）

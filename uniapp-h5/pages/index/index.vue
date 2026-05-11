@@ -107,7 +107,7 @@
 
 			<!-- 功能图标网格 -->
 			<view class="icon-grid">
-				<view class="icon-item" v-for="(item, index) in iconList" :key="index" @click="handleIconClick(item)">
+				<view class="icon-item" v-for="(item, index) in visibleIconList" :key="index" @click="handleIconClick(item)">
 					<image class="icon-image" :src="item.icon"></image>
 					<text class="icon-text">{{ item.name }}</text>
 				</view>
@@ -134,7 +134,7 @@
 					<view 
 						class="category-tab" 
 						:class="{ active: activeCategory === item.key }"
-						v-for="(item, index) in categoryTabs" 
+						v-for="(item, index) in visibleCategoryTabs"
 						:key="index"
 						@click="switchCategory(item.key)"
 					>
@@ -153,10 +153,6 @@
 						@click="switchSubTab(item.key)"
 					>
 						<text>{{ item.name }}</text>
-					</view>
-					<view class="more-link" @click="goToMore">
-						<text class="more-text">更多</text>
-						<image class="more-arrow" src="/static/更多@2x.png"></image>
 					</view>
 				</view>
 
@@ -209,6 +205,7 @@
 	import { updateUserInfo } from '@/api/auth'
 	import { BASE_URL, get } from '@/utils/request'
 	import config from '@/config/index'
+	import featureFlags from '@/config/feature-flags'
 	import NoticePopup from '@/components/notice-popup/notice-popup.vue'
 
 	export default {
@@ -228,8 +225,7 @@
 					{ key: 'market', name: '市场租赁', type: '3' }
 				],
 				subTabs: [
-					{ key: 'project', name: '项目' },
-					{ key: 'listing', name: '房源' }
+					{ key: 'project', name: '项目' }
 				],
 				iconList: [
 					{ name: '人才公寓', icon: '/static/人才公寓@2x.png', key: 'talent' },
@@ -263,6 +259,24 @@
 					{ label: '应届毕业生', value: '2' }
 				],
 				selectedIdentityIndex: -1
+			}
+		},
+		computed: {
+			// 按业务功能开关过滤顶部分类 Tab（隐藏保租房/市场租赁等暂未开放项）
+			visibleCategoryTabs() {
+				return this.categoryTabs.filter(tab => {
+					if (tab.key === 'guaranteed') return featureFlags.guaranteed
+					if (tab.key === 'market') return featureFlags.market
+					return true
+				})
+			},
+			// 按业务功能开关过滤九宫格图标入口
+			visibleIconList() {
+				return this.iconList.filter(item => {
+					if (item.key === 'guaranteed') return featureFlags.guaranteed
+					if (item.key === 'market') return featureFlags.market
+					return true
+				})
 			}
 		},
 		onLoad() {
