@@ -93,6 +93,14 @@ public class HzProject extends BaseEntity
     @TableField("manager_phone")
     private String managerPhone;
 
+    /** 人才公寓服务电话（一键拨号） */
+    @TableField("service_phone")
+    private String servicePhone;
+
+    /** 物业服务电话（一键拨号） */
+    @TableField("property_phone")
+    private String propertyPhone;
+
     /** 状态(0:正常 1:停用) */
     @TableField("status")
     private String status;
@@ -441,6 +449,26 @@ public class HzProject extends BaseEntity
         return gasFee;
     }
 
+    public void setServicePhone(String servicePhone)
+    {
+        this.servicePhone = servicePhone;
+    }
+
+    public String getServicePhone()
+    {
+        return servicePhone;
+    }
+
+    public void setPropertyPhone(String propertyPhone)
+    {
+        this.propertyPhone = propertyPhone;
+    }
+
+    public String getPropertyPhone()
+    {
+        return propertyPhone;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -471,6 +499,8 @@ public class HzProject extends BaseEntity
             .append("managerId", getManagerId())
             .append("managerName", getManagerName())
             .append("managerPhone", getManagerPhone())
+            .append("servicePhone", getServicePhone())
+            .append("propertyPhone", getPropertyPhone())
             .append("status", getStatus())
             .append("sortOrder", getSortOrder())
             .append("createBy", getCreateBy())

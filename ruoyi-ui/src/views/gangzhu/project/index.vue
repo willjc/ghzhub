@@ -211,6 +211,18 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-row>
+          <el-col :span="12">
+            <el-form-item label="人才公寓服务电话" prop="servicePhone">
+              <el-input v-model="form.servicePhone" placeholder="用于详情页一键拨号（如 0371-63337151）" maxlength="30" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="物业服务电话" prop="propertyPhone">
+              <el-input v-model="form.propertyPhone" placeholder="用于详情页一键拨号（如 0371-67005647）" maxlength="30" />
+            </el-form-item>
+          </el-col>
+        </el-row>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
             <el-radio label="0">正常</el-radio>
@@ -428,6 +440,14 @@
                 <div class="info-row">
                   <span class="label">联系电话</span>
                   <span class="value highlight">{{ detailData.managerPhone || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">人才公寓服务电话</span>
+                  <span class="value highlight">{{ detailData.servicePhone || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">物业服务电话</span>
+                  <span class="value highlight">{{ detailData.propertyPhone || '-' }}</span>
                 </div>
                 <div class="info-row">
                   <span class="label">物业公司</span>
@@ -768,6 +788,8 @@ export default {
         managerId: null,
         managerName: null,
         managerPhone: null,
+        servicePhone: null,
+        propertyPhone: null,
         status: "0",
         sortOrder: 0,
         remark: null

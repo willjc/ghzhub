@@ -70,6 +70,24 @@
 					<text class="detail-value">{{ projectInfo.gasFee || '2.58元/立方' }}</text>
 				</view>
 			</view>
+
+			<!-- 一键拨号区 -->
+			<view class="call-row" v-if="projectInfo.servicePhone || projectInfo.propertyPhone">
+				<view class="call-btn service" v-if="projectInfo.servicePhone" @click="callPhone(projectInfo.servicePhone)">
+					<image class="call-icon" src="/static/home/通知.png" mode="aspectFit"></image>
+					<view class="call-text">
+						<text class="call-title">人才公寓服务电话</text>
+						<text class="call-number">{{ projectInfo.servicePhone }}</text>
+					</view>
+				</view>
+				<view class="call-btn property" v-if="projectInfo.propertyPhone" @click="callPhone(projectInfo.propertyPhone)">
+					<image class="call-icon" src="/static/home/通知.png" mode="aspectFit"></image>
+					<view class="call-text">
+						<text class="call-title">物业服务电话</text>
+						<text class="call-number">{{ projectInfo.propertyPhone }}</text>
+					</view>
+				</view>
+			</view>
 			
 			
 			
@@ -110,6 +128,8 @@ export default {
 				electricFee: '',
 				waterFee: '',
 				gasFee: '',
+				servicePhone: '',
+				propertyPhone: '',
 				description: ''
 			}
 		}
@@ -144,6 +164,8 @@ export default {
 						electricFee: project.electricFee || '',
 						waterFee: project.waterFee || '',
 						gasFee: project.gasFee || '',
+						servicePhone: project.servicePhone || '',
+						propertyPhone: project.propertyPhone || '',
 						description: project.projectIntro || ''
 					}
 
@@ -189,6 +211,16 @@ export default {
 						title: '打开导航失败',
 						icon: 'none'
 					})
+				}
+			})
+		},
+		// 一键拨号（服务电话 / 物业电话）
+		callPhone(phoneNumber) {
+			if (!phoneNumber) return
+			uni.makePhoneCall({
+				phoneNumber: String(phoneNumber),
+				fail: (err) => {
+					console.error('拨号失败:', err)
 				}
 			})
 		},
@@ -427,6 +459,48 @@ export default {
 		font-family: "PingFang SC", "苹方-简", sans-serif;
 		text-align: center;
 		line-height: 51rpx;
+	}
+
+	/* 一键拨号区 */
+	.call-row {
+		display: flex;
+		gap: 20rpx;
+		padding: 0 20rpx 20rpx;
+	}
+	.call-btn {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		padding: 20rpx 24rpx;
+		border-radius: 16rpx;
+		background: linear-gradient(270deg, #4fc7ff 0%, #0f73ff 100%);
+	}
+	.call-btn.property {
+		background: linear-gradient(270deg, #ffb347 0%, #ff7a45 100%);
+	}
+	.call-icon {
+		width: 48rpx;
+		height: 48rpx;
+		margin-right: 16rpx;
+		flex-shrink: 0;
+	}
+	.call-text {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-width: 0;
+	}
+	.call-title {
+		color: #ffffff;
+		font-size: 24rpx;
+		line-height: 1.4;
+		opacity: 0.9;
+	}
+	.call-number {
+		color: #ffffff;
+		font-size: 30rpx;
+		font-weight: 600;
+		line-height: 1.3;
 	}
 </style>
 

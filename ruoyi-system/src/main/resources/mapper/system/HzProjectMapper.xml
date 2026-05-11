@@ -23,6 +23,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="managerId"       column="manager_id"      />
         <result property="managerName"     column="manager_name"    />
         <result property="managerPhone"    column="manager_phone"   />
+        <result property="servicePhone"    column="service_phone"   />
+        <result property="propertyPhone"   column="property_phone"  />
         <result property="status"          column="status"          />
         <result property="sortOrder"       column="sort_order"      />
         <result property="createBy"        column="create_by"       />
@@ -51,6 +53,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             IFNULL((SELECT COUNT(*) FROM hz_house h WHERE h.project_id = p.project_id AND h.del_flag = '0' AND h.house_status = '0'), 0) as available_houses,
             p.project_intro, p.cover_image, p.price, p.facilities, p.transportation,
             p.manager_id, p.manager_name, p.manager_phone,
+            p.service_phone, p.property_phone,
             p.status, p.sort_order,
             p.distribution, p.house_type, p.area, p.rent_detail,
             p.property_company, p.property_fee, p.electric_fee, p.water_fee, p.gas_fee,
