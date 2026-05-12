@@ -34,7 +34,7 @@
 							
 						</view>
 						<view class="listing-status">
-							<text class="status-text" :class="{ available: item.hasUnits }">有房源</text>
+							<text class="status-text" :class="{ available: item.hasUnits }">{{ item.hasUnits ? '有房源' : '无房源' }}</text>
 							<text class="status-divider">|</text>
 							<text class="status-count">共{{ item.totalUnits }}套</text>
 							<text class="listing-distance">{{ item.distance }}</text>

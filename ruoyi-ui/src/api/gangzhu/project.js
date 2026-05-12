@@ -50,3 +50,12 @@ export function generateHouseTypes(projectId) {
     method: 'post'
   })
 }
+
+// 按项目批量修改房源状态（受控过渡：0/3/4 可互转，跳过 1/2）
+export function batchUpdateHouseStatusByProject(projectId, targetStatus) {
+  return request({
+    url: '/system/house/project/' + projectId + '/batchUpdateStatus',
+    method: 'post',
+    data: { targetStatus }
+  })
+}

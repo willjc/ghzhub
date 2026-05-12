@@ -123,4 +123,16 @@ public interface IHzHouseService extends IService<HzHouse>
      * @param vrs VR列表
      */
     void saveHouseVrs(Long houseId, List<Map<String, Object>> vrs);
+
+    /**
+     * 按项目批量修改房源状态（受控过渡白名单）。
+     * 仅对源状态为 0(空置) / 3(维修中) / 4(下架) 的房源进行更新，
+     * 跳过 1(已预订) / 2(已出租)，避免与订单/合同冲突。
+     * 目标状态同样限定在 0 / 3 / 4 范围。
+     *
+     * @param projectId    项目ID
+     * @param targetStatus 目标状态（0/3/4）
+     * @return 汇总：total / affected / skippedBooked(1) / skippedRented(2)
+     */
+    Map<String, Integer> batchUpdateHouseStatusByProject(Long projectId, String targetStatus);
 }

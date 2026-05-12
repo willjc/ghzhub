@@ -3,6 +3,7 @@
 		<!-- Tab 切换 -->
 		<view class="tab-bar">
 			<view
+				v-if="featureFlags.guaranteed"
 				class="tab-item"
 				:class="{ active: isTypeSelected('2') }"
 				@click="switchTab('2')"
@@ -19,6 +20,7 @@
 				<view class="tab-line" v-if="isTypeSelected('1')"></view>
 			</view>
 			<view
+				v-if="featureFlags.market"
 				class="tab-item"
 				:class="{ active: isTypeSelected('3') }"
 				@click="switchTab('3')"
@@ -77,6 +79,7 @@
 
 <script>
 import { getProjectListByType } from '@/api/project.js'
+import featureFlags from '@/config/feature-flags'
 
 // 高德地图配置
 const AMAP_KEY = '2b05ba24adfcbb78c8ccec1cf6e5afc3'
@@ -91,8 +94,13 @@ const TYPE_CONFIG = {
 
 export default {
 	data() {
+		// 根据 feature-flags 生成默认选中类型（隐藏的 Tab 不默认选中）
+		const defaultSelected = ['1']
+		if (featureFlags.guaranteed) defaultSelected.push('2')
+		if (featureFlags.market) defaultSelected.push('3')
 		return {
-			selectedTypes: ['1', '2', '3'], // 默认全选（1:人才公寓 2:保租房 3:市场租赁）
+			featureFlags, // 暴露给模板使用
+			selectedTypes: defaultSelected, // 默认选中（按 feature-flags 过滤）
 			typeCounts: { '1': 0, '2': 0, '3': 0 }, // 各类型项目数量
 			map: null,
 			markers: [],
@@ -196,11 +204,11 @@ export default {
 			this.isEmpty = false
 
 			try {
-				// 并行加载三种类型的数据
+				// 并行加载数据（保租房/市场租赁按 feature-flags 决定是否加载）
 				const [type1, type2, type3] = await Promise.all([
 					this.loadTypeData('1'),
-					this.loadTypeData('2'),
-					this.loadTypeData('3')
+					featureFlags.guaranteed ? this.loadTypeData('2') : Promise.resolve([]),
+					featureFlags.market ? this.loadTypeData('3') : Promise.resolve([])
 				])
 
 				// 合并所有数据

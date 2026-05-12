@@ -188,7 +188,7 @@
 
 							<!-- 项目：显示状态信息 -->
 							<view class="listing-status" v-if="item.type === 'project'">
-								<text class="status-text" :class="{ available: item.hasUnits }">有房源</text>
+								<text class="status-text" :class="{ available: item.hasUnits }">{{ item.hasUnits ? '有房源' : '无房源' }}</text>
 								<text class="status-divider">|</text>
 								<text class="status-count">共{{ item.totalUnits }}套</text>
 								<text class="listing-distance">{{ item.distance }}</text>

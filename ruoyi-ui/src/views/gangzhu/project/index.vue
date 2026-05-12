@@ -87,7 +87,7 @@
           <el-tag v-else type="danger" size="small">停用</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="520">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="640">
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -137,6 +137,13 @@
             icon="el-icon-setting"
             @click="handleFacilityManage(scope.row)"
           >房间设施管理</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-refresh"
+            @click="handleBatchUpdateStatus(scope.row)"
+            v-hasPermi="['gangzhu:house:edit']"
+          >批量改房源状态</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -338,6 +345,48 @@
         :project-id="currentProjectId"
         :embedded="true"
       ></house-type-list>
+    </el-dialog>
+
+    <!-- 批量修改房源状态对话框 -->
+    <el-dialog
+      :title="'【' + batchStatusDialog.projectName + '】批量修改房源状态'"
+      :visible.sync="batchStatusDialog.visible"
+      width="520px"
+      append-to-body
+      :close-on-click-modal="false"
+    >
+      <div style="padding: 0 20px;">
+        <el-alert
+          type="info"
+          :closable="false"
+          style="margin-bottom: 16px;"
+        >
+          <template slot="title">
+            <div style="line-height: 1.8;">
+              <div>• 仅对"<b>空置 / 维修中 / 下架</b>"三类房源生效</div>
+              <div>• "<b>已预订 / 已出租</b>"房源将自动跳过（保护订单与合同）</div>
+              <div>• 操作会记录到系统日志</div>
+            </div>
+          </template>
+        </el-alert>
+        <el-form label-width="100px">
+          <el-form-item label="目标状态" required>
+            <el-radio-group v-model="batchStatusDialog.targetStatus">
+              <el-radio label="0">空置</el-radio>
+              <el-radio label="3">维修中</el-radio>
+              <el-radio label="4">下架</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </el-form>
+      </div>
+      <div slot="footer">
+        <el-button @click="batchStatusDialog.visible = false">取 消</el-button>
+        <el-button
+          type="primary"
+          :loading="batchStatusDialog.loading"
+          @click="submitBatchUpdateStatus"
+        >确 定</el-button>
+      </div>
     </el-dialog>
 
     <!-- 项目详情对话框 -->
@@ -659,7 +708,7 @@
 </template>
 
 <script>
-import { listProject, getProject, addProject, updateProject, delProject } from "@/api/gangzhu/project";
+import { listProject, getProject, addProject, updateProject, delProject, batchUpdateHouseStatusByProject } from "@/api/gangzhu/project";
 import { listHouseType } from "@/api/gangzhu/houseType";
 import { listFacilityItem } from "@/api/gangzhu/facilityItem";
 import { listHouseTypeFacility, batchSaveHouseTypeFacility } from "@/api/gangzhu/houseTypeFacility";
@@ -719,6 +768,14 @@ export default {
       facilityConfigList: [],
       facilityCategories: ['电器类', '门窗类', '灯类', '卫浴区', '家具类', '洗菜池', '其他'],
       facilitySaving: false,
+      // 批量修改房源状态对话框
+      batchStatusDialog: {
+        visible: false,
+        loading: false,
+        projectId: null,
+        projectName: '',
+        targetStatus: '3'
+      },
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -885,6 +942,53 @@ export default {
       this.currentProjectId = row.projectId;
       this.currentProjectName = row.projectName;
       this.houseTypeDialogVisible = true;
+    },
+    /** 批量修改房源状态 - 打开对话框 */
+    handleBatchUpdateStatus(row) {
+      this.batchStatusDialog = {
+        visible: true,
+        loading: false,
+        projectId: row.projectId,
+        projectName: row.projectName,
+        targetStatus: '3' // 默认维修中（最常用场景）
+      };
+    },
+    /** 批量修改房源状态 - 提交 */
+    submitBatchUpdateStatus() {
+      const { projectId, targetStatus, projectName } = this.batchStatusDialog;
+      const statusTextMap = { '0': '空置', '3': '维修中', '4': '下架' };
+      this.$modal.confirm(
+        '将把【' + projectName + '】项目下所有"空置/维修中/下架"房源批量改为【' + statusTextMap[targetStatus] + '】。<br/>' +
+        '<span style="color:#E6A23C;">已预订 / 已出租的房源将被自动跳过，不会影响现有订单和合同。</span><br/>是否继续？',
+        '批量修改确认',
+        {
+          dangerouslyUseHTMLString: true,
+          confirmButtonText: '确定执行',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      ).then(() => {
+        this.batchStatusDialog.loading = true;
+        return batchUpdateHouseStatusByProject(projectId, targetStatus);
+      }).then(res => {
+        this.batchStatusDialog.loading = false;
+        this.batchStatusDialog.visible = false;
+        const d = (res && res.data) || {};
+        this.$modal.alert(
+          '共 ' + (d.total || 0) + ' 套房源<br/>' +
+          '<span style="color:#67C23A;">已修改：' + (d.affected || 0) + ' 套</span><br/>' +
+          '<span style="color:#909399;">跳过(已预订)：' + (d.skippedBooked || 0) + ' 套</span><br/>' +
+          '<span style="color:#909399;">跳过(已出租)：' + (d.skippedRented || 0) + ' 套</span>',
+          '执行结果',
+          { dangerouslyUseHTMLString: true, type: 'success' }
+        );
+        this.getList();
+      }).catch(err => {
+        this.batchStatusDialog.loading = false;
+        if (err && err.message !== 'cancel') {
+          // 真实错误已由请求层抛出 toast，这里静默
+        }
+      });
     },
     /** 详情按钮操作 */
     handleDetail(row) {

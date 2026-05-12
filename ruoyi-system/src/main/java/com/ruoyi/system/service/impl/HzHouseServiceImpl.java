@@ -1,10 +1,12 @@
 package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzHouseImage;
@@ -23,10 +25,15 @@ import com.ruoyi.system.mapper.HzHouseVrMapper;
 import com.ruoyi.system.service.IHzHouseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
 
 /**
  * 房源Service业务层处理
@@ -467,5 +474,50 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
                 houseVrMapper.insert(houseVr);
             }
         }
+    }
+
+    /**
+     * 按项目批量修改房源状态（受控过渡白名单）。
+     * 白名单：仅 0/3/4 之间可互转；1/2 状态跳过（有订单/合同联动）。
+     */
+    @Override
+    @Transactional
+    public Map<String, Integer> batchUpdateHouseStatusByProject(Long projectId, String targetStatus)
+    {
+        if (projectId == null)
+        {
+            throw new ServiceException("项目ID不能为空");
+        }
+        Set<String> allowed = new HashSet<>(Arrays.asList("0", "3", "4"));
+        if (targetStatus == null || !allowed.contains(targetStatus))
+        {
+            throw new ServiceException("目标状态非法，仅支持 0(空置)/3(维修中)/4(下架)");
+        }
+
+        // 统计项目下房源总数
+        long total = this.count(new LambdaQueryWrapper<HzHouse>()
+                .eq(HzHouse::getProjectId, projectId));
+        // 统计已预订 / 已出租（将被跳过）
+        long skippedBooked = this.count(new LambdaQueryWrapper<HzHouse>()
+                .eq(HzHouse::getProjectId, projectId)
+                .eq(HzHouse::getHouseStatus, "1"));
+        long skippedRented = this.count(new LambdaQueryWrapper<HzHouse>()
+                .eq(HzHouse::getProjectId, projectId)
+                .eq(HzHouse::getHouseStatus, "2"));
+
+        // 仅更新白名单源状态（0/3/4），且非目标状态的房源
+        LambdaUpdateWrapper<HzHouse> uw = new LambdaUpdateWrapper<HzHouse>()
+                .eq(HzHouse::getProjectId, projectId)
+                .in(HzHouse::getHouseStatus, "0", "3", "4")
+                .ne(HzHouse::getHouseStatus, targetStatus)
+                .set(HzHouse::getHouseStatus, targetStatus);
+        int affected = this.baseMapper.update(null, uw);
+
+        Map<String, Integer> result = new LinkedHashMap<>();
+        result.put("total", (int) total);
+        result.put("affected", affected);
+        result.put("skippedBooked", (int) skippedBooked);
+        result.put("skippedRented", (int) skippedRented);
+        return result;
     }
 }

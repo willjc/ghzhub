@@ -199,4 +199,17 @@ public class HzHouseController extends BaseController
         houseService.saveHouseVrs(houseId, vrs);
         return success();
     }
+
+    /**
+     * 按项目批量修改房源状态（受控过渡：0/3/4 可互转，跳过 1/2）
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:house:edit')")
+    @Log(title = "房源管理-批量改状态", businessType = BusinessType.UPDATE)
+    @PostMapping("/project/{projectId}/batchUpdateStatus")
+    public AjaxResult batchUpdateStatusByProject(@PathVariable("projectId") Long projectId,
+                                                  @RequestBody Map<String, String> body)
+    {
+        String targetStatus = body == null ? null : body.get("targetStatus");
+        return success(houseService.batchUpdateHouseStatusByProject(projectId, targetStatus));
+    }
 }
