@@ -3,6 +3,8 @@
 		<scroll-view class="scroll-content" scroll-y>
 			<!-- 顶部用户信息区域 -->
 			<view class="header-section" @click="isLogin ? goToProfile() : goToLogin()">
+				<!-- 背景图：小程序 WXSS 不支持 background-image 引本地图，改用 image 铺底 -->
+				<image class="header-bg" src="/static/my/个人中心背景@2x.png" mode="scaleToFill"></image>
 				<image class="avatar" :src="userInfo.avatar || '/static/my/头像@2x.png'" mode="aspectFill"></image>
 				<view class="user-info" v-if="isLogin">
 					<text class="nickname">{{ userInfo.nickname || '未设置昵称' }}</text>
@@ -188,15 +190,31 @@
 
 	/* 顶部用户信息区域 */
 	.header-section {
+		position: relative;
 		width: 100%;
 		display: flex;
 		align-items: center;
 		padding: 60rpx 54rpx 40rpx 44rpx;
-		background-image: url('/static/my/个人中心背景@2x.png');
-		background-size: 100% 100%;
-		background-position: center;
-		background-repeat: no-repeat;
 		box-sizing: border-box;
+		overflow: hidden;
+	}
+
+	/* 背景图铺底（替代 background-image，小程序 WXSS 不支持引本地图） */
+	.header-bg {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 0;
+	}
+
+	/* 让实际内容盖在背景图之上 */
+	.header-section > .avatar,
+	.header-section > .user-info,
+	.header-section > .arrow {
+		position: relative;
+		z-index: 1;
 	}
 
 	.avatar {
