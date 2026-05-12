@@ -91,6 +91,11 @@ public class QualificationCheckService {
             ret.setChecked(false);
             return ret;
         }
+        // 资格校验时效：一次管一个自然日，次日首次访问需重新校验（通过/失败同口径过期）
+        if (!isCheckedToday(q.getLastCheckTime())) {
+            ret.setChecked(false);
+            return ret;
+        }
         ret.setChecked(true);
         ret.setPassed("1".equals(q.getFinalResult()));
         ret.setQualificationId(q.getQualificationId());
@@ -99,6 +104,18 @@ public class QualificationCheckService {
         ret.getItems().addAll(buildItemsFromEntity(q));
         ret.getFailReasons().addAll(collectFailReasons(ret.getItems()));
         return ret;
+    }
+
+    /**
+     * 判断 lastCheckTime 是否在今天（服务器当前自然日）。
+     * 兼容 "yyyy-MM-dd HH:mm:ss" 与 "yyyy-MM-dd" 两种格式，解析失败一律视为已过期。
+     */
+    private boolean isCheckedToday(String lastCheckTime) {
+        if (lastCheckTime == null || lastCheckTime.length() < 10) {
+            return false;
+        }
+        String today = java.time.LocalDate.now().toString(); // yyyy-MM-dd
+        return lastCheckTime.startsWith(today);
     }
 
     // ==================== 执行一次完整校验 ====================

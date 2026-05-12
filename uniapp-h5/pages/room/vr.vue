@@ -43,7 +43,9 @@
 				// #endif
 
 				// #ifndef H5
-				const baseUrl = ''
+				// 小程序 / APP：web-view 不支持相对路径，必须是完整 https URL
+				// 且域名需加入微信小程序"业务域名"白名单（app.caigon.cn）
+				const baseUrl = config.h5FrontendUrl || ''
 				// #endif
 
 				// 构建web-view的URL
