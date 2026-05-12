@@ -227,3 +227,11 @@ gov:
     # API Key（需与代理服务端 application-prod.yml 中 gov.proxy.api-key 一致）
     # 如需覆盖可用环境变量 GOV_PROXY_API_KEY
     api-key: ${GOV_PROXY_API_KEY:lWo1XjpwMfxpPqq52bCztCP-olV-dRaL}
+
+# H5 预览账号白名单（内部测试/UAT 用）
+# 命中的手机号将获得：
+#   1) 资格校验豁免：is-batch-tenant 直接返回 true，详情页不再被 guardOrRedirect 踢到 fail 页
+#   2) 房源列表放行：/h5/app/house/list 不再按 house_status 过滤，可见项目下全部房源
+# 多个手机号用英文逗号分隔；留空则关闭此能力
+ghz:
+  preview-phones: ${GHZ_PREVIEW_PHONES:18539279011}

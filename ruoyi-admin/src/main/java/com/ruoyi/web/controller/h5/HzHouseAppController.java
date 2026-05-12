@@ -23,6 +23,7 @@ import com.ruoyi.system.service.IHzAppointmentService;
 import com.ruoyi.system.service.IHzHouseFacilityService;
 import com.ruoyi.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -70,6 +71,28 @@ public class HzHouseAppController extends BaseController {
 
     @Autowired
     private IHzHouseFacilityService houseFacilityService;
+
+    /**
+     * H5 预览账号白名单（application.yml: ghz.preview-phones）
+     * 命中的手机号直接放行全部房源（不受 house_status 过滤），且所有房源可点击预订。
+     */
+    @Value("${ghz.preview-phones:}")
+    private String previewPhones;
+
+    /**
+     * 判断手机号是否在预览白名单
+     */
+    private boolean isPreviewPhone(String phone) {
+        if (StringUtils.isEmpty(phone) || StringUtils.isEmpty(previewPhones)) {
+            return false;
+        }
+        for (String p : previewPhones.split(",")) {
+            if (phone.trim().equals(p.trim())) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * 按项目类型获取房源列表（用于首页房源展示）
@@ -183,32 +206,38 @@ public class HzHouseAppController extends BaseController {
     ) {
         // 先获取当前登录用户"分配给我"的房源ID集合（批量配租房源），用于后续 SQL 过滤 + available 标记
         Set<Long> assignedHouseIds = new HashSet<>();
+        boolean isPreview = false;   // 是否为预览账号（白名单）
         Long userId = getHzUserIdFromToken();
         if (userId != null) {
             HzUser user = userMapper.selectById(userId);
-            if (user != null && StringUtils.isNotEmpty(user.getIdCard())) {
-                // 根据身份证查询批次租户
-                QueryWrapper<HzBatchTenant> tenantWrapper = new QueryWrapper<>();
-                tenantWrapper.eq("id_card", user.getIdCard())
-                        .eq("del_flag", "0");
-                List<HzBatchTenant> batchTenants = batchTenantMapper.selectList(tenantWrapper);
+            if (user != null) {
+                // 预览账号：不需要 id_card，直接放行全部房源
+                isPreview = isPreviewPhone(user.getPhone());
+                if (!isPreview && StringUtils.isNotEmpty(user.getIdCard())) {
+                    // 根据身份证查询批次租户
+                    QueryWrapper<HzBatchTenant> tenantWrapper = new QueryWrapper<>();
+                    tenantWrapper.eq("id_card", user.getIdCard())
+                            .eq("del_flag", "0");
+                    List<HzBatchTenant> batchTenants = batchTenantMapper.selectList(tenantWrapper);
 
-                if (!batchTenants.isEmpty()) {
-                    List<Long> tenantIds = batchTenants.stream()
-                            .map(HzBatchTenant::getId)
-                            .collect(Collectors.toList());
+                    if (!batchTenants.isEmpty()) {
+                        List<Long> tenantIds = batchTenants.stream()
+                                .map(HzBatchTenant::getId)
+                                .collect(Collectors.toList());
 
-                    QueryWrapper<HzBatchHouse> batchHouseWrapper = new QueryWrapper<>();
-                    batchHouseWrapper.in("tenant_id", tenantIds);
-                    List<HzBatchHouse> batchHouses = batchHouseMapper.selectList(batchHouseWrapper);
+                        QueryWrapper<HzBatchHouse> batchHouseWrapper = new QueryWrapper<>();
+                        batchHouseWrapper.in("tenant_id", tenantIds);
+                        List<HzBatchHouse> batchHouses = batchHouseMapper.selectList(batchHouseWrapper);
 
-                    assignedHouseIds = batchHouses.stream()
-                            .map(HzBatchHouse::getHouseId)
-                            .collect(Collectors.toSet());
+                        assignedHouseIds = batchHouses.stream()
+                                .map(HzBatchHouse::getHouseId)
+                                .collect(Collectors.toSet());
+                    }
                 }
             }
         }
         final Set<Long> finalAssignedHouseIds = assignedHouseIds;
+        final boolean finalIsPreview = isPreview;
 
         QueryWrapper<HzHouse> wrapper = new QueryWrapper<>();
         wrapper.eq("project_id", projectId)
@@ -218,9 +247,12 @@ public class HzHouseAppController extends BaseController {
                 .eq("del_flag", "0");  // 未删除
 
         // 房源可见性：
+        // - 预览账号（白名单）：不过滤 house_status，项目下全部房源可见
         // - 普通用户：只看空置房源(house_status='0')
         // - 批量配租用户：只看分配给自己的房源（绕过资格校验，不看其他空置房源）
-        if (finalAssignedHouseIds.isEmpty()) {
+        if (finalIsPreview) {
+            // 白名单预览：不加 house_status 限制
+        } else if (finalAssignedHouseIds.isEmpty()) {
             wrapper.eq("house_status", "0");
         } else {
             wrapper.in("house_id", finalAssignedHouseIds);
@@ -267,10 +299,12 @@ public class HzHouseAppController extends BaseController {
                         room.put("name", house.getHouseNo());
 
                         // 判断是否可选：
-                        // 1. 房源状态为空置(0)
-                        // 2. 或者 房源状态为已预订(1) 且 在当前用户的分配列表中
-                        boolean isAvailable = "0".equals(house.getHouseStatus()) ||
-                                             ("1".equals(house.getHouseStatus()) && finalAssignedHouseIds.contains(house.getHouseId()));
+                        // 1. 预览账号（白名单）：所有房源均可点击
+                        // 2. 房源状态为空置(0)
+                        // 3. 或者 房源状态为已预订(1) 且 在当前用户的分配列表中
+                        boolean isAvailable = finalIsPreview
+                                            || "0".equals(house.getHouseStatus())
+                                            || ("1".equals(house.getHouseStatus()) && finalAssignedHouseIds.contains(house.getHouseId()));
 
                         room.put("available", isAvailable);
                         return room;

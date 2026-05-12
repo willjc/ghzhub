@@ -20,6 +20,7 @@ import com.ruoyi.system.service.IHzQualificationAppealService;
 import com.ruoyi.system.service.IHzQualificationService;
 import com.ruoyi.system.service.IHzTenantService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -57,6 +58,13 @@ public class HzQualificationController extends BaseController {
     private HzBatchTenantMapper batchTenantMapper;
 
     /**
+     * H5 预览账号白名单（application.yml: ghz.preview-phones）
+     * 命中的手机号直接视为"批量配租用户"，豁免资格校验；同时房源列表接口放行全部房源。
+     */
+    @Value("${ghz.preview-phones:}")
+    private String previewPhones;
+
+    /**
      * 判断当前用户是否为"批量配租"用户
      * 依据：hz_user.id_card 命中 hz_batch_tenant（未删除）任一记录
      * 返回：{ isBatchTenant: true/false }
@@ -70,7 +78,15 @@ public class HzQualificationController extends BaseController {
             return success(data);
         }
         HzUser user = userMapper.selectById(userId);
-        if (user == null || StringUtils.isEmpty(user.getIdCard())) {
+        if (user == null) {
+            return success(data);
+        }
+        // 预览账号白名单：命中则直接豁免（无需 id_card 也可通过）
+        if (isPreviewPhone(user.getPhone())) {
+            data.put("isBatchTenant", true);
+            return success(data);
+        }
+        if (StringUtils.isEmpty(user.getIdCard())) {
             return success(data);
         }
         QueryWrapper<HzBatchTenant> wrapper = new QueryWrapper<>();
@@ -80,6 +96,21 @@ public class HzQualificationController extends BaseController {
         Long count = batchTenantMapper.selectCount(wrapper);
         data.put("isBatchTenant", count != null && count > 0);
         return success(data);
+    }
+
+    /**
+     * 判断手机号是否在预览白名单（逗号分隔）
+     */
+    private boolean isPreviewPhone(String phone) {
+        if (StringUtils.isEmpty(phone) || StringUtils.isEmpty(previewPhones)) {
+            return false;
+        }
+        for (String p : previewPhones.split(",")) {
+            if (phone.trim().equals(p.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
