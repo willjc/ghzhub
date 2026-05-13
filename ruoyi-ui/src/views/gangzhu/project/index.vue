@@ -80,6 +80,16 @@
       <el-table-column label="总楼栋数" align="center" prop="totalBuildings" width="100" />
       <el-table-column label="总房源" align="center" prop="totalHouses" width="100" />
       <el-table-column label="可用房源" align="center" prop="availableHouses" width="100" />
+      <el-table-column label="维修数" align="center" prop="maintainHouses" width="90">
+        <template slot-scope="scope">
+          <span :style="{ color: (scope.row.maintainHouses || 0) > 0 ? '#E6A23C' : '#909399' }">{{ scope.row.maintainHouses || 0 }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="下架数" align="center" prop="offlineHouses" width="90">
+        <template slot-scope="scope">
+          <span :style="{ color: (scope.row.offlineHouses || 0) > 0 ? '#F56C6C' : '#909399' }">{{ scope.row.offlineHouses || 0 }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="排序" align="center" prop="sortOrder" width="80" />
       <el-table-column label="状态" align="center" prop="status" width="80">
         <template slot-scope="scope">

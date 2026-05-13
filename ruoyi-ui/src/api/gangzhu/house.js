@@ -101,3 +101,21 @@ export function saveHouseVrs(data) {
     data: data
   })
 }
+
+// 按房源ID列表批量修改房源状态（0/3/4 受控白名单，跳过 1/2）
+export function batchUpdateHouseStatusByIds(houseIds, targetStatus) {
+  return request({
+    url: '/system/house/batchUpdateStatusByIds',
+    method: 'post',
+    data: { houseIds, targetStatus }
+  })
+}
+
+// 房源列表页统计看板（按当前查询条件返回各状态数量）
+export function getHouseStats(query) {
+  return request({
+    url: '/system/house/stats',
+    method: 'get',
+    params: query
+  })
+}

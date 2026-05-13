@@ -212,4 +212,41 @@ public class HzHouseController extends BaseController
         String targetStatus = body == null ? null : body.get("targetStatus");
         return success(houseService.batchUpdateHouseStatusByProject(projectId, targetStatus));
     }
+
+    /**
+     * 按房源ID列表批量修改房源状态（受控过渡：0/3/4 可互转，跳过 1/2）
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:house:edit')")
+    @Log(title = "房源管理-批量改状态(按ID)", businessType = BusinessType.UPDATE)
+    @PostMapping("/batchUpdateStatusByIds")
+    public AjaxResult batchUpdateStatusByIds(@RequestBody Map<String, Object> body)
+    {
+        if (body == null)
+        {
+            return error("参数不能为空");
+        }
+        Object idsObj = body.get("houseIds");
+        Object targetObj = body.get("targetStatus");
+        String targetStatus = targetObj == null ? null : targetObj.toString();
+        List<Long> houseIds = new java.util.ArrayList<>();
+        if (idsObj instanceof List)
+        {
+            for (Object item : (List<?>) idsObj)
+            {
+                if (item == null) continue;
+                houseIds.add(Long.valueOf(item.toString()));
+            }
+        }
+        return success(houseService.batchUpdateHouseStatusByIds(houseIds, targetStatus));
+    }
+
+    /**
+     * 房源列表页统计看板（按当前查询条件返回各状态数量）
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:house:list')")
+    @GetMapping("/stats")
+    public AjaxResult stats(HzHouse house)
+    {
+        return success(houseService.selectHouseStatusStats(house));
+    }
 }

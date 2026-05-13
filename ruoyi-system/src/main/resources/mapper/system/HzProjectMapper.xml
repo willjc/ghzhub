@@ -15,6 +15,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="totalBuildings"  column="total_buildings" />
         <result property="totalHouses"     column="total_houses"    />
         <result property="availableHouses" column="available_houses"/>
+        <result property="maintainHouses"  column="maintain_houses" />
+        <result property="offlineHouses"   column="offline_houses"  />
         <result property="projectIntro"    column="project_intro"   />
         <result property="coverImage"      column="cover_image"     />
         <result property="price"           column="price"           />
@@ -51,6 +53,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             IFNULL((SELECT COUNT(*) FROM hz_building b WHERE b.project_id = p.project_id AND b.del_flag = '0'), 0) as total_buildings,
             IFNULL((SELECT COUNT(*) FROM hz_house h WHERE h.project_id = p.project_id AND h.del_flag = '0'), 0) as total_houses,
             IFNULL((SELECT COUNT(*) FROM hz_house h WHERE h.project_id = p.project_id AND h.del_flag = '0' AND h.house_status = '0'), 0) as available_houses,
+            IFNULL((SELECT COUNT(*) FROM hz_house h WHERE h.project_id = p.project_id AND h.del_flag = '0' AND h.house_status = '3'), 0) as maintain_houses,
+            IFNULL((SELECT COUNT(*) FROM hz_house h WHERE h.project_id = p.project_id AND h.del_flag = '0' AND h.house_status = '4'), 0) as offline_houses,
             p.project_intro, p.cover_image, p.price, p.facilities, p.transportation,
             p.manager_id, p.manager_name, p.manager_phone,
             p.service_phone, p.property_phone,

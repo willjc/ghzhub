@@ -137,7 +137,7 @@
 					projectId: project.projectId, // 项目ID（用于跳转详情）
 					title: project.projectName || '未命名项目', // 项目名称
 					hasUnits: (project.availableHouses || 0) > 0, // 是否有房源
-					totalUnits: project.totalHouses || 0, // 共 N 套（总房源数）
+					totalUnits: Math.max(0, (project.totalHouses || 0) - (project.offlineHouses || 0)), // 共 N 套（总房源数，扣除下架）
 					distance: '附近', // 距离（暂时固定值）
 					address: project.address || '地址未填写', // 地址
 					tags: this.parseFacilities(project.facilities), // 设施标签

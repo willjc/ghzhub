@@ -154,7 +154,7 @@ export default {
 						projectName: project.projectName || '未命名项目',
 						address: project.address || '地址未填写',
 						distance: this.calculateDistance(project.latitude, project.longitude),
-						totalHouses: project.totalHouses || 0,
+						totalHouses: Math.max(0, (project.totalHouses || 0) - (project.offlineHouses || 0)),
 						distribution: project.distribution || '',
 						houseType: project.houseType || '',
 						area: project.area || '',

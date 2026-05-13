@@ -520,4 +520,110 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
         result.put("skippedRented", (int) skippedRented);
         return result;
     }
+
+    /**
+     * 按房源ID列表批量修改房源状态（受控过渡白名单）。
+     * 白名单：仅 0/3/4 之间可互转；1/2 状态跳过（有订单/合同联动）。
+     */
+    @Override
+    @Transactional
+    public Map<String, Integer> batchUpdateHouseStatusByIds(List<Long> houseIds, String targetStatus)
+    {
+        if (houseIds == null || houseIds.isEmpty())
+        {
+            throw new ServiceException("房源ID不能为空");
+        }
+        Set<String> allowed = new HashSet<>(Arrays.asList("0", "3", "4"));
+        if (targetStatus == null || !allowed.contains(targetStatus))
+        {
+            throw new ServiceException("目标状态非法，仅支持 0(空置)/3(维修中)/4(下架)");
+        }
+
+        // 统计选中房源总数
+        long total = this.count(new LambdaQueryWrapper<HzHouse>()
+                .in(HzHouse::getHouseId, houseIds));
+        // 统计已预订 / 已出租（将被跳过）
+        long skippedBooked = this.count(new LambdaQueryWrapper<HzHouse>()
+                .in(HzHouse::getHouseId, houseIds)
+                .eq(HzHouse::getHouseStatus, "1"));
+        long skippedRented = this.count(new LambdaQueryWrapper<HzHouse>()
+                .in(HzHouse::getHouseId, houseIds)
+                .eq(HzHouse::getHouseStatus, "2"));
+
+        // 仅更新白名单源状态（0/3/4），且非目标状态的房源
+        LambdaUpdateWrapper<HzHouse> uw = new LambdaUpdateWrapper<HzHouse>()
+                .in(HzHouse::getHouseId, houseIds)
+                .in(HzHouse::getHouseStatus, "0", "3", "4")
+                .ne(HzHouse::getHouseStatus, targetStatus)
+                .set(HzHouse::getHouseStatus, targetStatus);
+        int affected = this.baseMapper.update(null, uw);
+
+        Map<String, Integer> result = new LinkedHashMap<>();
+        result.put("total", (int) total);
+        result.put("affected", affected);
+        result.put("skippedBooked", (int) skippedBooked);
+        result.put("skippedRented", (int) skippedRented);
+        return result;
+    }
+
+    /**
+     * 按查询条件统计各状态房源数量（列表页看板用）。
+     * 条件与 selectHouseList 对齐：projectId / buildingId / unitId / houseCode / houseNo / status。
+     */
+    @Override
+    public Map<String, Integer> selectHouseStatusStats(HzHouse house)
+    {
+        LambdaQueryWrapper<HzHouse> base = buildStatsQueryWrapper(house);
+
+        long total = this.count(base);
+        long vacant = this.count(buildStatsQueryWrapper(house).eq(HzHouse::getHouseStatus, "0"));
+        long booked = this.count(buildStatsQueryWrapper(house).eq(HzHouse::getHouseStatus, "1"));
+        long rented = this.count(buildStatsQueryWrapper(house).eq(HzHouse::getHouseStatus, "2"));
+        long maintain = this.count(buildStatsQueryWrapper(house).eq(HzHouse::getHouseStatus, "3"));
+        long offline = this.count(buildStatsQueryWrapper(house).eq(HzHouse::getHouseStatus, "4"));
+
+        Map<String, Integer> result = new LinkedHashMap<>();
+        result.put("total", (int) total);
+        result.put("vacant", (int) vacant);
+        result.put("booked", (int) booked);
+        result.put("rented", (int) rented);
+        result.put("maintain", (int) maintain);
+        result.put("offline", (int) offline);
+        return result;
+    }
+
+    /** 构造看板统计的基础查询条件（与列表页对齐） */
+    private LambdaQueryWrapper<HzHouse> buildStatsQueryWrapper(HzHouse house)
+    {
+        LambdaQueryWrapper<HzHouse> qw = new LambdaQueryWrapper<>();
+        if (house == null)
+        {
+            return qw;
+        }
+        if (house.getProjectId() != null)
+        {
+            qw.eq(HzHouse::getProjectId, house.getProjectId());
+        }
+        if (house.getBuildingId() != null)
+        {
+            qw.eq(HzHouse::getBuildingId, house.getBuildingId());
+        }
+        if (house.getUnitId() != null)
+        {
+            qw.eq(HzHouse::getUnitId, house.getUnitId());
+        }
+        if (StringUtils.isNotBlank(house.getHouseCode()))
+        {
+            qw.like(HzHouse::getHouseCode, house.getHouseCode());
+        }
+        if (StringUtils.isNotBlank(house.getHouseNo()))
+        {
+            qw.like(HzHouse::getHouseNo, house.getHouseNo());
+        }
+        if (StringUtils.isNotBlank(house.getStatus()))
+        {
+            qw.eq(HzHouse::getStatus, house.getStatus());
+        }
+        return qw;
+    }
 }

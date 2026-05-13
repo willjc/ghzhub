@@ -61,6 +61,14 @@ public class HzProject extends BaseEntity
     @TableField("available_houses")
     private Integer availableHouses;
 
+    /** 维修中房源数（house_status=3） */
+    @TableField(exist = false)
+    private Integer maintainHouses;
+
+    /** 下架房源数（house_status=4） */
+    @TableField(exist = false)
+    private Integer offlineHouses;
+
     /** 项目介绍 */
     @TableField("project_intro")
     private String projectIntro;
@@ -247,6 +255,26 @@ public class HzProject extends BaseEntity
     public Integer getAvailableHouses()
     {
         return availableHouses;
+    }
+
+    public void setMaintainHouses(Integer maintainHouses)
+    {
+        this.maintainHouses = maintainHouses;
+    }
+
+    public Integer getMaintainHouses()
+    {
+        return maintainHouses;
+    }
+
+    public void setOfflineHouses(Integer offlineHouses)
+    {
+        this.offlineHouses = offlineHouses;
+    }
+
+    public Integer getOfflineHouses()
+    {
+        return offlineHouses;
     }
 
     public void setProjectIntro(String projectIntro)
@@ -482,6 +510,8 @@ public class HzProject extends BaseEntity
             .append("totalBuildings", getTotalBuildings())
             .append("totalHouses", getTotalHouses())
             .append("availableHouses", getAvailableHouses())
+            .append("maintainHouses", getMaintainHouses())
+            .append("offlineHouses", getOfflineHouses())
             .append("distribution", getDistribution())
             .append("houseType", getHouseType())
             .append("area", getArea())

@@ -135,4 +135,24 @@ public interface IHzHouseService extends IService<HzHouse>
      * @return 汇总：total / affected / skippedBooked(1) / skippedRented(2)
      */
     Map<String, Integer> batchUpdateHouseStatusByProject(Long projectId, String targetStatus);
+
+    /**
+     * 按房源ID列表批量修改房源状态（受控过渡白名单）。
+     * 仅对源状态为 0(空置) / 3(维修中) / 4(下架) 的房源进行更新，
+     * 跳过 1(已预订) / 2(已出租)，避免与订单/合同冲突。
+     * 目标状态同样限定在 0 / 3 / 4 范围。
+     *
+     * @param houseIds     房源ID列表
+     * @param targetStatus 目标状态（0/3/4）
+     * @return 汇总：total / affected / skippedBooked(1) / skippedRented(2)
+     */
+    Map<String, Integer> batchUpdateHouseStatusByIds(List<Long> houseIds, String targetStatus);
+
+    /**
+     * 按当前查询条件统计各状态房源数量（用于列表页统计看板）。
+     *
+     * @param house 查询条件（复用 selectHouseList 的条件）
+     * @return 各状态计数：total / vacant(0) / booked(1) / rented(2) / maintain(3) / offline(4)
+     */
+    Map<String, Integer> selectHouseStatusStats(HzHouse house);
 }

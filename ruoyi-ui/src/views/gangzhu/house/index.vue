@@ -1,5 +1,33 @@
 <template>
   <div class="app-container">
+    <!-- 统计看板 -->
+    <div class="stats-board" v-loading="statsLoading">
+      <div class="stats-item stats-total">
+        <div class="stats-label">总数</div>
+        <div class="stats-value">{{ stats.total || 0 }}</div>
+      </div>
+      <div class="stats-item stats-vacant">
+        <div class="stats-label">空置</div>
+        <div class="stats-value">{{ stats.vacant || 0 }}</div>
+      </div>
+      <div class="stats-item stats-booked">
+        <div class="stats-label">已预订</div>
+        <div class="stats-value">{{ stats.booked || 0 }}</div>
+      </div>
+      <div class="stats-item stats-rented">
+        <div class="stats-label">已出租</div>
+        <div class="stats-value">{{ stats.rented || 0 }}</div>
+      </div>
+      <div class="stats-item stats-maintain">
+        <div class="stats-label">维修中</div>
+        <div class="stats-value">{{ stats.maintain || 0 }}</div>
+      </div>
+      <div class="stats-item stats-offline">
+        <div class="stats-label">下架</div>
+        <div class="stats-value">{{ stats.offline || 0 }}</div>
+      </div>
+      <div class="stats-tip">统计跟随当前查询条件动态刷新</div>
+    </div>
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
       <el-form-item label="所属项目" prop="projectId">
         <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable @change="handleQueryProjectChange" style="width: 200px">
@@ -100,6 +128,17 @@
           @click="handleDelete"
           v-hasPermi="['gangzhu:house:remove']"
         >删除</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          plain
+          icon="el-icon-refresh"
+          size="mini"
+          :disabled="multiple"
+          @click="handleBatchUpdateStatus"
+          v-hasPermi="['gangzhu:house:edit']"
+        >批量改房源状态</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -832,11 +871,53 @@
         <el-button @click="upload.open = false">取 消</el-button>
       </div>
     </el-dialog>
+
+    <!-- 批量修改房源状态对话框 -->
+    <el-dialog
+      title="批量修改房源状态"
+      :visible.sync="batchStatusDialog.visible"
+      width="520px"
+      append-to-body
+      :close-on-click-modal="false"
+    >
+      <div style="padding: 0 20px;">
+        <el-alert
+          type="info"
+          :closable="false"
+          style="margin-bottom: 16px;"
+        >
+          <template slot="title">
+            <div style="line-height: 1.8;">
+              <div>共选中 <b>{{ batchStatusDialog.count }}</b> 套房源</div>
+              <div>• 仅对"<b>空置 / 维修中 / 下架</b>"三类房源生效</div>
+              <div>• "<b>已预订 / 已出租</b>"房源将自动跳过（保护订单与合同）</div>
+            </div>
+          </template>
+        </el-alert>
+        <el-form label-width="100px">
+          <el-form-item label="目标状态" required>
+            <el-radio-group v-model="batchStatusDialog.targetStatus">
+              <el-radio label="0">空置</el-radio>
+              <el-radio label="3">维修中</el-radio>
+              <el-radio label="4">下架</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </el-form>
+      </div>
+      <div slot="footer">
+        <el-button @click="batchStatusDialog.visible = false">取 消</el-button>
+        <el-button
+          type="primary"
+          :loading="batchStatusDialog.loading"
+          @click="submitBatchUpdateStatus"
+        >确 定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listHouse, getHouse, getHouseDetail, addHouse, updateHouse, delHouse, getHouseImages, saveHouseImages, getHouseVrs, saveHouseVrs } from "@/api/gangzhu/house";
+import { listHouse, getHouse, getHouseDetail, addHouse, updateHouse, delHouse, getHouseImages, saveHouseImages, getHouseVrs, saveHouseVrs, batchUpdateHouseStatusByIds, getHouseStats } from "@/api/gangzhu/house";
 import { listProject } from "@/api/gangzhu/project";
 import { listBuilding } from "@/api/gangzhu/building";
 import { listUnit } from "@/api/gangzhu/unit";
@@ -906,6 +987,16 @@ export default {
         headers: { Authorization: "Bearer " + this.$store.getters.token },
         url: process.env.VUE_APP_BASE_API + "/system/house/importData"
       },
+      // 统计看板数据
+      stats: { total: 0, vacant: 0, booked: 0, rented: 0, maintain: 0, offline: 0 },
+      statsLoading: false,
+      // 批量修改房源状态对话框
+      batchStatusDialog: {
+        visible: false,
+        loading: false,
+        count: 0,
+        targetStatus: '3'
+      },
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -957,6 +1048,7 @@ export default {
   },
   created() {
     this.getList();
+    this.getStats();
     this.getProjectList();
     // 移除初始加载房型列表，改为选择项目时加载
   },
@@ -973,6 +1065,69 @@ export default {
         this.houseList = response.rows;
         this.total = response.total;
         this.loading = false;
+      });
+      // 同步刷新统计看板
+      this.getStats();
+    },
+    /** 查询统计看板（跟随查询条件） */
+    getStats() {
+      this.statsLoading = true;
+      getHouseStats(this.queryParams).then(response => {
+        this.stats = response.data || { total: 0, vacant: 0, booked: 0, rented: 0, maintain: 0, offline: 0 };
+        this.statsLoading = false;
+      }).catch(() => {
+        this.statsLoading = false;
+      });
+    },
+    /** 打开批量改状态弹窗 */
+    handleBatchUpdateStatus() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning('请先勾选要修改的房源');
+        return;
+      }
+      this.batchStatusDialog = {
+        visible: true,
+        loading: false,
+        count: this.ids.length,
+        targetStatus: '3'
+      };
+    },
+    /** 提交批量改状态 */
+    submitBatchUpdateStatus() {
+      const ids = this.ids.slice();
+      const { targetStatus } = this.batchStatusDialog;
+      const statusTextMap = { '0': '空置', '3': '维修中', '4': '下架' };
+      this.$modal.confirm(
+        '将把已选中的 ' + ids.length + ' 套房源批量改为【' + statusTextMap[targetStatus] + '】。<br/>' +
+        '<span style="color:#E6A23C;">已预订 / 已出租的房源将被自动跳过，不会影响现有订单和合同。</span><br/>是否继续？',
+        '批量修改确认',
+        {
+          dangerouslyUseHTMLString: true,
+          confirmButtonText: '确定执行',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      ).then(() => {
+        this.batchStatusDialog.loading = true;
+        return batchUpdateHouseStatusByIds(ids, targetStatus);
+      }).then(res => {
+        this.batchStatusDialog.loading = false;
+        this.batchStatusDialog.visible = false;
+        const d = (res && res.data) || {};
+        this.$modal.alert(
+          '共 ' + (d.total || 0) + ' 套房源<br/>' +
+          '<span style="color:#67C23A;">已修改：' + (d.affected || 0) + ' 套</span><br/>' +
+          '<span style="color:#909399;">跳过(已预订)：' + (d.skippedBooked || 0) + ' 套</span><br/>' +
+          '<span style="color:#909399;">跳过(已出租)：' + (d.skippedRented || 0) + ' 套</span>',
+          '执行结果',
+          { dangerouslyUseHTMLString: true, type: 'success' }
+        );
+        this.getList();
+      }).catch(err => {
+        this.batchStatusDialog.loading = false;
+        if (err && err.message !== 'cancel') {
+          // 真实错误已由请求层抛出 toast，这里静默
+        }
       });
     },
     /** 查询项目列表 */
@@ -1536,6 +1691,80 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+/* 统计看板 */
+.stats-board {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+
+  .stats-item {
+    flex: 1;
+    min-width: 110px;
+    padding: 10px 14px;
+    border-radius: 4px;
+    background: #f5f7fa;
+    border-left: 4px solid #dcdfe6;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .stats-label {
+      font-size: 13px;
+      color: #606266;
+      margin-bottom: 4px;
+    }
+
+    .stats-value {
+      font-size: 22px;
+      font-weight: 600;
+      color: #303133;
+      line-height: 1.2;
+    }
+  }
+
+  .stats-total {
+    border-left-color: #409EFF;
+    .stats-value { color: #409EFF; }
+  }
+  .stats-vacant {
+    border-left-color: #67C23A;
+    .stats-value { color: #67C23A; }
+  }
+  .stats-booked {
+    border-left-color: #E6A23C;
+    .stats-value { color: #E6A23C; }
+  }
+  .stats-rented {
+    border-left-color: #909399;
+    .stats-value { color: #909399; }
+  }
+  .stats-maintain {
+    border-left-color: #F0A020;
+    .stats-value { color: #F0A020; }
+  }
+  .stats-offline {
+    border-left-color: #F56C6C;
+    .stats-value { color: #F56C6C; }
+  }
+
+  .stats-tip {
+    flex-basis: 100%;
+    font-size: 12px;
+    color: #909399;
+    margin-top: 4px;
+  }
+}
+
 .form-tip {
   font-size: 12px;
   color: #999;
