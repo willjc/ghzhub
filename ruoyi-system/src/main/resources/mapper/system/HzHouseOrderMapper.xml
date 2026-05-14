@@ -5,9 +5,11 @@
 
     <select id="selectExpiredOrders" resultType="com.ruoyi.system.domain.HzHouseOrder">
         SELECT * FROM hz_house_order
-        WHERE order_status IN ('0', '1')
-          AND lock_expire_time &lt; NOW()
-          AND del_flag = '0'
+        WHERE del_flag = '0'
+          AND (
+                  (order_status IN ('0', '1') AND lock_expire_time IS NOT NULL AND lock_expire_time &lt; NOW())
+               OR (order_status = '2'         AND doc_upload_expire_time IS NOT NULL AND doc_upload_expire_time &lt; NOW())
+              )
     </select>
 
 </mapper>

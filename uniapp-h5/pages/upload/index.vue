@@ -21,8 +21,14 @@
 				</view>
 			</view>
 
+			<!-- 顶部 Banner：被驳回提醒（双层提醒-第一层） -->
+			<view v-if="rejectedCount > 0" class="rejected-banner">
+				<text class="rejected-banner-icon">⚠</text>
+				<text class="rejected-banner-text">您有 {{ rejectedCount }} 份资料被驳回，请尽快查看原因并重新上传</text>
+			</view>
+
 			<!-- 0 单提示：暂无待上传材料的合同 -->
-			<view v-else class="empty-tip">
+			<view v-if="pendingOrders.length === 0" class="empty-tip">
 				<text class="empty-tip-text">您当前没有待上传材料的合同，请先在小程序内完成选房与签约后再上传。</text>
 			</view>
 
@@ -81,14 +87,25 @@
 						<text class="upload-label">工作证明</text>
 						<text class="upload-tip">（工作证明内容需与基本信息内容一致）</text>
 					</view>
-					
+
+					<!-- 状态卡（双层提醒-第二层） -->
+					<view v-if="workStatusInfo" class="doc-status-card" :class="'status-' + workStatusInfo.status">
+						<view class="doc-status-header">
+							<text class="doc-status-tag" :class="'tag-' + workStatusInfo.status">{{ workStatusInfo.label }}</text>
+							<text class="doc-status-title">{{ workStatusInfo.title }}</text>
+						</view>
+						<view v-if="workStatusInfo.status === 'rejected'" class="doc-status-reason">
+							<text class="doc-status-reason-label">拒绝原因：</text>
+							<text class="doc-status-reason-text">{{ workStatusInfo.reason || '未填写原因' }}</text>
+						</view>
+					</view>
 
 					<!-- 上传区域 -->
-					<view class="upload-area" @click="handleUpload">
+					<view class="upload-area" :class="{ 'upload-area-locked': workLocked }" @click="handleUpload">
 						<image v-if="workFilePreview" class="uploaded-image" :src="workFilePreview" mode="aspectFill"></image>
 						<view v-else class="upload-placeholder">
 							<image class="upload-icon" src="/static/上传@2x.png"></image>
-							<text class="upload-text">点击上传</text>
+							<text class="upload-text">{{ workLocked ? '审核中，不可修改' : (workIsRejected ? '点击重新上传' : '点击上传') }}</text>
 						</view>
 					</view>
 
@@ -105,11 +122,24 @@
 						<text class="upload-label">学历证明</text>
 						<text class="upload-tip">（毕业证或在读证明）</text>
 					</view>
-					<view class="upload-area" @click="handleEducationUpload">
+
+					<!-- 状态卡（双层提醒-第二层） -->
+					<view v-if="eduStatusInfo" class="doc-status-card" :class="'status-' + eduStatusInfo.status">
+						<view class="doc-status-header">
+							<text class="doc-status-tag" :class="'tag-' + eduStatusInfo.status">{{ eduStatusInfo.label }}</text>
+							<text class="doc-status-title">{{ eduStatusInfo.title }}</text>
+						</view>
+						<view v-if="eduStatusInfo.status === 'rejected'" class="doc-status-reason">
+							<text class="doc-status-reason-label">拒绝原因：</text>
+							<text class="doc-status-reason-text">{{ eduStatusInfo.reason || '未填写原因' }}</text>
+						</view>
+					</view>
+
+					<view class="upload-area" :class="{ 'upload-area-locked': eduLocked }" @click="handleEducationUpload">
 						<image v-if="educationFilePreview" :src="educationFilePreview" mode="aspectFill" class="uploaded-image"></image>
 						<view v-else class="upload-placeholder">
 							<image class="upload-icon" src="/static/上传@2x.png"></image>
-							<text class="upload-text">点击上传</text>
+							<text class="upload-text">{{ eduLocked ? '审核中，不可修改' : (eduIsRejected ? '点击重新上传' : '点击上传') }}</text>
 						</view>
 					</view>
 					<!-- 文件格式提示 -->
@@ -123,7 +153,7 @@
 		<!-- 提交按钮 -->
 		<view class="submit-section">
 			<button class="submit-btn" :class="{ 'submit-btn-disabled': pendingOrders.length === 0 }" :disabled="pendingOrders.length === 0" @click="handleSubmit">
-				<text class="submit-btn-text">{{ pendingOrders.length === 0 ? '暂无可提交的合同' : '提交材料' }}</text>
+				<text class="submit-btn-text">{{ pendingOrders.length === 0 ? '暂无合同' : '提交材料' }}</text>
 			</button>
 		</view>
 	</view>
@@ -159,6 +189,9 @@ export default {
 			eduUploading: false,      // 是否正在上传中
 			loading: false,
 			pendingOrders: [],
+			// 后端 pending-upload 返回的资料状态对象 { documentId, auditStatus, auditOpinion, filePath }
+			workDoc: null,
+			eduDoc: null,
 			_countdownTimer: null,
 		}
 	},
@@ -175,7 +208,51 @@ export default {
 	onUnload() {
 		if (this._countdownTimer) clearInterval(this._countdownTimer)
 	},
+	computed: {
+		// 工作证明状态描述（用于状态卡显示）
+		workStatusInfo() {
+			return this.buildStatusInfo(this.workDoc)
+		},
+		eduStatusInfo() {
+			return this.buildStatusInfo(this.eduDoc)
+		},
+		// 是否锁定（待审核 / 已通过 时锁定上传区）
+		workLocked() {
+			return this.workDoc && (this.workDoc.auditStatus === '0' || this.workDoc.auditStatus === '1')
+		},
+		eduLocked() {
+			return this.eduDoc && (this.eduDoc.auditStatus === '0' || this.eduDoc.auditStatus === '1')
+		},
+		// 是否被驳回
+		workIsRejected() {
+			return this.workDoc && this.workDoc.auditStatus === '2'
+		},
+		eduIsRejected() {
+			return this.eduDoc && this.eduDoc.auditStatus === '2'
+		},
+		// 被驳回总数（用于顶部 banner）
+		rejectedCount() {
+			let n = 0
+			if (this.workIsRejected) n++
+			if (this.eduIsRejected) n++
+			return n
+		},
+	},
 	methods: {
+		/**
+		 * 根据资料对象生成状态卡所需信息
+		 */
+		buildStatusInfo(doc) {
+			if (!doc) return null
+			const map = {
+				'0': { status: 'pending',  label: '审核中',     title: '资料已提交，等待管理员审核' },
+				'1': { status: 'approved', label: '✓ 已通过',  title: '资料已审核通过' },
+				'2': { status: 'rejected', label: '× 已驳回',  title: '资料未通过审核，请按原因重新上传' },
+			}
+			const info = map[doc.auditStatus]
+			if (!info) return null
+			return { ...info, reason: doc.auditOpinion }
+		},
 		/**
 		 * 加载用户信息
 		 */
@@ -249,6 +326,10 @@ export default {
 
 		// 工作证明：选择图片后立即上传到服务器
 		handleUpload() {
+			if (this.workLocked) {
+				uni.showToast({ title: '资料正在审核中或已通过，不可修改', icon: 'none' })
+				return
+			}
 			if (this.workUploading) {
 				uni.showToast({ title: '正在上传中，请稍候', icon: 'none' })
 				return
@@ -264,16 +345,18 @@ export default {
 					this.workFile = null // 清除旧的服务器路径
 					this.workUploading = true
 					uni.showLoading({ title: '上传中...' })
-					this.uploadFile(tempPath, '3').then(uploadRes => {
+					// 被驳回时走 reupload 覆盖原记录；否则走普通 upload
+					const reuploadId = this.workIsRejected ? (this.workDoc && this.workDoc.documentId) : null
+					this.uploadFile(tempPath, '3', reuploadId).then(uploadRes => {
 						uni.hideLoading()
 						this.workUploading = false
 						if (uploadRes && uploadRes.code === 200) {
-							// 上传成功，保存服务器路径（data中包含filePath和documentId）
 							const resData = uploadRes.data || uploadRes
 							this.workFile = resData.filePath || resData.fileName || resData.url
 							uni.showToast({ title: '工作证明上传成功', icon: 'success' })
+							// 重传成功后刷新状态
+							this.loadPendingOrders()
 						} else {
-							// 上传失败，清除预览
 							this.workFilePreview = null
 							uni.showToast({ title: uploadRes?.msg || '工作证明上传失败', icon: 'none' })
 						}
@@ -287,6 +370,10 @@ export default {
 		},
 		// 学历证明：选择图片后立即上传到服务器
 		handleEducationUpload() {
+			if (this.eduLocked) {
+				uni.showToast({ title: '资料正在审核中或已通过，不可修改', icon: 'none' })
+				return
+			}
 			if (this.eduUploading) {
 				uni.showToast({ title: '正在上传中，请稍候', icon: 'none' })
 				return
@@ -302,16 +389,16 @@ export default {
 					this.educationFile = null // 清除旧的服务器路径
 					this.eduUploading = true
 					uni.showLoading({ title: '上传中...' })
-					this.uploadFile(tempPath, '2').then(uploadRes => {
+					const reuploadId = this.eduIsRejected ? (this.eduDoc && this.eduDoc.documentId) : null
+					this.uploadFile(tempPath, '2', reuploadId).then(uploadRes => {
 						uni.hideLoading()
 						this.eduUploading = false
 						if (uploadRes && uploadRes.code === 200) {
-							// 上传成功，保存服务器路径（data中包含filePath和documentId）
 							const resData = uploadRes.data || uploadRes
 							this.educationFile = resData.filePath || resData.fileName || resData.url
 							uni.showToast({ title: '学历证明上传成功', icon: 'success' })
+							this.loadPendingOrders()
 						} else {
-							// 上传失败，清除预览
 							this.educationFilePreview = null
 							uni.showToast({ title: uploadRes?.msg || '学历证明上传失败', icon: 'none' })
 						}
@@ -338,16 +425,42 @@ export default {
 				return
 			}
 
-			uni.showToast({ title: '提交成功', icon: 'success' })
-			setTimeout(() => {
-				uni.navigateBack()
-			}, 1500)
+			// 长文案告知弹窗：单按钮"我已知晓"，留在原页
+			uni.showModal({
+				title: '资料上传完成',
+				content: '您已完成资料上传，请于合同签订后 72 小时内办理入住手续。我方将在 1 个月内完成资料审核，请务必保证所提交材料真实、完整、有效。后续在审核及不定期抽查中，如发现资料缺失、虚假填报、材料过期等违规情形，将记入个人诚信档案，同时责令限期退房并追缴相应违约金。',
+				showCancel: false,
+				confirmText: '我已知晓',
+				confirmColor: '#0f73ff',
+				success: () => {
+					// 关闭弹窗后留在 upload 页，刷新一下状态展示
+					this.loadPendingOrders()
+				}
+			})
 		},
 		async loadPendingOrders() {
 			try {
 				const res = await getPendingUploadOrders(this.userId)
 				if (res.code === 200) {
 					this.pendingOrders = res.data || []
+					// 从首条订单解析两类资料的最新状态（hz_document.tenant_id 等于用户 id，全用户共用一份）
+					if (this.pendingOrders.length > 0) {
+						const first = this.pendingOrders[0]
+						this.workDoc = first.workProof || null
+						this.eduDoc  = first.eduProof  || null
+						// 已有图片回填预览
+						if (this.workDoc && this.workDoc.filePath) {
+							this.workFilePreview = this.getImageUrl(this.workDoc.filePath)
+							this.workFile = this.workDoc.filePath
+						}
+						if (this.eduDoc && this.eduDoc.filePath) {
+							this.educationFilePreview = this.getImageUrl(this.eduDoc.filePath)
+							this.educationFile = this.eduDoc.filePath
+						}
+					} else {
+						this.workDoc = null
+						this.eduDoc = null
+					}
 					this.startCountdownTimer()
 				}
 			} catch (e) {
@@ -369,18 +482,24 @@ export default {
 			const s = seconds % 60
 			return `${h}时${m}分${s}秒`
 		},
-		async uploadFile(filePath, documentType) {
+		async uploadFile(filePath, documentType, reuploadDocumentId) {
 			// 校验文件路径有效性
 			if (!filePath) {
 				return { code: 500, msg: '文件路径无效，请重新选择' }
 			}
 			return new Promise((resolve) => {
 				const token = uni.getStorageSync('token') || ''
+				// 区分新上传 vs 重传（覆盖被驳回记录）
+				const isReupload = !!reuploadDocumentId
+				const url = config.baseUrl + (isReupload ? '/h5/document/reupload' : '/h5/document/upload')
+				const formData = isReupload
+					? { documentId: reuploadDocumentId }
+					: { documentType, tenantId: this.userId, contractId: this.contractId }
 				uni.uploadFile({
-					url: config.baseUrl + '/h5/document/upload',
+					url,
 					filePath,
 					name: 'file',
-					formData: { documentType, tenantId: this.userId, contractId: this.contractId },
+					formData,
 					header: {
 						'Authorization': token ? ('Bearer ' + token) : ''
 					},
@@ -633,6 +752,116 @@ export default {
 		color: #b76b00;
 		font-size: 26rpx;
 		line-height: 40rpx;
+	}
+
+	/* 顶部 Banner：被驳回提醒 */
+	.rejected-banner {
+		display: flex;
+		align-items: center;
+		margin: 16rpx 24rpx 8rpx;
+		padding: 20rpx 24rpx;
+		background: #fff1f0;
+		border: 1rpx solid #ffccc7;
+		border-radius: 12rpx;
+	}
+
+	.rejected-banner-icon {
+		font-size: 32rpx;
+		color: #e5252b;
+		margin-right: 12rpx;
+	}
+
+	.rejected-banner-text {
+		color: #cf1322;
+		font-size: 26rpx;
+		font-weight: 500;
+		line-height: 36rpx;
+	}
+
+	/* 资料状态卡 */
+	.doc-status-card {
+		margin: 0 41rpx 16rpx 41rpx;
+		padding: 16rpx 20rpx;
+		border-radius: 12rpx;
+		border: 1rpx solid transparent;
+	}
+
+	.doc-status-card.status-pending {
+		background: #f5f5f5;
+		border-color: #e0e0e0;
+	}
+
+	.doc-status-card.status-approved {
+		background: #f6ffed;
+		border-color: #b7eb8f;
+	}
+
+	.doc-status-card.status-rejected {
+		background: #fff1f0;
+		border-color: #ffa39e;
+	}
+
+	.doc-status-header {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+	}
+
+	.doc-status-tag {
+		display: inline-block;
+		padding: 4rpx 14rpx;
+		border-radius: 8rpx;
+		font-size: 22rpx;
+		margin-right: 12rpx;
+		flex-shrink: 0;
+	}
+
+	.doc-status-tag.tag-pending {
+		background: #d9d9d9;
+		color: #595959;
+	}
+
+	.doc-status-tag.tag-approved {
+		background: #52c41a;
+		color: #fff;
+	}
+
+	.doc-status-tag.tag-rejected {
+		background: #e5252b;
+		color: #fff;
+	}
+
+	.doc-status-title {
+		font-size: 24rpx;
+		color: #333;
+		line-height: 36rpx;
+		flex: 1;
+	}
+
+	.doc-status-reason {
+		margin-top: 10rpx;
+		display: flex;
+		align-items: flex-start;
+	}
+
+	.doc-status-reason-label {
+		font-size: 24rpx;
+		color: #cf1322;
+		font-weight: 500;
+		flex-shrink: 0;
+	}
+
+	.doc-status-reason-text {
+		font-size: 24rpx;
+		color: #cf1322;
+		line-height: 34rpx;
+		flex: 1;
+	}
+
+	/* 锁定态：上传区灰显且不可点击 */
+	.upload-area-locked {
+		opacity: 0.55;
+		background: #f0f0f0 !important;
 	}
 
 	/* 提交按钮区域 */

@@ -18,3 +18,13 @@ export function auditDocument(data) {
     data: data
   })
 }
+
+// 标记资料违规（抽查专用，仅留痕，不动订单/合同）
+// 入参：{ documentId, violationReason }
+export function markViolation(data) {
+  return request({
+    url: '/h5/document/violation',
+    method: 'put',
+    data: data
+  })
+}

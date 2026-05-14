@@ -4,9 +4,8 @@
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="84px">
       <el-form-item label="审核状态" prop="auditStatus">
         <el-select v-model="queryParams.auditStatus" placeholder="全部" clearable style="width: 140px">
-          <el-option label="待审核" value="0" />
           <el-option label="已通过" value="1" />
-          <el-option label="已拒绝" value="2" />
+          <el-option label="违规" value="2" />
         </el-select>
       </el-form-item>
       <el-form-item label="资料类型" prop="documentType">
@@ -95,24 +94,18 @@
         <template slot-scope="scope">
           <el-tag v-if="scope.row.auditStatus === '0'" type="warning" size="mini">待审核</el-tag>
           <el-tag v-else-if="scope.row.auditStatus === '1'" type="success" size="mini">已通过</el-tag>
-          <el-tag v-else-if="scope.row.auditStatus === '2'" type="danger" size="mini">已拒绝</el-tag>
+          <el-tag v-else-if="scope.row.auditStatus === '2'" type="danger" size="mini">违规</el-tag>
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" width="200" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
-            v-if="scope.row.auditStatus === '0'"
-            size="mini" type="text" icon="el-icon-circle-check"
-            @click="handleApprove(scope.row)"
+            v-if="scope.row.auditStatus !== '2'"
+            size="mini" type="text" icon="el-icon-warning-outline" style="color:#E6A23C;"
+            @click="handleMarkViolation(scope.row)"
             v-hasPermi="['gangzhu:document:audit']"
-          >通过</el-button>
-          <el-button
-            v-if="scope.row.auditStatus === '0'"
-            size="mini" type="text" icon="el-icon-circle-close" style="color:#F56C6C;"
-            @click="handleReject(scope.row)"
-            v-hasPermi="['gangzhu:document:audit']"
-          >拒绝</el-button>
+          >标记违规</el-button>
           <el-button
             size="mini" type="text" icon="el-icon-view"
             @click="handleDetail(scope.row)"
@@ -130,15 +123,17 @@
       @pagination="getList"
     />
 
-    <!-- 拒绝弹窗 -->
-    <el-dialog title="拒绝原因" :visible.sync="rejectOpen" width="500px" append-to-body>
+    <!-- 标记违规弹窗 -->
+    <el-dialog title="标记违规" :visible.sync="rejectOpen" width="500px" append-to-body>
+      <el-alert type="warning" :closable="false" show-icon style="margin-bottom: 12px;"
+        title="标记违规仅做留痕（写入审核意见），不会发消息给用户、不会回滚订单与房源；后续违规处置请走线下追缴并计入诚信档案。" />
       <el-form :model="rejectForm" label-width="80px">
-        <el-form-item label="审核意见">
-          <el-input v-model="rejectForm.auditOpinion" type="textarea" :rows="4" placeholder="请填写拒绝原因，便于用户重新提交" maxlength="200" show-word-limit />
+        <el-form-item label="违规原因">
+          <el-input v-model="rejectForm.auditOpinion" type="textarea" :rows="4" placeholder="请填写违规原因（如：资料缺失/虚假填报/材料过期 等）" maxlength="200" show-word-limit />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button type="danger" @click="submitReject">确认拒绝</el-button>
+        <el-button type="warning" @click="submitReject">确认标记</el-button>
         <el-button @click="rejectOpen = false">取 消</el-button>
       </div>
     </el-dialog>
@@ -161,7 +156,7 @@
         <el-descriptions-item label="审核状态">
           <el-tag v-if="detailData.auditStatus === '0'" type="warning" size="mini">待审核</el-tag>
           <el-tag v-else-if="detailData.auditStatus === '1'" type="success" size="mini">已通过</el-tag>
-          <el-tag v-else-if="detailData.auditStatus === '2'" type="danger" size="mini">已拒绝</el-tag>
+          <el-tag v-else-if="detailData.auditStatus === '2'" type="danger" size="mini">违规</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="审核意见">{{ detailData.auditOpinion || '-' }}</el-descriptions-item>
       </el-descriptions>
@@ -177,8 +172,7 @@
       </div>
 
       <div slot="footer" class="dialog-footer">
-        <el-button v-if="detailData.auditStatus === '0'" type="success" @click="handleApprove(detailData); detailOpen = false">通过</el-button>
-        <el-button v-if="detailData.auditStatus === '0'" type="danger" @click="handleReject(detailData); detailOpen = false">拒绝</el-button>
+        <el-button v-if="detailData.auditStatus !== '2'" type="warning" @click="handleMarkViolation(detailData); detailOpen = false">标记违规</el-button>
         <el-button @click="detailOpen = false">关 闭</el-button>
       </div>
     </el-dialog>
@@ -186,7 +180,7 @@
 </template>
 
 <script>
-import { listDocument, auditDocument } from "@/api/gangzhu/document";
+import { listDocument, markViolation } from "@/api/gangzhu/document";
 
 export default {
   name: "DocumentAudit",
@@ -204,7 +198,7 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        auditStatus: "0",
+        auditStatus: "1",
         documentType: null,
         tenantName: null,
         contractNo: null
@@ -235,36 +229,28 @@ export default {
     resetQuery() {
       this.dateRange = [];
       this.resetForm("queryForm");
-      this.queryParams.auditStatus = "0";
+      this.queryParams.auditStatus = "1";
       this.handleQuery();
     },
     handleDetail(row) {
       this.detailData = { ...row };
       this.detailOpen = true;
     },
-    handleApprove(row) {
-      this.$modal.confirm(`确认通过【${row.tenantName || ''} 的${this.docTypeLabel(row.documentType)}】？`).then(() => {
-        return auditDocument({ documentId: row.documentId, auditStatus: "1", auditOpinion: "审核通过" });
-      }).then(() => {
-        this.$modal.msgSuccess("已通过");
-        this.getList();
-      }).catch(() => {});
-    },
-    handleReject(row) {
+    /** 标记违规：抽查专用，写入 audit_status=2 + [违规] 前缀的 audit_opinion */
+    handleMarkViolation(row) {
       this.rejectForm = { documentId: row.documentId, auditOpinion: "" };
       this.rejectOpen = true;
     },
     submitReject() {
       if (!this.rejectForm.auditOpinion || this.rejectForm.auditOpinion.trim() === "") {
-        this.$modal.msgWarning("请填写拒绝原因");
+        this.$modal.msgWarning("请填写违规原因");
         return;
       }
-      auditDocument({
+      markViolation({
         documentId: this.rejectForm.documentId,
-        auditStatus: "2",
-        auditOpinion: this.rejectForm.auditOpinion.trim()
+        violationReason: this.rejectForm.auditOpinion.trim()
       }).then(() => {
-        this.$modal.msgSuccess("已拒绝");
+        this.$modal.msgSuccess("已标记违规");
         this.rejectOpen = false;
         this.getList();
       });

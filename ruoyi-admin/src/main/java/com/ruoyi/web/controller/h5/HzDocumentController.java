@@ -116,7 +116,10 @@ public class HzDocumentController extends BaseController {
             document.setDocumentName(file.getOriginalFilename());
             document.setFilePath(filePath);
             document.setFileSize(file.getSize());
-            document.setAuditStatus("0");  // 待审核
+            // 业务规则：上传即默认通过，1 个月内由管理员异步复核与抽查
+            document.setAuditStatus("1");
+            document.setAuditOpinion("系统默认通过，1 个月内复核");
+            document.setAuditTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
             document.setDelFlag("0");
             document.setCreateTime(new java.util.Date());
             if (contractId != null) {
@@ -125,13 +128,20 @@ public class HzDocumentController extends BaseController {
 
             int result = documentService.insertDocument(document);
             if (result > 0) {
-                // 发送资料提交成功消息
+                // 发送资料上传成功消息
                 try {
                     String docTypeLabel = getDocTypeLabel(documentType);
-                    messageService.sendMessage(tenantId, "system", "资料提交成功",
-                            "您的" + docTypeLabel + "已提交成功，请等待审核");
+                    messageService.sendMessage(tenantId, "system", "资料上传成功",
+                            "您的" + docTypeLabel + "已上传成功并默认通过，请于合同签订后 72 小时内办理入住手续");
                 } catch (Exception msgEx) {
                     logger.warn("发送资料提交消息失败: {}", msgEx.getMessage());
+                }
+
+                // 默认通过即视为审核通过，触发订单完成检查（两份资料齐则订单转 3）
+                try {
+                    orderService.onDocumentsApproved(tenantId);
+                } catch (Exception orderEx) {
+                    logger.warn("触发订单资料齐套检查失败: {}", orderEx.getMessage());
                 }
 
                 Map<String, Object> data = new HashMap<>();
@@ -242,8 +252,107 @@ public class HzDocumentController extends BaseController {
             if (existDocument.getTenantId() != null) {
                 orderService.onDocumentsApproved(existDocument.getTenantId());
             }
+        } else if (result > 0 && "2".equals(document.getAuditStatus())) {
+            // 发送资料驳回消息（含拒绝原因，引导用户重传）
+            try {
+                String docTypeLabel = getDocTypeLabel(existDocument.getDocumentType());
+                String reason = document.getAuditOpinion() != null ? document.getAuditOpinion() : "";
+                String content = "您的" + docTypeLabel + "审核未通过：" + reason + "，请尽快前往「资料上传」重新提交。";
+                messageService.sendMessage(existDocument.getTenantId(), "system", "资料审核未通过", content);
+            } catch (Exception msgEx) {
+                logger.warn("发送资料驳回消息失败: {}", msgEx.getMessage());
+            }
         }
         return result > 0 ? success() : error("审核失败");
+    }
+
+    /**
+     * 重新上传被驳回的资料（覆盖原记录）
+     * <p>仅当原记录 audit_status=2（已驳回）时允许；
+     * 上传成功后会重置 audit_status=0（待审核），清空 audit_opinion / audit_time / auditor。</p>
+     *
+     * @param file       新文件（仅图片）
+     * @param documentId 被驳回资料 ID
+     */
+    @PostMapping("/reupload")
+    public AjaxResult reupload(MultipartFile file,
+                               @RequestParam("documentId") Long documentId) {
+        if (file == null || file.isEmpty()) {
+            return error("请选择要上传的文件");
+        }
+        HzDocument exist = documentService.selectDocumentById(documentId);
+        if (exist == null) {
+            return error("资料不存在");
+        }
+        if (!"2".equals(exist.getAuditStatus())) {
+            return error("仅被驳回的资料可以重新上传");
+        }
+        try {
+            String filePath = FileUploadUtils.upload(RuoYiConfig.getUploadPath(), file);
+            HzDocument update = new HzDocument();
+            update.setDocumentId(documentId);
+            update.setFilePath(filePath);
+            update.setFileSize(file.getSize());
+            update.setDocumentName(file.getOriginalFilename());
+            update.setAuditStatus("0");
+            update.setAuditOpinion("");
+            update.setAuditTime(null);
+            update.setAuditor(null);
+            update.setUpdateTime(new java.util.Date());
+            int rows = documentService.updateDocument(update);
+            if (rows > 0) {
+                try {
+                    String docTypeLabel = getDocTypeLabel(exist.getDocumentType());
+                    messageService.sendMessage(exist.getTenantId(), "system", "资料重新提交成功",
+                            "您的" + docTypeLabel + "已重新提交，请等待审核");
+                } catch (Exception ignore) { }
+                Map<String, Object> data = new HashMap<>();
+                data.put("documentId", documentId);
+                data.put("filePath", filePath);
+                return success(data);
+            }
+            return error("更新失败");
+        } catch (Exception e) {
+            logger.error("重新上传资料失败", e);
+            return error("上传失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 标记资料违规（管理端抽查专用）
+     * <p>用于「上传即默认通过」机制下的事后抽查。仅做数据留痕：
+     * 把 audit_status 置为 2，audit_opinion 写入 "[违规] " + reason，便于后续查询统计；
+     * 不发 H5 消息（违规处置由运营线下追缴+计入诚信档案），不动订单/合同状态。</p>
+     *
+     * 请求体：{ "documentId": 1, "violationReason": "..." }
+     */
+    @PutMapping("/violation")
+    public AjaxResult markViolation(@RequestBody Map<String, Object> body) {
+        Object idObj = body.get("documentId");
+        String reason = body.get("violationReason") == null ? "" : String.valueOf(body.get("violationReason")).trim();
+        if (idObj == null) {
+            return error("参数不完整");
+        }
+        if (reason.isEmpty()) {
+            return error("请填写违规原因");
+        }
+        Long documentId;
+        try {
+            documentId = Long.valueOf(String.valueOf(idObj));
+        } catch (Exception e) {
+            return error("documentId 非法");
+        }
+        HzDocument exist = documentService.selectDocumentById(documentId);
+        if (exist == null) {
+            return error("资料不存在");
+        }
+        HzDocument update = new HzDocument();
+        update.setDocumentId(documentId);
+        update.setAuditStatus("2");
+        update.setAuditOpinion("[违规] " + reason);
+        update.setAuditTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+        int rows = documentService.updateDocument(update);
+        return rows > 0 ? success() : error("标记失败");
     }
 
     /**
