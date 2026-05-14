@@ -33,9 +33,21 @@ public class HzQualificationAppeal extends BaseEntity {
     @TableField("appeal_reason")
     private String appealReason;
 
-    /** 申诉材料 */
+    /** 学历情况说明 */
+    @TableField("education_desc")
+    private String educationDesc;
+
+    /** 申诉材料（学历附件） */
     @TableField("appeal_attachments")
     private String appealAttachments;
+
+    /** 社保证明附件（逗号分隔的图片路径） */
+    @TableField("social_attachments")
+    private String socialAttachments;
+
+    /** 社保情况说明 */
+    @TableField("social_desc")
+    private String socialDesc;
 
     /** 申诉时间 */
     @TableField("appeal_time")
@@ -109,6 +121,30 @@ public class HzQualificationAppeal extends BaseEntity {
         return appealAttachments;
     }
 
+    public void setSocialAttachments(String socialAttachments) {
+        this.socialAttachments = socialAttachments;
+    }
+
+    public String getSocialAttachments() {
+        return socialAttachments;
+    }
+
+    public void setEducationDesc(String educationDesc) {
+        this.educationDesc = educationDesc;
+    }
+
+    public String getEducationDesc() {
+        return educationDesc;
+    }
+
+    public void setSocialDesc(String socialDesc) {
+        this.socialDesc = socialDesc;
+    }
+
+    public String getSocialDesc() {
+        return socialDesc;
+    }
+
     public void setAppealTime(String appealTime) {
         this.appealTime = appealTime;
     }
@@ -180,7 +216,10 @@ public class HzQualificationAppeal extends BaseEntity {
             .append("qualificationId", getQualificationId())
             .append("tenantId", getTenantId())
             .append("appealReason", getAppealReason())
+            .append("educationDesc", getEducationDesc())
             .append("appealAttachments", getAppealAttachments())
+            .append("socialAttachments", getSocialAttachments())
+            .append("socialDesc", getSocialDesc())
             .append("appealTime", getAppealTime())
             .append("handleResult", getHandleResult())
             .append("handleOpinion", getHandleOpinion())

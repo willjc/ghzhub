@@ -9,7 +9,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="qualificationId"    column="qualification_id"   />
         <result property="tenantId"           column="tenant_id"          />
         <result property="appealReason"       column="appeal_reason"      />
+        <result property="educationDesc"      column="education_desc"     />
         <result property="appealAttachments"  column="appeal_attachments" />
+        <result property="socialAttachments"  column="social_attachments" />
+        <result property="socialDesc"         column="social_desc"        />
         <result property="appealTime"         column="appeal_time"        />
         <result property="handleResult"       column="handle_result"      />
         <result property="handleOpinion"      column="handle_opinion"     />
@@ -28,6 +31,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="phone"              column="phone"              />
         <result property="contactPhone"       column="contact_phone"      />
         <result property="idCard"             column="id_card"            />
+        <result property="workUnit"           column="work_unit"          />
+        <result property="unitContact"        column="unit_contact"       />
         <result property="currentEducation"   column="current_education"  />
         <result property="newEducation"       column="new_education"      />
         <result property="handlerName"        column="handler_name"       />
@@ -39,7 +44,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             a.qualification_id,
             a.tenant_id,
             a.appeal_reason,
+            a.education_desc,
             a.appeal_attachments,
+            a.social_attachments,
+            a.social_desc,
             a.appeal_time,
             a.handle_result,
             a.handle_opinion,
@@ -57,6 +65,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             u.phone,
             u.contact_phone,
             u.id_card,
+            u.work_unit,
+            u.unit_contact,
             COALESCE(u.education, '无') as current_education,
             a.appeal_reason as new_education
         FROM hz_qualification_appeal a
@@ -70,7 +80,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             a.qualification_id,
             a.tenant_id,
             a.appeal_reason,
+            a.education_desc,
             a.appeal_attachments,
+            a.social_attachments,
+            a.social_desc,
             a.appeal_time,
             a.handle_result,
             a.handle_opinion,
@@ -88,6 +101,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             u.phone,
             u.contact_phone,
             u.id_card,
+            u.work_unit,
+            u.unit_contact,
             COALESCE(u.education, '无') as current_education,
             a.appeal_reason as new_education,
             su.nick_name as handler_name
@@ -104,7 +119,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             a.qualification_id,
             a.tenant_id,
             a.appeal_reason,
+            a.education_desc,
             a.appeal_attachments,
+            a.social_attachments,
+            a.social_desc,
             a.appeal_time,
             a.handle_result,
             a.handle_opinion,
@@ -122,6 +140,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             u.phone,
             u.contact_phone,
             u.id_card,
+            u.work_unit,
+            u.unit_contact,
             COALESCE(u.education, '无') as current_education,
             a.appeal_reason as new_education
         FROM hz_qualification_appeal a

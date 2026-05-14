@@ -9,6 +9,14 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="手机号" prop="phone">
+        <el-input
+          v-model="queryParams.phone"
+          placeholder="请输入手机号"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="处理状态" prop="handleResult">
         <el-select v-model="queryParams.handleResult" placeholder="请选择处理状态" clearable>
           <el-option label="待处理" value="0" />
@@ -39,32 +47,23 @@
 
     <el-table v-loading="loading" :data="appealList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="用户昵称" align="center" prop="nickname" width="120" />
-      <el-table-column label="手机号" align="center" prop="phone" width="120" />
-      <el-table-column label="申述项" align="center" width="100">
+      <el-table-column label="姓名" align="center" prop="realName" width="100" :show-overflow-tooltip="true">
         <template slot-scope="scope">
-          <el-tag type="info">学历</el-tag>
+          <span>{{ scope.row.realName || '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="当前学历" align="center" prop="currentEducation" width="100">
+      <el-table-column label="用户昵称" align="center" prop="nickname" width="120" :show-overflow-tooltip="true" />
+      <el-table-column label="手机号" align="center" prop="phone" width="120" />
+      <el-table-column label="申述项" align="center" width="140">
+        <template slot-scope="scope">
+          <el-tag type="info">学历 + 社保证明</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="学历" align="center" width="160">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.hz_education_type" :value="scope.row.currentEducation"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="申述学历" align="center" prop="newEducation" width="100">
-        <template slot-scope="scope">
+          <span style="margin: 0 6px; color: #999;">→</span>
           <dict-tag :options="dict.type.hz_education_type" :value="scope.row.newEducation"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="附件" align="center" width="100">
-        <template slot-scope="scope">
-          <el-button
-            v-if="scope.row.appealAttachments"
-            size="mini"
-            type="text"
-            @click="viewImages(scope.row.appealAttachments)"
-          >查看附件</el-button>
-          <span v-else>无</span>
         </template>
       </el-table-column>
       <el-table-column label="处理状态" align="center" prop="handleResult" width="100">
@@ -116,11 +115,23 @@
     <!-- 审核对话框 -->
     <el-dialog :title="'审核资格申述'" :visible.sync="open" width="600px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+        <el-form-item label="姓名">
+          <el-input v-model="form.realName" :disabled="true" />
+        </el-form-item>
         <el-form-item label="用户昵称">
           <el-input v-model="form.nickname" :disabled="true" />
         </el-form-item>
         <el-form-item label="手机号">
           <el-input v-model="form.phone" :disabled="true" />
+        </el-form-item>
+        <el-form-item label="身份证号">
+          <el-input :value="maskIdCard(form.idCard)" :disabled="true" />
+        </el-form-item>
+        <el-form-item label="公司名">
+          <el-input v-model="form.workUnit" :disabled="true" />
+        </el-form-item>
+        <el-form-item label="公司电话">
+          <el-input v-model="form.unitContact" :disabled="true" />
         </el-form-item>
         <el-form-item label="当前学历">
           <dict-tag :options="dict.type.hz_education_type" :value="form.currentEducation"/>
@@ -128,7 +139,7 @@
         <el-form-item label="申述学历">
           <dict-tag :options="dict.type.hz_education_type" :value="form.newEducation"/>
         </el-form-item>
-        <el-form-item label="附件">
+        <el-form-item label="学历附件">
           <div class="image-list">
             <el-image
               v-for="(img, index) in imageList"
@@ -140,6 +151,25 @@
             />
           </div>
           <div v-if="imageList.length === 0">无附件</div>
+        </el-form-item>
+        <el-form-item label="学历说明" v-if="form.educationDesc">
+          <div style="white-space: pre-wrap; line-height: 24px; color: #333;">{{ form.educationDesc }}</div>
+        </el-form-item>
+        <el-form-item label="社保证明">
+          <div class="image-list">
+            <el-image
+              v-for="(img, index) in socialImageList"
+              :key="'s'+index"
+              :src="getImageUrl(img)"
+              :preview-src-list="socialImagePreviewList"
+              fit="cover"
+              class="preview-image"
+            />
+          </div>
+          <div v-if="socialImageList.length === 0">无附件</div>
+        </el-form-item>
+        <el-form-item label="社保说明" v-if="form.socialDesc">
+          <div style="white-space: pre-wrap; line-height: 24px; color: #333;">{{ form.socialDesc }}</div>
         </el-form-item>
         <el-form-item label="审核结果" prop="handleResult">
           <el-radio-group v-model="form.handleResult">
@@ -174,8 +204,12 @@
     <!-- 详情对话框 -->
     <el-dialog title="申诉详情" :visible.sync="detailOpen" width="700px" append-to-body>
       <el-descriptions :column="2" border>
+        <el-descriptions-item label="姓名">{{ detailData.realName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="用户昵称">{{ detailData.nickname }}</el-descriptions-item>
         <el-descriptions-item label="手机号">{{ detailData.phone }}</el-descriptions-item>
+        <el-descriptions-item label="身份证号">{{ maskIdCard(detailData.idCard) }}</el-descriptions-item>
+        <el-descriptions-item label="公司名" :span="2">{{ detailData.workUnit || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="公司电话" :span="2">{{ detailData.unitContact || '-' }}</el-descriptions-item>
         <el-descriptions-item label="当前学历">
           <dict-tag :options="dict.type.hz_education_type" :value="detailData.currentEducation"/>
         </el-descriptions-item>
@@ -183,7 +217,7 @@
           <dict-tag :options="dict.type.hz_education_type" :value="detailData.newEducation"/>
         </el-descriptions-item>
         <el-descriptions-item label="申诉时间" :span="2">{{ detailData.appealTime }}</el-descriptions-item>
-        <el-descriptions-item label="附件" :span="2">
+        <el-descriptions-item label="学历附件" :span="2">
           <div class="image-list" v-if="detailData.appealAttachments">
             <el-image
               v-for="(img, index) in detailData.appealAttachments.split(',')"
@@ -194,6 +228,24 @@
             ></el-image>
           </div>
           <span v-else>无</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="学历说明" :span="2" v-if="detailData.educationDesc">
+          <div style="white-space: pre-wrap; line-height: 22px;">{{ detailData.educationDesc }}</div>
+        </el-descriptions-item>
+        <el-descriptions-item label="社保证明" :span="2">
+          <div class="image-list" v-if="detailData.socialAttachments">
+            <el-image
+              v-for="(img, index) in detailData.socialAttachments.split(',')"
+              :key="'s'+index"
+              :src="getImageUrl(img)"
+              :preview-src-list="detailData.socialAttachments.split(',').map(i => getImageUrl(i))"
+              style="width: 100px; height: 100px; margin-right: 10px;"
+            ></el-image>
+          </div>
+          <span v-else>无</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="社保说明" :span="2" v-if="detailData.socialDesc">
+          <div style="white-space: pre-wrap; line-height: 22px;">{{ detailData.socialDesc }}</div>
         </el-descriptions-item>
         <el-descriptions-item label="处理状态">
           <el-tag v-if="detailData.handleResult === '0'" type="warning">待处理</el-tag>
@@ -233,10 +285,12 @@ export default {
       imageDialogVisible: false,
       previewImages: [],
       imageList: [],
+      socialImageList: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         nickname: null,
+        phone: null,
         handleResult: null
       },
       form: {},
@@ -253,6 +307,9 @@ export default {
   computed: {
     imagePreviewList() {
       return this.imageList.map(img => this.getImageUrl(img));
+    },
+    socialImagePreviewList() {
+      return this.socialImageList.map(img => this.getImageUrl(img));
     },
     previewImageList() {
       return this.previewImages.map(img => this.getImageUrl(img));
@@ -277,14 +334,19 @@ export default {
     reset() {
       this.form = {
         appealId: null,
+        realName: null,
         nickname: null,
         phone: null,
+        idCard: null,
+        workUnit: null,
+        unitContact: null,
         currentEducation: null,
         newEducation: null,
         handleResult: null,
         handleOpinion: null
       };
       this.imageList = [];
+      this.socialImageList = [];
       this.resetForm("form");
     },
     handleQuery() {
@@ -312,10 +374,16 @@ export default {
       getAppeal(row.appealId).then(response => {
         this.form = {
           appealId: response.data.appealId,
+          realName: row.realName,
           nickname: row.nickname,
           phone: row.phone,
+          idCard: row.idCard,
+          workUnit: row.workUnit,
+          unitContact: row.unitContact,
           currentEducation: row.currentEducation,
           newEducation: row.newEducation,
+          educationDesc: response.data.educationDesc,
+          socialDesc: response.data.socialDesc,
           handleResult: null,
           handleOpinion: null
         };
@@ -325,6 +393,11 @@ export default {
           this.imageList = response.data.appealAttachments.split(',').filter(img => img);
         } else {
           this.imageList = [];
+        }
+        if (response.data.socialAttachments) {
+          this.socialImageList = response.data.socialAttachments.split(',').filter(img => img);
+        } else {
+          this.socialImageList = [];
         }
 
         this.open = true;
@@ -382,6 +455,13 @@ export default {
 
       // 拼接baseUrl + 相对路径
       return baseUrl + (url.startsWith('/') ? url : '/' + url);
+    },
+    // 身份证号脱敏：前 3 后 4，中间 ****
+    maskIdCard(idCard) {
+      if (!idCard) return '-';
+      const str = String(idCard);
+      if (str.length < 8) return str;
+      return str.substring(0, 3) + '**********' + str.substring(str.length - 4);
     }
   }
 };

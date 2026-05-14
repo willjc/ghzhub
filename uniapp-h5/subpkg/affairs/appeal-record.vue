@@ -14,10 +14,16 @@
 					<text class="info-label">学历</text>
 					<text class="info-value">{{ item.education }}</text>
 				</view>
+
+				<!-- 学历说明 -->
+				<view class="info-row desc-row" v-if="item.educationDesc">
+					<text class="info-label">学历说明</text>
+					<text class="info-value desc-value">{{ item.educationDesc }}</text>
+				</view>
 				
-				<!-- 附件 -->
+				<!-- 学历附件 -->
 				<view class="info-row attachment-row">
-					<text class="info-label">附件</text>
+					<text class="info-label">学历附件</text>
 					<view class="image-list">
 						<image 
 							class="attachment-image" 
@@ -28,6 +34,27 @@
 							@click="previewImage(item.images, imgIndex)"
 						></image>
 					</view>
+				</view>
+				
+				<!-- 社保证明附件 -->
+				<view class="info-row attachment-row" v-if="item.socialImages && item.socialImages.length">
+					<text class="info-label">社保证明</text>
+					<view class="image-list">
+						<image 
+							class="attachment-image" 
+							v-for="(img, imgIndex) in item.socialImages" 
+							:key="'s'+imgIndex"
+							:src="img"
+							mode="aspectFill"
+							@click="previewImage(item.socialImages, imgIndex)"
+						></image>
+					</view>
+				</view>
+
+				<!-- 社保说明 -->
+				<view class="info-row desc-row" v-if="item.socialDesc">
+					<text class="info-label">社保说明</text>
+					<text class="info-value desc-value">{{ item.socialDesc }}</text>
 				</view>
 				
 				<!-- 申诉结果 -->
@@ -102,9 +129,12 @@
 						const appeal = res.data
 						// 转换为页面需要的格式
 						this.recordList = [{
-							appealType: '学历',
+							appealType: '学历 + 社保证明',
 							education: this.getEducationLabel(appeal.appealReason),
+							educationDesc: appeal.educationDesc || '',
+							socialDesc: appeal.socialDesc || '',
 							images: appeal.appealAttachments ? appeal.appealAttachments.split(',').map(img => this.getImageUrl(img)) : [],
+							socialImages: appeal.socialAttachments ? appeal.socialAttachments.split(',').map(img => this.getImageUrl(img)) : [],
 							status: this.getStatusValue(appeal.handleResult),
 							statusText: this.getStatusText(appeal.handleResult),
 							rejectReason: appeal.handleOpinion || '',
@@ -217,6 +247,19 @@
 		
 		align-items: center;
 		margin-bottom: 28rpx;
+	}
+
+	.desc-row {
+		align-items: flex-start;
+	}
+
+	.desc-value {
+		height: auto;
+		line-height: 40rpx;
+		flex: 1;
+		margin-left: 24rpx;
+		white-space: normal;
+		word-break: break-all;
 	}
 
 	.info-label {

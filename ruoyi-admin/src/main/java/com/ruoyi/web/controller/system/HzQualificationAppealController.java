@@ -30,7 +30,7 @@ public class HzQualificationAppealController extends BaseController {
      */
     @PreAuthorize("@ss.hasPermi('gangzhu:qualification:list')")
     @GetMapping("/list")
-    public TableDataInfo list(HzQualificationAppeal appeal,
+    public TableDataInfo list(HzQualificationAppealVO appeal,
                                @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
                                @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
         IPage<HzQualificationAppealVO> page = appealService.selectAppealVOPage(

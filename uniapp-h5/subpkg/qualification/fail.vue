@@ -35,6 +35,7 @@
     <view class="footer">
       <view class="btn-secondary" @click="goHome">返回首页</view>
       <view class="btn-primary" @click="recheck">重新校验</view>
+      <view v-if="canAppeal" class="btn-primary btn-appeal" @click="goAppeal">发起申诉</view>
     </view>
   </view>
 </template>
@@ -55,6 +56,14 @@ export default {
       try { this.items = JSON.parse(decodeURIComponent(options.items)) } catch (e) { this.items = [] }
     }
   },
+  computed: {
+    // 仅当学历或社保 failed 时才允许申诉
+    canAppeal() {
+      return this.items.some(i =>
+        (i.code === 'education' || i.code === 'social') && i.status === 'failed'
+      )
+    }
+  },
   methods: {
     statusText(s) {
       switch (s) {
@@ -68,6 +77,9 @@ export default {
     recheck() {
       // 手动重新校验：回 check 页重新跑一次
       uni.redirectTo({ url: '/subpkg/qualification/check' })
+    },
+    goAppeal() {
+      uni.navigateTo({ url: '/subpkg/affairs/appeal-submit' })
     },
     goHome() {
       uni.switchTab({ url: '/pages/index/index' })
@@ -200,5 +212,11 @@ export default {
   background: linear-gradient(270deg, #4fc7ff 0%, #0f73ff 100%);
   color: #fff;
   font-weight: 500;
+}
+.btn-primary + .btn-primary {
+  margin-left: 20rpx;
+}
+.btn-appeal {
+  background: linear-gradient(270deg, #ffb04f 0%, #ff7a18 100%);
 }
 </style>

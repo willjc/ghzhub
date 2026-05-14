@@ -6,7 +6,7 @@
 				<!-- 卡片头部 -->
 				<view class="card-header">
 					<text class="card-title">资格核验</text>
-					<text class="record-link" @click="goToRecordDetail(item.appealId)">资格申诉记录>></text>
+					<text class="record-link" @click="goToRecordDetail(item.appealId)">详情>></text>
 				</view>
 
 				<!-- 分隔线 -->
@@ -118,7 +118,7 @@
 							phone: appeal.contactPhone || appeal.phone || '***',
 							createTime: appeal.appealTime || appeal.createTime || '',
 							status: this.getAppealStatus(appeal.handleResult),
-							appealType: '学历',
+							appealType: '学历 + 社保证明',
 							handleResult: appeal.handleResult
 						})).sort((a, b) => {
 							// 按提交时间倒序排列（最新的在前）

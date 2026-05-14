@@ -70,6 +70,16 @@ public class HzQualificationAppealServiceImpl extends ServiceImpl<HzQualificatio
         if (StringUtils.isNotEmpty(appeal.getAppealReason())) {
             wrapper.like("a.appeal_reason", appeal.getAppealReason());
         }
+        // 用户昵称 / 手机号模糊搜索（通过 VO 承载）
+        if (appeal instanceof HzQualificationAppealVO) {
+            HzQualificationAppealVO vo = (HzQualificationAppealVO) appeal;
+            if (StringUtils.isNotEmpty(vo.getNickname())) {
+                wrapper.like("u.nickname", vo.getNickname());
+            }
+            if (StringUtils.isNotEmpty(vo.getPhone())) {
+                wrapper.like("u.phone", vo.getPhone());
+            }
+        }
 
         wrapper.eq("a.del_flag", "0");
         wrapper.orderByDesc("a.create_time");
@@ -141,5 +151,18 @@ public class HzQualificationAppealServiceImpl extends ServiceImpl<HzQualificatio
     @Override
     public int deleteAppealById(Long appealId) {
         return this.removeById(appealId) ? 1 : 0;
+    }
+
+    @Override
+    public boolean existsPassedAppeal(Long userId) {
+        if (userId == null) {
+            return false;
+        }
+        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<HzQualificationAppeal> qw =
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        qw.eq("tenant_id", userId)
+          .eq("handle_result", "1")
+          .eq("del_flag", "0");
+        return this.count(qw) > 0;
     }
 }

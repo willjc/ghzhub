@@ -98,4 +98,13 @@ public interface IHzQualificationAppealService {
      * @return 结果
      */
     int deleteAppealById(Long appealId);
+
+    /**
+     * 判断该用户是否存在已通过审核的申诉记录
+     * （用于资格校验时对学历项 + 社保项的人工豁免判定）
+     *
+     * @param userId 用户ID（对应表中的 tenant_id 字段）
+     * @return true=已存在通过的申诉
+     */
+    boolean existsPassedAppeal(Long userId);
 }

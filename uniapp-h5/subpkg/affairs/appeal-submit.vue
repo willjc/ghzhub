@@ -5,7 +5,7 @@
 			<view class="card card-appeal-item">
 				<view class="card-indicator"></view>
 				<text class="card-label">申诉项</text>
-				<text class="card-value">学历</text>
+				<text class="card-value">学历 + 社保证明</text>
 			</view>
 
 			<!-- 申诉材料卡片 -->
@@ -27,33 +27,84 @@
 					</view>
 				</view>
 
-				<!-- 附件上传 -->
+				<!-- 学历附件上传 -->
 				<view class="form-row attachment-row">
 					<view class="form-label">
 						<text class="required">*</text>
-						<text class="label-text">附件</text>
+						<text class="label-text">学历附件</text>
 					</view>
 				</view>
 
-				<!-- 图片上传区域 -->
 				<view class="upload-area">
-					<!-- 已上传的图片 -->
-					<view class="image-item" v-for="(img, index) in uploadedImages" :key="index">
+					<view class="image-item" v-for="(img, index) in uploadedImages" :key="'edu-' + index">
 						<image class="uploaded-image" :src="img" mode="aspectFill"></image>
 						<view class="delete-btn" @click="deleteImage(index)">
 							<image class="delete-icon" src="/static/icon-删除图片@2x.png"></image>
 						</view>
 					</view>
 
-					<!-- 上传按钮 -->
 					<view class="upload-btn" v-if="uploadedImages.length < 9" @click="chooseImage">
 						<image class="upload-icon" src="/static/上传@2x.png"></image>
 						<text class="upload-text">点击上传</text>
 					</view>
 				</view>
 
-				<!-- 提示文字 -->
-				<text class="upload-tip">请上传相关证明材料，支持图片格式，最多9张</text>
+				<text class="upload-tip">请上传学历证明（毕业证 / 学位证 / 学信网截图等），最多9张</text>
+
+				<!-- 学历情况说明 -->
+				<view class="form-row attachment-row" style="margin-top: 24rpx;">
+					<view class="form-label">
+						<text class="label-text">学历说明</text>
+					</view>
+				</view>
+				<view class="textarea-wrapper">
+					<textarea
+						class="desc-textarea"
+						v-model="educationDesc"
+						placeholder="可补充说明学历情况（选填，最多 500 字）"
+						maxlength="500"
+						auto-height
+					/>
+				</view>
+
+				<!-- 社保证明附件上传 -->
+				<view class="form-row attachment-row" style="margin-top: 24rpx;">
+					<view class="form-label">
+						<text class="label-text">社保证明</text>
+					</view>
+				</view>
+
+				<view class="upload-area">
+					<view class="image-item" v-for="(img, index) in socialImages" :key="'soc-' + index">
+						<image class="uploaded-image" :src="img" mode="aspectFill"></image>
+						<view class="delete-btn" @click="deleteSocialImage(index)">
+							<image class="delete-icon" src="/static/icon-删除图片@2x.png"></image>
+						</view>
+					</view>
+
+					<view class="upload-btn" v-if="socialImages.length < 9" @click="chooseSocialImage">
+						<image class="upload-icon" src="/static/上传@2x.png"></image>
+						<text class="upload-text">点击上传</text>
+					</view>
+				</view>
+
+				<text class="upload-tip">若社保信息已通过可不上传；如需申诉可上传社保缴纳证明（社保 APP 截图 / 单位盖章证明等），最多9张</text>
+
+				<!-- 社保情况说明 -->
+				<view class="form-row attachment-row" style="margin-top: 24rpx;">
+					<view class="form-label">
+						<text class="label-text">社保说明</text>
+					</view>
+				</view>
+				<view class="textarea-wrapper">
+					<textarea
+						class="desc-textarea"
+						v-model="socialDesc"
+						placeholder="可补充说明社保情况（选填，最多 500 字）"
+						maxlength="500"
+						auto-height
+					/>
+				</view>
 			</view>
 		</scroll-view>
 
@@ -115,7 +166,13 @@
 				],
 
 				// 上传的图片
-				uploadedImages: []
+				uploadedImages: [],
+				// 社保证明上传的图片
+				socialImages: [],
+				// 学历情况说明
+				educationDesc: '',
+				// 社保情况说明
+				socialDesc: ''
 			}
 		},
 		computed: {
@@ -199,6 +256,27 @@
 				this.uploadedImages.splice(index, 1)
 			},
 
+			// 选择社保证明图片
+			chooseSocialImage() {
+				const remainCount = 9 - this.socialImages.length
+				uni.chooseImage({
+					count: remainCount,
+					sizeType: ['compressed'],
+					sourceType: ['album', 'camera'],
+					success: (res) => {
+						this.socialImages = [...this.socialImages, ...res.tempFilePaths]
+						if (this.socialImages.length > 9) {
+							this.socialImages = this.socialImages.slice(0, 9)
+						}
+					}
+				})
+			},
+
+			// 删除社保证明图片
+			deleteSocialImage(index) {
+				this.socialImages.splice(index, 1)
+			},
+
 			// 提交申诉
 			handleSubmit() {
 				// 确保用户已登录
@@ -221,7 +299,7 @@
 
 				if (this.uploadedImages.length === 0) {
 					uni.showToast({
-						title: '请上传证明材料',
+						title: '请上传学历证明',
 						icon: 'none'
 					})
 					return
@@ -231,57 +309,50 @@
 					title: '提交中...'
 				})
 
-				console.log('开始上传图片，共', this.uploadedImages.length, '张')
+				console.log('开始上传图片，学历:', this.uploadedImages.length, '张，社保:', this.socialImages.length, '张')
 				console.log('上传地址:', config.uploadUrl + '/common/upload')
 
-				// 批量上传图片
-				const uploadPromises = this.uploadedImages.map((tempFilePath, index) => {
+				const uploadOne = (tempFilePath, label, idx) => {
 					return new Promise((resolve, reject) => {
-						console.log(`正在上传第${index + 1}张图片:`, tempFilePath)
-
+						console.log(`正在上传${label}第${idx + 1}张图片:`, tempFilePath)
 						uni.uploadFile({
-							url: config.uploadUrl + '/common/upload',  // 使用配置文件中的URL
+							url: config.uploadUrl + '/common/upload',
 							filePath: tempFilePath,
 							name: 'file',
 							header: {
 								'Authorization': uni.getStorageSync('token') || ''
 							},
 							success: (uploadFileRes) => {
-								console.log(`第${index + 1}张图片上传响应:`, uploadFileRes)
-
 								try {
 									const data = JSON.parse(uploadFileRes.data)
-									console.log(`第${index + 1}张图片解析结果:`, data)
-
 									if (data.code === 200) {
-										console.log(`第${index + 1}张图片上传成功:`, data.fileName)
-										resolve(data.fileName)  // 返回相对路径
+										resolve(data.fileName)
 									} else {
-										console.error(`第${index + 1}张图片上传失败:`, data.msg)
 										reject(data.msg)
 									}
 								} catch (e) {
-									console.error(`第${index + 1}张图片响应解析失败:`, e)
 									reject('响应解析失败')
 								}
 							},
-							fail: (err) => {
-								console.error(`第${index + 1}张图片上传失败:`, err)
-								reject(err)
-							}
+							fail: (err) => reject(err)
 						})
 					})
-				})
+				}
 
-				// 所有图片上传完成后提交申诉
-				Promise.all(uploadPromises).then(fileNames => {
-					console.log('所有图片上传成功，文件名列表:', fileNames)
+				const eduPromises = this.uploadedImages.map((p, i) => uploadOne(p, '学历', i))
+				const socPromises = this.socialImages.map((p, i) => uploadOne(p, '社保', i))
+
+				Promise.all([Promise.all(eduPromises), Promise.all(socPromises)]).then(([eduFileNames, socFileNames]) => {
+					console.log('全部图片上传完成 学历:', eduFileNames, ' 社保:', socFileNames)
 
 					// 提交申诉数据
 					const appealData = {
-						userId: this.userId,  // 用户ID
-						appealReason: this.education,  // 申诉的学历
-						appealAttachments: fileNames.join(',')  // 图片路径，逗号分隔
+						userId: this.userId,
+						appealReason: this.education,
+						appealAttachments: eduFileNames.join(','),
+						socialAttachments: socFileNames.join(','),
+						educationDesc: this.educationDesc,
+						socialDesc: this.socialDesc
 					}
 
 					console.log('提交申诉数据:', appealData)
@@ -528,6 +599,23 @@
 
 		display: block;
 		margin: 26rpx 41rpx 0rpx 41rpx;
+	}
+
+	.textarea-wrapper {
+		margin: 8rpx 41rpx 0 41rpx;
+		padding: 20rpx;
+		border-radius: 12rpx;
+		background: #fafbff;
+		border: 2rpx solid #eef0f7;
+	}
+
+	.desc-textarea {
+		width: 100%;
+		min-height: 120rpx;
+		font-size: 26rpx;
+		color: #333333;
+		line-height: 40rpx;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
 	}
 
 	/* 底部按钮 */

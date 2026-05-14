@@ -2,7 +2,7 @@
   <view class="page">
     <view class="header">
       <view class="title">正在校验申请资格</view>
-      <view class="subtitle">我们正在核对您的婚姻、社保及房产信息</view>
+      <view class="subtitle">我们正在核对您的婚姻、社保、学历及房产信息</view>
     </view>
 
     <view class="progress-bar">
@@ -43,6 +43,7 @@ import { runQualificationCheck, getCurrentUserId } from '@/api/qualification'
 const INIT_ITEMS = [
   { code: 'marriage',     label: '婚姻信息核验',   status: 'pending', message: '' },
   { code: 'social',       label: '社保缴纳记录',   status: 'pending', message: '' },
+  { code: 'education',    label: '学历核验',       status: 'pending', message: '' },
   { code: 'selfEstate',   label: '本人不动产登记', status: 'pending', message: '' },
   { code: 'selfHousing',  label: '本人公租房记录', status: 'pending', message: '' },
   { code: 'spouseEstate', label: '配偶不动产登记', status: 'pending', message: '' },

@@ -23,6 +23,12 @@ public class HzQualificationAppealVO extends HzQualificationAppeal {
     /** 用户身份证号 */
     private String idCard;
 
+    /** 用户工作单位（公司名） */
+    private String workUnit;
+
+    /** 单位联系电话（公司电话） */
+    private String unitContact;
+
     /** 用户当前学历 */
     private String currentEducation;
 
@@ -73,6 +79,22 @@ public class HzQualificationAppealVO extends HzQualificationAppeal {
 
     public void setIdCard(String idCard) {
         this.idCard = idCard;
+    }
+
+    public String getWorkUnit() {
+        return workUnit;
+    }
+
+    public void setWorkUnit(String workUnit) {
+        this.workUnit = workUnit;
+    }
+
+    public String getUnitContact() {
+        return unitContact;
+    }
+
+    public void setUnitContact(String unitContact) {
+        this.unitContact = unitContact;
     }
 
     public String getCurrentEducation() {
