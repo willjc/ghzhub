@@ -82,6 +82,8 @@ public class HzQualificationAppealServiceImpl extends ServiceImpl<HzQualificatio
         }
 
         wrapper.eq("a.del_flag", "0");
+        // 排序：待处理(0) 优先 → 已通过(1)/已拒绝(2) 在后；同状态按申诉时间倒序
+        wrapper.orderByAsc("a.handle_result");
         wrapper.orderByDesc("a.create_time");
 
         return this.baseMapper.selectAppealVOPage(page, wrapper);
