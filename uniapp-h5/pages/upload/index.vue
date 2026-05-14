@@ -21,6 +21,11 @@
 				</view>
 			</view>
 
+			<!-- 0 单提示：暂无待上传材料的合同 -->
+			<view v-else class="empty-tip">
+				<text class="empty-tip-text">您当前没有待上传材料的合同，请先在小程序内完成选房与签约后再上传。</text>
+			</view>
+
 			<!-- 基本信息卡片 -->
 			<view class="info-card">
 				<!-- 基本信息标题 -->
@@ -87,10 +92,9 @@
 						</view>
 					</view>
 
-					<!-- 模版下载 -->
-					<view class="template-download" @click="downloadTemplate">
-						<text class="template-label">模版下载：</text>
-						<text class="template-link">工作证明模版</text>
+					<!-- 文件格式提示 -->
+					<view class="format-tip">
+						<text class="format-tip-text">仅支持图片格式（JPG / PNG），单张不超过 10MB</text>
 					</view>
 				</view>
 
@@ -108,14 +112,18 @@
 							<text class="upload-text">点击上传</text>
 						</view>
 					</view>
+					<!-- 文件格式提示 -->
+					<view class="format-tip">
+						<text class="format-tip-text">仅支持图片格式（JPG / PNG），单张不超过 10MB</text>
+					</view>
 				</view>
 			</view>
 		</view>
 		
 		<!-- 提交按钮 -->
 		<view class="submit-section">
-			<button class="submit-btn" @click="handleSubmit">
-				<text class="submit-btn-text">提交材料</text>
+			<button class="submit-btn" :class="{ 'submit-btn-disabled': pendingOrders.length === 0 }" :disabled="pendingOrders.length === 0" @click="handleSubmit">
+				<text class="submit-btn-text">{{ pendingOrders.length === 0 ? '暂无可提交的合同' : '提交材料' }}</text>
 			</button>
 		</view>
 	</view>
@@ -276,9 +284,6 @@ export default {
 					uni.showToast({ title: '选择图片失败', icon: 'none' })
 				}
 			})
-		},
-		downloadTemplate() {
-			uni.showToast({ title: '模版下载功能待实现', icon: 'none' })
 		},
 		// 学历证明：选择图片后立即上传到服务器
 		handleEducationUpload() {
@@ -601,35 +606,33 @@ export default {
 		border-radius: 10rpx;
 	}
 
-	/* 模版下载 */
-	.template-download {
-		display: flex;
-		align-items: center;
+	/* 文件格式提示 */
+	.format-tip {
 		margin-left: 41rpx;
+		margin-bottom: 20rpx;
 	}
 
-	.template-label {
-		height: 34rpx;
-		opacity: 1;
-		color: #333333;
-		font-size: 24rpx;
+	.format-tip-text {
+		color: #999999;
+		font-size: 22rpx;
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
-		text-align: left;
-		line-height: 34rpx;
+		line-height: 32rpx;
 	}
 
-	.template-link {
-		width: 264rpx;
-		height: 34rpx;
-		opacity: 1;
-		color: #1976f8;
-		font-size: 24rpx;
-		font-weight: normal;
-		font-family: "PingFang SC", "苹方-简", sans-serif;
-		text-align: left;
-		line-height: 34rpx;
+	/* 0 单提示 */
+	.empty-tip {
+		margin: 24rpx;
+		padding: 20rpx 24rpx;
+		background: #fff8e1;
+		border: 1rpx solid #ffe082;
+		border-radius: 12rpx;
+	}
 
+	.empty-tip-text {
+		color: #b76b00;
+		font-size: 26rpx;
+		line-height: 40rpx;
 	}
 
 	/* 提交按钮区域 */
@@ -657,6 +660,11 @@ export default {
 
 	.submit-btn::after {
 		border: none;
+	}
+
+	.submit-btn-disabled {
+		background: #c8c9cc !important;
+		opacity: 0.8;
 	}
 
 	.submit-btn-text {

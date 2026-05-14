@@ -12,6 +12,7 @@ import com.ruoyi.system.service.IHzDocumentService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 资料文档Service业务层处理
@@ -81,5 +82,17 @@ public class HzDocumentServiceImpl extends ServiceImpl<HzDocumentMapper, HzDocum
     @Override
     public int deleteDocumentById(Long documentId) {
         return this.removeById(documentId) ? 1 : 0;
+    }
+
+    @Override
+    public IPage<Map<String, Object>> selectDocumentPageForAdmin(Map<String, Object> query, int pageNum, int pageSize) {
+        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
+        String auditStatus  = query == null ? null : (String) query.get("auditStatus");
+        String documentType = query == null ? null : (String) query.get("documentType");
+        String tenantName   = query == null ? null : (String) query.get("tenantName");
+        String contractNo   = query == null ? null : (String) query.get("contractNo");
+        String startTime    = query == null ? null : (String) query.get("startTime");
+        String endTime      = query == null ? null : (String) query.get("endTime");
+        return baseMapper.selectDocumentPageForAdmin(page, auditStatus, documentType, tenantName, contractNo, startTime, endTime);
     }
 }

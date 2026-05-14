@@ -1,26 +1,40 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="模板名称" prop="templateName">
-        <el-input
-          v-model="queryParams.templateName"
-          placeholder="请输入模板名称"
-          clearable
-          @keyup.enter.native="handleQuery"
+    <!-- 筛选区 -->
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="84px">
+      <el-form-item label="审核状态" prop="auditStatus">
+        <el-select v-model="queryParams.auditStatus" placeholder="全部" clearable style="width: 140px">
+          <el-option label="待审核" value="0" />
+          <el-option label="已通过" value="1" />
+          <el-option label="已拒绝" value="2" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="资料类型" prop="documentType">
+        <el-select v-model="queryParams.documentType" placeholder="全部" clearable style="width: 140px">
+          <el-option label="身份证" value="1" />
+          <el-option label="学历证明" value="2" />
+          <el-option label="工作证明" value="3" />
+          <el-option label="收入证明" value="4" />
+          <el-option label="人才证书" value="5" />
+          <el-option label="其他" value="6" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="用户姓名" prop="tenantName">
+        <el-input v-model="queryParams.tenantName" placeholder="请输入姓名" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
+      </el-form-item>
+      <el-form-item label="合同编号" prop="contractNo">
+        <el-input v-model="queryParams.contractNo" placeholder="请输入合同号" clearable style="width: 200px" @keyup.enter.native="handleQuery" />
+      </el-form-item>
+      <el-form-item label="上传时间">
+        <el-date-picker
+          v-model="dateRange"
+          style="width: 240px"
+          value-format="yyyy-MM-dd"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
         />
-      </el-form-item>
-      <el-form-item label="类型" prop="commitmentType">
-        <el-select v-model="queryParams.commitmentType" placeholder="请选择承诺书类型" clearable>
-          <el-option label="人才公寓" value="1" />
-          <el-option label="保租房" value="2" />
-          <el-option label="市场租赁" value="3" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-          <el-option label="正常" value="0" />
-          <el-option label="停用" value="1" />
-        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -29,247 +43,142 @@
     </el-form>
 
     <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-          v-hasPermi="['system:commitment:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="mini"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['system:commitment:remove']"
-        >删除</el-button>
-      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="templateList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="模板名称" align="center" prop="templateName" />
-      <el-table-column label="模板编码" align="center" prop="templateCode" />
-      <el-table-column label="承诺书类型" align="center" prop="commitmentType">
+    <!-- 列表 -->
+    <el-table v-loading="loading" :data="documentList" border>
+      <el-table-column label="用户姓名" align="center" prop="tenantName" min-width="100" />
+      <el-table-column label="手机号" align="center" prop="tenantPhone" min-width="120" />
+      <el-table-column label="合同编号" align="center" prop="contractNo" min-width="170">
         <template slot-scope="scope">
-          <el-tag v-if="scope.row.commitmentType === '1'" type="success">人才公寓</el-tag>
-          <el-tag v-else-if="scope.row.commitmentType === '2'" type="primary">保租房</el-tag>
-          <el-tag v-else-if="scope.row.commitmentType === '3'" type="info">市场租赁</el-tag>
+          <span v-if="scope.row.contractNo">{{ scope.row.contractNo }}</span>
+          <el-tag v-else size="mini" type="info">未关联合同</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="版本" align="center" prop="version" />
-      <el-table-column label="是否默认" align="center" prop="isDefault">
+      <el-table-column label="项目-房源" align="center" min-width="220" show-overflow-tooltip>
         <template slot-scope="scope">
-          <el-tag v-if="scope.row.isDefault === '1'" type="success">是</el-tag>
-          <el-tag v-else type="info">否</el-tag>
+          <span v-if="scope.row.projectName">
+            {{ scope.row.projectName }}
+            <span v-if="scope.row.buildingName"> / {{ scope.row.buildingName }}</span>
+            <span v-if="scope.row.unitName"> / {{ scope.row.unitName }}</span>
+            <span v-if="scope.row.houseNo"> / {{ scope.row.houseNo }}</span>
+          </span>
+          <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="资料类型" align="center" prop="documentType" width="100">
         <template slot-scope="scope">
-          <el-tag v-if="scope.row.status === '0'" type="success">正常</el-tag>
-          <el-tag v-else type="danger">停用</el-tag>
+          <el-tag :type="docTypeTagType(scope.row.documentType)" size="mini">
+            {{ docTypeLabel(scope.row.documentType) }}
+          </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table-column label="文件预览" align="center" width="100">
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
+          <el-image
+            v-if="scope.row.filePath"
+            style="width: 60px; height: 60px; cursor: pointer; border-radius: 4px;"
+            :src="resolveUrl(scope.row.filePath)"
+            :preview-src-list="[resolveUrl(scope.row.filePath)]"
+            fit="cover"
+          />
+          <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="上传时间" align="center" prop="createTime" width="160">
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="审核状态" align="center" prop="auditStatus" width="90">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.auditStatus === '0'" type="warning" size="mini">待审核</el-tag>
+          <el-tag v-else-if="scope.row.auditStatus === '1'" type="success" size="mini">已通过</el-tag>
+          <el-tag v-else-if="scope.row.auditStatus === '2'" type="danger" size="mini">已拒绝</el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" width="200" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-view"
+            v-if="scope.row.auditStatus === '0'"
+            size="mini" type="text" icon="el-icon-circle-check"
+            @click="handleApprove(scope.row)"
+            v-hasPermi="['gangzhu:document:audit']"
+          >通过</el-button>
+          <el-button
+            v-if="scope.row.auditStatus === '0'"
+            size="mini" type="text" icon="el-icon-circle-close" style="color:#F56C6C;"
+            @click="handleReject(scope.row)"
+            v-hasPermi="['gangzhu:document:audit']"
+          >拒绝</el-button>
+          <el-button
+            size="mini" type="text" icon="el-icon-view"
             @click="handleDetail(scope.row)"
-            v-hasPermi="['system:commitment:query']"
+            v-hasPermi="['gangzhu:document:query']"
           >详情</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['system:commitment:edit']"
-          >修改</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['system:commitment:remove']"
-          >删除</el-button>
         </template>
       </el-table-column>
     </el-table>
 
     <pagination
-      v-show="total>0"
+      v-show="total > 0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
 
-    <!-- 添加或修改承诺书模板对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="900px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="100px">
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="模板名称" prop="templateName">
-              <el-input v-model="form.templateName" placeholder="请输入模板名称" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="模板编码" prop="templateCode">
-              <el-input v-model="form.templateCode" placeholder="请输入模板编码" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="承诺书类型" prop="commitmentType">
-              <el-select v-model="form.commitmentType" placeholder="请选择承诺书类型" style="width: 100%">
-                <el-option label="人才公寓" value="1" />
-                <el-option label="保租房" value="2" />
-                <el-option label="市场租赁" value="3" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="版本号" prop="version">
-              <el-input v-model="form.version" placeholder="请输入版本号" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="是否默认" prop="isDefault">
-              <el-radio-group v-model="form.isDefault">
-                <el-radio label="1">是</el-radio>
-                <el-radio label="0">否</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态" prop="status">
-              <el-radio-group v-model="form.status">
-                <el-radio label="0">正常</el-radio>
-                <el-radio label="1">停用</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="24">
-            <el-form-item label="模板内容" prop="templateContent">
-              <editor v-model="form.templateContent" :min-height="300"/>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="24">
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+    <!-- 拒绝弹窗 -->
+    <el-dialog title="拒绝原因" :visible.sync="rejectOpen" width="500px" append-to-body>
+      <el-form :model="rejectForm" label-width="80px">
+        <el-form-item label="审核意见">
+          <el-input v-model="rejectForm.auditOpinion" type="textarea" :rows="4" placeholder="请填写拒绝原因，便于用户重新提交" maxlength="200" show-word-limit />
+        </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <el-button type="danger" @click="submitReject">确认拒绝</el-button>
+        <el-button @click="rejectOpen = false">取 消</el-button>
       </div>
     </el-dialog>
 
-    <!-- 承诺书模板详情对话框 -->
-    <el-dialog title="承诺书模板详情" :visible.sync="detailOpen" width="900px" append-to-body>
-      <el-form ref="detailForm" :model="detailData" label-width="100px">
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="模板名称">
-              <span>{{ detailData.templateName }}</span>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="模板编码">
-              <span>{{ detailData.templateCode }}</span>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="承诺书类型">
-              <el-tag v-if="detailData.commitmentType === '1'" type="success">人才公寓</el-tag>
-              <el-tag v-else-if="detailData.commitmentType === '2'" type="primary">保租房</el-tag>
-              <el-tag v-else-if="detailData.commitmentType === '3'" type="info">市场租赁</el-tag>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="版本号">
-              <span>{{ detailData.version }}</span>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="是否默认">
-              <el-tag v-if="detailData.isDefault === '1'" type="success">是</el-tag>
-              <el-tag v-else type="info">否</el-tag>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态">
-              <el-tag v-if="detailData.status === '0'" type="success">正常</el-tag>
-              <el-tag v-else type="danger">停用</el-tag>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="创建者">
-              <span>{{ detailData.createBy }}</span>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="创建时间">
-              <span>{{ parseTime(detailData.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="更新者">
-              <span>{{ detailData.updateBy }}</span>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="更新时间">
-              <span>{{ parseTime(detailData.updateTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="24">
-            <el-form-item label="模板内容">
-              <div class="detail-content" v-html="detailData.templateContent"></div>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row v-if="detailData.remark">
-          <el-col :span="24">
-            <el-form-item label="备注">
-              <span>{{ detailData.remark }}</span>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
+    <!-- 详情弹窗 -->
+    <el-dialog title="资料详情" :visible.sync="detailOpen" width="640px" append-to-body>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="用户姓名">{{ detailData.tenantName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="手机号">{{ detailData.tenantPhone || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="身份证号">{{ detailData.tenantIdCard || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="资料类型">{{ docTypeLabel(detailData.documentType) }}</el-descriptions-item>
+        <el-descriptions-item label="合同编号">{{ detailData.contractNo || '未关联' }}</el-descriptions-item>
+        <el-descriptions-item label="上传时间">{{ parseTime(detailData.createTime, '{y}-{m}-{d} {h}:{i}') }}</el-descriptions-item>
+        <el-descriptions-item label="项目-房源" :span="2">
+          {{ detailData.projectName || '-' }}
+          <span v-if="detailData.buildingName"> / {{ detailData.buildingName }}</span>
+          <span v-if="detailData.unitName"> / {{ detailData.unitName }}</span>
+          <span v-if="detailData.houseNo"> / {{ detailData.houseNo }}</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="审核状态">
+          <el-tag v-if="detailData.auditStatus === '0'" type="warning" size="mini">待审核</el-tag>
+          <el-tag v-else-if="detailData.auditStatus === '1'" type="success" size="mini">已通过</el-tag>
+          <el-tag v-else-if="detailData.auditStatus === '2'" type="danger" size="mini">已拒绝</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="审核意见">{{ detailData.auditOpinion || '-' }}</el-descriptions-item>
+      </el-descriptions>
+
+      <div style="margin-top: 16px; text-align: center;">
+        <el-image
+          v-if="detailData.filePath"
+          style="max-width: 100%; max-height: 480px;"
+          :src="resolveUrl(detailData.filePath)"
+          :preview-src-list="[resolveUrl(detailData.filePath)]"
+          fit="contain"
+        />
+      </div>
+
       <div slot="footer" class="dialog-footer">
+        <el-button v-if="detailData.auditStatus === '0'" type="success" @click="handleApprove(detailData); detailOpen = false">通过</el-button>
+        <el-button v-if="detailData.auditStatus === '0'" type="danger" @click="handleReject(detailData); detailOpen = false">拒绝</el-button>
         <el-button @click="detailOpen = false">关 闭</el-button>
       </div>
     </el-dialog>
@@ -277,62 +186,28 @@
 </template>
 
 <script>
-import { listCommitmentTemplate, getCommitmentTemplate, delCommitmentTemplate, addCommitmentTemplate, updateCommitmentTemplate } from "@/api/gangzhu/commitmentTemplate";
-import Editor from '@/components/Editor';
+import { listDocument, auditDocument } from "@/api/gangzhu/document";
 
 export default {
-  name: "CommitmentTemplate",
-  components: {
-    Editor
-  },
+  name: "DocumentAudit",
   data() {
     return {
-      // 遮罩层
-      loading: true,
-      // 选中数组
-      ids: [],
-      // 非单个禁用
-      single: true,
-      // 非多个禁用
-      multiple: true,
-      // 显示搜索条件
+      loading: false,
       showSearch: true,
-      // 总条数
       total: 0,
-      // 承诺书模板表格数据
-      templateList: [],
-      // 弹出层标题
-      title: "",
-      // 是否显示弹出层
-      open: false,
-      // 是否显示详情弹出层
+      documentList: [],
       detailOpen: false,
-      // 详情数据
       detailData: {},
-      // 查询参数
+      rejectOpen: false,
+      rejectForm: { documentId: null, auditOpinion: "" },
+      dateRange: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        templateName: null,
-        commitmentType: null,
-        status: null
-      },
-      // 表单参数
-      form: {},
-      // 表单校验
-      rules: {
-        templateName: [
-          { required: true, message: "模板名称不能为空", trigger: "blur" }
-        ],
-        templateCode: [
-          { required: true, message: "模板编码不能为空", trigger: "blur" }
-        ],
-        commitmentType: [
-          { required: true, message: "承诺书类型不能为空", trigger: "change" }
-        ],
-        templateContent: [
-          { required: true, message: "模板内容不能为空", trigger: "blur" }
-        ]
+        auditStatus: "0",
+        documentType: null,
+        tenantName: null,
+        contractNo: null
       }
     };
   },
@@ -340,144 +215,74 @@ export default {
     this.getList();
   },
   methods: {
-    /** 查询承诺书模板列表 */
     getList() {
       this.loading = true;
-      listCommitmentTemplate(this.queryParams).then(response => {
-        this.templateList = response.rows;
-        this.total = response.total;
+      const params = { ...this.queryParams };
+      if (this.dateRange && this.dateRange.length === 2) {
+        params.startTime = this.dateRange[0];
+        params.endTime = this.dateRange[1];
+      }
+      listDocument(params).then(res => {
+        this.documentList = res.rows || [];
+        this.total = res.total || 0;
         this.loading = false;
-      });
+      }).catch(() => { this.loading = false; });
     },
-    // 取消按钮
-    cancel() {
-      this.open = false;
-      this.reset();
-    },
-    // 表单重置
-    reset() {
-      this.form = {
-        templateId: null,
-        templateName: null,
-        templateCode: null,
-        commitmentType: null,
-        templateContent: null,
-        version: "1.0",
-        isDefault: "0",
-        status: "0",
-        remark: null
-      };
-      this.resetForm("form");
-    },
-    /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
     },
-    /** 重置按钮操作 */
     resetQuery() {
+      this.dateRange = [];
       this.resetForm("queryForm");
+      this.queryParams.auditStatus = "0";
       this.handleQuery();
     },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.templateId)
-      this.single = selection.length !== 1
-      this.multiple = !selection.length
-    },
-    /** 新增按钮操作 */
-    handleAdd() {
-      this.reset();
-      this.open = true;
-      this.title = "添加承诺书模板";
-    },
-    /** 详情按钮操作 */
     handleDetail(row) {
-      const templateId = row.templateId;
-      getCommitmentTemplate(templateId).then(response => {
-        this.detailData = response.data;
-        this.detailOpen = true;
-      });
+      this.detailData = { ...row };
+      this.detailOpen = true;
     },
-    /** 修改按钮操作 */
-    handleUpdate(row) {
-      this.reset();
-      const templateId = row.templateId || this.ids
-      getCommitmentTemplate(templateId).then(response => {
-        this.form = response.data;
-        this.open = true;
-        this.title = "修改承诺书模板";
-      });
-    },
-    /** 提交按钮 */
-    submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          if (this.form.templateId != null) {
-            updateCommitmentTemplate(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
-          } else {
-            addCommitmentTemplate(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
-            });
-          }
-        }
-      });
-    },
-    /** 删除按钮操作 */
-    handleDelete(row) {
-      const templateIds = row.templateId || this.ids;
-      this.$modal.confirm('是否确认删除承诺书模板编号为"' + templateIds + '"的数据项？').then(function() {
-        return delCommitmentTemplate(templateIds);
+    handleApprove(row) {
+      this.$modal.confirm(`确认通过【${row.tenantName || ''} 的${this.docTypeLabel(row.documentType)}】？`).then(() => {
+        return auditDocument({ documentId: row.documentId, auditStatus: "1", auditOpinion: "审核通过" });
       }).then(() => {
+        this.$modal.msgSuccess("已通过");
         this.getList();
-        this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
+    },
+    handleReject(row) {
+      this.rejectForm = { documentId: row.documentId, auditOpinion: "" };
+      this.rejectOpen = true;
+    },
+    submitReject() {
+      if (!this.rejectForm.auditOpinion || this.rejectForm.auditOpinion.trim() === "") {
+        this.$modal.msgWarning("请填写拒绝原因");
+        return;
+      }
+      auditDocument({
+        documentId: this.rejectForm.documentId,
+        auditStatus: "2",
+        auditOpinion: this.rejectForm.auditOpinion.trim()
+      }).then(() => {
+        this.$modal.msgSuccess("已拒绝");
+        this.rejectOpen = false;
+        this.getList();
+      });
+    },
+    docTypeLabel(type) {
+      const map = { "1": "身份证", "2": "学历证明", "3": "工作证明", "4": "收入证明", "5": "人才证书", "6": "其他" };
+      return map[type] || "资料";
+    },
+    docTypeTagType(type) {
+      const map = { "1": "info", "2": "success", "3": "primary", "4": "warning", "5": "danger", "6": "" };
+      return map[type] || "";
+    },
+    resolveUrl(filePath) {
+      if (!filePath) return "";
+      if (/^https?:\/\//.test(filePath)) return filePath;
+      const base = process.env.VUE_APP_BASE_API || "";
+      return base + (filePath.startsWith("/") ? filePath : "/" + filePath);
     }
   }
 };
 </script>
-
-<style scoped>
-.detail-content {
-  max-height: 500px;
-  overflow-y: auto;
-  padding: 15px;
-  background: #f5f5f5;
-  border-radius: 4px;
-  line-height: 1.8;
-}
-
-/* Quill 生成的 <p> 标签需要显式加间距，否则 Element UI 的 reset 会归零 */
-.detail-content >>> p {
-  margin-bottom: 0.8em;
-  min-height: 1em;
-}
-
-.detail-content >>> h1,
-.detail-content >>> h2,
-.detail-content >>> h3 {
-  margin-top: 16px;
-  margin-bottom: 8px;
-  font-weight: bold;
-}
-
-.detail-content >>> ol,
-.detail-content >>> ul {
-  padding-left: 30px;
-  margin-bottom: 0.8em;
-}
-
-.detail-content >>> li {
-  margin-bottom: 6px;
-}
-
-.detail-content >>> strong {
-  font-weight: bold;
-}
-</style>

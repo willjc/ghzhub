@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>港好住·选房入住流程（客户版）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f4f6fa;
+    color: #2c3e50;
+    padding: 40px 20px;
+    line-height: 1.7;
+  }
+  .container { max-width: 880px; margin: 0 auto; }
+  h1 {
+    font-size: 28px;
+    color: #1a2b4a;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #7a869a;
+    font-size: 14px;
+    margin-bottom: 36px;
+  }
+
+  /* 时间线主体 */
+  .timeline {
+    position: relative;
+    padding-left: 0;
+  }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 36px;
+    top: 12px;
+    bottom: 12px;
+    width: 2px;
+    background: linear-gradient(to bottom, #4A90E2, #67C23A);
+  }
+
+  .step {
+    position: relative;
+    padding-left: 90px;
+    margin-bottom: 28px;
+  }
+  .step-no {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #4A90E2;
+    color: #4A90E2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.15);
+    z-index: 2;
+  }
+  .step-no .label {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-bottom: 2px;
+  }
+  .step-no .num {
+    font-size: 22px;
+  }
+
+  .step-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 18px 22px;
+    box-shadow: 0 2px 10px rgba(15, 35, 70, 0.06);
+    border-left: 4px solid #4A90E2;
+  }
+  .step-card h3 {
+    font-size: 17px;
+    color: #1a2b4a;
+    margin-bottom: 8px;
+  }
+  .step-card p {
+    color: #4a5b75;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  .step-card .highlight {
+    background: #fff7e6;
+    color: #d46b08;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    display: inline-block;
+    margin-top: 6px;
+  }
+  .step-card ul {
+    margin-top: 8px;
+    padding-left: 20px;
+    color: #4a5b75;
+    font-size: 14px;
+  }
+  .step-card ul li { margin: 3px 0; }
+
+  /* 不同步骤色彩 */
+  .step:nth-child(2) .step-no, .step:nth-child(2) .step-card { border-color: #4A90E2; color: #4A90E2; }
+  .step:nth-child(3) .step-no { border-color: #5b9ee0; color: #5b9ee0; }
+  .step:nth-child(3) .step-card { border-left-color: #5b9ee0; }
+  .step:nth-child(4) .step-no { border-color: #6cabd9; color: #6cabd9; }
+  .step:nth-child(4) .step-card { border-left-color: #6cabd9; }
+  .step:nth-child(5) .step-no { border-color: #7eb8d2; color: #7eb8d2; }
+  .step:nth-child(5) .step-card { border-left-color: #7eb8d2; }
+  .step:nth-child(6) .step-no { border-color: #8fc4cc; color: #8fc4cc; }
+  .step:nth-child(6) .step-card { border-left-color: #8fc4cc; }
+  .step:nth-child(7) .step-no { border-color: #a1d1c5; color: #2c8c6a; }
+  .step:nth-child(7) .step-card { border-left-color: #a1d1c5; }
+  .step:nth-child(8) .step-no { border-color: #67C23A; color: #67C23A; }
+  .step:nth-child(8) .step-card { border-left-color: #67C23A; }
+
+  /* 异常提示区 */
+  .exception-box {
+    margin-top: 40px;
+    background: #fffaf0;
+    border: 1px solid #ffe7ba;
+    border-radius: 12px;
+    padding: 22px 26px;
+  }
+  .exception-box h2 {
+    font-size: 18px;
+    color: #d46b08;
+    margin-bottom: 12px;
+  }
+  .exception-box table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .exception-box th, .exception-box td {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 1px dashed #ffd591;
+  }
+  .exception-box th {
+    color: #874d00;
+    background: #fff7e6;
+  }
+  .exception-box td { color: #5a4a30; }
+
+  .footer {
+    text-align: center;
+    margin-top: 30px;
+    color: #94a3b8;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>港好住 · 选房入住完整流程</h1>
+  <p class="subtitle">面向租户的小程序操作链路（客户简版）</p>
+
+  <div class="timeline">
+
+    <div class="step">
+      <div class="step-no"><span class="label">步骤</span><span class="num">1</span></div>
+      <div class="step-card">
+        <h3>选择项目</h3>
+        <p>用户登录小程序后，在首页/人才公寓/保租房/市场租赁等栏目中浏览项目列表，点击感兴趣的项目卡片进入「项目详情页」，查看项目介绍、户型、租金、配套等信息。</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-no"><span class="label">步骤</span><span class="num">2</span></div>
+      <div class="step-card">
+        <h3>资格校验（点击「选择房源」时触发）</h3>
+        <p>系统自动判断用户身份并完成校验：</p>
+        <ul>
+          <li><b>批量配租用户</b>：管理员已为其分配房源，<b>免校验</b>直接放行；</li>
+          <li><b>普通用户</b>：系统自动调取政务数据校验社保、学历、工作等信息；</li>
+          <li>校验未通过 → 跳出失败页，告知未通过原因，流程终止；</li>
+          <li>校验通过 → 进入下一步签署承诺书。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-no"><span class="label">步骤</span><span class="num">3</span></div>
+      <div class="step-card">
+        <h3>签署租住承诺书</h3>
+        <p>资格通过后，用户阅读项目相关的租住承诺书内容，勾选「我已阅读并同意」，并完成电子签字，作为正式入场的承诺凭证。</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-no"><span class="label">步骤</span><span class="num">4</span></div>
+      <div class="step-card">
+        <h3>选定具体房源（10 分钟锁房）</h3>
+        <p>进入房源列表，仅展示该项目下的<b>空置房源</b>，已被预订/出租/维修/下架的均不显示。</p>
+        <p>用户选定某套房源后，系统立即原子锁定：</p>
+        <ul>
+          <li>该房源对其他人立即不可见，避免「同一套被多人定到」；</li>
+          <li>开启 <b>10 分钟倒计时</b>，必须在此期间完成签合同。</li>
+        </ul>
+        <span class="highlight">⏱ 10 分钟内未签合同，房源自动释放回空置状态</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-no"><span class="label">步骤</span><span class="num">5</span></div>
+      <div class="step-card">
+        <h3>签订电子合同（e签宝）</h3>
+        <p>系统按合同模板自动生成租赁合同（含租户、房源、租期、租金、押金条款）：</p>
+        <ul>
+          <li>平台甲方一侧自动盖章；</li>
+          <li>用户跳转 e签宝完成实名认证 + 手写签字；</li>
+          <li>双方签署完成后，合同状态变为「已签署」，自动跳转押金支付页。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-no"><span class="label">步骤</span><span class="num">6</span></div>
+      <div class="step-card">
+        <h3>缴纳押金</h3>
+        <p>用户在线支付押金，押金账单标记为「已缴」，房源状态由「已预订」变更为「已出租」。</p>
+        <ul>
+          <li><b>批量配租用户</b>：到此订单完结，可直接进入步骤 8 办理入住；</li>
+          <li><b>普通用户</b>：进入「待上传材料」状态，开启 <b>72 小时上传倒计时</b>。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-no"><span class="label">步骤</span><span class="num">7</span></div>
+      <div class="step-card">
+        <h3>上传审核材料（仅普通用户）</h3>
+        <p>用户在 72 小时内上传两类必交材料：</p>
+        <ul>
+          <li>📄 <b>工作证明</b></li>
+          <li>🎓 <b>学历证明</b>（毕业证或在读证明）。</li>
+        </ul>
+        <p>提交后由后台管理员逐份审核：</p>
+        <ul>
+          <li>通过 → 材料状态置为「已通过」；</li>
+          <li>拒绝 → 必须填写拒绝原因，用户需在 72 小时内重新上传；</li>
+          <li>两份均通过 → 订单自动流转为「已完成」。</li>
+        </ul>
+        <span class="highlight">⏱ 72 小时内材料未全部审核通过，订单将过期</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-no"><span class="label">步骤</span><span class="num">8</span></div>
+      <div class="step-card">
+        <h3>办理入住</h3>
+        <p>订单进入「已完成」状态后，用户可申请入住。系统会先做前置自检：</p>
+        <ul>
+          <li>合同是否已签署 ✓</li>
+          <li>押金是否已缴 ✓</li>
+          <li>首期房租是否已缴 ✓</li>
+        </ul>
+        <p>通过后用户填写实际入住日期、室友信息、紧急联系人等，提交入住申请；管理员核对后生成入住单 → 现场设施确认 → 合同正式进入「履行中」状态，整个流程闭环。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="exception-box">
+    <h2>⚠️ 异常情况自动兜底</h2>
+    <table>
+      <thead>
+        <tr><th style="width:38%">场景</th><th>系统处理</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>选房 10 分钟内未签合同</td><td>订单作废，房源自动释放回「空置」</td></tr>
+        <tr><td>签合同后未及时缴押金</td><td>订单过期，房源释放</td></tr>
+        <tr><td>72 小时内材料未通过审核</td><td>订单过期，房源释放，可重新选房</td></tr>
+        <tr><td>用户主动取消订单</td><td>订单标记取消，房源即时释放</td></tr>
+        <tr><td>租住期间退租</td><td>经审核扣费后退还押金，房源回到「空置」继续上架</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="footer">© 港好住 · 选房入住流程图（客户版）</p>
+</div>
+</body>
+</html>

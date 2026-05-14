@@ -173,7 +173,7 @@ public class QualificationCheckService {
                 married ? "已婚，将同步核验配偶信息" : "未婚，无需核验配偶信息"));
 
         // 社保
-        CheckItem socialItem = checkSocial(social);
+        CheckItem socialItem = checkSocial(social, user.getWorkUnit());
         result.getItems().add(socialItem);
 
         // 本人不动产
@@ -221,7 +221,7 @@ public class QualificationCheckService {
 
     // ==================== 逐项判定 ====================
 
-    private CheckItem checkSocial(Map<String, Object> resp) {
+    private CheckItem checkSocial(Map<String, Object> resp, String userWorkUnit) {
         if (resp == null || !Boolean.TRUE.equals(resp.get("success"))) {
             return new CheckItem("social", "社保缴纳", "error", "政务社保接口暂不可用，请稍后重试");
         }
@@ -277,6 +277,32 @@ public class QualificationCheckService {
         if (!inHangzone) {
             return new CheckItem("social", "社保缴纳", "failed", "近 3 个月缴费单位不在港区");
         }
+
+        // 单位一致性校验：取 AAE041 最大月份对应的 AAB004，与申请人填写的工作单位严格比对（trim 后字符串完全相等）
+        if (userWorkUnit == null || userWorkUnit.trim().isEmpty()) {
+            return new CheckItem("social", "社保缴纳", "failed", "请先在「完善信息」中填写工作单位");
+        }
+        String latestCompany = null;
+        String latestYm = null;
+        for (Object rec : records) {
+            if (!(rec instanceof Map)) continue;
+            Map<?, ?> r = (Map<?, ?>) rec;
+            Object ym = r.get("AAE041");
+            Object company = r.get("AAB004");
+            if (ym == null) continue;
+            String ymStr = String.valueOf(ym).trim();
+            if (ymStr.length() > 6) ymStr = ymStr.substring(0, 6);
+            if (latestYm == null || ymStr.compareTo(latestYm) > 0) {
+                latestYm = ymStr;
+                latestCompany = company == null ? null : String.valueOf(company).trim();
+            }
+        }
+        String inputCompany = userWorkUnit.trim();
+        log.info("[checkSocial] 单位一致性 latestYm={}, latestCompany={}, inputCompany={}", latestYm, latestCompany, inputCompany);
+        if (latestCompany == null || latestCompany.isEmpty() || !latestCompany.equals(inputCompany)) {
+            return new CheckItem("social", "社保缴纳", "failed", "社保缴费单位与您填写的单位不一致");
+        }
+
         return new CheckItem("social", "社保缴纳", "passed", "近 3 个月港区单位连续缴纳");
     }
 

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ruoyi.system.domain.HzDocument;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 资料文档Service接口
@@ -78,4 +79,14 @@ public interface IHzDocumentService {
      * @return 结果
      */
     public int deleteDocumentById(Long documentId);
+
+    /**
+     * 管理端：分页查询资料文档（联表用户/合同/项目/房源）
+     *
+     * @param query 筛选条件 Map：auditStatus、documentType、tenantName、contractNo、startTime、endTime
+     * @param pageNum 页码
+     * @param pageSize 每页条数
+     * @return 分页数据
+     */
+    public IPage<Map<String, Object>> selectDocumentPageForAdmin(Map<String, Object> query, int pageNum, int pageSize);
 }
