@@ -10,16 +10,20 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzCheckoutApply;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzHouse;
+import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.mapper.HzCheckoutApplyMapper;
 import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
+import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.service.IHzCheckoutService;
 import com.ruoyi.system.service.IHzContractService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,6 +40,9 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
 
     @Autowired
     private HzHouseMapper houseMapper;
+
+    @Autowired
+    private HzProjectMapper projectMapper;
 
     @Override
     public HzContract selectContractById(Long contractId) {
@@ -136,6 +143,30 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
             System.out.println("  - contractId=" + c.getContractId() + ", contractNo=" + c.getContractNo() + ", tenantId=" + c.getTenantId());
         }
         System.out.println("===== selectContractList 调试结束 =====");
+
+        // 回填导出/列表所需的虚拟字段：projectName + allocationType
+        if (!result.isEmpty()) {
+            // 批量查询项目名称
+            Set<Long> projectIds = result.stream()
+                .map(HzContract::getProjectId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+            Map<Long, String> projectNameMap = new HashMap<>();
+            if (!projectIds.isEmpty()) {
+                List<HzProject> projects = projectMapper.selectList(
+                    new LambdaQueryWrapper<HzProject>()
+                        .in(HzProject::getProjectId, projectIds)
+                        .eq(HzProject::getDelFlag, "0")
+                );
+                for (HzProject p : projects) {
+                    projectNameMap.put(p.getProjectId(), p.getProjectName());
+                }
+            }
+            for (HzContract c : result) {
+                c.setProjectName(projectNameMap.getOrDefault(c.getProjectId(), ""));
+                c.setAllocationType(computeAllocationType(c.getBatchId(), c.getRemark()));
+            }
+        }
         return result;
     }
 

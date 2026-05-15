@@ -18,6 +18,15 @@ export function getReceiptDetail(params) {
   })
 }
 
+// 收款明细汇总（顶部统计）
+export function getReceiptDetailSummary(params) {
+  return request({
+    url: '/system/report/receipt/detail/summary',
+    method: 'get',
+    params
+  })
+}
+
 // 自定义报表生成
 export function generateCustomReport(data) {
   return request({

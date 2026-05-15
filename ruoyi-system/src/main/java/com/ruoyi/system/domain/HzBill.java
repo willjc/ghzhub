@@ -108,7 +108,7 @@ public class HzBill extends BaseEntity {
     private String payTime;
 
     /** 支付方式 */
-    @Excel(name = "支付方式")
+    @Excel(name = "支付方式", readConverterExp = "wechat=微信支付,wxpay=微信支付,2=微信支付,alipay=支付宝,1=支付宝,cash=现金,3=现金,bank=银行转账,transfer=银行转账,4=银行转账,offline=线下支付,5=线下支付")
     @TableField("pay_method")
     private String payMethod;
 

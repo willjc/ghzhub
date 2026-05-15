@@ -189,8 +189,7 @@ export default {
         endMonth:    ym,
         dimensions:  ['projectName', 'month'],
         metrics:     ['receivableAmount', 'receivedAmount', 'collectionRate'],
-        projectIds:  [],
-        status:      ''
+        projectIds:  []
       },
       generating:  false,
       hasResult:   false,

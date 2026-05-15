@@ -4,7 +4,7 @@
     <div class="page-header">
       <div class="page-title-area">
         <h2 class="page-title"><i class="el-icon-document"></i> 项目收款台账</h2>
-        <span class="page-desc">按项目统计收款数据，支持日/周/月/年维度筛选与导出</span>
+        <span class="page-desc">应收基于账单应付日期，实收基于实际支付时间，支持日/周/月/年维度筛选与导出</span>
       </div>
     </div>
 
@@ -68,6 +68,7 @@
         <div class="summary-card" :class="'sc-' + s.theme">
           <div class="sc-label">{{ s.label }}</div>
           <div class="sc-value">{{ s.value }}</div>
+          <div class="sc-extra" v-if="s.extra">{{ s.extra }}</div>
         </div>
       </el-col>
     </el-row>
@@ -80,46 +81,48 @@
       <div ref="barChart" class="bar-chart"></div>
     </el-card>
 
-    <!-- Tab切换：汇总 / 收款明细 -->
+    <!-- Tab切换：收款明细 / 项目汇总 -->
     <el-card class="table-card" shadow="never">
       <el-tabs v-model="activeTab">
-        <!-- Tab1: 项目汇总 -->
-        <el-tab-pane label="项目汇总" name="summary">
-          <el-table :data="projectData" v-loading="loading" stripe show-summary :summary-method="getSummary"
-            :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }">
-            <el-table-column type="index" label="序号" width="60" align="center" />
-            <el-table-column prop="projectName" label="项目名称" min-width="180" show-overflow-tooltip />
-            <el-table-column prop="receivableAmount" label="应收金额（元）" width="140" align="right">
-              <template slot-scope="{ row }"><span class="amt blue">¥{{ formatNum(row.receivableAmount) }}</span></template>
-            </el-table-column>
-            <el-table-column prop="receivedAmount" label="实收金额（元）" width="140" align="right">
-              <template slot-scope="{ row }"><span class="amt green">¥{{ formatNum(row.receivedAmount) }}</span></template>
-            </el-table-column>
-            <el-table-column prop="overdueAmount" label="逾期金额（元）" width="140" align="right">
-              <template slot-scope="{ row }"><span class="amt red">¥{{ formatNum(row.overdueAmount) }}</span></template>
-            </el-table-column>
-            <el-table-column prop="collectionRate" label="收款率" width="100" align="center">
-              <template slot-scope="{ row }">
-                <el-progress :percentage="row.collectionRate" :stroke-width="8" :color="getRateColor(row.collectionRate)" />
-              </template>
-            </el-table-column>
-            <el-table-column prop="status" label="状态" width="90" align="center">
-              <template slot-scope="{ row }">
-                <el-tag :type="getStatusType(row.status)" size="small">{{ getStatusText(row.status) }}</el-tag>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-tab-pane>
-
-        <!-- Tab2: 收款明细 -->
+        <!-- Tab1: 收款明细（默认） -->
         <el-tab-pane label="收款明细" name="detail">
-          <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <!-- 明细汇总卡片 -->
+          <el-row :gutter="12" class="detail-summary-row" v-if="detailSummary">
+            <el-col :xs="12" :sm="6">
+              <div class="ds-card ds-blue">
+                <div class="ds-label">明细总笔数</div>
+                <div class="ds-value">{{ detailSummary.totalCount || 0 }} 笔</div>
+              </div>
+            </el-col>
+            <el-col :xs="12" :sm="6">
+              <div class="ds-card ds-green">
+                <div class="ds-label">实收总额</div>
+                <div class="ds-value">¥{{ formatNum(detailSummary.totalAmount || 0) }}</div>
+              </div>
+            </el-col>
+            <el-col :xs="24" :sm="12">
+              <div class="ds-card ds-teal">
+                <div class="ds-label">分类统计</div>
+                <div class="ds-value-small">
+                  <span v-for="t in (detailSummary.typeStats || [])" :key="t.name" class="type-tag">
+                    {{ t.name }}: {{ t.count }}笔 / ¥{{ formatNum(t.amount) }}
+                  </span>
+                  <span v-if="!(detailSummary.typeStats || []).length" class="muted">-</span>
+                </div>
+              </div>
+            </el-col>
+          </el-row>
+
+          <div class="detail-toolbar">
             <el-form :inline="true" size="small">
               <el-form-item label="账单类型">
-                <el-select v-model="detailQuery.billType" placeholder="全部" clearable style="width: 120px;" @change="loadDetail">
-                  <el-option label="租金" value="2" />
-                  <el-option label="物业费" value="6" />
+                <el-select v-model="detailQuery.billType" placeholder="全部" clearable style="width: 120px;" @change="reloadDetailAndSummary">
                   <el-option label="押金" value="1" />
+                  <el-option label="租金" value="2" />
+                  <el-option label="水费" value="3" />
+                  <el-option label="电费" value="4" />
+                  <el-option label="燃气费" value="5" />
+                  <el-option label="物业费" value="6" />
                   <el-option label="其他" value="7" />
                 </el-select>
               </el-form-item>
@@ -130,9 +133,10 @@
             :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }">
             <el-table-column type="index" label="序号" width="50" align="center" />
             <el-table-column prop="tenantName" label="租户姓名" width="100" />
-            <el-table-column prop="projectName" label="项目名称" min-width="150" show-overflow-tooltip />
-            <el-table-column prop="houseCode" label="房源编号" width="120" show-overflow-tooltip />
+            <el-table-column prop="projectName" label="项目名称" width="130" show-overflow-tooltip />
+            <el-table-column prop="houseAddress" label="房源" min-width="180" show-overflow-tooltip />
             <el-table-column prop="billTypeText" label="账单类型" width="80" align="center" />
+            <el-table-column prop="billPeriod" label="账期" width="100" align="center" />
             <el-table-column prop="billAmount" label="账单金额" width="110" align="right">
               <template slot-scope="{ row }"><span class="amt blue">¥{{ formatNum(row.billAmount) }}</span></template>
             </el-table-column>
@@ -140,10 +144,40 @@
               <template slot-scope="{ row }"><span class="amt green">¥{{ formatNum(row.paidAmount) }}</span></template>
             </el-table-column>
             <el-table-column prop="payTime" label="支付时间" width="160" />
-            <el-table-column prop="payMethod" label="支付方式" width="80" align="center" />
-            <el-table-column prop="billPeriod" label="账期" width="100" />
+            <el-table-column prop="payMethodText" label="支付方式" width="100" align="center" />
           </el-table>
           <pagination v-show="detailTotal > 0" :total="detailTotal" :page.sync="detailQuery.pageNum" :limit.sync="detailQuery.pageSize" @pagination="loadDetail" />
+        </el-tab-pane>
+
+        <!-- Tab2: 项目汇总 -->
+        <el-tab-pane label="项目汇总" name="summary">
+          <el-table :data="projectData" v-loading="loading" stripe show-summary :summary-method="getSummary"
+            :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }">
+            <el-table-column type="index" label="序号" width="60" align="center" />
+            <el-table-column prop="projectName" label="项目名称" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="receivableAmount" label="应收金额（元）" width="140" align="right">
+              <template slot-scope="{ row }"><span class="amt blue">¥{{ formatNum(row.receivableAmount) }}</span></template>
+            </el-table-column>
+            <el-table-column prop="receivedAmount" label="实收金额（元）" width="140" align="right">
+              <template slot-scope="{ row }"><span class="amt green">¥{{ formatNum(row.receivedAmount) }}</span></template>
+            </el-table-column>
+            <el-table-column prop="overdueAmount" label="逾期金额（元）" width="140" align="right">
+              <template slot-scope="{ row }"><span class="amt red">¥{{ formatNum(row.overdueAmount) }}</span></template>
+            </el-table-column>
+            <el-table-column prop="billCount" label="应收笔数" width="100" align="center" />
+            <el-table-column prop="paidCount" label="已收笔数" width="100" align="center" />
+            <el-table-column prop="overdueCount" label="逾期笔数" width="100" align="center" />
+            <el-table-column prop="collectionRate" label="收款率" width="160" align="center">
+              <template slot-scope="{ row }">
+                <el-progress :percentage="row.collectionRate" :stroke-width="8" :color="getRateColor(row.collectionRate)" />
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="80" align="center">
+              <template slot-scope="{ row }">
+                <el-tag :type="getStatusType(row.status)" size="small">{{ getStatusText(row.status) }}</el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
         </el-tab-pane>
       </el-tabs>
     </el-card>
@@ -152,7 +186,7 @@
 
 <script>
 import * as echarts from 'echarts'
-import { getReceiptSummary, getReceiptDetail, getProjectList } from "@/api/gangzhu/report"
+import { getReceiptSummary, getReceiptDetail, getReceiptDetailSummary, getProjectList } from "@/api/gangzhu/report"
 
 export default {
   name: 'ReceiptLedger',
@@ -160,7 +194,7 @@ export default {
     const now = new Date()
     return {
       loading: false,
-      activeTab: 'summary',
+      activeTab: 'detail',
       queryForm: {
         periodType: 'month',
         periodValue: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
@@ -174,6 +208,7 @@ export default {
       detailLoading: false,
       detailData: [],
       detailTotal: 0,
+      detailSummary: null,
       detailQuery: { pageNum: 1, pageSize: 20, billType: null },
       barChartInst: null
     }
@@ -182,10 +217,10 @@ export default {
     summaryStats() {
       const s = this.summaryData
       return [
-        { key: 'receivable', label: '应收总额', value: this.formatYuan(s.totalReceivable || 0), theme: 'blue' },
-        { key: 'received', label: '实收总额', value: this.formatYuan(s.totalReceived || 0), theme: 'green' },
-        { key: 'overdue', label: '逾期总额', value: this.formatYuan(s.totalOverdue || 0), theme: 'red' },
-        { key: 'rate', label: '综合收款率', value: (s.collectionRate || 0) + '%', theme: 'teal' }
+        { key: 'receivable', label: '应收总额', value: this.formatYuan(s.totalReceivable || 0), extra: (s.totalBillCount || 0) + ' 笔', theme: 'blue' },
+        { key: 'received', label: '实收总额', value: this.formatYuan(s.totalReceived || 0), extra: (s.totalPaidCount || 0) + ' 笔', theme: 'green' },
+        { key: 'overdue', label: '逾期总额', value: this.formatYuan(s.totalOverdue || 0), extra: '', theme: 'red' },
+        { key: 'rate', label: '综合收款率', value: (s.collectionRate || 0) + '%', extra: '', theme: 'teal' }
       ]
     }
   },
@@ -243,10 +278,10 @@ export default {
       }).finally(() => {
         this.loading = false
       })
-      // 同时加载明细
-      if (this.activeTab === 'detail') {
-        this.loadDetail()
-      }
+      // 同时刷新明细
+      this.detailQuery.pageNum = 1
+      this.loadDetail()
+      this.loadDetailSummary()
     },
     handleReset() {
       const now = new Date()
@@ -256,7 +291,13 @@ export default {
         periodValueWeek: null,
         projectId: null
       }
+      this.detailQuery.billType = null
       this.handleQuery()
+    },
+    reloadDetailAndSummary() {
+      this.detailQuery.pageNum = 1
+      this.loadDetail()
+      this.loadDetailSummary()
     },
     loadDetail() {
       this.detailLoading = true
@@ -273,6 +314,17 @@ export default {
         this.detailTotal = res.total || 0
       }).finally(() => {
         this.detailLoading = false
+      })
+    },
+    loadDetailSummary() {
+      const params = {
+        periodType: this.queryForm.periodType,
+        periodValue: this.queryForm.periodValue,
+        projectId: this.queryForm.projectId || undefined,
+        billType: this.detailQuery.billType || undefined
+      }
+      getReceiptDetailSummary(params).then(res => {
+        this.detailSummary = res.data || res
       })
     },
     handleExportDetail() {
@@ -314,10 +366,14 @@ export default {
     getSummary({ columns, data }) {
       return columns.map((col, i) => {
         if (i === 0) return '合计'
-        const keys = { receivableAmount: true, receivedAmount: true, overdueAmount: true }
-        if (keys[col.property]) {
+        const amtKeys = { receivableAmount: true, receivedAmount: true, overdueAmount: true }
+        const cntKeys = { billCount: true, paidCount: true, overdueCount: true }
+        if (amtKeys[col.property]) {
           const sum = data.reduce((s, r) => s + (Number(r[col.property]) || 0), 0)
           return '¥' + this.formatNum(sum)
+        }
+        if (cntKeys[col.property]) {
+          return data.reduce((s, r) => s + (Number(r[col.property]) || 0), 0)
         }
         return ''
       })
@@ -338,6 +394,7 @@ export default {
     activeTab(val) {
       if (val === 'detail' && this.detailData.length === 0) {
         this.loadDetail()
+        this.loadDetailSummary()
       }
     }
   }
@@ -362,6 +419,7 @@ export default {
 }
 .sc-label { font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
 .sc-value  { font-size: 22px; font-weight: 700; color: #1e293b; }
+.sc-extra  { font-size: 12px; color: #64748b; margin-top: 4px; }
 .sc-blue  { border-top-color: #2563eb; .sc-value { color: #2563eb; } }
 .sc-green { border-top-color: #16a34a; .sc-value { color: #16a34a; } }
 .sc-red   { border-top-color: #dc2626; .sc-value { color: #dc2626; } }
@@ -378,4 +436,20 @@ export default {
 .amt.blue  { color: #2563eb; }
 .amt.green { color: #16a34a; }
 .amt.red   { color: #dc2626; }
+.detail-summary-row { margin-bottom: 12px; }
+.ds-card {
+  background: #f8fafc; border-radius: 8px; padding: 10px 14px; height: 100%;
+  border-left: 3px solid #cbd5e1;
+}
+.ds-label { font-size: 12px; color: #64748b; margin-bottom: 4px; }
+.ds-value { font-size: 18px; font-weight: 700; color: #1e293b; }
+.ds-value-small { font-size: 12px; color: #1e293b; line-height: 1.6; }
+.ds-blue  { border-left-color: #2563eb; .ds-value { color: #2563eb; } }
+.ds-green { border-left-color: #16a34a; .ds-value { color: #16a34a; } }
+.ds-teal  { border-left-color: #0891b2; }
+.type-tag { display: inline-block; margin-right: 12px; padding: 2px 8px; background: #e0f2fe; color: #0c4a6e; border-radius: 4px; font-size: 12px; }
+.muted { color: #94a3b8; }
+.detail-toolbar {
+  margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
+}
 </style>
