@@ -124,11 +124,11 @@ public class HzReportController extends BaseController {
         }
         List<HzBill> receivedBills = billMapper.selectList(receivedWrapper);
 
-        // 3) 逾期：due_date 在时段结束之前 且未付清（截至endDate所在时点的存量逾期）
+        // 3) 逾期：时段内 due_date 应付 但状态未付清（与应收同时段，体现该时段欠款额）
         LambdaQueryWrapper<HzBill> overdueWrapper = new LambdaQueryWrapper<>();
         overdueWrapper.eq(HzBill::getDelFlag, "0")
                       .in(HzBill::getBillStatus, "0", "2", "3")
-                      .lt(HzBill::getDueDate, today)
+                      .ge(HzBill::getDueDate, startStr)
                       .le(HzBill::getDueDate, endStr);
         if (filterContractIds != null) {
             if (filterContractIds.isEmpty()) {
@@ -465,10 +465,10 @@ public class HzReportController extends BaseController {
         }
         List<HzBill> paidBills = billMapper.selectList(paidW);
 
-        // 3) 逾期账单：截至endDate已逾期未付清
+        // 3) 逾期账单：时段内 due_date 应付 但未付清
         LambdaQueryWrapper<HzBill> overW = new LambdaQueryWrapper<>();
         overW.eq(HzBill::getDelFlag, "0").in(HzBill::getBillStatus, "0", "2", "3")
-             .lt(HzBill::getDueDate, today).le(HzBill::getDueDate, endStr);
+             .ge(HzBill::getDueDate, startStr).le(HzBill::getDueDate, endStr);
         if (filterContractIds != null) {
             if (filterContractIds.isEmpty()) overW.eq(HzBill::getContractId, -1L);
             else overW.in(HzBill::getContractId, filterContractIds);

@@ -66,12 +66,30 @@
     <el-row :gutter="16" class="summary-row">
       <el-col :xs="12" :sm="6" v-for="s in summaryStats" :key="s.key">
         <div class="summary-card" :class="'sc-' + s.theme">
-          <div class="sc-label">{{ s.label }}</div>
+          <div class="sc-label">
+            {{ s.label }}
+            <el-tooltip v-if="s.tip" effect="dark" :content="s.tip" placement="top">
+              <i class="el-icon-question sc-tip"></i>
+            </el-tooltip>
+          </div>
           <div class="sc-value">{{ s.value }}</div>
           <div class="sc-extra" v-if="s.extra">{{ s.extra }}</div>
         </div>
       </el-col>
     </el-row>
+
+    <!-- 口径说明 -->
+    <el-alert class="metric-tip" type="info" show-icon :closable="false">
+      <template slot="title">
+        <span class="tip-text">
+          <b>📊 数据口径说明：</b>
+          <span class="tip-item"><b class="t-blue">应收总额</b> = 所选时段内 <em>应付日期(到期日)</em> 落入的全部账单金额</span>
+          <span class="tip-item"><b class="t-green">实收总额</b> = 所选时段内 <em>实际支付时间</em> 落入的已支付金额</span>
+          <span class="tip-item"><b class="t-red">逾期总额</b> = 所选时段内应付但<em>尚未结清</em>的欠款（账单金额-已付金额）</span>
+          <span class="tip-item"><b class="t-teal">综合收款率</b> = 实收总额 ÷ 应收总额 × 100%</span>
+        </span>
+      </template>
+    </el-alert>
 
     <!-- 柱状图 -->
     <el-card class="chart-card" shadow="never">
@@ -90,19 +108,34 @@
           <el-row :gutter="12" class="detail-summary-row" v-if="detailSummary">
             <el-col :xs="12" :sm="6">
               <div class="ds-card ds-blue">
-                <div class="ds-label">明细总笔数</div>
+                <div class="ds-label">
+                  明细总笔数
+                  <el-tooltip effect="dark" content="所选时段、项目、账单类型条件下，已支付账单的总条数" placement="top">
+                    <i class="el-icon-question ds-tip"></i>
+                  </el-tooltip>
+                </div>
                 <div class="ds-value">{{ detailSummary.totalCount || 0 }} 笔</div>
               </div>
             </el-col>
             <el-col :xs="12" :sm="6">
               <div class="ds-card ds-green">
-                <div class="ds-label">实收总额</div>
+                <div class="ds-label">
+                  实收总额
+                  <el-tooltip effect="dark" content="当前筛选条件下所有已支付账单的实付金额合计" placement="top">
+                    <i class="el-icon-question ds-tip"></i>
+                  </el-tooltip>
+                </div>
                 <div class="ds-value">¥{{ formatNum(detailSummary.totalAmount || 0) }}</div>
               </div>
             </el-col>
             <el-col :xs="24" :sm="12">
               <div class="ds-card ds-teal">
-                <div class="ds-label">分类统计</div>
+                <div class="ds-label">
+                  分类统计
+                  <el-tooltip effect="dark" content="按账单类型(押金/租金/水电费等)分别统计的笔数与金额" placement="top">
+                    <i class="el-icon-question ds-tip"></i>
+                  </el-tooltip>
+                </div>
                 <div class="ds-value-small">
                   <span v-for="t in (detailSummary.typeStats || [])" :key="t.name" class="type-tag">
                     {{ t.name }}: {{ t.count }}笔 / ¥{{ formatNum(t.amount) }}
@@ -155,24 +188,75 @@
             :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }">
             <el-table-column type="index" label="序号" width="60" align="center" />
             <el-table-column prop="projectName" label="项目名称" min-width="160" show-overflow-tooltip />
-            <el-table-column prop="receivableAmount" label="应收金额（元）" width="140" align="right">
+            <el-table-column prop="receivableAmount" width="160" align="right">
+              <template slot="header">
+                应收金额（元）
+                <el-tooltip effect="dark" content="该项目在所选时段内应付日期落入的全部账单金额合计" placement="top">
+                  <i class="el-icon-question th-tip"></i>
+                </el-tooltip>
+              </template>
               <template slot-scope="{ row }"><span class="amt blue">¥{{ formatNum(row.receivableAmount) }}</span></template>
             </el-table-column>
-            <el-table-column prop="receivedAmount" label="实收金额（元）" width="140" align="right">
+            <el-table-column prop="receivedAmount" width="160" align="right">
+              <template slot="header">
+                实收金额（元）
+                <el-tooltip effect="dark" content="该项目在所选时段内已实际收到的金额合计（按支付时间）" placement="top">
+                  <i class="el-icon-question th-tip"></i>
+                </el-tooltip>
+              </template>
               <template slot-scope="{ row }"><span class="amt green">¥{{ formatNum(row.receivedAmount) }}</span></template>
             </el-table-column>
-            <el-table-column prop="overdueAmount" label="逾期金额（元）" width="140" align="right">
+            <el-table-column prop="overdueAmount" width="160" align="right">
+              <template slot="header">
+                逾期金额（元）
+                <el-tooltip effect="dark" content="该项目在所选时段内应付但尚未结清的欠款（账单金额-已付金额）" placement="top">
+                  <i class="el-icon-question th-tip"></i>
+                </el-tooltip>
+              </template>
               <template slot-scope="{ row }"><span class="amt red">¥{{ formatNum(row.overdueAmount) }}</span></template>
             </el-table-column>
-            <el-table-column prop="billCount" label="应收笔数" width="100" align="center" />
-            <el-table-column prop="paidCount" label="已收笔数" width="100" align="center" />
-            <el-table-column prop="overdueCount" label="逾期笔数" width="100" align="center" />
-            <el-table-column prop="collectionRate" label="收款率" width="160" align="center">
+            <el-table-column prop="billCount" width="110" align="center">
+              <template slot="header">
+                应收笔数
+                <el-tooltip effect="dark" content="该项目所选时段内应支付的账单数量" placement="top">
+                  <i class="el-icon-question th-tip"></i>
+                </el-tooltip>
+              </template>
+            </el-table-column>
+            <el-table-column prop="paidCount" width="110" align="center">
+              <template slot="header">
+                已收笔数
+                <el-tooltip effect="dark" content="该项目所选时段内实际收到款项的账单数量" placement="top">
+                  <i class="el-icon-question th-tip"></i>
+                </el-tooltip>
+              </template>
+            </el-table-column>
+            <el-table-column prop="overdueCount" width="110" align="center">
+              <template slot="header">
+                逾期笔数
+                <el-tooltip effect="dark" content="该项目所选时段内应支付但尚未结清的账单数量" placement="top">
+                  <i class="el-icon-question th-tip"></i>
+                </el-tooltip>
+              </template>
+            </el-table-column>
+            <el-table-column prop="collectionRate" width="170" align="center">
+              <template slot="header">
+                收款率
+                <el-tooltip effect="dark" content="收款率 = 实收金额 ÷ 应收金额 × 100%" placement="top">
+                  <i class="el-icon-question th-tip"></i>
+                </el-tooltip>
+              </template>
               <template slot-scope="{ row }">
                 <el-progress :percentage="row.collectionRate" :stroke-width="8" :color="getRateColor(row.collectionRate)" />
               </template>
             </el-table-column>
-            <el-table-column prop="status" label="状态" width="80" align="center">
+            <el-table-column prop="status" width="90" align="center">
+              <template slot="header">
+                状态
+                <el-tooltip effect="dark" content="收款率≥90% 正常 / 80%-90% 预警 / 低于80% 异常" placement="top">
+                  <i class="el-icon-question th-tip"></i>
+                </el-tooltip>
+              </template>
               <template slot-scope="{ row }">
                 <el-tag :type="getStatusType(row.status)" size="small">{{ getStatusText(row.status) }}</el-tag>
               </template>
@@ -217,10 +301,14 @@ export default {
     summaryStats() {
       const s = this.summaryData
       return [
-        { key: 'receivable', label: '应收总额', value: this.formatYuan(s.totalReceivable || 0), extra: (s.totalBillCount || 0) + ' 笔', theme: 'blue' },
-        { key: 'received', label: '实收总额', value: this.formatYuan(s.totalReceived || 0), extra: (s.totalPaidCount || 0) + ' 笔', theme: 'green' },
-        { key: 'overdue', label: '逾期总额', value: this.formatYuan(s.totalOverdue || 0), extra: '', theme: 'red' },
-        { key: 'rate', label: '综合收款率', value: (s.collectionRate || 0) + '%', extra: '', theme: 'teal' }
+        { key: 'receivable', label: '应收总额', value: this.formatYuan(s.totalReceivable || 0), extra: (s.totalBillCount || 0) + ' 笔', theme: 'blue',
+          tip: '所选时段内应付日期(到期日)落入的全部账单金额（已关闭的除外）' },
+        { key: 'received', label: '实收总额', value: this.formatYuan(s.totalReceived || 0), extra: (s.totalPaidCount || 0) + ' 笔', theme: 'green',
+          tip: '所选时段内实际支付时间落入的已支付账单金额' },
+        { key: 'overdue', label: '逾期总额', value: this.formatYuan(s.totalOverdue || 0), extra: '', theme: 'red',
+          tip: '所选时段内应付但尚未结清的欠款（账单金额-已付金额）' },
+        { key: 'rate', label: '综合收款率', value: (s.collectionRate || 0) + '%', extra: '', theme: 'teal',
+          tip: '实收总额 ÷ 应收总额 × 100%，反映本时段回款情况' }
       ]
     }
   },
@@ -418,12 +506,33 @@ export default {
   &:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
 }
 .sc-label { font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
+.sc-tip { color: #cbd5e1; cursor: help; margin-left: 4px; font-size: 13px; }
+.sc-tip:hover { color: #64748b; }
 .sc-value  { font-size: 22px; font-weight: 700; color: #1e293b; }
 .sc-extra  { font-size: 12px; color: #64748b; margin-top: 4px; }
 .sc-blue  { border-top-color: #2563eb; .sc-value { color: #2563eb; } }
 .sc-green { border-top-color: #16a34a; .sc-value { color: #16a34a; } }
 .sc-red   { border-top-color: #dc2626; .sc-value { color: #dc2626; } }
 .sc-teal  { border-top-color: #0891b2; .sc-value { color: #0891b2; } }
+
+.metric-tip {
+  margin-bottom: 16px; border-radius: 8px;
+  background: linear-gradient(90deg, #eff6ff 0%, #ecfdf5 50%, #fef2f2 100%) !important;
+  border: 1px solid #dbeafe !important;
+  ::v-deep .el-alert__title { font-size: 13px; line-height: 1.7; }
+  .tip-text { color: #475569; }
+  .tip-item { margin-right: 18px; display: inline-block; }
+  .tip-item em { font-style: normal; color: #1e293b; font-weight: 600; }
+  .t-blue  { color: #2563eb; }
+  .t-green { color: #16a34a; }
+  .t-red   { color: #dc2626; }
+  .t-teal  { color: #0891b2; }
+}
+
+.th-tip { color: #94a3b8; cursor: help; margin-left: 3px; font-size: 13px; }
+.th-tip:hover { color: #2563eb; }
+.ds-tip { color: #cbd5e1; cursor: help; margin-left: 3px; font-size: 12px; }
+.ds-tip:hover { color: #64748b; }
 .chart-card, .table-card { border-radius: 10px; margin-bottom: 16px; }
 .bar-chart { height: 280px; }
 .card-head {

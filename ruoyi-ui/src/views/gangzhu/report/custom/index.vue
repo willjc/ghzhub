@@ -59,6 +59,9 @@
             <el-checkbox-group v-model="reportForm.metrics" class="field-group">
               <el-checkbox v-for="m in metricOptions" :key="m.value" :label="m.value" class="field-item">
                 {{ m.label }}
+                <el-tooltip effect="dark" :content="m.tip" placement="right">
+                  <i class="el-icon-question metric-tip-icon"></i>
+                </el-tooltip>
               </el-checkbox>
             </el-checkbox-group>
           </div>
@@ -167,12 +170,18 @@ const DIMENSIONS = [
 
 // 指标选项
 const METRICS = [
-  { value: 'receivableAmount',  label: '应收金额',   color: 'blue',  format: v => '¥' + (v || 0).toLocaleString() },
-  { value: 'receivedAmount',    label: '实收金额',   color: 'green', format: v => '¥' + (v || 0).toLocaleString() },
-  { value: 'overdueAmount',     label: '逾期金额',   color: 'red',   format: v => '¥' + (v || 0).toLocaleString() },
-  { value: 'billCount',         label: '账单数',     color: 'teal',  format: v => (v || 0) + '笔' },
-  { value: 'paidCount',         label: '已付数',     color: 'teal',  format: v => (v || 0) + '笔' },
-  { value: 'collectionRate',    label: '收款率',     color: 'amber', format: v => (v || 0) + '%' }
+  { value: 'receivableAmount',  label: '应收金额',   color: 'blue',  format: v => '¥' + (v || 0).toLocaleString(),
+    tip: '所选时段内应付日期落入的全部账单金额（已关闭账单除外）' },
+  { value: 'receivedAmount',    label: '实收金额',   color: 'green', format: v => '¥' + (v || 0).toLocaleString(),
+    tip: '所选时段内实际支付时间落入的已支付金额' },
+  { value: 'overdueAmount',     label: '逾期金额',   color: 'red',   format: v => '¥' + (v || 0).toLocaleString(),
+    tip: '所选时段内应付但尚未结清的欠款（账单金额-已付金额）' },
+  { value: 'billCount',         label: '账单数',     color: 'teal',  format: v => (v || 0) + '笔',
+    tip: '所选时段内应支付的账单数量（按应付日期）' },
+  { value: 'paidCount',         label: '已付数',     color: 'teal',  format: v => (v || 0) + '笔',
+    tip: '所选时段内实际收到款项的账单数量（按支付时间）' },
+  { value: 'collectionRate',    label: '收款率',     color: 'amber', format: v => (v || 0) + '%',
+    tip: '收款率 = 实收金额 ÷ 应收金额 × 100%' }
 ]
 
 export default {
@@ -318,6 +327,8 @@ export default {
 
 .field-group { display: flex; flex-direction: column; gap: 4px; }
 .field-item { margin-left: 0 !important; line-height: 2; }
+.metric-tip-icon { color: #cbd5e1; cursor: help; margin-left: 4px; font-size: 13px; }
+.metric-tip-icon:hover { color: #7c3aed; }
 
 .config-actions { margin-top: 16px; }
 
