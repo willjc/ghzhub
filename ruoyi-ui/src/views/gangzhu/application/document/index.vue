@@ -4,6 +4,7 @@
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="84px">
       <el-form-item label="审核状态" prop="auditStatus">
         <el-select v-model="queryParams.auditStatus" placeholder="全部" clearable style="width: 140px">
+          <el-option label="待审核" value="0" />
           <el-option label="已通过" value="1" />
           <el-option label="违规" value="2" />
         </el-select>
@@ -198,7 +199,7 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        auditStatus: "1",
+        auditStatus: null,
         documentType: null,
         tenantName: null,
         contractNo: null
@@ -229,7 +230,6 @@ export default {
     resetQuery() {
       this.dateRange = [];
       this.resetForm("queryForm");
-      this.queryParams.auditStatus = "1";
       this.handleQuery();
     },
     handleDetail(row) {
