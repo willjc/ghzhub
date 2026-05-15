@@ -66,6 +66,22 @@
           <dict-tag :options="dict.type.hz_education_type" :value="scope.row.newEducation"/>
         </template>
       </el-table-column>
+      <el-table-column label="学历审核" align="center" width="110">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.educationAuditStatus === '1'" type="success" size="mini">已通过</el-tag>
+          <el-tag v-else-if="scope.row.educationAuditStatus === '2'" type="danger"  size="mini">已驳回</el-tag>
+          <el-tag v-else-if="scope.row.educationAuditStatus === '0'" type="warning" size="mini">待审核</el-tag>
+          <span v-else style="color:#bbb;">未提交</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="社保审核" align="center" width="110">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.socialAuditStatus === '1'" type="success" size="mini">已通过</el-tag>
+          <el-tag v-else-if="scope.row.socialAuditStatus === '2'" type="danger"  size="mini">已驳回</el-tag>
+          <el-tag v-else-if="scope.row.socialAuditStatus === '0'" type="warning" size="mini">待审核</el-tag>
+          <span v-else style="color:#bbb;">未提交</span>
+        </template>
+      </el-table-column>
       <el-table-column label="处理状态" align="center" prop="handleResult" width="100">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.handleResult === '0'" type="warning">待处理</el-tag>
@@ -86,7 +102,7 @@
             v-hasPermi="['gangzhu:qualification:query']"
           >详情</el-button>
           <el-button
-            v-if="scope.row.handleResult === '0'"
+            v-if="canAudit(scope.row)"
             size="mini"
             type="text"
             icon="el-icon-edit"
@@ -114,7 +130,7 @@
 
     <!-- 审核对话框 -->
     <el-dialog :title="'审核资格申述'" :visible.sync="open" width="600px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+      <el-form ref="form" :model="form" :rules="auditRules" label-width="100px">
         <el-form-item label="姓名">
           <el-input v-model="form.realName" :disabled="true" />
         </el-form-item>
@@ -155,6 +171,24 @@
         <el-form-item label="学历说明" v-if="form.educationDesc">
           <div style="white-space: pre-wrap; line-height: 24px; color: #333;">{{ form.educationDesc }}</div>
         </el-form-item>
+
+        <!-- 学历审核组 -->
+        <div class="audit-group" v-if="hasEducation">
+          <div class="audit-group-title">学历审核
+            <el-tag size="mini" v-if="form.educationAuditStatusOld === '1'" type="success" style="margin-left:8px;">历史：已通过</el-tag>
+            <el-tag size="mini" v-else-if="form.educationAuditStatusOld === '2'" type="danger" style="margin-left:8px;">历史：已驳回</el-tag>
+          </div>
+          <el-form-item label="学历审核结果" prop="educationAuditStatus">
+            <el-radio-group v-model="form.educationAuditStatus">
+              <el-radio label="1">通过</el-radio>
+              <el-radio label="2">不通过</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="学历审核意见" prop="educationAuditOpinion" v-if="form.educationAuditStatus">
+            <el-input v-model="form.educationAuditOpinion" type="textarea" placeholder="请输入学历审核意见" :rows="3" />
+          </el-form-item>
+        </div>
+
         <el-form-item label="社保证明">
           <div class="image-list">
             <el-image
@@ -171,15 +205,25 @@
         <el-form-item label="社保说明" v-if="form.socialDesc">
           <div style="white-space: pre-wrap; line-height: 24px; color: #333;">{{ form.socialDesc }}</div>
         </el-form-item>
-        <el-form-item label="审核结果" prop="handleResult">
-          <el-radio-group v-model="form.handleResult">
-            <el-radio label="1">通过</el-radio>
-            <el-radio label="2">不通过</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="审核意见" prop="handleOpinion">
-          <el-input v-model="form.handleOpinion" type="textarea" placeholder="请输入审核意见" :rows="4" />
-        </el-form-item>
+
+        <!-- 社保审核组 -->
+        <div class="audit-group" v-if="hasSocial">
+          <div class="audit-group-title">社保审核
+            <el-tag size="mini" v-if="form.socialAuditStatusOld === '1'" type="success" style="margin-left:8px;">历史：已通过</el-tag>
+            <el-tag size="mini" v-else-if="form.socialAuditStatusOld === '2'" type="danger" style="margin-left:8px;">历史：已驳回</el-tag>
+          </div>
+          <el-form-item label="社保审核结果" prop="socialAuditStatus">
+            <el-radio-group v-model="form.socialAuditStatus">
+              <el-radio label="1">通过</el-radio>
+              <el-radio label="2">不通过</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="社保审核意见" prop="socialAuditOpinion" v-if="form.socialAuditStatus">
+            <el-input v-model="form.socialAuditOpinion" type="textarea" placeholder="请输入社保审核意见" :rows="3" />
+          </el-form-item>
+        </div>
+
+        <div v-if="!hasEducation && !hasSocial" style="color:#999; padding:8px 16px;">该申诉未提交任何附件，无可审核项</div>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" @click="submitAudit">确 定</el-button>
@@ -264,6 +308,7 @@
 </template>
 
 <script>
+// build-version: 20260515-split-audit-v2 强制重新构建以让 webpack chunk hash 变化，绕过浏览器缓存
 import { listAppeal, getAppeal, handleAppeal, delAppeal } from "@/api/gangzhu/appeal";
 
 export default {
@@ -294,14 +339,7 @@ export default {
         handleResult: null
       },
       form: {},
-      rules: {
-        handleResult: [
-          { required: true, message: "审核结果不能为空", trigger: "change" }
-        ],
-        handleOpinion: [
-          { required: true, message: "审核意见不能为空", trigger: "blur" }
-        ]
-      }
+      rules: {}
     };
   },
   computed: {
@@ -313,6 +351,39 @@ export default {
     },
     previewImageList() {
       return this.previewImages.map(img => this.getImageUrl(img));
+    },
+    // 是否有学历附件
+    hasEducation() {
+      return this.imageList && this.imageList.length > 0;
+    },
+    // 是否有社保附件
+    hasSocial() {
+      return this.socialImageList && this.socialImageList.length > 0;
+    },
+    // 动态校验规则：仅对实际渲染的审核组生效
+    auditRules() {
+      const r = {};
+      if (this.hasEducation) {
+        r.educationAuditStatus = [
+          { required: true, message: "学历审核结果不能为空", trigger: "change" }
+        ];
+        if (this.form.educationAuditStatus) {
+          r.educationAuditOpinion = [
+            { required: true, message: "学历审核意见不能为空", trigger: "blur" }
+          ];
+        }
+      }
+      if (this.hasSocial) {
+        r.socialAuditStatus = [
+          { required: true, message: "社保审核结果不能为空", trigger: "change" }
+        ];
+        if (this.form.socialAuditStatus) {
+          r.socialAuditOpinion = [
+            { required: true, message: "社保审核意见不能为空", trigger: "blur" }
+          ];
+        }
+      }
+      return r;
     }
   },
   created() {
@@ -342,8 +413,16 @@ export default {
         unitContact: null,
         currentEducation: null,
         newEducation: null,
-        handleResult: null,
-        handleOpinion: null
+        educationDesc: null,
+        socialDesc: null,
+        // 双独立审核字段
+        educationAuditStatus: null,
+        educationAuditOpinion: null,
+        socialAuditStatus: null,
+        socialAuditOpinion: null,
+        // 历史审核状态（仅展示，不参与提交）
+        educationAuditStatusOld: null,
+        socialAuditStatusOld: null
       };
       this.imageList = [];
       this.socialImageList = [];
@@ -362,6 +441,15 @@ export default {
       this.single = selection.length !== 1
       this.multiple = !selection.length
     },
+    // 是否可审核：有附件且对应一侧未终审通过/驳回，或处于待审核状态
+    canAudit(row) {
+      if (!row) return false;
+      const eduPending = row.appealAttachments && row.appealAttachments.length > 0
+        && (row.educationAuditStatus === '0' || row.educationAuditStatus === null || row.educationAuditStatus === undefined || row.educationAuditStatus === '');
+      const socPending = row.socialAttachments && row.socialAttachments.length > 0
+        && (row.socialAuditStatus === '0' || row.socialAuditStatus === null || row.socialAuditStatus === undefined || row.socialAuditStatus === '');
+      return eduPending || socPending;
+    },
     // 查看详情
     handleDetail(row) {
       this.detailOpen = true;
@@ -372,8 +460,13 @@ export default {
     handleAudit(row) {
       this.reset();
       getAppeal(row.appealId).then(response => {
+        const d = response.data;
+        // 处理附件图片（先设，driver hasEducation/hasSocial）
+        this.imageList = d.appealAttachments ? d.appealAttachments.split(',').filter(img => img) : [];
+        this.socialImageList = d.socialAttachments ? d.socialAttachments.split(',').filter(img => img) : [];
+
         this.form = {
-          appealId: response.data.appealId,
+          appealId: d.appealId,
           realName: row.realName,
           nickname: row.nickname,
           phone: row.phone,
@@ -382,36 +475,39 @@ export default {
           unitContact: row.unitContact,
           currentEducation: row.currentEducation,
           newEducation: row.newEducation,
-          educationDesc: response.data.educationDesc,
-          socialDesc: response.data.socialDesc,
-          handleResult: null,
-          handleOpinion: null
+          educationDesc: d.educationDesc,
+          socialDesc: d.socialDesc,
+          // 历史已审核的不再让管理员重审 → 老状态展示，当前编辑值置 null
+          educationAuditStatusOld: d.educationAuditStatus || null,
+          socialAuditStatusOld: d.socialAuditStatus || null,
+          educationAuditStatus: null,
+          educationAuditOpinion: null,
+          socialAuditStatus: null,
+          socialAuditOpinion: null
         };
-
-        // 处理附件图片
-        if (response.data.appealAttachments) {
-          this.imageList = response.data.appealAttachments.split(',').filter(img => img);
-        } else {
-          this.imageList = [];
-        }
-        if (response.data.socialAttachments) {
-          this.socialImageList = response.data.socialAttachments.split(',').filter(img => img);
-        } else {
-          this.socialImageList = [];
-        }
 
         this.open = true;
         this.title = "审核资格申述";
       });
     },
     submitAudit() {
+      // 至少审核一项
+      const hasEduAudit = !!this.form.educationAuditStatus;
+      const hasSocAudit = !!this.form.socialAuditStatus;
+      if (!hasEduAudit && !hasSocAudit) {
+        this.$modal.msgWarning("学历和社保至少要审核一项");
+        return;
+      }
       this.$refs["form"].validate(valid => {
         if (valid) {
           const data = {
             appealId: this.form.appealId,
-            handleResult: this.form.handleResult,
-            handleOpinion: this.form.handleOpinion,
-            appealReason: this.form.newEducation  // 传递新学历给后端
+            educationAuditStatus: this.form.educationAuditStatus,
+            educationAuditOpinion: this.form.educationAuditOpinion,
+            socialAuditStatus: this.form.socialAuditStatus,
+            socialAuditOpinion: this.form.socialAuditOpinion,
+            // 透传新学历给后端，后端在学历通过时回写到 hz_user.education
+            appealReason: this.form.newEducation
           };
 
           handleAppeal(data).then(response => {
@@ -492,5 +588,23 @@ export default {
   max-width: 100%;
   max-height: 500px;
   border-radius: 4px;
+}
+
+.audit-group {
+  margin: 12px 0 8px;
+  padding: 12px 16px 4px;
+  background: #fafafa;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+}
+
+.audit-group-title {
+  font-weight: 600;
+  color: #303133;
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #dcdfe6;
+  display: flex;
+  align-items: center;
 }
 </style>
