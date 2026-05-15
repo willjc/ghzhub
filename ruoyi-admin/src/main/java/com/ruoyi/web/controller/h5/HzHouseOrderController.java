@@ -70,10 +70,10 @@ public class HzHouseOrderController extends BaseController {
     }
 
     /**
-     * 获取用户待上传资料的订单列表（含倒计时 + 工作证明/学历证明状态）
+     * 获取用户待上传资料的订单列表（含倒计时 + 工作证明状态）
      *
      * <p>返回结构：每个订单含 orderNo / docRemainSeconds / contractId 等基础字段，
-     * 以及 workProof（type=3 工作证明）和 eduProof（type=2 学历证明）两个对象，
+     * 以及 workProof（type=3 工作证明）对象，
      * 形如 {documentId, auditStatus, auditOpinion, filePath}，用于前端渲染状态卡。</p>
      *
      * @param tenantId 租户ID
@@ -85,9 +85,7 @@ public class HzHouseOrderController extends BaseController {
         // 一次性查询该 tenant 的全部资料，按类型取最新一条
         List<HzDocument> allDocs = documentService.selectDocumentListByTenantId(tenantId);
         HzDocument latestWorkProof = pickLatestByType(allDocs, "3");
-        HzDocument latestEduProof  = pickLatestByType(allDocs, "2");
         Map<String, Object> workProofMap = toDocMap(latestWorkProof);
-        Map<String, Object> eduProofMap  = toDocMap(latestEduProof);
         for (HzHouseOrder order : orders) {
             Map<String, Object> map = new HashMap<>();
             map.put("orderId", order.getOrderId());
@@ -97,7 +95,6 @@ public class HzHouseOrderController extends BaseController {
             map.put("docRemainSeconds", order.getDocRemainSeconds());
             map.put("docUploadExpireTime", order.getDocUploadExpireTime());
             map.put("workProof", workProofMap);
-            map.put("eduProof", eduProofMap);
             result.add(map);
         }
         return success(result);

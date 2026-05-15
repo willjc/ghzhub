@@ -2,11 +2,16 @@ package com.ruoyi.system.gov.service;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.domain.HzQualification;
 import com.ruoyi.system.domain.HzUser;
 import com.ruoyi.system.gov.client.GovDataClient;
 import com.ruoyi.system.gov.dto.QualificationCheckResult;
 import com.ruoyi.system.gov.dto.QualificationCheckResult.CheckItem;
+import com.ruoyi.system.mapper.HzContractMapper;
+import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.service.IHzQualificationService;
 import com.ruoyi.system.service.IHzUserService;
 import org.slf4j.Logger;
@@ -85,6 +90,12 @@ public class QualificationCheckService {
     @Autowired
     private com.ruoyi.system.service.IHzQualificationAppealService appealService;
 
+    @Autowired
+    private HzContractMapper contractMapper;
+
+    @Autowired
+    private HzProjectMapper projectMapper;
+
     // ==================== 查询最新资格态 ====================
 
     public QualificationCheckResult getStatus(Long userId) {
@@ -152,6 +163,17 @@ public class QualificationCheckService {
         }
         String idCard = user.getIdCard().trim();
         String name = user.getRealName().trim();
+
+        // 人才公寓一人一户：若用户当前有在住的人才公寓合同，直接拦截
+        if (hasTalentApartmentActiveContract(userId)) {
+            QualificationCheckResult r = new QualificationCheckResult();
+            r.setChecked(true);
+            r.setPassed(false);
+            r.getItems().add(new CheckItem("talentApartment", "人才公寓在住校验", "failed",
+                    "您当前正在住人才公寓，不可重复申请"));
+            r.getFailReasons().add("您当前正在住人才公寓，不可重复申请");
+            return r;
+        }
 
         // 首轮并发：婚姻 / 社保 / 本人不动产 / 本人公租房
         CompletableFuture<Map<String, Object>> fMarriage = supply(() -> govDataClient.queryMarriage(idCard, name));
@@ -601,6 +623,32 @@ public class QualificationCheckService {
             list.add(new CheckItem("spouseHousing", "配偶公租房记录", "skipped", "未婚，无需核验"));
         }
         return list;
+    }
+
+    /**
+     * 判断用户是否当前有在住的人才公寓合同（contract_status IN 2,3 且 project_type=1）
+     */
+    private boolean hasTalentApartmentActiveContract(Long userId) {
+        // 查询用户所有活跃合同（已签署或履行中）
+        List<HzContract> activeContracts = contractMapper.selectList(
+                new LambdaQueryWrapper<HzContract>()
+                        .eq(HzContract::getTenantId, userId)
+                        .in(HzContract::getContractStatus, "2", "3")
+                        .eq(HzContract::getDelFlag, "0"));
+        if (activeContracts == null || activeContracts.isEmpty()) {
+            return false;
+        }
+        // 逐个检查合同关联的项目是否为人才公寓
+        for (HzContract c : activeContracts) {
+            if (c.getProjectId() == null) continue;
+            HzProject project = projectMapper.selectById(c.getProjectId());
+            if (project != null && "1".equals(project.getProjectType())) {
+                log.info("[资格校验] 人才公寓在住拦截命中：userId={}, contractId={}, projectId={}",
+                        userId, c.getContractId(), c.getProjectId());
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isBlank(String s) {

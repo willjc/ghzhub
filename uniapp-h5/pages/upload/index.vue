@@ -115,38 +115,6 @@
 					</view>
 				</view>
 
-				<!-- 学历证明上传 -->
-				<view class="upload-section" style="margin-top:30rpx;">
-					<view class="upload-label-row">
-						<text class="required-mark">*</text>
-						<text class="upload-label">学历证明</text>
-						<text class="upload-tip">（毕业证或在读证明）</text>
-					</view>
-
-					<!-- 状态卡（双层提醒-第二层） -->
-					<view v-if="eduStatusInfo" class="doc-status-card" :class="'status-' + eduStatusInfo.status">
-						<view class="doc-status-header">
-							<text class="doc-status-tag" :class="'tag-' + eduStatusInfo.status">{{ eduStatusInfo.label }}</text>
-							<text class="doc-status-title">{{ eduStatusInfo.title }}</text>
-						</view>
-						<view v-if="eduStatusInfo.status === 'rejected'" class="doc-status-reason">
-							<text class="doc-status-reason-label">拒绝原因：</text>
-							<text class="doc-status-reason-text">{{ eduStatusInfo.reason || '未填写原因' }}</text>
-						</view>
-					</view>
-
-					<view class="upload-area" :class="{ 'upload-area-locked': eduLocked }" @click="handleEducationUpload">
-						<image v-if="educationFilePreview" :src="educationFilePreview" mode="aspectFill" class="uploaded-image"></image>
-						<view v-else class="upload-placeholder">
-							<image class="upload-icon" src="/static/上传@2x.png"></image>
-							<text class="upload-text">{{ eduLocked ? '审核中，不可修改' : (eduIsRejected ? '点击重新上传' : '点击上传') }}</text>
-						</view>
-					</view>
-					<!-- 文件格式提示 -->
-					<view class="format-tip">
-						<text class="format-tip-text">仅支持图片格式（JPG / PNG），单张不超过 10MB</text>
-					</view>
-				</view>
 			</view>
 		</view>
 		
@@ -183,15 +151,10 @@ export default {
 			workFile: null,           // 服务器返回的文件路径（已上传）
 			workFilePreview: null,    // 用于界面预览的图片路径
 			workUploading: false,     // 是否正在上传中
-			// 学历证明
-			educationFile: null,      // 服务器返回的文件路径（已上传）
-			educationFilePreview: null, // 用于界面预览的图片路径
-			eduUploading: false,      // 是否正在上传中
 			loading: false,
 			pendingOrders: [],
 			// 后端 pending-upload 返回的资料状态对象 { documentId, auditStatus, auditOpinion, filePath }
 			workDoc: null,
-			eduDoc: null,
 			_countdownTimer: null,
 		}
 	},
@@ -213,28 +176,18 @@ export default {
 		workStatusInfo() {
 			return this.buildStatusInfo(this.workDoc)
 		},
-		eduStatusInfo() {
-			return this.buildStatusInfo(this.eduDoc)
-		},
 		// 是否锁定（待审核 / 已通过 时锁定上传区）
 		workLocked() {
 			return this.workDoc && (this.workDoc.auditStatus === '0' || this.workDoc.auditStatus === '1')
-		},
-		eduLocked() {
-			return this.eduDoc && (this.eduDoc.auditStatus === '0' || this.eduDoc.auditStatus === '1')
 		},
 		// 是否被驳回
 		workIsRejected() {
 			return this.workDoc && this.workDoc.auditStatus === '2'
 		},
-		eduIsRejected() {
-			return this.eduDoc && this.eduDoc.auditStatus === '2'
-		},
 		// 被驳回总数（用于顶部 banner）
 		rejectedCount() {
 			let n = 0
 			if (this.workIsRejected) n++
-			if (this.eduIsRejected) n++
 			return n
 		},
 	},
@@ -369,55 +322,10 @@ export default {
 			})
 		},
 		// 学历证明：选择图片后立即上传到服务器
-		handleEducationUpload() {
-			if (this.eduLocked) {
-				uni.showToast({ title: '资料正在审核中或已通过，不可修改', icon: 'none' })
-				return
-			}
-			if (this.eduUploading) {
-				uni.showToast({ title: '正在上传中，请稍候', icon: 'none' })
-				return
-			}
-			uni.chooseImage({
-				count: 1,
-				sizeType: ['compressed'],
-				sourceType: ['album', 'camera'],
-				success: (res) => {
-					const tempPath = res.tempFilePaths[0]
-					// 立即显示本地预览
-					this.educationFilePreview = tempPath
-					this.educationFile = null // 清除旧的服务器路径
-					this.eduUploading = true
-					uni.showLoading({ title: '上传中...' })
-					const reuploadId = this.eduIsRejected ? (this.eduDoc && this.eduDoc.documentId) : null
-					this.uploadFile(tempPath, '2', reuploadId).then(uploadRes => {
-						uni.hideLoading()
-						this.eduUploading = false
-						if (uploadRes && uploadRes.code === 200) {
-							const resData = uploadRes.data || uploadRes
-							this.educationFile = resData.filePath || resData.fileName || resData.url
-							uni.showToast({ title: '学历证明上传成功', icon: 'success' })
-							this.loadPendingOrders()
-						} else {
-							this.educationFilePreview = null
-							uni.showToast({ title: uploadRes?.msg || '学历证明上传失败', icon: 'none' })
-						}
-					})
-				},
-				fail: (err) => {
-					console.error('选择图片失败:', err)
-					uni.showToast({ title: '选择图片失败', icon: 'none' })
-				}
-			})
-		},
 		// 提交材料：文件已在选择时上传，此处仅做校验和确认
 		async handleSubmit() {
 			if (!this.workFile) {
 				uni.showToast({ title: this.workUploading ? '工作证明正在上传中' : '请上传工作证明', icon: 'none' })
-				return
-			}
-			if (!this.educationFile) {
-				uni.showToast({ title: this.eduUploading ? '学历证明正在上传中' : '请上传学历证明', icon: 'none' })
 				return
 			}
 			if (!this.contractId) {
@@ -447,19 +355,13 @@ export default {
 					if (this.pendingOrders.length > 0) {
 						const first = this.pendingOrders[0]
 						this.workDoc = first.workProof || null
-						this.eduDoc  = first.eduProof  || null
 						// 已有图片回填预览
 						if (this.workDoc && this.workDoc.filePath) {
 							this.workFilePreview = this.getImageUrl(this.workDoc.filePath)
 							this.workFile = this.workDoc.filePath
 						}
-						if (this.eduDoc && this.eduDoc.filePath) {
-							this.educationFilePreview = this.getImageUrl(this.eduDoc.filePath)
-							this.educationFile = this.eduDoc.filePath
-						}
 					} else {
 						this.workDoc = null
-						this.eduDoc = null
 					}
 					this.startCountdownTimer()
 				}
