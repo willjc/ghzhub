@@ -70,7 +70,7 @@
 				<view class="form-row">
 					<text class="form-label"><text class="required">*</text>单位性质</text>
 					<view class="form-value-wrap">
-						<picker :range="unitNatureOptions" range-key="label" @change="onUnitNatureChange">
+						<picker class="picker-fill" :range="unitNatureOptions" range-key="label" @change="onUnitNatureChange">
 							<view class="form-input">
 								<text :class="!formData.unitNature ? 'placeholder' : ''">{{ unitNatureLabel || '请选择单位性质' }}</text>
 							</view>
@@ -329,6 +329,12 @@
 		color: #1a1a1a;
 		font-size: 26rpx;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
+	}
+
+	/* picker 占满父容器宽度，避免点击区域只覆盖文字内容导致点击无响应 */
+	.picker-fill {
+		flex: 1;
+		display: block;
 	}
 
 	.form-value {
