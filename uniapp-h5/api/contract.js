@@ -72,3 +72,14 @@ export function getContractDetail(contractId) {
 export function getContractPdfUrl(contractId) {
   return request.get(`/h5/app/contract/${contractId}/pdf-url`)
 }
+
+/**
+ * 人才公寓 7 折分档：实际月租预览（用于房源详情页提示）
+ * @param {Object} params
+ * @param {Number} params.houseId 房源ID
+ * @param {Number} [params.userId] 用户ID（不传则后端从 token 解析）
+ * @returns {Promise<{applicable, area, areaLimit, originalRent, standardPrice, overflowArea, actualMonthlyRent, remark}>}
+ */
+export function getTalentRentPreview(params) {
+  return request.get('/h5/app/contract/talent-rent-preview', params)
+}

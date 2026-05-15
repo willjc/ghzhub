@@ -14,6 +14,7 @@ import com.ruoyi.system.service.IHzContractService;
 import com.ruoyi.system.service.IHzDocumentService;
 import com.ruoyi.system.service.IHzHouseOrderService;
 import com.ruoyi.system.domain.HzHouseOrder;
+import com.ruoyi.system.util.TalentApartmentRentCalculator;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -456,6 +457,55 @@ public class HzContractAppController extends BaseController {
     }
 
     /**
+     * 人才公寓 7 折分档：实际月租预览（用于房源详情页提示）
+     *
+     * 入参：houseId
+     * 入参可选：userId（不传则从 token 解析）
+     * 返回：{ applicable, area, areaLimit, originalRent, standardPrice,
+     *         overflowArea, actualMonthlyRent, remark, projectType, education }
+     * 说明：仅当 applicable=true 时前端才需展示分档提示，其它情况静默隐藏
+     */
+    @GetMapping("/talent-rent-preview")
+    public AjaxResult talentRentPreview(@RequestParam Long houseId,
+                                        @RequestParam(required = false) Long userId) {
+        if (houseId == null) {
+            return error("houseId 不能为空");
+        }
+        if (userId == null) {
+            userId = getHzUserIdFromToken();
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("applicable", false);
+
+        HzHouse house = houseMapper.selectById(houseId);
+        if (house == null) {
+            return success(data); // 房源不存在直接返回不适用
+        }
+        HzProject project = projectMapper.selectById(house.getProjectId());
+        String projectType = project != null ? project.getProjectType() : null;
+        String education = null;
+        if (userId != null) {
+            HzUser u = hzUserMapper.selectById(userId);
+            if (u != null) education = u.getEducation();
+        }
+
+        TalentApartmentRentCalculator.Result r = TalentApartmentRentCalculator.calculate(
+                projectType, education, house.getArea(), house.getRentPrice());
+
+        data.put("applicable", r.isApplicable());
+        data.put("projectType", projectType);
+        data.put("education", education);
+        data.put("area", house.getArea());
+        data.put("areaLimit", r.getAreaLimit());
+        data.put("originalRent", r.getOriginalRent());
+        data.put("standardPrice", r.getStandardPrice());
+        data.put("overflowArea", r.getOverflowArea());
+        data.put("actualMonthlyRent", r.getActualMonthlyRent());
+        data.put("remark", r.getRemark());
+        return success(data);
+    }
+
+    /**
      * 保存签署合同
      */
     @PostMapping("/sign")
@@ -567,7 +617,22 @@ public class HzContractAppController extends BaseController {
             contract.setHouseId(houseId);
             contract.setHouseCode(house.getHouseNo());
             contract.setHouseAddress(houseAddress);
-            contract.setRentPrice(house.getRentPrice());
+            // 人才公寓 7 折分档：根据用户学历和房源面积计算实际月租
+            // - 仅 project_type=1（人才公寓）适用；其它项目仍按房源原价
+            // - 不适用时（含小初高/未填学历），actualMonthlyRent 即原 rentPrice
+            TalentApartmentRentCalculator.Result __rentResult =
+                    TalentApartmentRentCalculator.calculate(
+                            project != null ? project.getProjectType() : null,
+                            hzUser.getEducation(),
+                            house.getArea(),
+                            house.getRentPrice());
+            contract.setRentPrice(__rentResult.getActualMonthlyRent());
+            if (__rentResult.isApplicable()) {
+                logger.info("人才公寓 7 折分档命中：houseId={}, area={}, education={}, originalRent={}, actualRent={}, remark={}",
+                        houseId, house.getArea(), hzUser.getEducation(),
+                        __rentResult.getOriginalRent(), __rentResult.getActualMonthlyRent(),
+                        __rentResult.getRemark());
+            }
 
             // 5.1 获取批次优惠信息（如果该房源属于配租批次）
             try {
@@ -816,7 +881,20 @@ public class HzContractAppController extends BaseController {
             contract.setHouseId(houseId);
             contract.setHouseCode(house.getHouseNo());
             contract.setHouseAddress(houseAddress);
-            contract.setRentPrice(house.getRentPrice());
+            // 人才公寓 7 折分档：续租同样按当前学历和房源面积重新计算实际月租
+            TalentApartmentRentCalculator.Result __renewRentResult =
+                    TalentApartmentRentCalculator.calculate(
+                            project != null ? project.getProjectType() : null,
+                            hzUser.getEducation(),
+                            house.getArea(),
+                            house.getRentPrice());
+            contract.setRentPrice(__renewRentResult.getActualMonthlyRent());
+            if (__renewRentResult.isApplicable()) {
+                logger.info("人才公寓 7 折分档命中（续租）：houseId={}, area={}, education={}, originalRent={}, actualRent={}, remark={}",
+                        houseId, house.getArea(), hzUser.getEducation(),
+                        __renewRentResult.getOriginalRent(), __renewRentResult.getActualMonthlyRent(),
+                        __renewRentResult.getRemark());
+            }
 
             // 获取合同模板，押金优先使用房源自身配置，若未配置则回退到模板默认值
             HzContractTemplate template = templateMapper.selectById(templateId);

@@ -54,6 +54,10 @@
 							<text class="bill-label">缴费时间：</text>
 							<text class="bill-value">{{ bill.payTime }}</text>
 						</view>
+						<view class="bill-info bill-remark" v-if="bill.remark">
+							<text class="bill-label">备注：</text>
+							<text class="bill-value bill-remark-value">{{ bill.remark }}</text>
+						</view>
 						<!-- 遮罩：押金未缴或资料未提交时覆盖整张账单卡片 -->
 						<view class="bill-lock-mask" v-if="bill.locked" @click.stop="onLockedBillTap(bill)">
 							<text class="bill-lock-tip">{{ !depositPaid ? '请先缴纳押金' : '请先上传入住资料' }}</text>
@@ -362,6 +366,7 @@
 					amount: parseFloat(bill.billAmount),
 					dateRange: dateRange,
 					payTime: payTimeStr,
+					remark: bill.remark || '',  // 人才公寓 7 折分档明细备注（仅命中时有值）
 					selected: false
 				}
 			},
@@ -690,6 +695,19 @@
 		font-family: "PingFang SC", "苹方-简", sans-serif;
 		text-align: left;
 		line-height: 34rpx;
+	}
+
+	/* 备注（人才公寓 7 折分档明细等）允许换行展示 */
+	.bill-info.bill-remark {
+		align-items: flex-start;
+	}
+	.bill-remark-value {
+		flex: 1;
+		height: auto;
+		line-height: 36rpx;
+		color: #92400e;
+		word-break: break-all;
+		white-space: normal;
 	}
 	
 	/* 空状态 */

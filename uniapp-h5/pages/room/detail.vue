@@ -34,6 +34,11 @@
 					<text class="price-unit">元/月</text>
 				</view>
 			</view>
+
+			<!-- 人才公寓 7 折分档提示（仅 applicable=true 时显示） -->
+			<view class="talent-rent-tip" v-if="talentRent.applicable">
+				<text class="talent-rent-tip-text">{{ talentRentTipText }}</text>
+			</view>
 			
 			<!-- 房源详细信息 -->
 			<view class="room-detail-card">
@@ -120,6 +125,7 @@
 import { getHouseDetail, getHouseVR, getHouseImages } from '@/api/house'
 import { createOrder } from '@/api/order'
 import { guardOrRedirect } from '@/api/qualification'
+import { getTalentRentPreview } from '@/api/contract'
 import config from '@/config/index'
 
 	export default {
@@ -162,6 +168,13 @@ import config from '@/config/index'
 					outdoor: [],  // 户外图
 					indoor: [],   // 室内图
 					bathroom: []  // 卫生间
+				},
+				// 人才公寓 7 折分档提示（仅 applicable=true 时展示）
+				talentRent: {
+					applicable: false,
+					areaLimit: 0,
+					actualMonthlyRent: 0,
+					overflowArea: 0
 				}
 			}
 		},
@@ -177,6 +190,21 @@ import config from '@/config/index'
 			this.loadRoomDetail()
 			this.loadVRList()    // 加载VR列表
 			this.loadImages()    // 加载房源图片
+			this.loadTalentRentPreview()  // 加载人才公寓 7 折分档提示（仅适用时展示）
+		},
+		computed: {
+			// 人才公寓 7 折分档提示文案（仅 applicable=true 时使用）
+			talentRentTipText() {
+				const t = this.talentRent
+				if (!t || !t.applicable) return ''
+				const limit = Number(t.areaLimit || 0)
+				const overflow = Number(t.overflowArea || 0)
+				const actual = Number(t.actualMonthlyRent || 0)
+				if (overflow > 0) {
+					return `您学历对应面积上限 ${limit}㎡，本房超出 ${overflow}㎡，超出部分按标准价计算，您实际月租 ¥${actual}`
+				}
+				return `您学历对应面积上限 ${limit}㎡，本房未超出，按 7 折价 ¥${actual}/月计算`
+			}
 		},
 		methods: {
 			switchImageTab(key) {
@@ -316,6 +344,26 @@ import config from '@/config/index'
 				} catch (e) {
 					uni.hideLoading()
 					uni.showToast({ title: '选房失败，请重试', icon: 'none' })
+				}
+			},
+			async loadTalentRentPreview() {
+				try {
+					if (!this.roomId) return
+					const userInfo = uni.getStorageSync('userInfo') || {}
+					const params = { houseId: this.roomId }
+					if (userInfo.userId) params.userId = userInfo.userId
+					const res = await getTalentRentPreview(params)
+					if (res && res.code === 200 && res.data) {
+						this.talentRent = {
+							applicable: !!res.data.applicable,
+							areaLimit: res.data.areaLimit || 0,
+							actualMonthlyRent: res.data.actualMonthlyRent || 0,
+							overflowArea: res.data.overflowArea || 0
+						}
+					}
+				} catch (err) {
+					// 提示加载失败不影响主流程，静默处理
+					console.warn('加载人才公寓分档提示失败：', err)
 				}
 			},
 			async loadRoomDetail() {
@@ -571,7 +619,21 @@ backdrop-filter: blur(4rpx);
 		text-align: left;
 		line-height: 40rpx;
 	}
-	
+
+	/* 人才公寓 7 折分档提示（简约一行） */
+	.talent-rent-tip {
+		margin-top: 12rpx;
+		padding: 14rpx 20rpx;
+		background: #fff7ed;
+		border-left: 4rpx solid #f59e0b;
+		border-radius: 8rpx;
+	}
+	.talent-rent-tip-text {
+		font-size: 24rpx;
+		color: #92400e;
+		line-height: 36rpx;
+	}
+
 	/* 房源详细信息卡片 */
 	.room-detail-card {
 		width: 646rpx;

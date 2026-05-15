@@ -10,6 +10,7 @@ import com.ruoyi.system.esign.*;
 import com.ruoyi.system.mapper.*;
 import com.ruoyi.system.service.EsignService;
 import com.ruoyi.system.domain.HzCheckIn;
+import com.ruoyi.system.util.TalentApartmentRentCalculator;
 import com.ruoyi.system.service.IHzCheckInService;
 import com.ruoyi.system.service.IHzUserMessageService;
 import org.slf4j.Logger;
@@ -966,6 +967,9 @@ public class EsignServiceImpl implements EsignService {
         int billCount = rentMonths / paymentCycle;
         if (rentMonths % paymentCycle != 0) billCount++;
 
+        // 人才公寓 7 折分档：为账单计算备注明细（命中时才有 remark，其它一律 null）
+        String rentRemark = buildTalentRentRemark(contract);
+
         LocalDate startDate = LocalDate.parse(contract.getStartDate(), DateTimeFormatter.ISO_LOCAL_DATE);
         for (int i = 0; i < billCount; i++) {
             HzBill rentBill = new HzBill();
@@ -998,9 +1002,37 @@ public class EsignServiceImpl implements EsignService {
                 rentBill.setUnpaidAmount(billAmount);
                 rentBill.setBillStatus("0");  // 待支付
             }
+            // 人才公寓 7 折分档命中时：给租金账单写入分档明细备注（押金账单不写）
+            if (rentRemark != null) {
+                rentBill.setRemark(rentRemark);
+            }
             billMapper.insert(rentBill);
         }
         log.info("合同 {} 生成账单成功：押金1条，租金{}条，免租{}期", contract.getContractNo(), billCount, freeRentPeriods);
+    }
+
+    /**
+     * 人才公寓 7 折分档：根据合同关联的房源/用户/项目实时反算备注明细。
+     * 仅当 project_type=1 且学历命中映射且面积超出上限时返回非空备注；
+     * 其它情况返回 null，账单备注保持为空（不污染普通租金账单）。
+     */
+    private String buildTalentRentRemark(HzContract contract) {
+        try {
+            HzHouse h = houseMapper.selectById(contract.getHouseId());
+            if (h == null) return null;
+            HzProject p = projectMapper.selectById(contract.getProjectId());
+            if (p == null) return null;
+            HzUser u = userMapper.selectById(contract.getTenantId());
+            String education = u != null ? u.getEducation() : null;
+            // 注意：用 house.getRentPrice()（标准 7 折价）参与反算，而不是 contract.rentPrice
+            //（contract.rentPrice 已是分档后的实际月租）
+            TalentApartmentRentCalculator.Result r = TalentApartmentRentCalculator.calculate(
+                    p.getProjectType(), education, h.getArea(), h.getRentPrice());
+            return r.isApplicable() ? r.getRemark() : null;
+        } catch (Exception ex) {
+            log.warn("生成人才公寓分档备注失败（不影响主流程）: {}", ex.getMessage());
+            return null;
+        }
     }
 
     /**
