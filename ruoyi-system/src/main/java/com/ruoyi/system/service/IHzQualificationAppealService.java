@@ -81,15 +81,20 @@ public interface IHzQualificationAppealService {
     int updateAppeal(HzQualificationAppeal appeal);
 
     /**
-     * 审核资格申诉
+     * 审核资格申诉（双材料独立审核）
      *
-     * @param appealId 申诉ID
-     * @param handleResult 处理结果（1:通过，2:不通过）
-     * @param handleOpinion 处理意见
-     * @param newEducation 新学历（用户申诉的学历）
-     * @return 结果
+     * 入参 appeal 中需提供：appealId、educationAuditStatus、educationAuditOpinion、
+     * socialAuditStatus、socialAuditOpinion 等字段。任一侧状态为 null 表示「本次不动该侧」。
+     * 同时要求传入 newEducation（仅当学历审核通过时回写到 hz_user.education）。
+     *
+     * 兼容旧字段：方法内部会同步更新 handle_result/handle_opinion（取两侧的「最差状态」做摘要：
+     * 任一驳回 → 整体驳回；都通过 → 整体通过；其他 → 待处理）。
+     *
+     * @param appeal 申诉对象（需含 appealId 与四个新审核字段）
+     * @param newEducation 学历审核通过时回写到用户表的新学历值（可为空）
+     * @return 1=成功
      */
-    int handleAppeal(Long appealId, String handleResult, String handleOpinion, String newEducation);
+    int handleAppealSplit(HzQualificationAppeal appeal, String newEducation);
 
     /**
      * 删除资格申诉
@@ -100,11 +105,14 @@ public interface IHzQualificationAppealService {
     int deleteAppealById(Long appealId);
 
     /**
-     * 判断该用户是否存在已通过审核的申诉记录
-     * （用于资格校验时对学历项 + 社保项的人工豁免判定）
-     *
-     * @param userId 用户ID（对应表中的 tenant_id 字段）
-     * @return true=已存在通过的申诉
+     * 判断该用户是否存在「学历」已通过的申诉
+     * （供资格校验对学历项做人工豁免判定）
      */
-    boolean existsPassedAppeal(Long userId);
+    boolean existsPassedEducationAppeal(Long userId);
+
+    /**
+     * 判断该用户是否存在「社保」已通过的申诉
+     * （供资格校验对社保项做人工豁免判定）
+     */
+    boolean existsPassedSocialAppeal(Long userId);
 }

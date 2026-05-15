@@ -99,14 +99,15 @@ public class QualificationCheckService {
             ret.setChecked(false);
             return ret;
         }
-        // 申诉豁免（学历 + 社保两项）
-        boolean appealPassed = appealService.existsPassedAppeal(userId);
+        // 申诉豁免（学历 / 社保两项独立判定）
+        boolean appealEduPassed = appealService.existsPassedEducationAppeal(userId);
+        boolean appealSocPassed = appealService.existsPassedSocialAppeal(userId);
 
         ret.setChecked(true);
         ret.setQualificationId(q.getQualificationId());
         ret.setLastCheckTime(q.getLastCheckTime());
         // 简略回放 items，使失败页可以直接用
-        ret.getItems().addAll(buildItemsFromEntity(q, appealPassed));
+        ret.getItems().addAll(buildItemsFromEntity(q, appealEduPassed, appealSocPassed));
 
         // 总判定：缓存的 final_result 不一定反映最新申诉态（如校验后才被审核通过），
         // 这里基于回放 items 重新计算一次。
@@ -180,8 +181,9 @@ public class QualificationCheckService {
         Map<String, Object> spouseEstate = safeGet(fSpouseEstate);
         Map<String, Object> spouseHousing = safeGet(fSpouseHousing);
 
-        // 是否存在已通过的申诉（学历 + 社保人工豁免标记）
-        boolean appealPassed = appealService.existsPassedAppeal(userId);
+        // 是否存在已通过的申诉（学历 / 社保独立豁免）
+        boolean appealEduPassed = appealService.existsPassedEducationAppeal(userId);
+        boolean appealSocPassed = appealService.existsPassedSocialAppeal(userId);
 
         // ====== 逐项判定 ======
         QualificationCheckResult result = new QualificationCheckResult();
@@ -194,16 +196,16 @@ public class QualificationCheckService {
                 marriage != null && Boolean.TRUE.equals(marriage.get("success")) ? "passed" : "error",
                 married ? "已婚，将同步核验配偶信息" : "未婚，无需核验配偶信息"));
 
-        // 社保（叠加申诉豁免）
+        // 社保（叠加申诉豁免：仅社保侧）
         CheckItem socialItem = checkSocial(social, user.getWorkUnit());
-        if (appealPassed && !"passed".equals(socialItem.getStatus())) {
+        if (appealSocPassed && !"passed".equals(socialItem.getStatus())) {
             socialItem = new CheckItem("social", "社保缴纳", "passed", "已通过人工审核");
         }
         result.getItems().add(socialItem);
 
-        // 学历（无政务接口，默认 failed；申诉通过则 passed）
+        // 学历（无政务接口，默认 failed；学历申诉通过则 passed）
         CheckItem educationItem;
-        if (appealPassed) {
+        if (appealEduPassed) {
             educationItem = new CheckItem("education", "学历核验", "passed", "已通过人工审核");
         } else {
             educationItem = new CheckItem("education", "学历核验", "failed", "学历待人工审核，请提交申诉");
@@ -559,21 +561,21 @@ public class QualificationCheckService {
     }
 
     /** 从已存实体反向构造 items（用于 status 接口回放） */
-    private List<CheckItem> buildItemsFromEntity(HzQualification q, boolean appealPassed) {
+    private List<CheckItem> buildItemsFromEntity(HzQualification q, boolean appealEduPassed, boolean appealSocPassed) {
         List<CheckItem> list = new ArrayList<>();
         // 婚姻
         boolean hasSpouse = q.getSpouseIdCard() != null && !q.getSpouseIdCard().isEmpty();
         list.add(new CheckItem("marriage", "婚姻信息", "passed",
                 hasSpouse ? "已婚" : "未婚"));
-        // 社保（叠加申诉豁免）
-        boolean socialOk = "1".equals(q.getSocialValid()) || appealPassed;
+        // 社保（叠加社保申诉豁免）
+        boolean socialOk = "1".equals(q.getSocialValid()) || appealSocPassed;
         list.add(new CheckItem("social", "社保缴纳",
                 socialOk ? "passed" : "failed",
                 socialOk
-                        ? (appealPassed && !"1".equals(q.getSocialValid()) ? "已通过人工审核" : "近 3 个月港区单位连续缴纳")
+                        ? (appealSocPassed && !"1".equals(q.getSocialValid()) ? "已通过人工审核" : "近 3 个月港区单位连续缴纳")
                         : "近 3 个月社保缴纳不满足"));
-        // 学历（无政务接口，依赖申诉豁免）
-        if (appealPassed) {
+        // 学历（无政务接口，依赖学历申诉豁免）
+        if (appealEduPassed) {
             list.add(new CheckItem("education", "学历核验", "passed", "已通过人工审核"));
         } else {
             list.add(new CheckItem("education", "学历核验", "failed", "学历待人工审核，请提交申诉"));

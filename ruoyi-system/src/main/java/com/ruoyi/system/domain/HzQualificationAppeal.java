@@ -61,6 +61,22 @@ public class HzQualificationAppeal extends BaseEntity {
     @TableField("handle_opinion")
     private String handleOpinion;
 
+    /** 学历审核状态(0:待审核 1:通过 2:驳回 NULL:未提交) */
+    @TableField("education_audit_status")
+    private String educationAuditStatus;
+
+    /** 学历审核意见 */
+    @TableField("education_audit_opinion")
+    private String educationAuditOpinion;
+
+    /** 社保审核状态(0:待审核 1:通过 2:驳回 NULL:未提交) */
+    @TableField("social_audit_status")
+    private String socialAuditStatus;
+
+    /** 社保审核意见 */
+    @TableField("social_audit_opinion")
+    private String socialAuditOpinion;
+
     /** 处理人 */
     @TableField("handle_by")
     private String handleBy;
@@ -167,6 +183,38 @@ public class HzQualificationAppeal extends BaseEntity {
 
     public String getHandleOpinion() {
         return handleOpinion;
+    }
+
+    public void setEducationAuditStatus(String educationAuditStatus) {
+        this.educationAuditStatus = educationAuditStatus;
+    }
+
+    public String getEducationAuditStatus() {
+        return educationAuditStatus;
+    }
+
+    public void setEducationAuditOpinion(String educationAuditOpinion) {
+        this.educationAuditOpinion = educationAuditOpinion;
+    }
+
+    public String getEducationAuditOpinion() {
+        return educationAuditOpinion;
+    }
+
+    public void setSocialAuditStatus(String socialAuditStatus) {
+        this.socialAuditStatus = socialAuditStatus;
+    }
+
+    public String getSocialAuditStatus() {
+        return socialAuditStatus;
+    }
+
+    public void setSocialAuditOpinion(String socialAuditOpinion) {
+        this.socialAuditOpinion = socialAuditOpinion;
+    }
+
+    public String getSocialAuditOpinion() {
+        return socialAuditOpinion;
     }
 
     public void setHandleBy(String handleBy) {

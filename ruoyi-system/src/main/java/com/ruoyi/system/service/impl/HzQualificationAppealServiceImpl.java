@@ -118,36 +118,91 @@ public class HzQualificationAppealServiceImpl extends ServiceImpl<HzQualificatio
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int handleAppeal(Long appealId, String handleResult, String handleOpinion, String newEducation) {
+    public int handleAppealSplit(HzQualificationAppeal input, String newEducation) {
+        if (input == null || input.getAppealId() == null) {
+            throw new RuntimeException("入参不合法");
+        }
+
         // 1. 查询申诉记录
-        HzQualificationAppeal appeal = this.getById(appealId);
+        HzQualificationAppeal appeal = this.getById(input.getAppealId());
         if (appeal == null) {
             throw new RuntimeException("申诉记录不存在");
         }
 
-        // 2. 更新申诉记录
-        appeal.setHandleResult(handleResult);
-        appeal.setHandleOpinion(handleOpinion);
-        appeal.setHandleTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        // 2. 防御性校验：只能审核「用户实际提交的材料」
+        boolean hasEdu    = StringUtils.isNotEmpty(appeal.getAppealAttachments());
+        boolean hasSocial = StringUtils.isNotEmpty(appeal.getSocialAttachments());
 
-        boolean updateResult = this.updateById(appeal);
-        if (!updateResult) {
+        String eduStatus    = input.getEducationAuditStatus();
+        String socialStatus = input.getSocialAuditStatus();
+
+        if (StringUtils.isNotEmpty(eduStatus) && !hasEdu) {
+            throw new RuntimeException("用户未提交学历附件，不可审核学历项");
+        }
+        if (StringUtils.isNotEmpty(socialStatus) && !hasSocial) {
+            throw new RuntimeException("用户未提交社保附件，不可审核社保项");
+        }
+        if (StringUtils.isEmpty(eduStatus) && StringUtils.isEmpty(socialStatus)) {
+            throw new RuntimeException("学历和社保至少要审核一项");
+        }
+
+        // 3. 局部更新：仅更新本次传入的侧（null 表示不动）
+        if (StringUtils.isNotEmpty(eduStatus)) {
+            appeal.setEducationAuditStatus(eduStatus);
+            appeal.setEducationAuditOpinion(input.getEducationAuditOpinion());
+        }
+        if (StringUtils.isNotEmpty(socialStatus)) {
+            appeal.setSocialAuditStatus(socialStatus);
+            appeal.setSocialAuditOpinion(input.getSocialAuditOpinion());
+        }
+
+        // 4. 兼容旧字段：handle_result 用「最差状态」做摘要（任一驳回 → 整体驳回；
+        //    都通过 → 整体通过；其他 → 待处理），handle_opinion 拼接两侧意见
+        String summaryStatus = computeSummaryStatus(appeal.getEducationAuditStatus(), appeal.getSocialAuditStatus());
+        appeal.setHandleResult(summaryStatus);
+        appeal.setHandleOpinion(buildSummaryOpinion(appeal.getEducationAuditOpinion(), appeal.getSocialAuditOpinion()));
+        appeal.setHandleTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        // status：摘要状态非 0 则置为「已处理」
+        if (!"0".equals(summaryStatus)) {
+            appeal.setStatus("1");
+        }
+
+        boolean updateOk = this.updateById(appeal);
+        if (!updateOk) {
             throw new RuntimeException("更新申诉记录失败");
         }
 
-        // 3. 如果审核通过，更新用户学历
-        if ("1".equals(handleResult) && StringUtils.isNotEmpty(newEducation)) {
+        // 5. 学历审核通过 → 回写用户学历字段（社保侧无需回写，校验时实时查申诉表豁免）
+        if ("1".equals(eduStatus) && StringUtils.isNotEmpty(newEducation)) {
             HzUser user = new HzUser();
             user.setUserId(appeal.getTenantId());
             user.setEducation(newEducation);
-
-            int userUpdateResult = userMapper.updateById(user);
-            if (userUpdateResult <= 0) {
+            int rows = userMapper.updateById(user);
+            if (rows <= 0) {
                 throw new RuntimeException("更新用户学历失败");
             }
         }
 
         return 1;
+    }
+
+    /** 计算两侧审核的摘要状态：任一驳回 → 2；都通过 → 1；其他 → 0 */
+    private String computeSummaryStatus(String edu, String soc) {
+        if ("2".equals(edu) || "2".equals(soc)) return "2";
+        boolean eduPassed = "1".equals(edu) || edu == null;   // null 视为「未提交」不阻断
+        boolean socPassed = "1".equals(soc) || soc == null;
+        if (eduPassed && socPassed && ("1".equals(edu) || "1".equals(soc))) return "1";
+        return "0";
+    }
+
+    /** 拼接两侧审核意见（任意一侧空则只显示另一侧） */
+    private String buildSummaryOpinion(String eduOp, String socOp) {
+        boolean hasEdu = StringUtils.isNotEmpty(eduOp);
+        boolean hasSoc = StringUtils.isNotEmpty(socOp);
+        if (hasEdu && hasSoc) return "[学历]" + eduOp + " | [社保]" + socOp;
+        if (hasEdu) return "[学历]" + eduOp;
+        if (hasSoc) return "[社保]" + socOp;
+        return null;
     }
 
     @Override
@@ -156,14 +211,23 @@ public class HzQualificationAppealServiceImpl extends ServiceImpl<HzQualificatio
     }
 
     @Override
-    public boolean existsPassedAppeal(Long userId) {
-        if (userId == null) {
-            return false;
-        }
+    public boolean existsPassedEducationAppeal(Long userId) {
+        if (userId == null) return false;
         com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<HzQualificationAppeal> qw =
                 new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
         qw.eq("tenant_id", userId)
-          .eq("handle_result", "1")
+          .eq("education_audit_status", "1")
+          .eq("del_flag", "0");
+        return this.count(qw) > 0;
+    }
+
+    @Override
+    public boolean existsPassedSocialAppeal(Long userId) {
+        if (userId == null) return false;
+        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<HzQualificationAppeal> qw =
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        qw.eq("tenant_id", userId)
+          .eq("social_audit_status", "1")
           .eq("del_flag", "0");
         return this.count(qw) > 0;
     }

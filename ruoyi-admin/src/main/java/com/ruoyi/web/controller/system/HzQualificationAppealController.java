@@ -55,22 +55,23 @@ public class HzQualificationAppealController extends BaseController {
     }
 
     /**
-     * 审核资格申述
+     * 审核资格申述（双材料独立审核）
+     * 入参示例：
+     *   {
+     *     "appealId": 36,
+     *     "educationAuditStatus": "1", "educationAuditOpinion": "学历证明清晰",
+     *     "socialAuditStatus":   "2", "socialAuditOpinion":   "社保单位与申请单位不一致",
+     *     "appealReason": "本科"  // 临时复用：当 educationAuditStatus=1 时回写到 hz_user.education
+     *   }
+     * 任一侧 status 为 null/空表示「本次不动该侧」
      */
     @PreAuthorize("@ss.hasPermi('gangzhu:qualification:edit')")
     @Log(title = "资格申述审核", businessType = BusinessType.UPDATE)
     @PutMapping("/handle")
     public AjaxResult handle(@RequestBody HzQualificationAppeal appeal) {
-        // 从appeal中获取申诉原因作为新学历（前端会传入）
-        String newEducation = appeal.getAppealReason(); // 临时使用appealReason传递新学历
-
-        int result = appealService.handleAppeal(
-            appeal.getAppealId(),
-            appeal.getHandleResult(),
-            appeal.getHandleOpinion(),
-            newEducation
-        );
-
+        // 复用 appealReason 字段传递「学历审核通过时回写到 hz_user.education 的新学历」
+        String newEducation = appeal.getAppealReason();
+        int result = appealService.handleAppealSplit(appeal, newEducation);
         return toAjax(result);
     }
 
