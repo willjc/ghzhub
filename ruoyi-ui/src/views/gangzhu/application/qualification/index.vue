@@ -308,6 +308,7 @@
 </template>
 
 <script>
+// build-version: 20260515-split-audit-v2 强制重新构建以让 webpack chunk hash 变化，绕过浏览器缓存
 import { listAppeal, getAppeal, handleAppeal, delAppeal } from "@/api/gangzhu/appeal";
 
 export default {
