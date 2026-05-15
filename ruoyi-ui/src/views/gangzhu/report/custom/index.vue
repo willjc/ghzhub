@@ -74,13 +74,6 @@
                   <el-option v-for="p in projectOptions" :key="p.value" :label="p.label" :value="p.value" />
                 </el-select>
               </el-form-item>
-              <el-form-item label="状态">
-                <el-select v-model="reportForm.status" placeholder="全部状态" clearable style="width: 100%;">
-                  <el-option label="正常" value="normal" />
-                  <el-option label="预警" value="warning" />
-                  <el-option label="异常" value="error" />
-                </el-select>
-              </el-form-item>
             </el-form>
           </div>
 
@@ -163,13 +156,13 @@
 
 <script>
 import * as echarts from 'echarts'
+import { generateCustomReport, getProjectList } from "@/api/gangzhu/report"
 
 // 维度选项
 const DIMENSIONS = [
   { value: 'projectName',   label: '项目名称' },
   { value: 'month',         label: '月份' },
-  { value: 'houseType',     label: '房型' },
-  { value: 'tenantCategory',label: '租户类型' }
+  { value: 'billType',      label: '账单类型' }
 ]
 
 // 指标选项
@@ -177,46 +170,10 @@ const METRICS = [
   { value: 'receivableAmount',  label: '应收金额',   color: 'blue',  format: v => '¥' + (v || 0).toLocaleString() },
   { value: 'receivedAmount',    label: '实收金额',   color: 'green', format: v => '¥' + (v || 0).toLocaleString() },
   { value: 'overdueAmount',     label: '逾期金额',   color: 'red',   format: v => '¥' + (v || 0).toLocaleString() },
-  { value: 'refundAmount',      label: '退款金额',   color: 'gray',  format: v => '¥' + (v || 0).toLocaleString() },
-  { value: 'roomCount',         label: '房间数量',   color: 'teal',  format: v => (v || 0) + '间' },
-  { value: 'occupiedCount',     label: '已租数量',   color: 'teal',  format: v => (v || 0) + '间' },
+  { value: 'billCount',         label: '账单数',     color: 'teal',  format: v => (v || 0) + '笔' },
+  { value: 'paidCount',         label: '已付数',     color: 'teal',  format: v => (v || 0) + '笔' },
   { value: 'collectionRate',    label: '收款率',     color: 'amber', format: v => (v || 0) + '%' }
 ]
-
-const PROJECT_OPTIONS = [
-  { value: '1', label: '港区人才公寓A区' },
-  { value: '2', label: '港区人才公寓B区' },
-  { value: '3', label: '保租房项目一期' },
-  { value: '4', label: '保租房项目二期' },
-  { value: '5', label: '市场租赁项目' }
-]
-
-// 生成模拟结果
-function genMockResult(dims, metrics) {
-  const projects = ['港区人才公寓A区', '港区人才公寓B区', '保租房项目一期', '保租房项目二期', '市场租赁项目']
-  const months   = ['2026-01', '2026-02', '2026-03', '2026-04']
-  const houseTypes = ['一室', '两室', '三室']
-  const categories = ['人才租赁', '保障租赁', '市场租赁']
-
-  const rows = []
-  const count = 10 + Math.floor(Math.random() * 10)
-  for (let i = 0; i < count; i++) {
-    const row = {}
-    if (dims.includes('projectName'))    row.projectName    = projects[Math.floor(Math.random() * projects.length)]
-    if (dims.includes('month'))          row.month          = months[Math.floor(Math.random() * months.length)]
-    if (dims.includes('houseType'))      row.houseType      = houseTypes[Math.floor(Math.random() * houseTypes.length)]
-    if (dims.includes('tenantCategory')) row.tenantCategory = categories[Math.floor(Math.random() * categories.length)]
-    if (metrics.includes('receivableAmount')) row.receivableAmount = Math.round(50000 + Math.random() * 200000)
-    if (metrics.includes('receivedAmount'))   row.receivedAmount   = Math.round(40000 + Math.random() * 180000)
-    if (metrics.includes('overdueAmount'))    row.overdueAmount    = Math.round(1000  + Math.random() * 20000)
-    if (metrics.includes('refundAmount'))     row.refundAmount     = Math.round(500   + Math.random() * 5000)
-    if (metrics.includes('roomCount'))        row.roomCount        = Math.round(50    + Math.random() * 200)
-    if (metrics.includes('occupiedCount'))    row.occupiedCount    = Math.round(40    + Math.random() * 180)
-    if (metrics.includes('collectionRate'))   row.collectionRate   = Math.round(75    + Math.random() * 25)
-    rows.push(row)
-  }
-  return rows
-}
 
 export default {
   name: 'CustomReport',
@@ -226,7 +183,7 @@ export default {
     return {
       dimensionOptions: DIMENSIONS,
       metricOptions:    METRICS,
-      projectOptions:   PROJECT_OPTIONS,
+      projectOptions:   [],
       reportForm: {
         startMonth:  `${now.getFullYear()}-01`,
         endMonth:    ym,
@@ -246,23 +203,51 @@ export default {
     selectedDimensions() { return DIMENSIONS.filter(d => this.reportForm.dimensions.includes(d.value)) },
     selectedMetrics()    { return METRICS.filter(m => this.reportForm.metrics.includes(m.value)) }
   },
+  created() {
+    this.loadProjectList()
+  },
   beforeDestroy() {
     if (this.reportChartInst) this.reportChartInst.dispose()
   },
   methods: {
+    loadProjectList() {
+      getProjectList().then(res => {
+        const list = res.rows || res.data || []
+        this.projectOptions = list.map(p => ({ value: p.projectId, label: p.projectName }))
+      })
+    },
     handleGenerate() {
       if (!this.reportForm.dimensions.length) { this.$message.warning('请至少选择一个数据维度'); return }
       if (!this.reportForm.metrics.length)    { this.$message.warning('请至少选择一个统计指标'); return }
       this.generating = true
-      setTimeout(() => {
-        this.resultData = genMockResult(this.reportForm.dimensions, this.reportForm.metrics)
-        this.hasResult  = true
-        this.generating = false
+      const params = {
+        startMonth: this.reportForm.startMonth,
+        endMonth: this.reportForm.endMonth,
+        dimensions: this.reportForm.dimensions,
+        metrics: this.reportForm.metrics,
+        projectIds: this.reportForm.projectIds.length ? this.reportForm.projectIds : null
+      }
+      generateCustomReport(params).then(res => {
+        this.resultData = res.data || []
+        this.hasResult = true
         this.$nextTick(() => this.renderChart())
-      }, 800)
+      }).catch(() => {
+        this.$message.error('生成报表失败')
+      }).finally(() => {
+        this.generating = false
+      })
     },
     handleExport() {
-      this.$message.success('正在导出自定义报表，请稍候...')
+      const params = {
+        startMonth: this.reportForm.startMonth,
+        endMonth: this.reportForm.endMonth,
+        dimensions: this.reportForm.dimensions,
+        metrics: this.reportForm.metrics,
+        projectIds: this.reportForm.projectIds.length ? this.reportForm.projectIds : null
+      }
+      // POST方式下载
+      this.$message.success('正在导出自定义报表...')
+      this.download('system/report/custom/export', params, `自定义报表_${new Date().getTime()}.xlsx`)
     },
     renderChart() {
       if (!this.$refs.reportChart || !this.resultData.length) return
@@ -272,9 +257,9 @@ export default {
       const firstDim = this.selectedDimensions[0]
       const xData = this.resultData.map(r => r[firstDim ? firstDim.value : ''] || '-').slice(0, 12)
       const series = this.selectedMetrics
-        .filter(m => ['receivableAmount', 'receivedAmount', 'overdueAmount', 'refundAmount'].includes(m.value))
+        .filter(m => ['receivableAmount', 'receivedAmount', 'overdueAmount'].includes(m.value))
         .map((m, idx) => {
-          const colors = ['#2563eb', '#16a34a', '#dc2626', '#6b7280']
+          const colors = ['#2563eb', '#16a34a', '#dc2626']
           return {
             name: m.label,
             type: this.chartType,
@@ -297,7 +282,7 @@ export default {
     getSummaryMethod({ columns, data }) {
       return columns.map((col, i) => {
         if (i === 0) return '合计'
-        const numMetrics = ['receivableAmount', 'receivedAmount', 'overdueAmount', 'refundAmount', 'roomCount', 'occupiedCount']
+        const numMetrics = ['receivableAmount', 'receivedAmount', 'overdueAmount', 'billCount', 'paidCount']
         if (numMetrics.includes(col.property)) {
           const sum = data.reduce((s, r) => s + (r[col.property] || 0), 0)
           const metric = METRICS.find(m => m.value === col.property)

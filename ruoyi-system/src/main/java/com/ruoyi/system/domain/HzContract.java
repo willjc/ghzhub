@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -24,10 +25,12 @@ public class HzContract extends BaseEntity {
     private Long contractId;
 
     /** 合同编号 */
+    @Excel(name = "合同编号")
     @TableField("contract_no")
     private String contractNo;
 
     /** 合同类型(1:首次签约 2:续租 3:换房) */
+    @Excel(name = "合同类型", readConverterExp = "1=首次签约,2=续租,3=换房")
     @TableField("contract_type")
     private String contractType;
 
@@ -44,14 +47,17 @@ public class HzContract extends BaseEntity {
     private Long tenantId;
 
     /** 租户姓名 */
+    @Excel(name = "租户姓名")
     @TableField("tenant_name")
     private String tenantName;
 
     /** 租户身份证号 */
+    @Excel(name = "身份证号")
     @TableField("tenant_id_card")
     private String tenantIdCard;
 
     /** 租户电话 */
+    @Excel(name = "联系电话")
     @TableField("tenant_phone")
     private String tenantPhone;
 
@@ -68,30 +74,37 @@ public class HzContract extends BaseEntity {
     private String houseCode;
 
     /** 房源地址 */
+    @Excel(name = "房源地址")
     @TableField("house_address")
     private String houseAddress;
 
     /** 租金 */
+    @Excel(name = "月租金")
     @TableField("rent_price")
     private BigDecimal rentPrice;
 
     /** 押金 */
+    @Excel(name = "押金")
     @TableField("deposit")
     private BigDecimal deposit;
 
     /** 合同开始日期 */
+    @Excel(name = "合同开始日期")
     @TableField("start_date")
     private String startDate;
 
     /** 合同结束日期 */
+    @Excel(name = "合同结束日期")
     @TableField("end_date")
     private String endDate;
 
     /** 租期(月) */
+    @Excel(name = "租期(月)")
     @TableField("rent_months")
     private Integer rentMonths;
 
     /** 缴费周期(1:月付 2:季付 3:半年付 4:年付) */
+    @Excel(name = "缴费周期", readConverterExp = "1=月付,2=季付,3=半年付,4=年付")
     @TableField("payment_cycle")
     private String paymentCycle;
 
@@ -124,6 +137,7 @@ public class HzContract extends BaseEntity {
     private String signTime;
 
     /** 合同状态(0:草稿 1:待签署 2:已签署 3:履行中 4:已到期 5:已解约) */
+    @Excel(name = "合同状态", readConverterExp = "0=草稿,1=待签署,2=已签署,3=履行中,4=已到期,5=已解约")
     @TableField("contract_status")
     private String contractStatus;
 
@@ -145,6 +159,7 @@ public class HzContract extends BaseEntity {
 
     // ========== 以下字段来自房源表，不存储在合同表中 ==========
     /** 项目名称（来自房源表） */
+    @Excel(name = "所属项目")
     @TableField(exist = false)
     private String projectName;
 
@@ -193,6 +208,7 @@ public class HzContract extends BaseEntity {
     private String facilities;
 
     /** 配租方式（常规分配/集中分配，由 batch_id + remark 首段推断，非持久化） */
+    @Excel(name = "配租方式")
     @TableField(exist = false)
     private String allocationType;
 
