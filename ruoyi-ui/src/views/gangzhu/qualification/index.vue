@@ -184,8 +184,8 @@
               <el-radio label="2">不通过</el-radio>
             </el-radio-group>
           </el-form-item>
-          <el-form-item label="学历审核意见" prop="educationAuditOpinion" v-if="form.educationAuditStatus">
-            <el-input v-model="form.educationAuditOpinion" type="textarea" placeholder="请输入学历审核意见" :rows="3" />
+          <el-form-item label="学历审核意见" prop="educationAuditOpinion" v-if="form.educationAuditStatus === '2'">
+            <el-input v-model="form.educationAuditOpinion" type="textarea" placeholder="请输入驳回理由" :rows="3" />
           </el-form-item>
         </div>
 
@@ -218,8 +218,8 @@
               <el-radio label="2">不通过</el-radio>
             </el-radio-group>
           </el-form-item>
-          <el-form-item label="社保审核意见" prop="socialAuditOpinion" v-if="form.socialAuditStatus">
-            <el-input v-model="form.socialAuditOpinion" type="textarea" placeholder="请输入社保审核意见" :rows="3" />
+          <el-form-item label="社保审核意见" prop="socialAuditOpinion" v-if="form.socialAuditStatus === '2'">
+            <el-input v-model="form.socialAuditOpinion" type="textarea" placeholder="请输入驳回理由" :rows="3" />
           </el-form-item>
         </div>
 
@@ -367,9 +367,9 @@ export default {
         r.educationAuditStatus = [
           { required: true, message: "学历审核结果不能为空", trigger: "change" }
         ];
-        if (this.form.educationAuditStatus) {
+        if (this.form.educationAuditStatus === '2') {
           r.educationAuditOpinion = [
-            { required: true, message: "学历审核意见不能为空", trigger: "blur" }
+            { required: true, message: "驳回理由不能为空", trigger: "blur" }
           ];
         }
       }
@@ -377,9 +377,9 @@ export default {
         r.socialAuditStatus = [
           { required: true, message: "社保审核结果不能为空", trigger: "change" }
         ];
-        if (this.form.socialAuditStatus) {
+        if (this.form.socialAuditStatus === '2') {
           r.socialAuditOpinion = [
-            { required: true, message: "社保审核意见不能为空", trigger: "blur" }
+            { required: true, message: "驳回理由不能为空", trigger: "blur" }
           ];
         }
       }
