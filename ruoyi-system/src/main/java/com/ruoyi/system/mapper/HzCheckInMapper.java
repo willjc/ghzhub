@@ -54,6 +54,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "LEFT JOIN hz_unit un ON h.unit_id = un.unit_id " +
             "LEFT JOIN hz_project p ON h.project_id = p.project_id " +
             "WHERE c.del_flag = '0' " +
+            "  AND (c.status NOT IN ('0','1') OR ct.contract_status IN ('2','3')) " +
             "<if test='checkIn.tenantId != null'> AND c.tenant_id = #{checkIn.tenantId} </if>" +
             "<if test='checkIn.contractId != null'> AND c.contract_id = #{checkIn.contractId} </if>" +
             "<if test='checkIn.houseId != null'> AND c.house_id = #{checkIn.houseId} </if>" +
@@ -133,6 +134,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "LEFT JOIN hz_unit un ON h.unit_id = un.unit_id " +
             "LEFT JOIN hz_project p ON h.project_id = p.project_id " +
             "WHERE c.del_flag = '0' " +
+            "  AND (c.status NOT IN ('0','1') OR ct.contract_status IN ('2','3')) " +
             "<if test='tenantId != null'> AND c.tenant_id = #{tenantId} </if>" +
             "<if test='contractId != null'> AND c.contract_id = #{contractId} </if>" +
             "<if test='houseId != null'> AND c.house_id = #{houseId} </if>" +

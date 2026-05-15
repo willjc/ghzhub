@@ -4,10 +4,12 @@ import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.mapper.HzBillMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzDocumentMapper;
+import com.ruoyi.system.mapper.HzCheckInMapper;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzDocument;
+import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.service.IHzContractService;
 import com.ruoyi.system.service.IHzUserMessageService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -52,6 +54,9 @@ public class ContractExpireTask {
 
     @Autowired
     private HzDocumentMapper documentMapper;
+
+    @Autowired
+    private HzCheckInMapper checkInMapper;
 
     @Autowired
     private IHzContractService contractService;
@@ -100,6 +105,9 @@ public class ContractExpireTask {
                                 .eq(HzHouse::getHouseStatus, "2")  // 仅已出租状态才释放
                                 .set(HzHouse::getHouseStatus, "0"));
                     }
+
+                    // 2.1 联动：把该合同未办理/未审核的入住单软删，避免到期合同还能办理入住
+                    softDeleteOrphanCheckInsByContract(contract.getContractId(), "合同到期自动软删");
 
                     // 3. 发送消息提醒
                     if (contract.getTenantId() != null) {
@@ -275,7 +283,36 @@ public class ContractExpireTask {
      */
     private void expireContract(HzContract contract, String reason) {
         contractService.expireContractAndReleaseHouse(contract.getContractId(), contract.getHouseId());
+        // 联动：把该合同对应"待办理(0)/待审核(1)"的入住单软删，避免管理端继续办理
+        softDeleteOrphanCheckInsByContract(contract.getContractId(), "合同超时失效自动软删");
         log.info("合同超时失效：contractId={}, reason={}", contract.getContractId(), reason);
+    }
+
+    /**
+     * 软删除与指定合同关联且仍处于"待办理(0)/待审核(1)"状态的入住单。
+     * 当合同被定时任务标记为已到期/已超时失效后，对应入住单不应再被办理。
+     */
+    private int softDeleteOrphanCheckInsByContract(Long contractId, String reason) {
+        if (contractId == null) {
+            return 0;
+        }
+        try {
+            int rows = checkInMapper.update(null, new LambdaUpdateWrapper<HzCheckIn>()
+                    .eq(HzCheckIn::getContractId, contractId)
+                    .eq(HzCheckIn::getDelFlag, "0")
+                    .in(HzCheckIn::getStatus, "0", "1")
+                    .set(HzCheckIn::getDelFlag, "1")
+                    .set(HzCheckIn::getUpdateBy, "contractExpireTask")
+                    .set(HzCheckIn::getUpdateTime, new Date())
+                    .setSql("remark = CONCAT(IFNULL(remark,''), ' | " + reason + "')"));
+            if (rows > 0) {
+                log.info("联动软删入住单：contractId={}, rows={}, reason={}", contractId, rows, reason);
+            }
+            return rows;
+        } catch (Exception e) {
+            log.warn("联动软删入住单失败 contractId={}: {}", contractId, e.getMessage());
+            return 0;
+        }
     }
 
     /**

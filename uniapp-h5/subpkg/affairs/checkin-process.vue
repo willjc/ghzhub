@@ -25,7 +25,7 @@
 				<view class="form-row" @click="showDatePicker('checkinDate')">
 					<text class="form-label"><text class="required">*</text>入住日期</text>
 					<view class="form-value-wrap">
-						<text class="form-value placeholder" v-if="!formData.checkinDate">请选择入住日期</text>
+						<text class="form-value placeholder" v-if="!formData.checkinDate">{{ checkinDatePlaceholder }}</text>
 						<text class="form-value" v-else>{{ formData.checkinDate }}</text>
 					</view>
 				</view>
@@ -184,6 +184,11 @@
 				months: [],
 				days: [],
 
+				// 入住日期合法范围（基于合同 startDate 与 signTime+3天）
+				// 仅对主入住日期 checkinDate 生效；合住人日期不受此限制
+				minCheckinDate: null, // Date 对象
+				maxCheckinDate: null, // Date 对象
+
 				// 关系选择器
 				showRelationPickerPopup: false,
 				currentRelationField: '',
@@ -201,6 +206,14 @@
 			this.initDatePicker()
 			this.loadCheckInDetail()
 		},
+		computed: {
+			checkinDatePlaceholder() {
+				if (this.minCheckinDate && this.maxCheckinDate) {
+					return `请选择入住日期（${this.formatDate(this.minCheckinDate)} 至 ${this.formatDate(this.maxCheckinDate)}）`
+				}
+				return '请选择入住日期'
+			}
+		},
 		methods: {
 			// 加载入住单详情
 			async loadCheckInDetail() {
@@ -216,6 +229,11 @@
 						const remark = response.data.remark || ''
 						this.formData.community = this.extractInfo(remark, '项目：')
 						this.formData.room = this.extractInfo(remark, '房间：')
+
+						// 计算入住日期合法范围：[start_date, sign_time + 3天]
+						this.computeCheckinDateRange(response.data.startDate, response.data.signTime)
+						// 范围确定后重新生成可选 years
+						this.initDatePicker()
 
 						// 如果已有实际入住日期，回显
 						if (response.data.actualCheckinDate) {
@@ -286,19 +304,73 @@
 
 			// 初始化日期选择器
 			initDatePicker() {
-				const currentYear = new Date().getFullYear()
-				this.years = []
-				for (let i = currentYear; i <= currentYear + 5; i++) {
-					this.years.push(i)
+				// 若已计算出 [minCheckinDate, maxCheckinDate] 范围，则按范围生成可选 years
+				if (this.minCheckinDate && this.maxCheckinDate) {
+					const startYear = this.minCheckinDate.getFullYear()
+					const endYear = this.maxCheckinDate.getFullYear()
+					this.years = []
+					for (let i = startYear; i <= endYear; i++) {
+						this.years.push(i)
+					}
+				} else {
+					const currentYear = new Date().getFullYear()
+					this.years = []
+					for (let i = currentYear; i <= currentYear + 5; i++) {
+						this.years.push(i)
+					}
 				}
 				this.months = Array.from({ length: 12 }, (_, i) => i + 1)
 				this.days = Array.from({ length: 31 }, (_, i) => i + 1)
 			},
 
+			// 解析合同 startDate 与 signTime，得到 [minCheckinDate, maxCheckinDate]
+			computeCheckinDateRange(startDateStr, signTimeStr) {
+				const startDate = this.parseDate(startDateStr)
+				const signTime = this.parseDate(signTimeStr)
+				if (!startDate || !signTime) {
+					return
+				}
+				// minCheckinDate = startDate（去掉时分秒）
+				const minDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())
+				// maxCheckinDate = signTime + 3天（按签订日 0 点起算）
+				const maxDate = new Date(signTime.getFullYear(), signTime.getMonth(), signTime.getDate())
+				maxDate.setDate(maxDate.getDate() + 3)
+				this.minCheckinDate = minDate
+				this.maxCheckinDate = maxDate
+			},
+
+			// 兼容多种返回格式的日期解析（YYYY-MM-DD / YYYY-MM-DD HH:mm:ss / 时间戳）
+			parseDate(val) {
+				if (!val) return null
+				if (typeof val === 'number') return new Date(val)
+				if (val instanceof Date) return val
+				const str = String(val).replace(/-/g, '/').replace('T', ' ')
+				const d = new Date(str)
+				return isNaN(d.getTime()) ? null : d
+			},
+
+			// 格式化为 YYYY-MM-DD
+			formatDate(d) {
+				if (!d) return ''
+				const y = d.getFullYear()
+				const m = String(d.getMonth() + 1).padStart(2, '0')
+				const day = String(d.getDate()).padStart(2, '0')
+				return `${y}-${m}-${day}`
+			},
+
 			// 显示日期选择器
 			showDatePicker(field) {
 				this.currentDateField = field
-				this.datePickerValue = [0, 0, 0]
+				// 主入住日期：默认定位到 minCheckinDate
+				if (field === 'checkinDate' && this.minCheckinDate) {
+					const y = this.minCheckinDate.getFullYear()
+					const m = this.minCheckinDate.getMonth() + 1
+					const d = this.minCheckinDate.getDate()
+					const yIdx = Math.max(0, this.years.indexOf(y))
+					this.datePickerValue = [yIdx, m - 1, d - 1]
+				} else {
+					this.datePickerValue = [0, 0, 0]
+				}
 				this.showDatePickerPopup = true
 			},
 
@@ -307,27 +379,49 @@
 				this.datePickerValue = e.detail.value
 			},
 
-			// 确认日期（不允许选今天之前的日期）
+			// 确认日期（主入住日期需落在 [start_date, sign_time+3天]，合住人日期不早于今天）
 			confirmDate() {
 				const year = this.years[this.datePickerValue[0]]
 				const month = this.months[this.datePickerValue[1]]
 				const day = this.days[this.datePickerValue[2]]
 
-				// 不允许选今天之前的日期
-				const today = new Date()
-				today.setHours(0, 0, 0, 0)
+				// 防止选到不存在的日期（如 2 月 31 日）
 				const selected = new Date(year, month - 1, day)
-				if (selected < today) {
-					uni.showToast({ title: '入住日期不能早于今天', icon: 'none' })
+				if (selected.getFullYear() !== year || selected.getMonth() !== month - 1 || selected.getDate() !== day) {
+					uni.showToast({ title: '所选日期无效，请重新选择', icon: 'none' })
 					return
 				}
 
-				const dateStr = `${year}年${month}月${day}日`
-
 				if (this.currentDateField === 'checkinDate') {
-					this.formData.checkinDate = dateStr
+					// 主入住日期：必须落在 [minCheckinDate, maxCheckinDate]
+					if (this.minCheckinDate && this.maxCheckinDate) {
+						if (selected < this.minCheckinDate || selected > this.maxCheckinDate) {
+							uni.showToast({
+								title: `入住日期需在 ${this.formatDate(this.minCheckinDate)} 至 ${this.formatDate(this.maxCheckinDate)} 之间`,
+								icon: 'none',
+								duration: 2500
+							})
+							return
+						}
+					} else {
+						// 兜底：未拿到合同范围时仍校验"不早于今天"
+						const today = new Date()
+						today.setHours(0, 0, 0, 0)
+						if (selected < today) {
+							uni.showToast({ title: '入住日期不能早于今天', icon: 'none' })
+							return
+						}
+					}
+					this.formData.checkinDate = this.formatDate(selected)
 				} else if (this.currentDateField === 'cohabitantDate') {
-					this.formData.cohabitantDate = dateStr
+					// 合住人日期：仅限"不早于今天"
+					const today = new Date()
+					today.setHours(0, 0, 0, 0)
+					if (selected < today) {
+						uni.showToast({ title: '入住日期不能早于今天', icon: 'none' })
+						return
+					}
+					this.formData.cohabitantDate = this.formatDate(selected)
 				}
 
 				this.showDatePickerPopup = false
@@ -367,6 +461,19 @@
 						icon: 'none'
 					})
 					return
+				}
+
+				// 校验主入住日期落在 [minCheckinDate, maxCheckinDate]
+				if (this.minCheckinDate && this.maxCheckinDate) {
+					const selected = this.parseDate(this.formData.checkinDate)
+					if (!selected || selected < this.minCheckinDate || selected > this.maxCheckinDate) {
+						uni.showToast({
+							title: `入住日期需在 ${this.formatDate(this.minCheckinDate)} 至 ${this.formatDate(this.maxCheckinDate)} 之间`,
+							icon: 'none',
+							duration: 2500
+						})
+						return
+					}
 				}
 
 				if (!this.formData.emergencyName) {

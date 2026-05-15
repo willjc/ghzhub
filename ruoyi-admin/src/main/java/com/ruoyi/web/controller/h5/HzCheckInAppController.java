@@ -4,8 +4,11 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.DateUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzCheckIn;
+import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzHouse;
+import com.ruoyi.system.mapper.HzBillMapper;
 import com.ruoyi.system.mapper.HzCheckInMapper;
 import com.ruoyi.system.service.IHzCheckInService;
 import com.ruoyi.system.service.IHzHouseService;
@@ -21,6 +24,9 @@ import com.google.gson.reflect.TypeToken;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -52,6 +58,9 @@ public class HzCheckInAppController extends BaseController {
 
     @Autowired
     private IHzContractService contractService;
+
+    @Autowired
+    private HzBillMapper billMapper;
 
     @Autowired
     private com.ruoyi.system.service.IHzProjectService projectService;
@@ -412,6 +421,17 @@ public class HzCheckInAppController extends BaseController {
             }
         }
 
+        // 补充合同的 signTime 与 startDate（小程序日期选择器需要据此限定可选范围）
+        if (checkIn.getContractId() != null) {
+            HzContract contract = contractService.selectContractById(checkIn.getContractId());
+            if (contract != null) {
+                result.put("signTime", contract.getSignTime());
+                result.put("startDate", contract.getStartDate());
+                result.put("endDate", contract.getEndDate());
+                result.put("contractStatus", contract.getContractStatus());
+            }
+        }
+
         return success(result);
     }
 
@@ -435,6 +455,12 @@ public class HzCheckInAppController extends BaseController {
             // 检查状态
             if (!"0".equals(checkIn.getStatus())) {
                 return error("该入住单已办理，无法重复提交");
+            }
+
+            // 二次校验：合同状态 + 押金/首期租金已收清 + 入住日期范围
+            String denyMsg = validateCheckinSubmit(checkIn, params.get("actualCheckinDate"));
+            if (denyMsg != null) {
+                return error(denyMsg);
             }
 
             // 更新入住办理信息
@@ -754,6 +780,77 @@ public class HzCheckInAppController extends BaseController {
             return remark.substring(start, end).trim();
         }
         return "";
+    }
+
+    /**
+     * 提交入住办理前的二次校验：
+     * 1) 合同存在且状态为 已签署(2)/履行中(3)
+     * 2) 押金（如有）必须全部已付清
+     * 3) 首期租金（按 due_date 升序第一条）必须已付清
+     * 4) 实际入住日期需在 [sign_time, sign_time+3 天]
+     * 任一不满足返回拒绝原因，通过返回 null。
+     */
+    private String validateCheckinSubmit(HzCheckIn checkIn, Object rawCheckinDate) {
+        Long contractId = checkIn.getContractId();
+        if (contractId == null) {
+            return "入住单未关联合同，无法提交办理";
+        }
+        HzContract contract = contractService.selectContractById(contractId);
+        if (contract == null || !"0".equals(contract.getDelFlag())) {
+            return "合同不存在或已删除，无法办理入住";
+        }
+        String cs = contract.getContractStatus();
+        if (!"2".equals(cs) && !"3".equals(cs)) {
+            return "合同当前状态已非「已签署/履行中」，无法办理入住";
+        }
+        // 押金账单
+        List<HzBill> deposits = billMapper.selectList(new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, contractId)
+                .eq(HzBill::getBillType, "1")
+                .eq(HzBill::getDelFlag, "0"));
+        for (HzBill b : deposits) {
+            if (!"1".equals(b.getBillStatus())) {
+                return "押金尚未收齐，请先完成支付再办理入住";
+            }
+        }
+        // 首期租金
+        HzBill firstRent = billMapper.selectOne(new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, contractId)
+                .eq(HzBill::getBillType, "2")
+                .eq(HzBill::getDelFlag, "0")
+                .orderByAsc(HzBill::getDueDate)
+                .last("LIMIT 1"));
+        if (firstRent != null && !"1".equals(firstRent.getBillStatus())) {
+            return "首期租金尚未收齐，请先完成支付再办理入住";
+        }
+        // 入住日期范围 [sign_time, sign_time+3 天]
+        if (rawCheckinDate == null || rawCheckinDate.toString().isEmpty()) {
+            return "请选择实际入住日期";
+        }
+        String stdDate = convertChineseDateToDate(rawCheckinDate.toString());
+        String signTime = contract.getSignTime();
+        if (stdDate == null || stdDate.isEmpty()) {
+            return "入住日期格式不正确";
+        }
+        if (signTime == null || signTime.isEmpty()) {
+            // 老数据迁移合同可能无 sign_time，放行
+            return null;
+        }
+        try {
+            LocalDate ci = LocalDate.parse(stdDate.length() >= 10 ? stdDate.substring(0, 10) : stdDate,
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            LocalDateTime st = LocalDateTime.parse(signTime.replace("T", " ").trim(),
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            LocalDate signDay = st.toLocalDate();
+            LocalDate maxDay = signDay.plusDays(3);
+            if (ci.isBefore(signDay) || ci.isAfter(maxDay)) {
+                return "入住日期需在签订合同当日至签订日后 3 日内（" + signDay + " 至 " + maxDay + "）";
+            }
+        } catch (Exception e) {
+            // 解析异常不阻断主流程
+            return null;
+        }
+        return null;
     }
 
     /**
