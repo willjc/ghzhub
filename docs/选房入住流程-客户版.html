@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>港好住·选房入住流程（客户版）</title>
+<title>港好住·选房入住流程（租户版）</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -108,20 +108,81 @@
   }
   .step-card ul li { margin: 3px 0; }
 
+  /* 分支补充流程（如：资格申诉） */
+  .branch {
+    position: relative;
+    padding-left: 90px;
+    margin-bottom: 28px;
+  }
+  .branch-tag {
+    position: absolute;
+    left: 12px;
+    top: 6px;
+    width: 52px;
+    padding: 4px 0;
+    text-align: center;
+    border-radius: 12px;
+    background: #fff7e6;
+    border: 1px dashed #faad14;
+    color: #d46b08;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    z-index: 2;
+  }
+  .branch-card {
+    background: #fffdf6;
+    border: 1px dashed #faad14;
+    border-radius: 12px;
+    padding: 16px 22px;
+    box-shadow: 0 1px 6px rgba(214, 107, 8, 0.06);
+  }
+  .branch-card h3 {
+    font-size: 16px;
+    color: #d46b08;
+    margin-bottom: 8px;
+  }
+  .branch-card h3::before {
+    content: "↳ ";
+    color: #faad14;
+    font-weight: 700;
+  }
+  .branch-card p {
+    color: #4a5b75;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  .branch-card ul {
+    margin-top: 6px;
+    padding-left: 20px;
+    color: #4a5b75;
+    font-size: 14px;
+  }
+  .branch-card ul li { margin: 3px 0; }
+  .branch-card .tip {
+    margin-top: 8px;
+    color: #874d00;
+    background: #fff7e6;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    display: inline-block;
+  }
+
   /* 不同步骤色彩 */
   .step:nth-child(2) .step-no, .step:nth-child(2) .step-card { border-color: #4A90E2; color: #4A90E2; }
-  .step:nth-child(3) .step-no { border-color: #5b9ee0; color: #5b9ee0; }
-  .step:nth-child(3) .step-card { border-left-color: #5b9ee0; }
-  .step:nth-child(4) .step-no { border-color: #6cabd9; color: #6cabd9; }
-  .step:nth-child(4) .step-card { border-left-color: #6cabd9; }
-  .step:nth-child(5) .step-no { border-color: #7eb8d2; color: #7eb8d2; }
-  .step:nth-child(5) .step-card { border-left-color: #7eb8d2; }
-  .step:nth-child(6) .step-no { border-color: #8fc4cc; color: #8fc4cc; }
-  .step:nth-child(6) .step-card { border-left-color: #8fc4cc; }
-  .step:nth-child(7) .step-no { border-color: #a1d1c5; color: #2c8c6a; }
-  .step:nth-child(7) .step-card { border-left-color: #a1d1c5; }
-  .step:nth-child(8) .step-no { border-color: #67C23A; color: #67C23A; }
-  .step:nth-child(8) .step-card { border-left-color: #67C23A; }
+  .step:nth-child(4) .step-no { border-color: #5b9ee0; color: #5b9ee0; }
+  .step:nth-child(4) .step-card { border-left-color: #5b9ee0; }
+  .step:nth-child(5) .step-no { border-color: #6cabd9; color: #6cabd9; }
+  .step:nth-child(5) .step-card { border-left-color: #6cabd9; }
+  .step:nth-child(6) .step-no { border-color: #7eb8d2; color: #7eb8d2; }
+  .step:nth-child(6) .step-card { border-left-color: #7eb8d2; }
+  .step:nth-child(7) .step-no { border-color: #8fc4cc; color: #8fc4cc; }
+  .step:nth-child(7) .step-card { border-left-color: #8fc4cc; }
+  .step:nth-child(8) .step-no { border-color: #a1d1c5; color: #2c8c6a; }
+  .step:nth-child(8) .step-card { border-left-color: #a1d1c5; }
+  .step:nth-child(9) .step-no { border-color: #67C23A; color: #67C23A; }
+  .step:nth-child(9) .step-card { border-left-color: #67C23A; }
 
   /* 异常提示区 */
   .exception-box {
@@ -163,7 +224,7 @@
 <body>
 <div class="container">
   <h1>港好住 · 选房入住完整流程</h1>
-  <p class="subtitle">面向租户的小程序操作链路（客户简版）</p>
+  <p class="subtitle">面向租户的小程序操作链路（租户版）</p>
 
   <div class="timeline">
 
@@ -182,10 +243,27 @@
         <p>系统自动判断用户身份并完成校验：</p>
         <ul>
           <li><b>批量配租用户</b>：管理员已为其分配房源，<b>免校验</b>直接放行；</li>
-          <li><b>普通用户</b>：系统自动调取政务数据校验社保、学历、工作等信息；</li>
-          <li>校验未通过 → 跳出失败页，告知未通过原因，流程终止；</li>
+          <li><b>普通用户</b>：系统自动调取政务数据校验<b>社保（含单位一致性）</b>和<b>学历</b>两项；</li>
+          <li>校验未通过 → 跳转失败页，提供「<b>返回首页</b> / <b>重新校验</b> / <b>发起申诉</b>」三个操作；</li>
           <li>校验通过 → 进入下一步签署承诺书。</li>
         </ul>
+      </div>
+    </div>
+
+    <!-- 补充分支：资格申诉（仅校验未通过时使用） -->
+    <div class="branch">
+      <div class="branch-tag">分支</div>
+      <div class="branch-card">
+        <h3>资格申诉（可选 · 仅校验未通过时使用）</h3>
+        <p>对系统校验结果有异议的用户，可在失败页点击「发起申诉」补充佐证材料：</p>
+        <ul>
+          <li>📎 上传<b>学历证明附件</b>，并可填写学历情况说明（最多 500 字）；</li>
+          <li>📎 上传<b>社保证明附件</b>（若社保已通过可不传），并可填写社保情况说明；</li>
+          <li>提交后由管理员人工审核，可在「申诉记录」页查看进度与结果；</li>
+          <li><b>审核通过</b> → 系统自动同步学历至用户档案，可重新发起资格校验并继续主流程；</li>
+          <li><b>审核拒绝</b> → 用户可根据拒绝原因补充材料后再次提交。</li>
+        </ul>
+        <span class="tip">↺ 申诉通过后回到「步骤 3 签署承诺书」继续主流程</span>
       </div>
     </div>
 
@@ -278,6 +356,7 @@
         <tr><th style="width:38%">场景</th><th>系统处理</th></tr>
       </thead>
       <tbody>
+        <tr><td>资格校验未通过</td><td>可重新校验，或上传学历/社保佐证<b>发起申诉</b>，管理员审核通过后自动放行</td></tr>
         <tr><td>选房 10 分钟内未签合同</td><td>订单作废，房源自动释放回「空置」</td></tr>
         <tr><td>签合同后未及时缴押金</td><td>订单过期，房源释放</td></tr>
         <tr><td>72 小时内材料未通过审核</td><td>订单过期，房源释放，可重新选房</td></tr>
@@ -287,7 +366,7 @@
     </table>
   </div>
 
-  <p class="footer">© 港好住 · 选房入住流程图（客户版）</p>
+  <p class="footer">© 港好住 · 选房入住流程图（租户版）</p>
 </div>
 </body>
 </html>

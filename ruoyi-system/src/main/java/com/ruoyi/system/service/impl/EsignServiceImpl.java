@@ -47,6 +47,7 @@ public class EsignServiceImpl implements EsignService {
     private final HzBuildingMapper buildingMapper;
     private final HzUnitMapper unitMapper;
     private final HzHouseFacilityMapper houseFacilityMapper;
+    private final HzHouseTypeFacilityMapper houseTypeFacilityMapper;
     private final IHzCheckInService checkInService;
     private final IHzUserMessageService messageService;
 
@@ -55,6 +56,7 @@ public class EsignServiceImpl implements EsignService {
                             HzHouseMapper houseMapper, HzProjectMapper projectMapper,
                             HzBuildingMapper buildingMapper, HzUnitMapper unitMapper,
                             HzHouseFacilityMapper houseFacilityMapper,
+                            HzHouseTypeFacilityMapper houseTypeFacilityMapper,
                             IHzCheckInService checkInService, IHzUserMessageService messageService) {
         this.userMapper = userMapper;
         this.contractMapper = contractMapper;
@@ -65,6 +67,7 @@ public class EsignServiceImpl implements EsignService {
         this.buildingMapper = buildingMapper;
         this.unitMapper = unitMapper;
         this.houseFacilityMapper = houseFacilityMapper;
+        this.houseTypeFacilityMapper = houseTypeFacilityMapper;
         this.checkInService = checkInService;
         this.messageService = messageService;
     }
@@ -190,6 +193,9 @@ public class EsignServiceImpl implements EsignService {
         EsignHttpResponse resp = callApi("POST", "/v3/files/create-by-doc-template", jsonParm);
         JsonObject root = gson.fromJson(resp.getBody(), JsonObject.class);
         if (root.get("code").getAsInt() != 0) {
+            // 详细日志：定位 e签宝模板填充失败的具体控件
+            log.error("e签宝模板填充失败 contractId={} response={} requestComponents={}",
+                    contractId, resp.getBody(), componentsJson);
             throw new RuntimeException("模板填充生成文件失败: " + root.get("message").getAsString());
         }
 
@@ -387,16 +393,34 @@ public class EsignServiceImpl implements EsignService {
         }
 
         // ── 设施数据（按设施名称汇总数量）──────────────────────────────
+        // 优先取房源单独配置（hz_house_facility）；若房源未单独配置，回退取户型默认配置（hz_house_type_facility）
         Map<String, Integer> facilityQtyMap = new HashMap<>();
         if (contract.getHouseId() != null) {
             List<HzHouseFacility> facilities = houseFacilityMapper.selectList(
                     new LambdaQueryWrapper<HzHouseFacility>()
                             .eq(HzHouseFacility::getHouseId, contract.getHouseId())
                             .eq(HzHouseFacility::getDelFlag, "0"));
-            for (HzHouseFacility f : facilities) {
-                String name = f.getFacilityName();
-                int qty = f.getQuantity() != null ? f.getQuantity() : 0;
-                facilityQtyMap.merge(name, qty, Integer::sum);
+            if (facilities != null && !facilities.isEmpty()) {
+                for (HzHouseFacility f : facilities) {
+                    String name = f.getFacilityName();
+                    int qty = f.getQuantity() != null ? f.getQuantity() : 0;
+                    facilityQtyMap.merge(name, qty, Integer::sum);
+                }
+                log.info("e签宝模板填充使用「房源设施」 contractId={} houseId={} facilityCount={}",
+                        contract.getContractId(), contract.getHouseId(), facilities.size());
+            } else if (house != null && house.getHouseTypeId() != null) {
+                // 回退：取户型设施作为默认
+                List<HzHouseTypeFacility> typeFacilities = houseTypeFacilityMapper.selectList(
+                        new LambdaQueryWrapper<HzHouseTypeFacility>()
+                                .eq(HzHouseTypeFacility::getHouseTypeId, house.getHouseTypeId())
+                                .eq(HzHouseTypeFacility::getDelFlag, "0"));
+                for (HzHouseTypeFacility f : typeFacilities) {
+                    String name = f.getFacilityName();
+                    int qty = f.getQuantity() != null ? f.getQuantity() : 0;
+                    facilityQtyMap.merge(name, qty, Integer::sum);
+                }
+                log.info("e签宝模板填充回退使用「户型设施」 contractId={} houseId={} houseTypeId={} facilityCount={}",
+                        contract.getContractId(), contract.getHouseId(), house.getHouseTypeId(), typeFacilities.size());
             }
         }
 
@@ -417,19 +441,23 @@ public class EsignServiceImpl implements EsignService {
         sb.append("  {\"componentId\": \"23c33b4791934632b6cc8322d8b15fe3\", \"componentValue\": \"").append(escapeJson(contractNo)).append("\"},\n");
         // 单行文本10: 合同编号
         sb.append("  {\"componentId\": \"fe46bc6ad7c84533949d2c32e75c3182\", \"componentValue\": \"").append(escapeJson(contractNo)).append("\"},\n");
-        // 身份证号1
-        sb.append("  {\"componentId\": \"ba2d50d300394daba46764c3f7ca5aec\", \"componentValue\": \"").append(escapeJson(idCard)).append("\"},\n");
-        // 手机号1
-        sb.append("  {\"componentId\": \"520eaa1e2b634c0592937bd216a74cf5\", \"componentValue\": \"").append(escapeJson(phone)).append("\"},\n");
-        // ── 合同起始日期拆分 ──
-        sb.append("  {\"componentId\": \"0a17d6c252294058bef7a5959d0444e3\", \"componentValue\": \"").append(startYear).append("\"},\n");
-        sb.append("  {\"componentId\": \"873b2dca5ffd407c896bc42266b590e2\", \"componentValue\": \"").append(startMonth).append("\"},\n");
-        sb.append("  {\"componentId\": \"31e87f7e9f1e4ec6a6d9db1301d65f6b\", \"componentValue\": \"").append(startDay).append("\"},\n");
+        // 身份证号1（空值跳过，避免 e签宝身份证控件校验失败）
+        if (!idCard.isEmpty()) {
+            sb.append("  {\"componentId\": \"ba2d50d300394daba46764c3f7ca5aec\", \"componentValue\": \"").append(escapeJson(idCard)).append("\"},\n");
+        }
+        // 手机号1（空值跳过）
+        if (!phone.isEmpty()) {
+            sb.append("  {\"componentId\": \"520eaa1e2b634c0592937bd216a74cf5\", \"componentValue\": \"").append(escapeJson(phone)).append("\"},\n");
+        }
+        // ── 合同起始日期拆分（数字控件，空值跳过）──
+        if (!startYear.isEmpty()) sb.append("  {\"componentId\": \"0a17d6c252294058bef7a5959d0444e3\", \"componentValue\": \"").append(startYear).append("\"},\n");
+        if (!startMonth.isEmpty()) sb.append("  {\"componentId\": \"873b2dca5ffd407c896bc42266b590e2\", \"componentValue\": \"").append(startMonth).append("\"},\n");
+        if (!startDay.isEmpty()) sb.append("  {\"componentId\": \"31e87f7e9f1e4ec6a6d9db1301d65f6b\", \"componentValue\": \"").append(startDay).append("\"},\n");
         // ── 合同终止日期拆分 ──
-        sb.append("  {\"componentId\": \"2ba6a017f99b42f7ad3a7b90b5f7e021\", \"componentValue\": \"").append(endYear).append("\"},\n");
-        sb.append("  {\"componentId\": \"75361beac8664e859fa090b9253b7ccf\", \"componentValue\": \"").append(endMonth).append("\"},\n");
-        sb.append("  {\"componentId\": \"6f93df14d68e4b9e80f58973b6b948e9\", \"componentValue\": \"").append(endDay).append("\"},\n");
-        // ── 签约日期拆分（当前日期）──
+        if (!endYear.isEmpty()) sb.append("  {\"componentId\": \"2ba6a017f99b42f7ad3a7b90b5f7e021\", \"componentValue\": \"").append(endYear).append("\"},\n");
+        if (!endMonth.isEmpty()) sb.append("  {\"componentId\": \"75361beac8664e859fa090b9253b7ccf\", \"componentValue\": \"").append(endMonth).append("\"},\n");
+        if (!endDay.isEmpty()) sb.append("  {\"componentId\": \"6f93df14d68e4b9e80f58973b6b948e9\", \"componentValue\": \"").append(endDay).append("\"},\n");
+        // ── 签约日期拆分（当前日期，理论上不会空）──
         sb.append("  {\"componentId\": \"682336d1a20744f888d18c38026cf1ba\", \"componentValue\": \"").append(signYear).append("\"},\n");
         sb.append("  {\"componentId\": \"a96cbcb2bb6c469dbce41f2896919423\", \"componentValue\": \"").append(signMonth).append("\"},\n");
         sb.append("  {\"componentId\": \"994019cb2cfb41a2ae832f8e106d5282\", \"componentValue\": \"").append(signDay).append("\"},\n");
@@ -478,36 +506,37 @@ public class EsignServiceImpl implements EsignService {
             {"晾衣架",       "0a638a08ce044b128809553f91b3e3bb"},   // 数字57
         };
 
-        // 一对一设施填充（无数据时留空）
+        // 一对一设施填充（无数据时跳过该控件，e签宝数字控件不接受空字符串）
         for (String[] mapping : facilityMapping) {
             int qty = facilityQtyMap.getOrDefault(mapping[0], 0);
-            String qtyStr = qty > 0 ? String.valueOf(qty) : "";
-            sb.append("  {\"componentId\": \"").append(mapping[1]).append("\", \"componentValue\": \"").append(qtyStr).append("\"},\n");
+            if (qty > 0) {
+                sb.append("  {\"componentId\": \"").append(mapping[1]).append("\", \"componentValue\": \"").append(qty).append("\"},\n");
+            }
         }
 
-        // 数字13: 电视（DB无此设施，留空）
-        sb.append("  {\"componentId\": \"df9310d42f124edf986744f92edc78aa\", \"componentValue\": \"\"},\n");
+        // 数字13: 电视（DB无此设施，跳过）
         // 数字33: 墙面（汇总: 客厅墙面+卧室墙面+厨房墙面+卫生间墙面）
         int wallQty = facilityQtyMap.getOrDefault("客厅墙面", 0)
                     + facilityQtyMap.getOrDefault("卧室墙面", 0)
                     + facilityQtyMap.getOrDefault("厨房墙面", 0)
                     + facilityQtyMap.getOrDefault("卫生间墙面", 0);
-        sb.append("  {\"componentId\": \"ab92c18d58614881aaf3bdec381920cd\", \"componentValue\": \"").append(wallQty > 0 ? wallQty : "").append("\"},\n");
+        if (wallQty > 0) {
+            sb.append("  {\"componentId\": \"ab92c18d58614881aaf3bdec381920cd\", \"componentValue\": \"").append(wallQty).append("\"},\n");
+        }
         // 数字34: 地板（DB: 房间地板）
         int floorQty = facilityQtyMap.getOrDefault("房间地板", 0);
-        sb.append("  {\"componentId\": \"3aaf69df97be45c6aca3ed0632b4dfba\", \"componentValue\": \"").append(floorQty > 0 ? floorQty : "").append("\"},\n");
-        // 数字35: 地毯（DB无此设施，留空）
-        sb.append("  {\"componentId\": \"fe9eaa91e1c64f30b8e503fc61fee38b\", \"componentValue\": \"\"},\n");
-        // 数字39: 密码锁（DB无此设施，留空）
-        sb.append("  {\"componentId\": \"bac3286c5f8046ed924291c2e4888ea1\", \"componentValue\": \"\"},\n");
-        // 数字41: 厨房推拉门（DB无此设施，留空）
-        sb.append("  {\"componentId\": \"cf3857e2240544819dad9c3501b7f139\", \"componentValue\": \"\"},\n");
+        if (floorQty > 0) {
+            sb.append("  {\"componentId\": \"3aaf69df97be45c6aca3ed0632b4dfba\", \"componentValue\": \"").append(floorQty).append("\"},\n");
+        }
+        // 数字35: 地毯 / 数字39: 密码锁 / 数字41: 厨房推拉门（DB无，跳过）
         // 数字42: 窗户（汇总: 客厅窗户+卧室窗户）
         int windowQty = facilityQtyMap.getOrDefault("客厅窗户", 0)
                       + facilityQtyMap.getOrDefault("卧室窗户", 0);
-        sb.append("  {\"componentId\": \"1c395eb1e2534fa0866976ce3d236a56\", \"componentValue\": \"").append(windowQty > 0 ? windowQty : "").append("\"},\n");
+        if (windowQty > 0) {
+            sb.append("  {\"componentId\": \"1c395eb1e2534fa0866976ce3d236a56\", \"componentValue\": \"").append(windowQty).append("\"},\n");
+        }
 
-        // ── 单行文本11: 项目地址 ──
+        // ── 单行文本11: 项目地址（文本控件可接受空字符串）──
         sb.append("  {\"componentId\": \"72bf22dc56d24723a715a1f2546346c2\", \"componentValue\": \"").append(escapeJson(projectAddress)).append("\"}\n");
 
         sb.append("]");
