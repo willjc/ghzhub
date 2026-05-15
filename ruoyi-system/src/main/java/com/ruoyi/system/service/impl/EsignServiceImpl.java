@@ -427,20 +427,21 @@ public class EsignServiceImpl implements EsignService {
         // ── 组装控件JSON ────────────────────────────────────────────────
         StringBuilder sb = new StringBuilder();
         sb.append("[\n");
-        // 单行文本3: 地址+房间号
-        sb.append("  {\"componentId\": \"ebfedbda264e446390801f1ba6ee96eb\", \"componentValue\": \"").append(escapeJson(addressWithRoom)).append("\"},\n");
-        // 单行文本4: 租金大写（中文大写金额）
-        sb.append("  {\"componentId\": \"37fdb4123afb45139912f5dc938d5e3c\", \"componentValue\": \"").append(escapeJson(rentPriceChinese)).append("\"},\n");
+        Long ctxContractId = contract.getContractId();
+        // 单行文本3: 地址+房间号（保守上限 50 字）
+        sb.append("  {\"componentId\": \"ebfedbda264e446390801f1ba6ee96eb\", \"componentValue\": \"").append(escapeJson(truncateForEsign(addressWithRoom, 50, "单行文本3-地址房号", ctxContractId))).append("\"},\n");
+        // 单行文本4: 租金大写（中文大写金额，保守上限 50 字）
+        sb.append("  {\"componentId\": \"37fdb4123afb45139912f5dc938d5e3c\", \"componentValue\": \"").append(escapeJson(truncateForEsign(rentPriceChinese, 50, "单行文本4-租金大写", ctxContractId))).append("\"},\n");
         // 数字1: 房租单价（元/平方米/月）
         sb.append("  {\"componentId\": \"d2a93cfe598449c49fac10a5c8d58f08\", \"componentValue\": \"").append(unitPrice).append("\"},\n");
         // 数字2: 每月租金
         sb.append("  {\"componentId\": \"ef7ed4f368094d19a52d45369994e7e7\", \"componentValue\": \"").append(monthlyRent).append("\"},\n");
         // 数字3: 房间平米数（面积）
         sb.append("  {\"componentId\": \"7af62cd84df944dba1d828dba66ae394\", \"componentValue\": \"").append(houseArea).append("\"},\n");
-        // 单行文本9: 合同编号
-        sb.append("  {\"componentId\": \"23c33b4791934632b6cc8322d8b15fe3\", \"componentValue\": \"").append(escapeJson(contractNo)).append("\"},\n");
-        // 单行文本10: 合同编号
-        sb.append("  {\"componentId\": \"fe46bc6ad7c84533949d2c32e75c3182\", \"componentValue\": \"").append(escapeJson(contractNo)).append("\"},\n");
+        // 单行文本9: 合同编号（保守上限 30 字）
+        sb.append("  {\"componentId\": \"23c33b4791934632b6cc8322d8b15fe3\", \"componentValue\": \"").append(escapeJson(truncateForEsign(contractNo, 30, "单行文本9-合同编号", ctxContractId))).append("\"},\n");
+        // 单行文本10: 合同编号（保守上限 30 字）
+        sb.append("  {\"componentId\": \"fe46bc6ad7c84533949d2c32e75c3182\", \"componentValue\": \"").append(escapeJson(truncateForEsign(contractNo, 30, "单行文本10-合同编号", ctxContractId))).append("\"},\n");
         // 身份证号1（空值跳过，避免 e签宝身份证控件校验失败）
         if (!idCard.isEmpty()) {
             sb.append("  {\"componentId\": \"ba2d50d300394daba46764c3f7ca5aec\", \"componentValue\": \"").append(escapeJson(idCard)).append("\"},\n");
@@ -537,7 +538,7 @@ public class EsignServiceImpl implements EsignService {
         }
 
         // ── 单行文本11: 项目地址（文本控件可接受空字符串）──
-        sb.append("  {\"componentId\": \"72bf22dc56d24723a715a1f2546346c2\", \"componentValue\": \"").append(escapeJson(projectAddress)).append("\"}\n");
+        sb.append("  {\"componentId\": \"72bf22dc56d24723a715a1f2546346c2\", \"componentValue\": \"").append(escapeJson(truncateForEsign(projectAddress, 20, "单行文本11-项目地址", ctxContractId))).append("\"}\n");
 
         sb.append("]");
         return sb.toString();
@@ -634,6 +635,23 @@ public class EsignServiceImpl implements EsignService {
     private String escapeJson(String str) {
         if (str == null) return "";
         return str.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+    }
+
+    /**
+     * e签宝模板「单行文本」控件长度防御性截断。
+     * 各控件在 e签宝模板内有独立的最大长度限制（如「单行文本11 项目地址」上限 20 字），
+     * 超长 e签宝会直接 400「填写内容长度超限」拒签。这里按字符截断并打 warn 日志，
+     * 后续若发现某字段被频繁截断，可推动运营在 e签宝模板侧调大上限或在数据源缩短文案。
+     *
+     * 字符长度近似按 String.length() 计算（一个汉字算 1，e签宝同一控件配置时
+     * 一般为 N 汉字 / 2N 字母数字，按汉字算最稳妥）。
+     */
+    private String truncateForEsign(String value, int maxLen, String fieldName, Long contractId) {
+        if (value == null || value.isEmpty()) return value;
+        if (value.length() <= maxLen) return value;
+        log.warn("e签宝模板控件[{}]内容超长被截断 contractId={} 原长度={} 截断为={} 原值=[{}]",
+                fieldName, contractId, value.length(), maxLen, value);
+        return value.substring(0, maxLen);
     }
 
     // ==================== 旧方法（保留兼容）====================
