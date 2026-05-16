@@ -215,19 +215,25 @@ public class WechatPayController extends BaseController {
                         houseOrderService.onDepositPaid(bill.getOrderNo());
                         logger.info("【微信回调】押金账单已触发 onDepositPaid，orderNo={}", bill.getOrderNo());
                     } else {
-                        // 直签合同模式：押金支付成功后，将房源状态从已预订改为已出租
+                        // 无预订单模式：押金支付成功后，将房源状态从已预订改为已出租
                         HzContract contract = contractMapper.selectById(bill.getContractId());
                         if (contract != null && contract.getHouseId() != null) {
                             houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
                                 .eq(HzHouse::getHouseId, contract.getHouseId())
                                 .eq(HzHouse::getHouseStatus, "1")
                                 .set(HzHouse::getHouseStatus, "2"));
-                            // 合同状态推进到 '3'（履行中）
-                            contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
-                                .eq(HzContract::getContractId, contract.getContractId())
-                                .set(HzContract::getContractStatus, "3"));
-                            logger.info("【微信回调】直签合同押金支付成功，房源状态→已出租，合同状态→履行中, contractId={}", contract.getContractId());
+                            logger.info("【微信回调】无预订单模式押金支付成功，房源状态→已出租, contractId={}", contract.getContractId());
                         }
+                    }
+                }
+
+                // 合同状态推进：押金 + 首期租金均付清才进入「3 履行中」
+                // 调用统一方法，由其内部判断双条件是否齐全（兼顾"先押金后租金"和"先租金后押金"两种顺序）
+                if ("1".equals(bill.getBillType()) || "2".equals(bill.getBillType())) {
+                    try {
+                        houseOrderService.tryAdvanceContractToFulfilling(bill.getContractId());
+                    } catch (Exception advEx) {
+                        logger.warn("【微信回调】tryAdvanceContractToFulfilling 失败，不影响主流程: {}", advEx.getMessage());
                     }
                 }
             }
@@ -309,18 +315,24 @@ public class WechatPayController extends BaseController {
                     if (bill.getOrderNo() != null) {
                         houseOrderService.onDepositPaid(bill.getOrderNo());
                     } else {
-                        // 直签合同模式：押金支付成功后，将房源状态从已预订改为已出租
+                        // 无预订单模式：押金支付成功后，将房源状态从已预订改为已出租
                         HzContract contract = contractMapper.selectById(bill.getContractId());
                         if (contract != null && contract.getHouseId() != null) {
                             houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
                                 .eq(HzHouse::getHouseId, contract.getHouseId())
                                 .eq(HzHouse::getHouseStatus, "1")
                                 .set(HzHouse::getHouseStatus, "2"));
-                            contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
-                                .eq(HzContract::getContractId, contract.getContractId())
-                                .set(HzContract::getContractStatus, "3"));
-                            logger.info("主动查单同步-直签合同押金支付成功，房源状态→已出租，合同状态→履行中, contractId={}", contract.getContractId());
+                            logger.info("主动查单同步-无预订单模式押金支付成功，房源状态→已出租, contractId={}", contract.getContractId());
                         }
+                    }
+                }
+
+                // 合同状态推进：押金 + 首期租金均付清才进入「3 履行中」
+                if ("1".equals(bill.getBillType()) || "2".equals(bill.getBillType())) {
+                    try {
+                        houseOrderService.tryAdvanceContractToFulfilling(bill.getContractId());
+                    } catch (Exception advEx) {
+                        logger.warn("主动查单同步-tryAdvanceContractToFulfilling 失败，不影响主流程: {}", advEx.getMessage());
                     }
                 }
 

@@ -289,6 +289,48 @@ public class HzHouseOrderServiceImpl
         }
     }
 
+    @Override
+    public void tryAdvanceContractToFulfilling(Long contractId) {
+        if (contractId == null) return;
+        HzContract contract = contractMapper.selectById(contractId);
+        if (contract == null) return;
+
+        // 仅允许从「1 待签署」或「2 已签署」推进，避免回退或对已履行/已到期/已解约/已超时合同二次推进
+        String cs = contract.getContractStatus();
+        if (!"1".equals(cs) && !"2".equals(cs)) return;
+
+        // 条件1：押金账单是否已付清（续租合同 contract_type='2' 没有押金账单，跳过此条件）
+        boolean depositOk;
+        if ("2".equals(contract.getContractType())) {
+            depositOk = true;
+        } else {
+            Long paidDeposit = billMapper.selectCount(new LambdaQueryWrapper<HzBill>()
+                    .eq(HzBill::getContractId, contractId)
+                    .eq(HzBill::getBillType, "1")
+                    .eq(HzBill::getBillStatus, "1")
+                    .eq(HzBill::getDelFlag, "0"));
+            depositOk = paidDeposit != null && paidDeposit > 0;
+        }
+        if (!depositOk) return;
+
+        // 条件2：首期租金账单是否已付清（按 bill_date 升序取第一条 bill_amount>0 的）
+        HzBill firstRent = billMapper.selectOne(new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, contractId)
+                .eq(HzBill::getBillType, "2")
+                .eq(HzBill::getDelFlag, "0")
+                .gt(HzBill::getBillAmount, BigDecimal.ZERO)
+                .orderByAsc(HzBill::getBillDate)
+                .last("LIMIT 1"));
+        if (firstRent == null || !"1".equals(firstRent.getBillStatus())) return;
+
+        // 双条件齐全 → 推进合同到「3 履行中」
+        contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                .eq(HzContract::getContractId, contractId)
+                .in(HzContract::getContractStatus, "1", "2")
+                .set(HzContract::getContractStatus, "3")
+                .set(HzContract::getUpdateTime, new Date()));
+    }
+
     /**
      * 生成预订单号：HO + 时间戳 + 4位随机数
      */

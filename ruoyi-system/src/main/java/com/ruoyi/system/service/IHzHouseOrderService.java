@@ -73,4 +73,18 @@ public interface IHzHouseOrderService extends IService<HzHouseOrder> {
      * 定时任务：处理已过期的预订单并释放房源
      */
     void processExpiredOrders();
+
+    /**
+     * 尝试将合同状态推进到「3 履行中」
+     * <p>
+     * 触发条件（双条件均满足才推进）：
+     * 1) 押金账单已支付（contract_type='2' 续租无押金账单时跳过此条件）
+     * 2) 首期租金账单已支付
+     * <p>
+     * 当前 contract_status 必须为 '1' 待签署 或 '2' 已签署，避免回退或重复。
+     * 调用方：押金支付回调、租金支付回调（兜住"先押金后租金"的尾部触发）。
+     *
+     * @param contractId 合同ID
+     */
+    void tryAdvanceContractToFulfilling(Long contractId);
 }
