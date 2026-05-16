@@ -50,6 +50,17 @@
           <el-option label="集中分配" value="集中分配" />
         </el-select>
       </el-form-item>
+      <el-form-item label="签约时间">
+        <el-date-picker
+          v-model="daterangeSignTime"
+          style="width: 240px"
+          value-format="yyyy-MM-dd"
+          type="daterange"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+        ></el-date-picker>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -464,7 +475,10 @@ export default {
         contractStatus: null,
         projectId: null,
         allocationType: null,
+        params: {}
       },
+      // 签约时间范围筛选 [开始日期, 结束日期]
+      daterangeSignTime: [],
       projectList: [],
     };
   },
@@ -573,6 +587,12 @@ export default {
     },
     getList() {
       this.loading = true;
+      // 把签约时间范围拼到 params 里，交给后端按 sign_time 字段过滤
+      this.queryParams.params = {};
+      if (this.daterangeSignTime && this.daterangeSignTime.length === 2) {
+        this.queryParams.params["beginSignTime"] = this.daterangeSignTime[0];
+        this.queryParams.params["endSignTime"] = this.daterangeSignTime[1];
+      }
       listContract(this.queryParams).then(response => {
         this.contractList = response.rows;
         this.total = response.total;
@@ -584,6 +604,7 @@ export default {
       this.getList();
     },
     resetQuery() {
+      this.daterangeSignTime = [];
       this.resetForm("queryForm");
       this.handleQuery();
     },
@@ -599,6 +620,12 @@ export default {
       this.multiple = !selection.length
     },
     handleExport() {
+      // 导出时也带上签约时间范围
+      this.queryParams.params = {};
+      if (this.daterangeSignTime && this.daterangeSignTime.length === 2) {
+        this.queryParams.params["beginSignTime"] = this.daterangeSignTime[0];
+        this.queryParams.params["endSignTime"] = this.daterangeSignTime[1];
+      }
       this.download('system/contract/export', {
         ...this.queryParams
       }, `contract_${new Date().getTime()}.xlsx`)

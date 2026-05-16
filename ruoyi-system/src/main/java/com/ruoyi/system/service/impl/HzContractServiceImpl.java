@@ -128,6 +128,18 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
                .eq(HzContract::getDelFlag, "0")
                .orderByDesc(HzContract::getCreateTime);
 
+        // 签约时间范围（前端 params.beginSignTime / endSignTime）
+        if (contract != null && contract.getParams() != null) {
+            Object begin = contract.getParams().get("beginSignTime");
+            Object end = contract.getParams().get("endSignTime");
+            if (begin != null && StringUtils.isNotEmpty(begin.toString())) {
+                wrapper.ge(HzContract::getSignTime, begin.toString() + " 00:00:00");
+            }
+            if (end != null && StringUtils.isNotEmpty(end.toString())) {
+                wrapper.le(HzContract::getSignTime, end.toString() + " 23:59:59");
+            }
+        }
+
         // 检查是否有 dataScope 参数
         if (contract != null && contract.getParams() != null && contract.getParams().containsKey("dataScope")) {
             String dataScope = (String) contract.getParams().get("dataScope");
@@ -183,6 +195,18 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
                .like(StringUtils.isNotEmpty(contract.getTenantName()), HzContract::getTenantName, contract.getTenantName())
                .eq(HzContract::getDelFlag, "0")
                .orderByDesc(HzContract::getContractId);
+
+        // 签约时间范围（前端 params.beginSignTime / endSignTime）
+        if (contract.getParams() != null) {
+            Object begin = contract.getParams().get("beginSignTime");
+            Object end = contract.getParams().get("endSignTime");
+            if (begin != null && StringUtils.isNotEmpty(begin.toString())) {
+                wrapper.ge(HzContract::getSignTime, begin.toString() + " 00:00:00");
+            }
+            if (end != null && StringUtils.isNotEmpty(end.toString())) {
+                wrapper.le(HzContract::getSignTime, end.toString() + " 23:59:59");
+            }
+        }
 
         // 配租方式筛选：batch_id 非空 或 remark 首段是"集中分配" -> 集中分配；否则常规分配
         String allocType = contract.getAllocationType();
