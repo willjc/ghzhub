@@ -42,6 +42,7 @@
           <el-option label="履行中" value="3" />
           <el-option label="已到期" value="4" />
           <el-option label="已解约" value="5" />
+          <el-option label="已失效" value="6" />
         </el-select>
       </el-form-item>
       <el-form-item label="配租方式" prop="allocationType">
@@ -117,7 +118,9 @@
           <el-tag v-else-if="scope.row.contractStatus === '2'" type="primary">已签署</el-tag>
           <el-tag v-else-if="scope.row.contractStatus === '3'" type="success">履行中</el-tag>
           <el-tag v-else-if="scope.row.contractStatus === '4'" type="danger">已到期</el-tag>
-          <el-tag v-else type="info">已解约</el-tag>
+          <el-tag v-else-if="scope.row.contractStatus === '5'" type="info">已解约</el-tag>
+          <el-tag v-else-if="scope.row.contractStatus === '6'" type="info">已失效</el-tag>
+          <el-tag v-else type="info">未知</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="配租方式" align="center" prop="allocationType" width="100">

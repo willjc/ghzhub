@@ -286,6 +286,15 @@ public class HzHouseOrderServiceImpl
             order.setUpdateTime(new Date());
             updateById(order);
             orderMapper.releaseHouse(order.getHouseId());
+
+            // 同步推关联合同到「6 超时失效」（仅从 0草稿/1待签署 推进，避免误改已签署/履行中等状态）
+            if (order.getContractId() != null && order.getContractId() > 0) {
+                contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                        .eq(HzContract::getContractId, order.getContractId())
+                        .in(HzContract::getContractStatus, "0", "1")
+                        .set(HzContract::getContractStatus, "6")
+                        .set(HzContract::getUpdateTime, new Date()));
+            }
         }
     }
 
