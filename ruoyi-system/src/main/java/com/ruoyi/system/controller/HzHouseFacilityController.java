@@ -6,8 +6,10 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzHouseFacility;
+import com.ruoyi.system.domain.HzHouseTypeFacility;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.service.IHzHouseFacilityService;
+import com.ruoyi.system.service.IHzHouseTypeFacilityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -29,21 +31,32 @@ public class HzHouseFacilityController extends BaseController
     @Autowired
     private HzHouseMapper hzHouseMapper;
 
+    @Autowired
+    private IHzHouseTypeFacilityService hzHouseTypeFacilityService;
+
     /**
-     * 查询房源设施列表（含fallback：新表无数据时解析旧字段）
+     * 查询房源设施列表（三级fallback：房源设施表 → 户型设施表 → 旧字段）
      */
     @PreAuthorize("@ss.hasPermi('gangzhu:house:list')")
     @GetMapping("/list/{houseId}")
     public AjaxResult list(@PathVariable("houseId") Long houseId)
     {
-        // 1. 优先查询新表
+        // 1. 优先查询房源设施新表
         List<HzHouseFacility> list = hzHouseFacilityService.selectByHouseId(houseId);
         if (list != null && !list.isEmpty()) {
             return success(list);
         }
 
-        // 2. 回退：查询旧 hz_house.facilities 字段
+        // 2. 回退：通过房源的户型ID查询户型设施表
         HzHouse house = hzHouseMapper.selectById(houseId);
+        if (house != null && house.getHouseTypeId() != null) {
+            List<HzHouseTypeFacility> typeList = hzHouseTypeFacilityService.selectByHouseTypeId(house.getHouseTypeId());
+            if (typeList != null && !typeList.isEmpty()) {
+                return success(typeList);
+            }
+        }
+
+        // 3. 再回退：查询旧 hz_house.facilities 字段
         if (house != null && house.getFacilities() != null && !house.getFacilities().isEmpty()) {
             String oldFacilities = house.getFacilities();
             List<Map<String, Object>> result = new ArrayList<>();
