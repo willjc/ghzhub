@@ -108,11 +108,18 @@ export default {
 			if (options.type) {
 				this.housingType = options.type
 			}
-			if (options.data) {
+			// 优先从 Storage 读取设施数据（由 checkin-confirm 页面存入）
+			const storedEquipment = uni.getStorageSync('checkin_equipment_list')
+			if (storedEquipment && Array.isArray(storedEquipment) && storedEquipment.length > 0) {
+				this.equipmentList = storedEquipment
+				uni.removeStorageSync('checkin_equipment_list') // 用完即删
+				console.log('入住确认模式，从Storage读取设备列表:', this.equipmentList.length, '条')
+			} else if (options.data) {
+				// 兼容旧的 URL 参数传递方式
 				try {
 					const data = JSON.parse(decodeURIComponent(options.data))
 					this.equipmentList = data.equipmentList || []
-					console.log('入住确认模式，接收到的设备列表:', this.equipmentList)
+					console.log('入住确认模式，从URL参数接收设备列表:', this.equipmentList)
 				} catch (e) {
 					console.error('解析设备数据失败:', e)
 				}

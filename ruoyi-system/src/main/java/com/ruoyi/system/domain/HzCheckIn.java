@@ -99,6 +99,10 @@ public class HzCheckIn extends BaseEntity {
     @TableField("tenant_signature")
     private String tenantSignature;
 
+    /** 用户确认的设施快照(JSON) */
+    @TableField("confirmed_facilities")
+    private String confirmedFacilities;
+
     /** 管理员签名 */
     @TableField("manager_signature")
     private String managerSignature;
@@ -353,6 +357,14 @@ public class HzCheckIn extends BaseEntity {
 
     public String getTenantSignature() {
         return tenantSignature;
+    }
+
+    public void setConfirmedFacilities(String confirmedFacilities) {
+        this.confirmedFacilities = confirmedFacilities;
+    }
+
+    public String getConfirmedFacilities() {
+        return confirmedFacilities;
     }
 
     public void setManagerSignature(String managerSignature) {

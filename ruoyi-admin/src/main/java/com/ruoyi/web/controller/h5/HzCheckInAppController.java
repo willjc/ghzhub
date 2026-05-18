@@ -687,16 +687,10 @@ public class HzCheckInAppController extends BaseController {
             checkIn.setTenantSignature(signatureUrl);
             checkIn.setCheckinTime(DateUtils.getTime());
 
-            // 保存用户选择的配套设施（JSON格式）
+            // 保存用户选择的配套设施（JSON格式）到独立字段
             if (params.get("selectedFacilities") != null) {
-                // 将设施信息保存到remark，原有remark保留，追加设施信息
                 String facilitiesJson = params.get("selectedFacilities").toString();
-                String existingRemark = checkIn.getRemark();
-                if (existingRemark != null && !existingRemark.isEmpty()) {
-                    checkIn.setRemark(existingRemark + " | 设施确认：" + facilitiesJson);
-                } else {
-                    checkIn.setRemark("设施确认：" + facilitiesJson);
-                }
+                checkIn.setConfirmedFacilities(facilitiesJson);
             }
 
             // 更新状态为已入住确认

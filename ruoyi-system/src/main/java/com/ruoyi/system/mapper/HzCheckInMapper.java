@@ -35,7 +35,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  c.audit_by, c.audit_time, c.audit_remark, c.checkin_time, " +
             "  c.meter_reading_electric, c.meter_reading_water, c.meter_reading_gas, " +
             "  c.key_count, c.inventory_list_id, c.checkin_photos, " +
-            "  c.tenant_signature, c.manager_signature, c.manager_id, c.manager_name, " +
+            "  c.tenant_signature, c.confirmed_facilities, c.manager_signature, c.manager_id, c.manager_name, " +
             "  c.status, c.create_by, c.create_time, c.update_by, c.update_time, c.remark, c.del_flag, " +
             "  ct.contract_no AS contractNo, " +
             "  u.nickname AS tenantNickname, " +
@@ -80,7 +80,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  c.audit_by, c.audit_time, c.audit_remark, c.checkin_time, " +
             "  c.meter_reading_electric, c.meter_reading_water, c.meter_reading_gas, " +
             "  c.key_count, c.inventory_list_id, c.checkin_photos, " +
-            "  c.tenant_signature, c.manager_signature, c.manager_id, c.manager_name, " +
+            "  c.tenant_signature, c.confirmed_facilities, c.manager_signature, c.manager_id, c.manager_name, " +
             "  c.status, c.create_by, c.create_time, c.update_by, c.update_time, c.remark, c.del_flag, " +
             "  ct.contract_no AS contractNo, " +
             "  u.nickname AS tenantNickname, " +
@@ -115,7 +115,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  c.audit_by, c.audit_time, c.audit_remark, c.checkin_time, " +
             "  c.meter_reading_electric, c.meter_reading_water, c.meter_reading_gas, " +
             "  c.key_count, c.inventory_list_id, c.checkin_photos, " +
-            "  c.tenant_signature, c.manager_signature, c.manager_id, c.manager_name, " +
+            "  c.tenant_signature, c.confirmed_facilities, c.manager_signature, c.manager_id, c.manager_name, " +
             "  c.status, c.create_by, c.create_time, c.update_by, c.update_time, c.remark, c.del_flag, " +
             "  ct.contract_no AS contractNo, " +
             "  u.nickname AS tenantNickname, " +

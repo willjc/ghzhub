@@ -186,14 +186,14 @@
 
 			// 入住确认 - 跳转到签字页面
 			handleConfirm() {
-				// 准备传递给签字页面的数据
-				const confirmData = {
-					recordId: this.recordId
+				// 通过 Storage 传递设施数据（避免 URL 参数长度限制）
+				if (this.equipmentList && this.equipmentList.length > 0) {
+					uni.setStorageSync('checkin_equipment_list', this.equipmentList)
 				}
 
-				// 跳转到签字页面，传递数据
+				// 跳转到签字页面
 				uni.navigateTo({
-					url: `/pages/signature/index?type=${this.housingType}&recordId=${this.recordId}&data=${encodeURIComponent(JSON.stringify(confirmData))}`
+					url: `/pages/signature/index?type=${this.housingType}&recordId=${this.recordId}`
 				})
 			}
 		}

@@ -402,8 +402,8 @@ export default {
         if (this.detailForm.houseId) {
           this.loadFacilities(this.detailForm.houseId);
         }
-        // 解析用户确认的点验单（从remark字段）
-        this.confirmedFacilityGroups = this.parseConfirmedFacilities(this.detailForm.remark);
+        // 解析用户确认的点验单（从独立字段 confirmedFacilities）
+        this.confirmedFacilityGroups = this.parseConfirmedFacilities(this.detailForm.confirmedFacilities);
       });
     },
     /** 加载房间设施 */
@@ -432,15 +432,12 @@ export default {
       });
       return Object.keys(map).map(key => ({ category: key, items: map[key] }));
     },
-    /** 解析用户确认的点验单（从remark中的JSON） */
-    parseConfirmedFacilities(remark) {
-      if (!remark) return [];
+    /** 解析用户确认的点验单（从独立字段 confirmedFacilities） */
+    parseConfirmedFacilities(facilitiesJson) {
+      if (!facilitiesJson) return [];
       try {
-        // 格式：原备注 | 设施确认：[{...},{...}]
-        const match = remark.match(/设施确认：(.+)/);
-        if (!match) return [];
-        const list = JSON.parse(match[1]);
-        if (!Array.isArray(list)) return [];
+        const list = JSON.parse(facilitiesJson);
+        if (!Array.isArray(list) || list.length === 0) return [];
         return this.groupFacilities(list);
       } catch (e) {
         console.error('解析点验单设施JSON失败:', e);
