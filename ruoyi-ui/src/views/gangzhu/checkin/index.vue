@@ -234,6 +234,38 @@
         </div>
       </div>
 
+      <!-- 用户确认的点验单（仅已入住确认状态展示） -->
+      <div class="detail-section" v-if="detailForm.status === '4' && confirmedFacilityGroups.length > 0">
+        <div class="detail-section-title">用户确认的点验单</div>
+        <div class="detail-section-body">
+          <div v-for="group in confirmedFacilityGroups" :key="'cf_' + group.category" style="margin-bottom: 8px;">
+            <span style="font-weight: bold; margin-right: 8px;">{{ group.category }}：</span>
+            <el-tag
+              v-for="(item, idx) in group.items"
+              :key="idx"
+              :type="item.status === '完好' ? 'success' : (item.status === '破损' ? 'danger' : 'info')"
+              size="small"
+              style="margin-right: 6px; margin-bottom: 4px;"
+            >
+              {{ item.name }}×{{ item.quantity || 1 }}({{ item.status || '未知' }})
+            </el-tag>
+          </div>
+        </div>
+      </div>
+
+      <!-- 租户签名 -->
+      <div class="detail-section" v-if="detailForm.tenantSignature">
+        <div class="detail-section-title">租户签名</div>
+        <div class="detail-section-body">
+          <el-image
+            :src="baseUrl + detailForm.tenantSignature"
+            style="max-width: 300px; max-height: 150px; border: 1px solid #eee; border-radius: 4px;"
+            fit="contain"
+            :preview-src-list="[baseUrl + detailForm.tenantSignature]"
+          />
+        </div>
+      </div>
+
       <div slot="footer" class="dialog-footer">
         <el-button @click="detailOpen = false">关 闭</el-button>
       </div>
@@ -287,6 +319,7 @@ export default {
       baseUrl: process.env.VUE_APP_BASE_API,
       facilityLoading: false,
       facilityGroups: [],
+      confirmedFacilityGroups: [],  // 用户确认时的设施快照（从remark解析）
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -361,6 +394,7 @@ export default {
     handleDetail(row) {
       const recordId = row.recordId;
       this.facilityGroups = [];
+      this.confirmedFacilityGroups = [];
       getCheckIn(recordId).then(response => {
         this.detailForm = response.data;
         this.detailOpen = true;
@@ -368,6 +402,8 @@ export default {
         if (this.detailForm.houseId) {
           this.loadFacilities(this.detailForm.houseId);
         }
+        // 解析用户确认的点验单（从remark字段）
+        this.confirmedFacilityGroups = this.parseConfirmedFacilities(this.detailForm.remark);
       });
     },
     /** 加载房间设施 */
@@ -395,6 +431,21 @@ export default {
         });
       });
       return Object.keys(map).map(key => ({ category: key, items: map[key] }));
+    },
+    /** 解析用户确认的点验单（从remark中的JSON） */
+    parseConfirmedFacilities(remark) {
+      if (!remark) return [];
+      try {
+        // 格式：原备注 | 设施确认：[{...},{...}]
+        const match = remark.match(/设施确认：(.+)/);
+        if (!match) return [];
+        const list = JSON.parse(match[1]);
+        if (!Array.isArray(list)) return [];
+        return this.groupFacilities(list);
+      } catch (e) {
+        console.error('解析点验单设施JSON失败:', e);
+        return [];
+      }
     },
     /** 审核功能 */
     handleAudit(row, status) {
