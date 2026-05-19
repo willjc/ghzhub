@@ -253,12 +253,10 @@ public class HzDocumentController extends BaseController {
                 orderService.onDocumentsApproved(existDocument.getTenantId());
             }
         } else if (result > 0 && "2".equals(document.getAuditStatus())) {
-            // 发送资料驳回消息（含拒绝原因，引导用户重传）
+            // 发送资料驳回消息（直接用驳回原因作为消息内容）
             try {
-                String docTypeLabel = getDocTypeLabel(existDocument.getDocumentType());
-                String reason = document.getAuditOpinion() != null ? document.getAuditOpinion() : "";
-                String content = "您的" + docTypeLabel + "审核未通过：" + reason + "，请尽快前往「资料上传」重新提交。";
-                messageService.sendMessage(existDocument.getTenantId(), "system", "资料审核未通过", content);
+                String reason = document.getAuditOpinion() != null ? document.getAuditOpinion() : "资料审核未通过";
+                messageService.sendMessage(existDocument.getTenantId(), "system", "资料审核未通过", reason);
             } catch (Exception msgEx) {
                 logger.warn("发送资料驳回消息失败: {}", msgEx.getMessage());
             }
