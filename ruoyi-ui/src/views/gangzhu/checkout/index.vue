@@ -182,12 +182,12 @@
         <el-row>
           <el-col :span="8">
             <el-form-item label="月租金">
-              <span style="color: #f56c6c; font-weight: bold;">¥{{ currentForm.rentPrice }}</span>
+              <span style="color: #f56c6c; font-weight: bold;">¥{{ fmt(currentForm.rentPrice) }}</span>
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="押金">
-              <span style="color: #f56c6c; font-weight: bold;">¥{{ currentForm.deposit }}</span>
+              <span style="color: #f56c6c; font-weight: bold;">¥{{ fmt(currentForm.deposit) }}</span>
             </el-form-item>
           </el-col>
         </el-row>
@@ -200,18 +200,18 @@
           <el-table-column label="账单期" align="center" prop="billPeriod" width="100" />
           <el-table-column label="账单金额" align="right" prop="billAmount" width="100">
             <template slot-scope="scope">
-              ¥{{ scope.row.billAmount }}
+              ¥{{ fmt(scope.row.billAmount) }}
             </template>
           </el-table-column>
           <el-table-column label="已付金额" align="right" prop="paidAmount" width="100">
             <template slot-scope="scope">
-              ¥{{ scope.row.paidAmount }}
+              ¥{{ fmt(scope.row.paidAmount) }}
             </template>
           </el-table-column>
           <el-table-column label="未付金额" align="right" prop="unpaidAmount" width="100">
             <template slot-scope="scope">
               <span :style="{ color: scope.row.unpaidAmount > 0 ? '#f56c6c' : '#67c23a' }">
-                ¥{{ scope.row.unpaidAmount }}
+                ¥{{ fmt(scope.row.unpaidAmount) }}
               </span>
             </template>
           </el-table-column>
@@ -442,11 +442,11 @@
         <el-descriptions-item label="租期">{{ detailForm.rentMonths || 0 }} 个月</el-descriptions-item>
         <el-descriptions-item label="缴费周期">{{ detailForm.paymentCycleText || '-' }}</el-descriptions-item>
         <el-descriptions-item label="月租金">
-          <span v-if="detailForm.rentPrice" style="color: #f56c6c; font-weight: bold;">¥{{ detailForm.rentPrice }}</span>
+          <span v-if="detailForm.rentPrice" style="color: #f56c6c; font-weight: bold;">¥{{ fmt(detailForm.rentPrice) }}</span>
           <span v-else>-</span>
         </el-descriptions-item>
         <el-descriptions-item label="押金">
-          <span v-if="detailForm.deposit" style="color: #f56c6c; font-weight: bold;">¥{{ detailForm.deposit }}</span>
+          <span v-if="detailForm.deposit" style="color: #f56c6c; font-weight: bold;">¥{{ fmt(detailForm.deposit) }}</span>
           <span v-else>-</span>
         </el-descriptions-item>
       </el-descriptions>
@@ -459,18 +459,18 @@
         <el-table-column label="账单期" align="center" prop="billPeriod" width="100" />
         <el-table-column label="账单金额" align="right" prop="billAmount" width="100">
           <template slot-scope="scope">
-            ¥{{ scope.row.billAmount }}
+            ¥{{ fmt(scope.row.billAmount) }}
           </template>
         </el-table-column>
         <el-table-column label="已付金额" align="right" prop="paidAmount" width="100">
           <template slot-scope="scope">
-            ¥{{ scope.row.paidAmount }}
+            ¥{{ fmt(scope.row.paidAmount) }}
           </template>
         </el-table-column>
         <el-table-column label="未付金额" align="right" prop="unpaidAmount" width="100">
           <template slot-scope="scope">
             <span :style="{ color: scope.row.unpaidAmount > 0 ? '#f56c6c' : '#67c23a' }">
-              ¥{{ scope.row.unpaidAmount }}
+              ¥{{ fmt(scope.row.unpaidAmount) }}
             </span>
           </template>
         </el-table-column>
@@ -535,7 +535,7 @@
           <span style="color: #67C23A; font-weight: bold;">¥{{ calculateRefundableRent(detailForm) }}</span>
         </el-descriptions-item>
         <el-descriptions-item label="应退总额">
-          <span style="font-size: 16px; color: #f56c6c; font-weight: bold;">¥{{ detailForm.refundAmount || 0 }}</span>
+          <span style="font-size: 16px; color: #f56c6c; font-weight: bold;">¥{{ fmt(detailForm.refundAmount) }}</span>
         </el-descriptions-item>
       </el-descriptions>
 
@@ -712,18 +712,28 @@ export default {
     },
     // 计算账单总金额
     totalBillAmount() {
-      return this.billList.reduce((sum, bill) => sum + (bill.billAmount || 0), 0);
+      const sum = this.billList.reduce((s, bill) => s + Number(bill.billAmount || 0), 0);
+      return sum.toFixed(2);
     },
     // 计算已付金额
     totalPaidAmount() {
-      return this.billList.reduce((sum, bill) => sum + (bill.paidAmount || 0), 0);
+      const sum = this.billList.reduce((s, bill) => s + Number(bill.paidAmount || 0), 0);
+      return sum.toFixed(2);
     },
     // 计算未付金额
     totalUnpaidAmount() {
-      return this.billList.reduce((sum, bill) => sum + (bill.unpaidAmount || 0), 0);
+      const sum = this.billList.reduce((s, bill) => s + Number(bill.unpaidAmount || 0), 0);
+      return sum.toFixed(2);
     }
   },
   methods: {
+    /** 格式化金额：保留两位小数 */
+    fmt(v) {
+      if (v === null || v === undefined || v === '') return '0.00';
+      const n = Number(v);
+      if (isNaN(n)) return '0.00';
+      return n.toFixed(2);
+    },
     /** 格式化房源信息 */
     formatHouseInfo(row) {
       const parts = [];
@@ -899,7 +909,8 @@ export default {
       });
 
       // 4. 统计应退租金总额
-      return refundableBills.reduce((sum, bill) => sum + (bill.paidAmount || 0), 0);
+      const sum = refundableBills.reduce((s, bill) => s + Number(bill.paidAmount || 0), 0);
+      return sum.toFixed(2);
     },
 
     // 审批通过

@@ -87,6 +87,9 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
     @Autowired
     private HzUnitMapper unitMapper;
 
+    @Autowired
+    private com.ruoyi.system.mapper.HzHouseTypeFacilityMapper houseTypeFacilityMapper;
+
     @Override
     public HzCheckoutApply selectCheckoutApplyByApplyId(Long applyId) {
         return checkoutApplyMapper.selectById(applyId);
@@ -181,7 +184,29 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                     vo.setArea(house.getArea());
                     vo.setOrientation(house.getOrientation());
                     vo.setDecoration(house.getDecoration());
-                    vo.setFacilities(house.getFacilities());
+
+                    // 设施：优先取房源 hz_house.facilities；为空则 fallback 户型 hz_house_type_facility
+                    String facilitiesStr = house.getFacilities();
+                    if ((facilitiesStr == null || facilitiesStr.trim().isEmpty()) && house.getHouseTypeId() != null) {
+                        try {
+                            List<com.ruoyi.system.domain.HzHouseTypeFacility> typeFacilities = houseTypeFacilityMapper.selectList(
+                                    new LambdaQueryWrapper<com.ruoyi.system.domain.HzHouseTypeFacility>()
+                                            .eq(com.ruoyi.system.domain.HzHouseTypeFacility::getHouseTypeId, house.getHouseTypeId())
+                                            .eq(com.ruoyi.system.domain.HzHouseTypeFacility::getDelFlag, "0"));
+                            if (typeFacilities != null && !typeFacilities.isEmpty()) {
+                                StringBuilder sb = new StringBuilder();
+                                for (com.ruoyi.system.domain.HzHouseTypeFacility f : typeFacilities) {
+                                    if (f.getFacilityName() == null || f.getFacilityName().trim().isEmpty()) continue;
+                                    if (sb.length() > 0) sb.append(",");
+                                    sb.append(f.getFacilityName().trim());
+                                }
+                                facilitiesStr = sb.toString();
+                            }
+                        } catch (Exception ex) {
+                            logger.warn("查询户型设施失败 houseTypeId={}", house.getHouseTypeId(), ex);
+                        }
+                    }
+                    vo.setFacilities(facilitiesStr);
 
                     // 获取项目信息
                     if (house.getProjectId() != null) {
