@@ -142,9 +142,10 @@ public class HzRefundController extends BaseController {
         }
 
         // 3. 拆分金额：押金部分 + 租金部分
-        // 兜底：当 apply.depositRefund 未保存（老数据 / 自动退款流程）时，从押金账单已付金额推断
+        // 兜底：当 apply.depositRefund 未保存（NULL 或 0，覆盖老数据 / 自动退款流程）时，从押金账单已付金额推断
         BigDecimal depositRefund;
-        if (apply.getDepositRefund() == null) {
+        if (apply.getDepositRefund() == null
+                || apply.getDepositRefund().compareTo(BigDecimal.ZERO) <= 0) {
             BigDecimal depositPaidGuess = BigDecimal.ZERO;
             LambdaQueryWrapper<HzBill> guessQuery = new LambdaQueryWrapper<>();
             guessQuery.eq(HzBill::getContractId, apply.getContractId())

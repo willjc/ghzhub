@@ -754,7 +754,7 @@ export default {
     // 计算建议的应退总额（供管理员参考）
     calculatedRefund() {
       // 应退押金：优先用管理员手填，否则合同押金
-      const depositRefund = (this.approveForm.depositRefund !== null && this.approveForm.depositRefund !== undefined)
+      const depositRefund = Number(this.approveForm.depositRefund) > 0
         ? Number(this.approveForm.depositRefund) : Number(this.currentForm.deposit || 0);
       const refundableRent = Number(this.refundableRent) || 0;
       const penalty = Number(this.approveForm.penaltyAmount || 0);
@@ -908,7 +908,7 @@ export default {
         damageDescription: row.damageDescription || '',
         approveOpinion: '',
         refundAmount: null, // 先设置为null，加载账单后会自动计算
-        depositRefund: (row.depositRefund !== null && row.depositRefund !== undefined) ? row.depositRefund : (row.deposit || 0) // 默认=合同押金
+        depositRefund: (row.depositRefund !== null && row.depositRefund !== undefined && Number(row.depositRefund) > 0) ? row.depositRefund : (row.deposit || 0) // 默认=合同押金（0 也视为未填，走兜底）
       };
 
       // 加载账单列表
@@ -940,7 +940,7 @@ export default {
     // 计算初始应退总额（在加载账单后调用）
     calculateInitialRefund() {
       // 应退押金：优先用 approveForm 已有值，否则用合同押金
-      const depositRefund = (this.approveForm.depositRefund !== null && this.approveForm.depositRefund !== undefined)
+      const depositRefund = Number(this.approveForm.depositRefund) > 0
         ? Number(this.approveForm.depositRefund) : Number(this.currentForm.deposit || 0);
 
       // 判断"未入住"
