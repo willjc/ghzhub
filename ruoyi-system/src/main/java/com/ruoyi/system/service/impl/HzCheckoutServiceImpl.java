@@ -155,6 +155,21 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
             // 复制签名信息
             vo.setTenantSignature(apply.getTenantSignature());
 
+            // 查入住状态，用于前端判断"未入住即退租"场景（取最新一条 hz_checkin）
+            if (apply.getContractId() != null) {
+                try {
+                    LambdaQueryWrapper<HzCheckIn> ciw = new LambdaQueryWrapper<>();
+                    ciw.eq(HzCheckIn::getContractId, apply.getContractId())
+                       .eq(HzCheckIn::getDelFlag, "0")
+                       .orderByDesc(HzCheckIn::getCreateTime)
+                       .last("LIMIT 1");
+                    HzCheckIn ci = checkInMapper.selectOne(ciw);
+                    vo.setCheckinStatus(ci == null ? null : ci.getStatus());
+                } catch (Exception ex) {
+                    logger.warn("查询入住状态失败 contractId={}", apply.getContractId(), ex);
+                }
+            }
+
             // 3. 查询合同信息
             if (apply.getContractId() != null) {
                 HzContract contract = contractMapper.selectById(apply.getContractId());
@@ -505,6 +520,7 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                .set(HzCheckoutApply::getMeterReadingGas, hzCheckoutApply.getMeterReadingGas())
                .set(HzCheckoutApply::getKeyReturned, hzCheckoutApply.getKeyReturned())
                .set(HzCheckoutApply::getRefundAmount, hzCheckoutApply.getRefundAmount())
+               .set(HzCheckoutApply::getDepositRefund, hzCheckoutApply.getDepositRefund())
                .set(HzCheckoutApply::getApproveOpinion, hzCheckoutApply.getApproveOpinion())
                .set(HzCheckoutApply::getApproveBy, approveBy)
                .set(HzCheckoutApply::getApproveTime, new java.util.Date())

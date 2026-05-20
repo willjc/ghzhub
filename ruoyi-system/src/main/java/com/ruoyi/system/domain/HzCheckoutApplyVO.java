@@ -176,6 +176,17 @@ public class HzCheckoutApplyVO {
     /** 租户签名（base64图片数据） */
     private String tenantSignature;
 
+    /** 入住状态：null/0=未提交入住，1=待审核，2=审核通过，3=审核拒绝；用于退租时判断"未入住" */
+    private String checkinStatus;
+
+    public String getCheckinStatus() {
+        return checkinStatus;
+    }
+
+    public void setCheckinStatus(String checkinStatus) {
+        this.checkinStatus = checkinStatus;
+    }
+
     // Getters and Setters
 
     public Long getApplyId() {

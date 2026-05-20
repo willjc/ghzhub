@@ -142,7 +142,28 @@ public class HzRefundController extends BaseController {
         }
 
         // 3. 拆分金额：押金部分 + 租金部分
-        BigDecimal depositRefund = apply.getDepositRefund() == null ? BigDecimal.ZERO : apply.getDepositRefund();
+        // 兜底：当 apply.depositRefund 未保存（老数据 / 自动退款流程）时，从押金账单已付金额推断
+        BigDecimal depositRefund;
+        if (apply.getDepositRefund() == null) {
+            BigDecimal depositPaidGuess = BigDecimal.ZERO;
+            LambdaQueryWrapper<HzBill> guessQuery = new LambdaQueryWrapper<>();
+            guessQuery.eq(HzBill::getContractId, apply.getContractId())
+                      .eq(HzBill::getBillType, "1")
+                      .eq(HzBill::getPayMethod, "wechat")
+                      .eq(HzBill::getBillStatus, "1")
+                      .eq(HzBill::getDelFlag, "0")
+                      .last("LIMIT 1");
+            HzBill guessBill = billMapper.selectOne(guessQuery);
+            if (guessBill != null) {
+                depositPaidGuess = guessBill.getPaidAmount() != null ? guessBill.getPaidAmount()
+                        : (guessBill.getBillAmount() != null ? guessBill.getBillAmount() : BigDecimal.ZERO);
+            }
+            // 推断的押金部分不超过应退总额
+            depositRefund = depositPaidGuess.compareTo(totalRefund) > 0 ? totalRefund : depositPaidGuess;
+            logger.warn("退款单 {} 未保存 deposit_refund，自动按押金账单已付推断为 {}", refundId, depositRefund);
+        } else {
+            depositRefund = apply.getDepositRefund();
+        }
         if (depositRefund.compareTo(BigDecimal.ZERO) < 0) {
             return error("应退押金不能为负数");
         }
