@@ -828,6 +828,8 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
             item.put("billStatus", bill.getBillStatus());
             item.put("billStatusText", getBillStatusText(bill.getBillStatus()));
             item.put("payTime", bill.getPayTime());
+            item.put("payMethod", bill.getPayMethod());
+            item.put("transactionNo", bill.getTransactionNo());
             resultList.add(item);
         }
 
