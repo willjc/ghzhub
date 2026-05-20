@@ -150,10 +150,55 @@
         <el-descriptions-item label="损坏扣款">{{ detailForm.damageDeduction || 0 }} 元</el-descriptions-item>
         <el-descriptions-item label="违约金">{{ detailForm.penaltyAmount || 0 }} 元</el-descriptions-item>
         <el-descriptions-item label="押金">{{ detailForm.deposit || 0 }} 元</el-descriptions-item>
+        <el-descriptions-item label="应退押金">
+          <span style="color: #67c23a; font-weight: bold;">¥{{ depositRefundAmount }}</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="应退租金">
+          <span style="color: #67c23a; font-weight: bold;">¥{{ rentRefundAmount }}</span>
+        </el-descriptions-item>
         <el-descriptions-item label="应退总额">
           <span style="font-size: 16px; color: #f56c6c; font-weight: bold;">¥{{ detailForm.refundAmount || 0 }}</span>
         </el-descriptions-item>
       </el-descriptions>
+
+      <!-- 退款拆分明细（按账单维度溯源） -->
+      <el-divider content-position="left">退款拆分明细</el-divider>
+      <el-alert
+        v-if="!depositBills.length && !paidRentBills.length"
+        title="未查询到该合同的已付账单（可能是历史数据或老合同）"
+        type="info" :closable="false" show-icon style="margin-bottom: 10px;">
+      </el-alert>
+      <el-table
+        v-else
+        :data="splitRows"
+        border size="small"
+        :show-summary="false"
+        style="width: 100%;">
+        <el-table-column label="账单号" prop="billNo" width="180" show-overflow-tooltip />
+        <el-table-column label="账单类型" prop="billTypeText" width="100" align="center">
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.billType === '1'" type="warning" size="mini">押金</el-tag>
+            <el-tag v-else type="info" size="mini">租金</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="原支付方式" prop="payMethod" width="100" align="center">
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.payMethod === 'wechat'" type="success" size="mini">微信</el-tag>
+            <el-tag v-else-if="scope.row.payMethod" type="info" size="mini">{{ scope.row.payMethod }}</el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="原付款金额" prop="paidAmount" width="110" align="right">
+          <template slot-scope="scope">¥{{ scope.row.paidAmount || 0 }}</template>
+        </el-table-column>
+        <el-table-column label="原微信交易号" prop="transactionNo" min-width="200" show-overflow-tooltip>
+          <template slot-scope="scope">{{ scope.row.transactionNo || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="付款时间" prop="payTime" width="160" />
+      </el-table>
+      <div v-if="splitRows.length" style="margin-top: 8px; color: #909399; font-size: 12px;">
+        提示：微信原路退款将按上述账单分别发起退款请求（押金笔退至原押金支付通道，租金笔退至对应租金账单）。
+      </div>
 
       <!-- 付款信息 -->
       <el-divider content-position="left">付款信息</el-divider>
@@ -214,6 +259,7 @@
 <script>
 import { listRefund, getRefund, submitPayment, wechatRefund, delRefund } from "@/api/gangzhu/refund";
 import { listProject } from "@/api/gangzhu/project";
+import { getContractBills } from "@/api/gangzhu/checkout";
 
 export default {
   name: "Refund",
@@ -237,6 +283,8 @@ export default {
       // 详情
       detailOpen: false,
       detailForm: {},
+      // 详情对应合同的账单列表（用于退款拆分溯源）
+      billList: [],
       // 付款信息
       paymentOpen: false,
       paymentForm: {
@@ -260,6 +308,39 @@ export default {
   created() {
     this.getList();
     this.getProjectList();
+  },
+  computed: {
+    // 应退押金（来自后端 hz_checkout_apply.deposit_refund）
+    depositRefundAmount() {
+      const v = Number(this.detailForm.depositRefund);
+      return Number.isFinite(v) && v > 0 ? v : 0;
+    },
+    // 应退租金 = 总应退 - 应退押金（保留 2 位）
+    rentRefundAmount() {
+      const total = Number(this.detailForm.refundAmount) || 0;
+      const rent = total - this.depositRefundAmount;
+      return rent > 0 ? Math.round(rent * 100) / 100 : 0;
+    },
+    // 已付押金账单（billType=1, billStatus=1）
+    depositBills() {
+      return (this.billList || []).filter(b => b.billType === '1' && b.billStatus === '1');
+    },
+    // 已付租金账单（billType=2, billStatus=1）
+    paidRentBills() {
+      return (this.billList || []).filter(b => b.billType === '2' && b.billStatus === '1');
+    },
+    // 退款拆分明细行（押金笔在前，租金笔按付款时间升序）
+    splitRows() {
+      const sortByTime = (a, b) => {
+        const ta = a.payTime ? new Date(a.payTime).getTime() : 0;
+        const tb = b.payTime ? new Date(b.payTime).getTime() : 0;
+        return ta - tb;
+      };
+      return [
+        ...this.depositBills.slice().sort(sortByTime),
+        ...this.paidRentBills.slice().sort(sortByTime)
+      ];
+    }
   },
   methods: {
     getProjectList() {
@@ -287,24 +368,70 @@ export default {
     handleDetail(row) {
       getRefund(row.refundId).then(response => {
         this.detailForm = response.data || {};
+        this.billList = [];
+        // 拉取合同账单列表用于退款拆分溯源
+        if (this.detailForm.contractId) {
+          getContractBills(this.detailForm.contractId).then(res => {
+            this.billList = res.data || [];
+          }).catch(() => {
+            this.billList = [];
+          });
+        }
         this.detailOpen = true;
       });
     },
     // 微信原路退款
     handleWechatRefund(row) {
-      this.$modal.confirm(
-        `确认通过微信原路退款 ¥${row.refundAmount} 元给租户吗？\n退款后状态将自动更新为"已退还"，操作不可撤销。`
-      ).then(() => {
-        const loading = this.$loading({ lock: true, text: '退款处理中...', background: 'rgba(0,0,0,0.7)' });
-        wechatRefund(row.refundId).then(res => {
-          loading.close();
-          this.$modal.msgSuccess(res.msg || '微信退款申请成功，预计2分钟内到账');
-          this.getList();
-        }).catch(err => {
-          loading.close();
-          // 后端 error() 返回的错误信息已由 request 拦截器弹出，此处无需额外提示
+      // 拉取账单明细组装弹窗文案，用于二次确认
+      const buildAndConfirm = (bills) => {
+        const depositBills = bills.filter(b => b.billType === '1' && b.billStatus === '1');
+        const rentBills = bills.filter(b => b.billType === '2' && b.billStatus === '1');
+        const lines = [];
+        lines.push(`合同编号：${row.contractNo || '-'}`);
+        lines.push(`总退款金额：¥${row.refundAmount} 元`);
+        if (depositBills.length || rentBills.length) {
+          lines.push('');
+          lines.push('将按以下账单原路退款：');
+          depositBills.forEach(b => {
+            lines.push(`  · 押金账单 ${b.billNo}：¥${b.paidAmount}（${b.payMethod === 'wechat' ? '微信' : (b.payMethod || '未知')}）`);
+          });
+          rentBills.forEach(b => {
+            lines.push(`  · 租金账单 ${b.billNo}：¥${b.paidAmount}（${b.payMethod === 'wechat' ? '微信' : (b.payMethod || '未知')}）`);
+          });
+        } else {
+          lines.push('');
+          lines.push('（未查询到已付账单明细，将直接按总额发起退款）');
+        }
+        lines.push('');
+        lines.push('退款后状态将自动更新为"已退还"，操作不可撤销。');
+        const message = lines.join('\n');
+        this.$confirm(message, '微信原路退款确认', {
+          confirmButtonText: '确认退款',
+          cancelButtonText: '取消',
+          type: 'warning',
+          customClass: 'refund-confirm-dialog',
+          dangerouslyUseHTMLString: false
+        }).then(() => {
+          const loading = this.$loading({ lock: true, text: '退款处理中...', background: 'rgba(0,0,0,0.7)' });
+          wechatRefund(row.refundId).then(res => {
+            loading.close();
+            this.$modal.msgSuccess(res.msg || '微信退款申请成功，预计2分钟内到账');
+            this.getList();
+          }).catch(() => {
+            loading.close();
+          });
+        }).catch(() => {});
+      };
+
+      if (row.contractId) {
+        getContractBills(row.contractId).then(res => {
+          buildAndConfirm(res.data || []);
+        }).catch(() => {
+          buildAndConfirm([]);
         });
-      }).catch(() => {});
+      } else {
+        buildAndConfirm([]);
+      }
     },
     // 提交付款信息
     handlePaymentInfo(row) {
@@ -363,5 +490,14 @@ export default {
 <style scoped>
 ::v-deep .el-divider__text {
   background-color: #f5f7fa;
+}
+</style>
+<style>
+.refund-confirm-dialog .el-message-box__message {
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 1.7;
+  max-height: 400px;
+  overflow-y: auto;
 }
 </style>

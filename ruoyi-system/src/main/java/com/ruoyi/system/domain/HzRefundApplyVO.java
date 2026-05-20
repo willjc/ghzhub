@@ -103,6 +103,9 @@ public class HzRefundApplyVO implements Serializable {
     /** 押金 */
     private BigDecimal deposit;
 
+    /** 应退押金（管理员审批时确定，退款拆分依据） */
+    private BigDecimal depositRefund;
+
     // ===== 付款信息 =====
     /** 付款方式（1=现金 2=支付宝 3=微信 4=银行转账） */
     private String paymentMethod;
@@ -342,6 +345,14 @@ public class HzRefundApplyVO implements Serializable {
 
     public void setDeposit(BigDecimal deposit) {
         this.deposit = deposit;
+    }
+
+    public BigDecimal getDepositRefund() {
+        return depositRefund;
+    }
+
+    public void setDepositRefund(BigDecimal depositRefund) {
+        this.depositRefund = depositRefund;
     }
 
     public String getPaymentMethod() {
