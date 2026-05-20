@@ -37,6 +37,12 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item label="退款类型" prop="refundType">
+        <el-select v-model="queryParams.refundType" placeholder="请选择类型" clearable style="width: 180px">
+          <el-option label="退租退款" value="checkout" />
+          <el-option label="入住超时自动退款" value="auto-cancel-checkin" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -50,6 +56,12 @@
     <el-table v-loading="loading" :data="refundList">
       <el-table-column label="退款编号" align="center" prop="refundNo" width="100" />
       <el-table-column label="合同编号" align="center" prop="contractNo" min-width="150" show-overflow-tooltip />
+      <el-table-column label="退款类型" align="center" prop="refundType" width="140">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.refundType === 'auto-cancel-checkin'" type="danger" size="small">入住超时自动退款</el-tag>
+          <el-tag v-else type="info" size="small">{{ scope.row.refundTypeText || '退租退款' }}</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="退款金额" align="center" prop="refundAmount" width="120">
         <template slot-scope="scope">
           <span style="color: #f56c6c; font-weight: bold;">{{ scope.row.refundAmount }}元</span>
@@ -219,7 +231,8 @@ export default {
         refundNo: null,
         contractNo: null,
         refundStatus: null,
-        projectId: null
+        projectId: null,
+        refundType: null
       },
       // 详情
       detailOpen: false,

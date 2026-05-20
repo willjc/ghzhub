@@ -46,13 +46,25 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
     private HzHouseMapper houseMapper;
 
     @Override
-    public TableDataInfo selectRefundList(Page<HzCheckoutApply> page, String refundNo, String contractNo, String refundStatus, Long projectId) {
+    public TableDataInfo selectRefundList(Page<HzCheckoutApply> page, String refundNo, String contractNo, String refundStatus, Long projectId, String refundType) {
         // 构建退租申请查询条件（已确认且有退款金额）
         LambdaQueryWrapper<HzCheckoutApply> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzCheckoutApply::getApplyStatus, "5")
                .isNotNull(HzCheckoutApply::getRefundAmount)
                .gt(HzCheckoutApply::getRefundAmount, BigDecimal.ZERO)
                .orderByDesc(HzCheckoutApply::getApproveTime);
+
+        // 退款类型过滤：通过 checkout_reason 区分
+        // - auto-cancel-checkin: 入住超时自动解约
+        // - checkout: 普通退租退款
+        if (refundType != null && !refundType.isEmpty()) {
+            if ("auto-cancel-checkin".equals(refundType)) {
+                wrapper.like(HzCheckoutApply::getCheckoutReason, "入住超时自动解约");
+            } else if ("checkout".equals(refundType)) {
+                wrapper.and(w -> w.isNull(HzCheckoutApply::getCheckoutReason)
+                        .or().notLike(HzCheckoutApply::getCheckoutReason, "入住超时自动解约"));
+            }
+        }
 
         // 退款编号（申请ID）过滤
         if (refundNo != null && !refundNo.isEmpty()) {
@@ -156,6 +168,15 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
         vo.setApproveBy(checkout.getApproveBy());
         vo.setApproveTime(checkout.getApproveTime());
         vo.setApproveOpinion(checkout.getApproveOpinion());
+
+        // 退款类型识别：根据 checkout_reason 区分
+        if (checkout.getCheckoutReason() != null && checkout.getCheckoutReason().contains("入住超时自动解约")) {
+            vo.setRefundType("auto-cancel-checkin");
+            vo.setRefundTypeText("入住超时自动退款");
+        } else {
+            vo.setRefundType("checkout");
+            vo.setRefundTypeText("退租退款");
+        }
 
         vo.setWaterFee(checkout.getWaterFee() != null ? checkout.getWaterFee() : BigDecimal.ZERO);
         vo.setElectricFee(checkout.getElectricFee() != null ? checkout.getElectricFee() : BigDecimal.ZERO);

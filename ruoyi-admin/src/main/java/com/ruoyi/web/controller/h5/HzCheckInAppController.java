@@ -65,6 +65,9 @@ public class HzCheckInAppController extends BaseController {
     @Autowired
     private com.ruoyi.system.service.IHzProjectService projectService;
 
+    @Autowired
+    private com.ruoyi.system.service.ISysConfigService sysConfigService;
+
     /**
      * 获取用户的房源列表（用于用户端"我的房源"页面）
      *
@@ -889,6 +892,123 @@ public class HzCheckInAppController extends BaseController {
         } catch (ParseException e) {
             logger.error("日期格式解析失败: " + chineseDate, e);
             return chineseDate; // 返回原值
+        }
+    }
+
+    /**
+     * 入住超时倒计时（小程序「入住办理」页面卡片显示）。
+     * 返回字段：
+     *   showCountdown - 是否显示倒计时（true=用户已付款且未提交入住申请且功能启用）
+     *   remainingSeconds - 剩余秒数（≤0 表示已超时）
+     *   totalSeconds  - 总倒计时秒数（如 72*3600）
+     *   deadline      - 截止时间字符串
+     *   timeoutHours  - 配置的超时小时数
+     */
+    @GetMapping("/countdown/{contractId}")
+    public AjaxResult getCheckinCountdown(@PathVariable("contractId") Long contractId) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("showCountdown", false);
+        data.put("remainingSeconds", 0);
+        data.put("totalSeconds", 0);
+        data.put("deadline", null);
+        data.put("timeoutHours", 72);
+
+        if (contractId == null) {
+            return AjaxResult.success(data);
+        }
+
+        // 1. 配置开关 + 启用日 + 超时小时数
+        String enabled = readCfg("auto.cancel.enabled", "false");
+        if (!"true".equalsIgnoreCase(enabled)) {
+            return AjaxResult.success(data);
+        }
+        String startDateStr = readCfg("auto.cancel.start-date", null);
+        if (startDateStr == null || startDateStr.isEmpty()) {
+            return AjaxResult.success(data);
+        }
+        int timeoutHours;
+        try {
+            timeoutHours = Integer.parseInt(readCfg("auto.cancel.timeout-hours", "72"));
+        } catch (NumberFormatException e) {
+            timeoutHours = 72;
+        }
+        data.put("timeoutHours", timeoutHours);
+        data.put("totalSeconds", timeoutHours * 3600);
+
+        // 2. 加载合同
+        HzContract contract = contractService.selectContractById(contractId);
+        if (contract == null || !"3".equals(contract.getContractStatus()) || "2".equals(contract.getDelFlag())) {
+            return AjaxResult.success(data);
+        }
+        // 启用日之后创建的合同才纳入
+        if (contract.getCreateTime() != null) {
+            try {
+                LocalDateTime startDate = LocalDateTime.parse(
+                        startDateStr.replace("T", " ").trim(),
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                LocalDateTime contractCreate = contract.getCreateTime().toInstant()
+                        .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+                if (contractCreate.isBefore(startDate)) {
+                    return AjaxResult.success(data);
+                }
+            } catch (Exception ignore) {
+                return AjaxResult.success(data);
+            }
+        }
+
+        // 3. 已提交过入住申请（status>=1）→ 永久豁免，不显示倒计时
+        Long submittedCount = checkInMapper.selectCount(new LambdaQueryWrapper<HzCheckIn>()
+                .eq(HzCheckIn::getContractId, contractId)
+                .ge(HzCheckIn::getStatus, "1")
+                .eq(HzCheckIn::getDelFlag, "0"));
+        if (submittedCount != null && submittedCount > 0) {
+            return AjaxResult.success(data);
+        }
+
+        // 4. 押金账单 pay_time（微信支付）作为起算点
+        HzBill depositBill = billMapper.selectOne(new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, contractId)
+                .eq(HzBill::getBillType, "1")
+                .eq(HzBill::getBillStatus, "1")
+                .eq(HzBill::getPayMethod, "wechat")
+                .eq(HzBill::getDelFlag, "0")
+                .last("LIMIT 1"));
+        if (depositBill == null || depositBill.getPayTime() == null || depositBill.getPayTime().isEmpty()) {
+            return AjaxResult.success(data);
+        }
+        // 5. 必须首期租金也已支付（否则不进倒计时阶段）
+        Long paidRent = billMapper.selectCount(new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, contractId)
+                .eq(HzBill::getBillType, "2")
+                .eq(HzBill::getBillStatus, "1")
+                .eq(HzBill::getPayMethod, "wechat")
+                .eq(HzBill::getDelFlag, "0"));
+        if (paidRent == null || paidRent == 0) {
+            return AjaxResult.success(data);
+        }
+
+        // 6. 计算剩余秒数
+        try {
+            LocalDateTime payTime = LocalDateTime.parse(
+                    depositBill.getPayTime().replace("T", " ").trim(),
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            LocalDateTime deadline = payTime.plusHours(timeoutHours);
+            long remaining = java.time.Duration.between(LocalDateTime.now(), deadline).getSeconds();
+            data.put("showCountdown", true);
+            data.put("remainingSeconds", Math.max(remaining, 0));
+            data.put("deadline", deadline.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        } catch (Exception e) {
+            logger.warn("计算入住倒计时失败 contractId={}: {}", contractId, e.getMessage());
+        }
+        return AjaxResult.success(data);
+    }
+
+    private String readCfg(String key, String defaultValue) {
+        try {
+            String v = sysConfigService.selectConfigByKey(key);
+            return (v == null || v.isEmpty()) ? defaultValue : v;
+        } catch (Exception e) {
+            return defaultValue;
         }
     }
 }

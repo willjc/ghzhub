@@ -49,6 +49,12 @@ public class HzRefundApplyVO implements Serializable {
     /** 退款状态文本 */
     private String refundStatusText;
 
+    /** 退款类型（checkout=退租退款 / auto-cancel-checkin=入住超时自动退款） */
+    private String refundType;
+
+    /** 退款类型文本 */
+    private String refundTypeText;
+
     /** 申请时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date applyTime;
@@ -200,6 +206,22 @@ public class HzRefundApplyVO implements Serializable {
 
     public void setRefundStatusText(String refundStatusText) {
         this.refundStatusText = refundStatusText;
+    }
+
+    public String getRefundType() {
+        return refundType;
+    }
+
+    public void setRefundType(String refundType) {
+        this.refundType = refundType;
+    }
+
+    public String getRefundTypeText() {
+        return refundTypeText;
+    }
+
+    public void setRefundTypeText(String refundTypeText) {
+        this.refundTypeText = refundTypeText;
     }
 
     public Date getApplyTime() {

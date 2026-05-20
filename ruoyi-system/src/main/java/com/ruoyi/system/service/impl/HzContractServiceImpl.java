@@ -7,20 +7,27 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.domain.HzCheckoutApply;
+import com.ruoyi.system.domain.HzCheckoutRecord;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzProject;
+import com.ruoyi.system.mapper.HzCheckInMapper;
 import com.ruoyi.system.mapper.HzCheckoutApplyMapper;
+import com.ruoyi.system.mapper.HzCheckoutRecordMapper;
 import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.service.IHzCheckoutService;
 import com.ruoyi.system.service.IHzContractService;
+import com.ruoyi.system.service.IHzUserMessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +50,15 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
 
     @Autowired
     private HzProjectMapper projectMapper;
+
+    @Autowired
+    private HzCheckInMapper checkInMapper;
+
+    @Autowired
+    private HzCheckoutRecordMapper checkoutRecordMapper;
+
+    @Autowired
+    private IHzUserMessageService messageService;
 
     @Override
     public HzContract selectContractById(Long contractId) {
@@ -329,5 +345,148 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
                     .eq(HzHouse::getHouseStatus, "1")
                     .set(HzHouse::getHouseStatus, "0"));
         }
+    }
+
+    /**
+     * 入住超时自动解约（DB 部分，事务）。
+     * 不调微信退款 API，仅完成数据库 6 件事并落地一条 hz_checkout_apply（applyStatus='5' 已完成）+
+     * hz_checkout_record（refundStatus='0' 待退还）。
+     * 调用方在事务外发起微信退款后，再调 markCheckoutRecordRefunded 把 refundStatus 改为 1。
+     */
+    @Override
+    @Transactional
+    public Long createAutoCancelCheckoutApplyTx(Long contractId, BigDecimal totalRefund, BigDecimal depositAmt) {
+        if (contractId == null) {
+            return null;
+        }
+        HzContract contract = baseMapper.selectById(contractId);
+        if (contract == null || !"3".equals(contract.getContractStatus()) || "2".equals(contract.getDelFlag())) {
+            // 已被其他流程处理（合同已不再是履行中）
+            return null;
+        }
+
+        Date now = new Date();
+        BigDecimal refundAmount = totalRefund != null ? totalRefund : BigDecimal.ZERO;
+        BigDecimal depositRefund = depositAmt != null ? depositAmt : BigDecimal.ZERO;
+
+        // 1. 写 hz_checkout_apply（applyStatus='5' 已完成，让退款管理页面能立即看到）
+        HzCheckoutApply apply = new HzCheckoutApply();
+        apply.setContractId(contractId);
+        apply.setTenantId(contract.getTenantId());
+        apply.setHouseId(contract.getHouseId());
+        apply.setApplyTime(now);
+        apply.setPlanCheckoutDate(now);
+        apply.setCheckoutReason("入住超时自动解约");
+        apply.setIsEarlyTermination("1");
+        apply.setApplyStatus("5");
+        apply.setApproveTime(now);
+        apply.setApproveBy("系统");
+        apply.setApproveOpinion("用户付款后超过 72 小时未提交入住申请，系统自动解约并原路退款");
+        apply.setDepositRefund(depositRefund);
+        apply.setRefundAmount(refundAmount);
+        apply.setPenaltyAmount(BigDecimal.ZERO);
+        apply.setUnpaidBills(BigDecimal.ZERO);
+        apply.setDamageDeduction(BigDecimal.ZERO);
+        apply.setWaterFee(BigDecimal.ZERO);
+        apply.setElectricFee(BigDecimal.ZERO);
+        apply.setGasFee(BigDecimal.ZERO);
+        apply.setHeatingFee(BigDecimal.ZERO);
+        apply.setPropertyFee(BigDecimal.ZERO);
+        apply.setDelFlag("0");
+        apply.setCreateBy("system-auto-cancel");
+        apply.setCreateTime(now);
+        checkoutApplyMapper.insert(apply);
+        Long applyId = apply.getApplyId();
+
+        // 2. 写 hz_checkout_record（refundStatus='0' 待退还，由事务外微信退款成功后改为 1）
+        HzCheckoutRecord record = new HzCheckoutRecord();
+        record.setApplyId(applyId);
+        record.setContractId(contractId);
+        record.setTenantId(contract.getTenantId());
+        record.setHouseId(contract.getHouseId());
+        record.setCheckoutDate(now);
+        record.setCheckoutTime(now);
+        record.setDepositRefund(depositRefund);
+        record.setUnpaidRent(BigDecimal.ZERO);
+        record.setPenaltyAmount(BigDecimal.ZERO);
+        record.setDamageDeduction(BigDecimal.ZERO);
+        record.setUtilityBill(BigDecimal.ZERO);
+        record.setRefundStatus("0");
+        record.setPaymentMethod("3"); // 3=微信
+        record.setPaymentRemark("入住超时系统自动退款，等待微信回调");
+        record.setManagerName("系统");
+        record.setDelFlag("0");
+        record.setCreateBy("system-auto-cancel");
+        record.setCreateTime(now);
+        checkoutRecordMapper.insert(record);
+
+        // 3. 合同状态改为已解约（5）
+        baseMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                .eq(HzContract::getContractId, contractId)
+                .set(HzContract::getContractStatus, "5"));
+
+        // 4. 释放房源
+        if (contract.getHouseId() != null) {
+            houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                    .eq(HzHouse::getHouseId, contract.getHouseId())
+                    .eq(HzHouse::getHouseStatus, "1")
+                    .set(HzHouse::getHouseStatus, "0"));
+        }
+
+        // 5. 软删该合同下的入住单（理论上 status>=1 已豁免，所以这里通常 0 行）
+        String cancelTimeStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(now);
+        checkInMapper.update(null, new LambdaUpdateWrapper<HzCheckIn>()
+                .eq(HzCheckIn::getContractId, contractId)
+                .eq(HzCheckIn::getDelFlag, "0")
+                .set(HzCheckIn::getDelFlag, "2")
+                .set(HzCheckIn::getStatus, "3")
+                .set(HzCheckIn::getCancelReason, "入住超时系统自动取消")
+                .set(HzCheckIn::getCancelTime, cancelTimeStr));
+
+        // 6. 站内消息
+        try {
+            String contractNo = contract.getContractNo() != null ? contract.getContractNo() : ("ID:" + contractId);
+            String title = "入住超时-合同已自动解约并退款";
+            String content = "您的合同" + contractNo + "因付款后超过 72 小时未提交入住申请，"
+                    + "系统已自动解约并发起原路退款，预计退款 "
+                    + refundAmount.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString()
+                    + " 元（押金+首期租金），微信退款将在 2 分钟内到账，如有疑问请联系管理员。";
+            messageService.sendMessage(contract.getTenantId(), "contract", title, content);
+        } catch (Exception ignore) {
+            // 消息发送失败不影响主流程
+        }
+
+        return applyId;
+    }
+
+    @Override
+    @Transactional
+    public void markCheckoutRecordRefunded(Long applyId, String paymentRemark) {
+        if (applyId == null) {
+            return;
+        }
+        Date now = new Date();
+        checkoutRecordMapper.update(null, new LambdaUpdateWrapper<HzCheckoutRecord>()
+                .eq(HzCheckoutRecord::getApplyId, applyId)
+                .set(HzCheckoutRecord::getRefundStatus, "1")
+                .set(HzCheckoutRecord::getRefundTime, now)
+                .set(HzCheckoutRecord::getPaymentMethod, "3")
+                .set(HzCheckoutRecord::getPaymentRemark, paymentRemark)
+                .set(HzCheckoutRecord::getUpdateBy, "system-auto-cancel")
+                .set(HzCheckoutRecord::getUpdateTime, now));
+    }
+
+    @Override
+    @Transactional
+    public void markCheckoutRecordRefundFailed(Long applyId, String paymentRemark) {
+        if (applyId == null) {
+            return;
+        }
+        Date now = new Date();
+        checkoutRecordMapper.update(null, new LambdaUpdateWrapper<HzCheckoutRecord>()
+                .eq(HzCheckoutRecord::getApplyId, applyId)
+                .set(HzCheckoutRecord::getPaymentRemark, paymentRemark)
+                .set(HzCheckoutRecord::getUpdateBy, "system-auto-cancel")
+                .set(HzCheckoutRecord::getUpdateTime, now));
     }
 }

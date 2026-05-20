@@ -116,4 +116,33 @@ public interface IHzContractService {
      * @param houseId 房源ID
      */
     void expireContractAndReleaseHouse(Long contractId, Long houseId);
+
+    /**
+     * 入住超时自动解约（DB 部分，事务内执行）。
+     * 包含：合同状态=5、释放房源、软删未办理的入住单、写 hz_checkout_apply（applyStatus='5'）、
+     *      写 hz_checkout_record（refundStatus='0' 待退还）、发站内消息。
+     * 不调用微信退款 API，由调用方在事务外发起退款，再调 markCheckoutRecordRefunded 更新记录。
+     *
+     * @param contractId   合同ID
+     * @param totalRefund  应退总额（押金 + 首期租金）
+     * @param depositAmt   押金金额（用于 hz_checkout_apply.deposit_refund 字段）
+     * @return 新建的 hz_checkout_apply.apply_id；如合同已被处理或不满足条件返回 null
+     */
+    Long createAutoCancelCheckoutApplyTx(Long contractId, java.math.BigDecimal totalRefund, java.math.BigDecimal depositAmt);
+
+    /**
+     * 标记退款已完成（事务内执行）。
+     *
+     * @param applyId       hz_checkout_apply.apply_id
+     * @param paymentRemark 备注（含退款单号）
+     */
+    void markCheckoutRecordRefunded(Long applyId, String paymentRemark);
+
+    /**
+     * 标记退款失败（事务内执行），refundStatus 仍保持 0=待退还，便于管理员在退款管理页面手动重试。
+     *
+     * @param applyId       hz_checkout_apply.apply_id
+     * @param paymentRemark 失败原因
+     */
+    void markCheckoutRecordRefundFailed(Long applyId, String paymentRemark);
 }

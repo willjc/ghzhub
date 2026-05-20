@@ -12,6 +12,15 @@ export function getCheckInList(tenantId) {
 }
 
 /**
+ * 入住超时倒计时（合同付款后 72 小时未办理入住将自动解约+退款）
+ * @param {Number} contractId 合同ID
+ * @returns {Object} { showCountdown, remainingSeconds, totalSeconds, deadline, timeoutHours }
+ */
+export function getCheckinCountdown(contractId) {
+  return get(`/h5/app/checkin/countdown/${contractId}`)
+}
+
+/**
  * 获取用户的已入住确认的入住单列表 (用于续租/退租页面)
  * @param {Number} tenantId 租户ID
  * @param {String} type 页面类型：renew=续租, checkout=退租

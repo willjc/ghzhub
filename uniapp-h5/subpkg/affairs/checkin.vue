@@ -53,6 +53,22 @@
 					<text class="info-value">{{ item.deposit }}</text>
 				</view>
 				
+				<!-- 倒计时条 - 待办理 (status=0) 且开启自动解约 -->
+				<view
+					class="countdown-bar"
+					v-if="item.statusCode === '0' && item.contractId && countdownMap[item.contractId] && countdownMap[item.contractId].showCountdown"
+					:class="getCountdownLevelClass(countdownMap[item.contractId].remainingSeconds, countdownMap[item.contractId].totalSeconds)"
+				>
+					<view class="countdown-header">
+						<text class="countdown-title">⏰ 入住办理倒计时</text>
+						<text class="countdown-time">{{ formatRemain(countdownMap[item.contractId].remainingSeconds) }}</text>
+					</view>
+					<view class="countdown-progress">
+						<view class="countdown-progress-inner" :style="{ width: getProgressWidth(countdownMap[item.contractId].remainingSeconds, countdownMap[item.contractId].totalSeconds) }"></view>
+					</view>
+					<text class="countdown-tip">超时未办理将自动解约并原路退还押金及首期租金</text>
+				</view>
+
 				<!-- 按钮区域 - 待办理 (status=0) -->
 				<view class="button-group" v-if="item.statusCode === '0'">
 					<view
@@ -105,7 +121,7 @@
 </template>
 
 <script>
-	import { getCheckInList, cancelCheckIn } from '@/api/checkin.js'
+	import { getCheckInList, cancelCheckIn, getCheckinCountdown } from '@/api/checkin.js'
 	import { checkinCheck } from '@/api/order'
 	import authCheck from '@/mixins/authCheck'
 
@@ -123,6 +139,8 @@
 				checkinBlockMsg: '',
 				checkinRemainSeconds: 0,
 				_checkinTimer: null,
+				countdownMap: {}, // { contractId: { showCountdown, remainingSeconds, totalSeconds, deadline, timeoutHours } }
+				_countdownTimer: null,
 
 				statusClassMap: {
 					'pending': 'status-pending',
@@ -147,6 +165,7 @@
 		},
 		onUnload() {
 			if (this._checkinTimer) clearInterval(this._checkinTimer)
+			if (this._countdownTimer) clearInterval(this._countdownTimer)
 		},
 		onShow() {
 			// 每次页面显示时重新加载列表数据，确保显示最新状态
@@ -168,6 +187,8 @@
 						this.checkinList = response.data.map(item => {
 							return this.convertCheckInData(item)
 						})
+						// 加载倒计时数据（仅 status=0 待办理项）
+						this.loadCountdowns()
 					} else {
 						this.checkinList = []
 					}
@@ -208,6 +229,7 @@
 
 				return {
 					recordId: item.recordId,
+					contractId: item.contractId,
 					checkinNo: item.checkinNo,
 					status: statusMap[item.status] || 'pending',
 					statusCode: item.status,
@@ -358,6 +380,94 @@
 			},
 			showBlockReason() {
 				uni.showToast({ title: this.checkinBlockMsg || '请先满足入住条件', icon: 'none', duration: 2500 })
+			},
+
+			// 加载倒计时数据（针对所有 status=0 的合同）
+			async loadCountdowns() {
+				try {
+					const targets = this.checkinList.filter(it => it.statusCode === '0' && it.contractId)
+					if (targets.length === 0) {
+						this.countdownMap = {}
+						this.stopCountdownTick()
+						return
+					}
+					const map = {}
+					for (const it of targets) {
+						try {
+							const res = await getCheckinCountdown(it.contractId)
+							if (res && res.code === 200 && res.data) {
+								map[it.contractId] = {
+									showCountdown: !!res.data.showCountdown,
+									remainingSeconds: Number(res.data.remainingSeconds) || 0,
+									totalSeconds: Number(res.data.totalSeconds) || 0,
+									deadline: res.data.deadline,
+									timeoutHours: res.data.timeoutHours
+								}
+							}
+						} catch (e) {
+							// 单条失败不影响其他
+							console.warn('countdown 加载失败 contractId=' + it.contractId, e)
+						}
+					}
+					this.countdownMap = map
+					this.startCountdownTick()
+				} catch (e) {
+					console.error('loadCountdowns 失败', e)
+				}
+			},
+
+			// 启动每秒递减定时器
+			startCountdownTick() {
+				if (this._countdownTimer) clearInterval(this._countdownTimer)
+				this._countdownTimer = setInterval(() => {
+					let hasActive = false
+					const map = { ...this.countdownMap }
+					Object.keys(map).forEach(k => {
+						const c = map[k]
+						if (c && c.showCountdown && c.remainingSeconds > 0) {
+							c.remainingSeconds = c.remainingSeconds - 1
+							hasActive = true
+						}
+					})
+					this.countdownMap = map
+					if (!hasActive) this.stopCountdownTick()
+				}, 1000)
+			},
+
+			stopCountdownTick() {
+				if (this._countdownTimer) {
+					clearInterval(this._countdownTimer)
+					this._countdownTimer = null
+				}
+			},
+
+			// 格式化剩余时间：>=1h 显示 X时X分；<1h 显示 X分X秒
+			formatRemain(s) {
+				if (!s || s <= 0) return '已超时'
+				const h = Math.floor(s / 3600)
+				const m = Math.floor((s % 3600) / 60)
+				const sec = s % 60
+				if (h > 0) return `${h}小时${m}分钟`
+				if (m > 0) return `${m}分${sec}秒`
+				return `${sec}秒`
+			},
+
+			// 进度条宽度（剩余/总）
+			getProgressWidth(remaining, total) {
+				if (!total || total <= 0) return '0%'
+				let p = (remaining / total) * 100
+				if (p < 0) p = 0
+				if (p > 100) p = 100
+				return p.toFixed(2) + '%'
+			},
+
+			// 倒计时颜色级别：>50% 蓝、24h~50% 黄、<24h 红
+			getCountdownLevelClass(remaining, total) {
+				if (!remaining || remaining <= 0) return 'countdown-danger'
+				const ratio = total > 0 ? remaining / total : 0
+				if (remaining < 24 * 3600) return 'countdown-danger'
+				if (ratio < 0.5) return 'countdown-warning'
+				return 'countdown-normal'
 			},
 		}
 	}
@@ -531,5 +641,76 @@
 		color: #999999;
 		font-size: 28rpx;
 	}
+
+	/* 倒计时条 */
+	.countdown-bar {
+		margin-top: 20rpx;
+		padding: 18rpx 20rpx;
+		border-radius: 12rpx;
+		border: 1rpx solid #e6f4ff;
+		background: #f0f8ff;
+	}
+
+	.countdown-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 12rpx;
+	}
+
+	.countdown-title {
+		font-size: 24rpx;
+		color: #333;
+	}
+
+	.countdown-time {
+		font-size: 26rpx;
+		font-weight: 600;
+		color: #1281ff;
+	}
+
+	.countdown-progress {
+		width: 100%;
+		height: 8rpx;
+		background: #e6e6e6;
+		border-radius: 4rpx;
+		overflow: hidden;
+	}
+
+	.countdown-progress-inner {
+		height: 100%;
+		background: #1281ff;
+		transition: width 0.6s linear;
+	}
+
+	.countdown-tip {
+		display: block;
+		margin-top: 10rpx;
+		font-size: 22rpx;
+		color: #888;
+	}
+
+	/* 不同等级配色 */
+	.countdown-normal {
+		background: #f0f8ff;
+		border-color: #d6e8ff;
+	}
+	.countdown-normal .countdown-time { color: #1281ff; }
+	.countdown-normal .countdown-progress-inner { background: #1281ff; }
+
+	.countdown-warning {
+		background: #fff7e6;
+		border-color: #ffd591;
+	}
+	.countdown-warning .countdown-time { color: #fa8c16; }
+	.countdown-warning .countdown-progress-inner { background: #fa8c16; }
+
+	.countdown-danger {
+		background: #fff1f0;
+		border-color: #ffa39e;
+	}
+	.countdown-danger .countdown-time { color: #fa5740; }
+	.countdown-danger .countdown-progress-inner { background: #fa5740; }
+	.countdown-danger .countdown-tip { color: #d4380d; }
 </style>
 

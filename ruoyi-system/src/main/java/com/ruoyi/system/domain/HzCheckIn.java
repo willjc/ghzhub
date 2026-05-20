@@ -135,6 +135,14 @@ public class HzCheckIn extends BaseEntity {
     @TableField("del_flag")
     private String delFlag;
 
+    /** 取消原因（系统自动取消时填充） */
+    @TableField("cancel_reason")
+    private String cancelReason;
+
+    /** 取消时间（系统自动取消时填充） */
+    @TableField("cancel_time")
+    private String cancelTime;
+
     /** 合同编号（关联查询字段，非数据库字段） */
     @TableField(exist = false)
     private String contractNo;
@@ -405,6 +413,22 @@ public class HzCheckIn extends BaseEntity {
 
     public String getDelFlag() {
         return delFlag;
+    }
+
+    public String getCancelReason() {
+        return cancelReason;
+    }
+
+    public void setCancelReason(String cancelReason) {
+        this.cancelReason = cancelReason;
+    }
+
+    public String getCancelTime() {
+        return cancelTime;
+    }
+
+    public void setCancelTime(String cancelTime) {
+        this.cancelTime = cancelTime;
     }
 
     public void setAuditBy(String auditBy) {

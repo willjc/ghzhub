@@ -12,6 +12,8 @@ import com.ruoyi.system.domain.HzDocument;
 import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.service.IHzContractService;
 import com.ruoyi.system.service.IHzUserMessageService;
+import com.ruoyi.system.service.ISysConfigService;
+import com.ruoyi.system.service.WechatPayService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.slf4j.Logger;
@@ -19,11 +21,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 合同超时失效定时任务
@@ -63,6 +69,12 @@ public class ContractExpireTask {
 
     @Autowired
     private IHzUserMessageService messageService;
+
+    @Autowired
+    private ISysConfigService configService;
+
+    @Autowired
+    private WechatPayService wechatPayService;
 
     /**
      * 合同到期自动释放房源（每天凌晨1点执行）
@@ -328,6 +340,251 @@ public class ContractExpireTask {
         } catch (Exception e) {
             log.warn("日期解析失败: {}", dateTimeStr);
             return null;
+        }
+    }
+
+    // ============================================================
+    // 入住超时自动解约 + 退款（每小时执行；sys_job 配置 invoke_target = contractExpireTask.processCheckinTimeoutAutoCancel()）
+    // 触发条件：合同 status='3' 履行中 + 押金已付 + 首期租金已付 + 押金 pay_time 在配置 start-date 之后
+    //          + 不存在已提交过的入住单(status>=1) + 押金 pay_time + 72h 已过
+    // 阶段：24h/48h/60h/70h 提醒，72h 解约+退款（dry-run 时只发提醒不真正解约）
+    // ============================================================
+
+    /**
+     * 入住超时自动解约任务入口（sys_job 每小时整点调用）。
+     */
+    public void processCheckinTimeoutAutoCancel() {
+        log.info("[CheckinTimeout] 开始扫描入住超时自动解约");
+
+        // 1. 总开关
+        String enabled = readConfig("auto.cancel.enabled", "false");
+        if (!"true".equalsIgnoreCase(enabled)) {
+            log.info("[CheckinTimeout] auto.cancel.enabled=false，跳过本次扫描");
+            return;
+        }
+
+        // 2. 启用日（仅对启用日之后创建的新合同生效）
+        LocalDateTime startDate = parseDateTime(readConfig("auto.cancel.start-date", null));
+        if (startDate == null) {
+            log.warn("[CheckinTimeout] 未配置 auto.cancel.start-date，已跳过");
+            return;
+        }
+
+        // 3. 超时小时数（默认 72）
+        int timeoutHours;
+        try {
+            timeoutHours = Integer.parseInt(readConfig("auto.cancel.timeout-hours", "72"));
+        } catch (NumberFormatException e) {
+            timeoutHours = 72;
+        }
+
+        // 4. 演练模式
+        boolean dryRun = "true".equalsIgnoreCase(readConfig("auto.cancel.dry-run", "true"));
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // 5. 候选合同：status=3 履行中 + del_flag=0 + create_time >= startDate
+        List<HzContract> candidates = contractMapper.selectList(
+                new LambdaQueryWrapper<HzContract>()
+                        .eq(HzContract::getContractStatus, "3")
+                        .eq(HzContract::getDelFlag, "0")
+                        .ge(HzContract::getCreateTime, java.sql.Timestamp.valueOf(startDate)));
+
+        if (candidates.isEmpty()) {
+            log.info("[CheckinTimeout] 无候选合同");
+            return;
+        }
+        log.info("[CheckinTimeout] 候选合同 {} 条，dryRun={}, timeoutHours={}", candidates.size(), dryRun, timeoutHours);
+
+        int reminderCount = 0;
+        int cancelCount = 0;
+        for (HzContract contract : candidates) {
+            try {
+                // 用户提交过任何入住申请（status>=1）即永久豁免
+                Long submittedCheckin = checkInMapper.selectCount(
+                        new LambdaQueryWrapper<HzCheckIn>()
+                                .eq(HzCheckIn::getContractId, contract.getContractId())
+                                .ge(HzCheckIn::getStatus, "1")
+                                .eq(HzCheckIn::getDelFlag, "0"));
+                if (submittedCheckin != null && submittedCheckin > 0) {
+                    continue;
+                }
+
+                // 押金账单：已支付 + 微信
+                HzBill depositBill = billMapper.selectOne(
+                        new LambdaQueryWrapper<HzBill>()
+                                .eq(HzBill::getContractId, contract.getContractId())
+                                .eq(HzBill::getBillType, "1")
+                                .eq(HzBill::getBillStatus, "1")
+                                .eq(HzBill::getPayMethod, "wechat")
+                                .eq(HzBill::getDelFlag, "0")
+                                .last("LIMIT 1"));
+                if (depositBill == null || depositBill.getPayTime() == null) {
+                    continue;
+                }
+                LocalDateTime depositPayTime = parseDateTime(depositBill.getPayTime());
+                if (depositPayTime == null || depositPayTime.isBefore(startDate)) {
+                    continue;
+                }
+
+                // 首期租金账单：已支付 + 微信，按 bill_date 升序取最早一笔
+                HzBill firstRentBill = billMapper.selectOne(
+                        new LambdaQueryWrapper<HzBill>()
+                                .eq(HzBill::getContractId, contract.getContractId())
+                                .eq(HzBill::getBillType, "2")
+                                .eq(HzBill::getBillStatus, "1")
+                                .eq(HzBill::getPayMethod, "wechat")
+                                .eq(HzBill::getDelFlag, "0")
+                                .orderByAsc(HzBill::getBillDate)
+                                .last("LIMIT 1"));
+                if (firstRentBill == null) {
+                    // 用户只交了押金还没交租金（或者租金未通过微信支付），暂不处理
+                    continue;
+                }
+
+                long elapsedHours = ChronoUnit.HOURS.between(depositPayTime, now);
+
+                // 阶段提醒：24h / 48h / 60h / 70h（按整点扫描，命中等于触发）
+                if (elapsedHours == 24 || elapsedHours == 48 || elapsedHours == 60 || elapsedHours == 70) {
+                    if (sendCheckinReminder(contract, elapsedHours, timeoutHours)) {
+                        reminderCount++;
+                    }
+                }
+
+                // 解约：超过 timeoutHours
+                if (elapsedHours >= timeoutHours) {
+                    if (dryRun) {
+                        log.info("[CheckinTimeout][DRY-RUN] 将解约 contractId={}, contractNo={}, elapsedH={}",
+                                contract.getContractId(), contract.getContractNo(), elapsedHours);
+                        // 演练期也发一次终止提醒（如果之前没发过）
+                        sendCheckinReminder(contract, elapsedHours, timeoutHours);
+                    } else {
+                        if (doAutoCancelAndRefund(contract, depositBill, firstRentBill)) {
+                            cancelCount++;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("[CheckinTimeout] 处理合同失败 contractId={}", contract.getContractId(), e);
+            }
+        }
+        log.info("[CheckinTimeout] 本次完成：发提醒 {} 条，解约 {} 条", reminderCount, cancelCount);
+    }
+
+    /**
+     * 发送阶段提醒。
+     */
+    private boolean sendCheckinReminder(HzContract contract, long elapsedHours, int timeoutHours) {
+        if (contract.getTenantId() == null) {
+            return false;
+        }
+        long remainingH = Math.max(0, timeoutHours - elapsedHours);
+        String contractNo = contract.getContractNo() != null ? contract.getContractNo() : ("ID:" + contract.getContractId());
+        String title;
+        String content;
+        if (remainingH <= 0) {
+            title = "入住办理已超时";
+            content = "您的合同" + contractNo + "已超过 " + timeoutHours + " 小时未提交入住申请，"
+                    + "如未在系统处理前提交申请，合同将被自动解约并原路退款。";
+        } else {
+            title = "请尽快提交入住申请（剩余 " + remainingH + " 小时）";
+            content = "您已完成押金与首期租金支付，请在剩余 " + remainingH + " 小时内进入小程序"
+                    + "「我的-入住办理」提交入住申请，否则合同将自动解约并原路退款。";
+        }
+        try {
+            messageService.sendMessage(contract.getTenantId(), "checkin-timeout", title, content);
+            log.info("[CheckinTimeout] 发提醒 contractId={}, elapsedH={}, remainingH={}",
+                    contract.getContractId(), elapsedHours, remainingH);
+            return true;
+        } catch (Exception e) {
+            log.warn("[CheckinTimeout] 提醒发送失败 contractId={}: {}", contract.getContractId(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 真实自动解约 + 微信退款。
+     * 流程：先调事务方法落地 hz_checkout_apply + hz_checkout_record + 改合同状态 + 释放房源 + 软删入住单 + 发消息；
+     *       再事务外调微信退款 API；最后短事务更新 record.refund_status。
+     */
+    private boolean doAutoCancelAndRefund(HzContract contract, HzBill depositBill, HzBill firstRentBill) {
+        BigDecimal depositAmt = depositBill.getBillAmount() != null ? depositBill.getBillAmount() : BigDecimal.ZERO;
+        BigDecimal firstRentAmt = firstRentBill.getBillAmount() != null ? firstRentBill.getBillAmount() : BigDecimal.ZERO;
+        BigDecimal totalRefund = depositAmt.add(firstRentAmt).setScale(2, RoundingMode.HALF_UP);
+
+        // 必须有 transaction_no 才能原路退款
+        if (depositBill.getTransactionNo() == null || depositBill.getTransactionNo().isEmpty()
+                || firstRentBill.getTransactionNo() == null || firstRentBill.getTransactionNo().isEmpty()) {
+            log.warn("[CheckinTimeout] 跳过：押金或租金账单缺少 transaction_no, contractId={}", contract.getContractId());
+            return false;
+        }
+
+        // 1. 事务内：DB 落地
+        Long applyId;
+        try {
+            applyId = contractService.createAutoCancelCheckoutApplyTx(contract.getContractId(), totalRefund, depositAmt);
+        } catch (Exception e) {
+            log.error("[CheckinTimeout] DB 写入失败 contractId={}", contract.getContractId(), e);
+            return false;
+        }
+        if (applyId == null) {
+            log.info("[CheckinTimeout] 合同已被处理，跳过 contractId={}", contract.getContractId());
+            return false;
+        }
+
+        // 2. 事务外：调用微信退款（押金 + 首期租金 两笔）
+        boolean depositOk = false;
+        boolean rentOk = false;
+        StringBuilder remark = new StringBuilder();
+        long ts = System.currentTimeMillis();
+
+        try {
+            String outRefundDeposit = "AUTO_DEP" + ts + applyId;
+            int depositFen = depositAmt.multiply(new BigDecimal("100")).intValue();
+            Map<String, Object> r1 = wechatPayService.wechatRefund(
+                    depositBill.getTransactionNo(), outRefundDeposit,
+                    depositFen, depositFen, "入住超时自动解约-押金");
+            depositOk = true;
+            remark.append("押金已申请退款 单号:").append(outRefundDeposit);
+            log.info("[CheckinTimeout] 押金退款已申请 contractId={}, refund={}", contract.getContractId(), r1);
+        } catch (Exception e) {
+            remark.append("押金退款失败:").append(e.getMessage()).append(" ");
+            log.error("[CheckinTimeout] 押金微信退款失败 contractId={}", contract.getContractId(), e);
+        }
+
+        try {
+            String outRefundRent = "AUTO_RENT" + ts + applyId;
+            int rentFen = firstRentAmt.multiply(new BigDecimal("100")).intValue();
+            Map<String, Object> r2 = wechatPayService.wechatRefund(
+                    firstRentBill.getTransactionNo(), outRefundRent,
+                    rentFen, rentFen, "入住超时自动解约-首期租金");
+            rentOk = true;
+            remark.append(" 首期租金已申请退款 单号:").append(outRefundRent);
+            log.info("[CheckinTimeout] 首期租金退款已申请 contractId={}, refund={}", contract.getContractId(), r2);
+        } catch (Exception e) {
+            remark.append(" 首期租金退款失败:").append(e.getMessage());
+            log.error("[CheckinTimeout] 首期租金微信退款失败 contractId={}", contract.getContractId(), e);
+        }
+
+        // 3. 短事务：更新 record 状态
+        if (depositOk && rentOk) {
+            contractService.markCheckoutRecordRefunded(applyId, "微信原路退款成功 | " + remark);
+        } else {
+            contractService.markCheckoutRecordRefundFailed(applyId,
+                    "微信退款部分失败，请管理员在退款管理重试 | " + remark);
+        }
+        return true;
+    }
+
+    /**
+     * 读取 sys_config 的便利方法
+     */
+    private String readConfig(String key, String defaultValue) {
+        try {
+            String v = configService.selectConfigByKey(key);
+            return (v == null || v.isEmpty()) ? defaultValue : v;
+        } catch (Exception e) {
+            return defaultValue;
         }
     }
 }
