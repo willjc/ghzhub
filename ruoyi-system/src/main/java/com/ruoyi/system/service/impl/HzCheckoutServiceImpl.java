@@ -651,6 +651,15 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                        .set(HzContract::getContractStatus, "5"); // 5=已解约
         contractMapper.update(null, contractWrapper);
 
+        // 6. 释放房源：已预订(1) / 已出租(2) → 空置(0)
+        // 与"入住超时自动解约"和"合同到期未续租"的释放逻辑保持对称
+        if (apply.getHouseId() != null) {
+            houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                    .eq(HzHouse::getHouseId, apply.getHouseId())
+                    .in(HzHouse::getHouseStatus, "1", "2")  // 仅"已预订/已出租"才释放，避免误改维修中等状态
+                    .set(HzHouse::getHouseStatus, "0"));
+        }
+
         return result;
     }
 
