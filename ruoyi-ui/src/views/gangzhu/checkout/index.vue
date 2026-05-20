@@ -367,6 +367,10 @@
                   controls-position="right"
                   style="width: 100%;"
                 />
+                <div style="font-size:12px;line-height:1.4;margin-top:2px;">
+                  <span v-if="depositBillForRefund" style="color:#67C23A;">→ 退至账单 {{ depositBillForRefund.billNo }}</span>
+                  <span v-else style="color:#F56C6C;">⚠ 未找到微信支付的押金账单</span>
+                </div>
               </el-form-item>
             </el-col>
             <el-col :span="8">
@@ -379,6 +383,44 @@
                   controls-position="right"
                   style="width: 100%;"
                 />
+                <div style="font-size:12px;line-height:1.4;margin-top:2px;">
+                  <span v-if="rentRefundPart > 0 && rentBillForRefund" style="color:#67C23A;">→ 租金部分 ¥{{ fmt(rentRefundPart) }} 退至账单 {{ rentBillForRefund.billNo }}</span>
+                  <span v-else-if="rentRefundPart > 0" style="color:#F56C6C;">⚠ 无单笔已付租金账单 ≥ ¥{{ fmt(rentRefundPart) }}，请调小总额或线下退</span>
+                  <span v-else style="color:#909399;">仅退押金，无需租金账单</span>
+                </div>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <!-- 退款账单溯源 -->
+          <el-row>
+            <el-col :span="24">
+              <el-form-item label="退款账单溯源">
+                <div style="font-size:12px;line-height:1.8;background:#F4F4F5;border-left:3px solid #909399;padding:6px 10px;">
+                  <div>
+                    <b>押金笔：</b>
+                    <template v-if="Number(approveForm.depositRefund) > 0">
+                      <span v-if="depositBillForRefund">
+                        ¥{{ fmt(approveForm.depositRefund) }} → 账单
+                        <el-tag size="mini" type="success">{{ depositBillForRefund.billNo }}</el-tag>
+                        （交易号 {{ depositBillForRefund.transactionNo || '空' }}，已付 ¥{{ fmt(depositBillForRefund.paidAmount || depositBillForRefund.billAmount) }}）
+                      </span>
+                      <span v-else style="color:#F56C6C;">未找到押金账单，无法发起退款</span>
+                    </template>
+                    <span v-else style="color:#909399;">本次不退押金</span>
+                  </div>
+                  <div>
+                    <b>租金笔：</b>
+                    <template v-if="rentRefundPart > 0">
+                      <span v-if="rentBillForRefund">
+                        ¥{{ fmt(rentRefundPart) }} → 账单
+                        <el-tag size="mini" type="success">{{ rentBillForRefund.billNo }}</el-tag>
+                        （账单期 {{ rentBillForRefund.billPeriod }}，交易号 {{ rentBillForRefund.transactionNo || '空' }}，已付 ¥{{ fmt(rentBillForRefund.paidAmount) }}）
+                      </span>
+                      <span v-else style="color:#F56C6C;">无单笔已付 ≥ ¥{{ fmt(rentRefundPart) }} 的微信租金账单</span>
+                    </template>
+                    <span v-else style="color:#909399;">本次不退租金</span>
+                  </div>
+                </div>
               </el-form-item>
             </el-col>
           </el-row>
@@ -735,6 +777,38 @@ export default {
       }
       // 否则使用自动计算的值
       return this.calculatedRefund;
+    },
+    // 押金退款将命中的账单（bill_type='1' && billStatus='1' && payMethod='wechat'）
+    depositBillForRefund() {
+      const list = (this.billList || []).filter(b =>
+        b.billType === '1' && b.billStatus === '1' && (b.payMethod === 'wechat' || b.payMethod === 'WECHAT')
+      );
+      return list.length > 0 ? list[0] : null;
+    },
+    // 租金退款将命中的账单：按 payTime 升序取「单笔已付 >= 应退租金」的首笔
+    rentBillForRefund() {
+      const dr = Number(this.approveForm.depositRefund || 0);
+      const ra = Number(this.approveForm.refundAmount || 0);
+      const rentRefund = Math.max(0, Number((ra - dr).toFixed(2)));
+      if (rentRefund <= 0) return null;
+      const list = (this.billList || []).filter(b =>
+        b.billType === '2' && b.billStatus === '1' &&
+        (b.payMethod === 'wechat' || b.payMethod === 'WECHAT') &&
+        b.transactionNo && Number(b.paidAmount || 0) >= rentRefund
+      );
+      // 按 payTime 升序
+      list.sort((a, b) => {
+        const ta = a.payTime ? new Date(a.payTime).getTime() : 0;
+        const tb = b.payTime ? new Date(b.payTime).getTime() : 0;
+        return ta - tb;
+      });
+      return list.length > 0 ? list[0] : null;
+    },
+    // 应退租金部分（仅用于展示）
+    rentRefundPart() {
+      const dr = Number(this.approveForm.depositRefund || 0);
+      const ra = Number(this.approveForm.refundAmount || 0);
+      return Math.max(0, Number((ra - dr).toFixed(2)));
     },
     // 计算账单总金额
     totalBillAmount() {
