@@ -68,6 +68,10 @@ public class HzCheckoutApply extends BaseEntity {
     @TableField("deposit_refund")
     private BigDecimal depositRefund;
 
+    @Excel(name = "应退租金")
+    @TableField("rent_refund")
+    private BigDecimal rentRefund;
+
     @Excel(name = "申请状态", readConverterExp = "0=审批中,1=审批通过,2=审批驳回,3=已取消,4=待确认")
     @TableField("apply_status")
     private String applyStatus;
@@ -178,6 +182,9 @@ public class HzCheckoutApply extends BaseEntity {
     
     public void setDepositRefund(BigDecimal depositRefund) { this.depositRefund = depositRefund; }
     public BigDecimal getDepositRefund() { return depositRefund; }
+
+    public void setRentRefund(BigDecimal rentRefund) { this.rentRefund = rentRefund; }
+    public BigDecimal getRentRefund() { return rentRefund; }
     
     public void setApplyStatus(String applyStatus) { this.applyStatus = applyStatus; }
     public String getApplyStatus() { return applyStatus; }

@@ -106,6 +106,9 @@ public class HzRefundApplyVO implements Serializable {
     /** 应退押金（管理员审批时确定，退款拆分依据） */
     private BigDecimal depositRefund;
 
+    /** 应退租金（管理员审批时确定） */
+    private BigDecimal rentRefund;
+
     // ===== 付款信息 =====
     /** 付款方式（1=现金 2=支付宝 3=微信 4=银行转账） */
     private String paymentMethod;
@@ -353,6 +356,14 @@ public class HzRefundApplyVO implements Serializable {
 
     public void setDepositRefund(BigDecimal depositRefund) {
         this.depositRefund = depositRefund;
+    }
+
+    public BigDecimal getRentRefund() {
+        return rentRefund;
+    }
+
+    public void setRentRefund(BigDecimal rentRefund) {
+        this.rentRefund = rentRefund;
     }
 
     public String getPaymentMethod() {

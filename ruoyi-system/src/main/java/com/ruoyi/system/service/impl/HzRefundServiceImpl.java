@@ -187,6 +187,7 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
         vo.setPenaltyAmount(checkout.getPenaltyAmount() != null ? checkout.getPenaltyAmount() : BigDecimal.ZERO);
         vo.setDeposit(getDepositFromContract(checkout.getContractId()));
         vo.setDepositRefund(checkout.getDepositRefund() != null ? checkout.getDepositRefund() : BigDecimal.ZERO);
+        vo.setRentRefund(checkout.getRentRefund() != null ? checkout.getRentRefund() : BigDecimal.ZERO);
 
         if (checkout.getContractId() != null) {
             HzContract contract = contractMapper.selectById(checkout.getContractId());

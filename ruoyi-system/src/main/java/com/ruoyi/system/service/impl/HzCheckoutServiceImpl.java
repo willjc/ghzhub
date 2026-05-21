@@ -521,6 +521,7 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                .set(HzCheckoutApply::getKeyReturned, hzCheckoutApply.getKeyReturned())
                .set(HzCheckoutApply::getRefundAmount, hzCheckoutApply.getRefundAmount())
                .set(HzCheckoutApply::getDepositRefund, hzCheckoutApply.getDepositRefund())
+               .set(HzCheckoutApply::getRentRefund, hzCheckoutApply.getRentRefund())
                .set(HzCheckoutApply::getApproveOpinion, hzCheckoutApply.getApproveOpinion())
                .set(HzCheckoutApply::getApproveBy, approveBy)
                .set(HzCheckoutApply::getApproveTime, new java.util.Date())

@@ -589,8 +589,11 @@
         <el-descriptions-item label="物业费">{{ detailForm.propertyFee || 0 }} 元</el-descriptions-item>
         <el-descriptions-item label="损坏扣款">{{ detailForm.damageDeduction || 0 }} 元</el-descriptions-item>
         <el-descriptions-item label="违约金">{{ detailForm.penaltyAmount || 0 }} 元</el-descriptions-item>
+        <el-descriptions-item label="应退押金">
+          <span style="color: #67C23A; font-weight: bold;">¥{{ fmt(detailForm.depositRefund) }}</span>
+        </el-descriptions-item>
         <el-descriptions-item label="应退租金">
-          <span style="color: #67C23A; font-weight: bold;">¥{{ calculateRefundableRent(detailForm) }}</span>
+          <span style="color: #67C23A; font-weight: bold;">¥{{ fmt(detailForm.rentRefund) }}</span>
         </el-descriptions-item>
         <el-descriptions-item label="应退总额">
           <span style="font-size: 16px; color: #f56c6c; font-weight: bold;">¥{{ fmt(detailForm.refundAmount) }}</span>
@@ -1085,6 +1088,7 @@ export default {
           keyReturned: this.approveForm.keyReturned,
           refundAmount: this.approveForm.refundAmount,
           depositRefund: this.approveForm.depositRefund, // 应退押金（退款时按此拆分两笔）
+          rentRefund: Number(this.refundableRent) || 0, // 应退租金（审批时定，详情页直接展示，避免反推）
           // 审批信息（会保存到数据库）
           approveOpinion: this.approveForm.approveOpinion
         };

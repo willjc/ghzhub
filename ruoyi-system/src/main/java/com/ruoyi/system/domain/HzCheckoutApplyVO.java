@@ -134,6 +134,10 @@ public class HzCheckoutApplyVO {
     @Excel(name = "押金退款(元)")
     private BigDecimal depositRefund;
 
+    /** 应退租金（审批时确定） */
+    @Excel(name = "应退租金(元)")
+    private BigDecimal rentRefund;
+
     /** 水费 */
     private BigDecimal waterFee;
 
@@ -451,6 +455,14 @@ public class HzCheckoutApplyVO {
 
     public void setDepositRefund(BigDecimal depositRefund) {
         this.depositRefund = depositRefund;
+    }
+
+    public BigDecimal getRentRefund() {
+        return rentRefund;
+    }
+
+    public void setRentRefund(BigDecimal rentRefund) {
+        this.rentRefund = rentRefund;
     }
 
     public BigDecimal getWaterFee() {
