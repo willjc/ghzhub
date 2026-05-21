@@ -137,6 +137,7 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
             vo.setPenaltyAmount(apply.getPenaltyAmount());
             vo.setUnpaidBills(apply.getUnpaidBills());
             vo.setDepositRefund(apply.getDepositRefund());
+            vo.setRentRefund(apply.getRentRefund());
             vo.setWaterFee(apply.getWaterFee());
             vo.setElectricFee(apply.getElectricFee());
             vo.setGasFee(apply.getGasFee());
