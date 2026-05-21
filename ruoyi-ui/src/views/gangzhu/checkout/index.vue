@@ -597,27 +597,30 @@
         </el-descriptions-item>
       </el-descriptions>
 
-      <!-- 房间设施状态 -->
-      <el-divider content-position="left" v-if="detailForm.facilities">
+      <!-- 房间设施状态（审批时录入的完好/损坏） -->
+      <template v-if="parseFacilitiesStatus(detailForm.damageDescription).length > 0">
+        <el-divider content-position="left">房间设施状态</el-divider>
         <el-descriptions :column="1" border>
-          <el-descriptions-item label="房间设施状态">
+          <el-descriptions-item label="设施清单">
             <div class="facilities-detail-list">
-              <div v-for="(facility, index) in parseFacilitiesStatus(detailForm.damageDescription)" :key="index" class="facility-detail-item">
-                <el-tag :type="facility.status === '完好' ? 'success' : 'danger'" size="medium">
-                  {{ facility.name }} - {{ facility.status }}
-                </el-tag>
-              </div>
+              <el-tag v-for="(facility, index) in parseFacilitiesStatus(detailForm.damageDescription)" :key="index"
+                      :type="facility.status === '完好' ? 'success' : 'danger'"
+                      size="medium"
+                      style="margin: 0 8px 8px 0;">
+                {{ facility.name }} - {{ facility.status }}
+              </el-tag>
             </div>
           </el-descriptions-item>
         </el-descriptions>
-      </el-divider>
+      </template>
 
       <!-- 物品损坏情况 -->
-      <el-divider content-position="left" v-if="getDamageDescription(detailForm.damageDescription)">
+      <template v-if="getDamageDescription(detailForm.damageDescription)">
+        <el-divider content-position="left">物品损坏情况</el-divider>
         <el-descriptions :column="1" border>
-          <el-descriptions-item label="物品损坏情况">{{ getDamageDescription(detailForm.damageDescription) }}</el-descriptions-item>
+          <el-descriptions-item label="损坏说明">{{ getDamageDescription(detailForm.damageDescription) }}</el-descriptions-item>
         </el-descriptions>
-      </el-divider>
+      </template>
 
       <!-- 签字信息 -->
       <el-divider content-position="left" v-if="recordForm.recordId">签字信息</el-divider>
