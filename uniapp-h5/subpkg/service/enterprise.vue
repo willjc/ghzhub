@@ -257,6 +257,7 @@
 
 <script>
 import { get, post, BASE_URL } from '@/utils/request'
+import { wechatPrepayEnterprise, syncPayResult } from '@/api/pay'
 
 export default {
 	data() {
@@ -329,38 +330,85 @@ export default {
 			})
 		},
 
-		// 支付账单
+		// 支付账单（微信支付 JSAPI）
 		async handlePay(bill) {
+			// 获取 openid
+			const userInfo = uni.getStorageSync('userInfo') || {}
+			const openid = userInfo.wechatOpenid
+			if (!openid) {
+				uni.showToast({ title: '无法获取 openid，请重新登录', icon: 'none' })
+				return
+			}
+
 			uni.showModal({
 				title: '确认支付',
 				content: `确认支付账单 ¥${bill.finalAmount}？`,
 				success: async (res) => {
-					if (res.confirm) {
-						uni.showLoading({
-							title: '支付中...'
+					if (!res.confirm) return
+					try {
+						uni.showLoading({ title: '发起支付...' })
+						// 1. 请求预支付参数
+						const prepayRes = await wechatPrepayEnterprise({
+							billId: bill.billId,
+							openid
 						})
-						try {
-							await post('/h5/app/enterpriseBill/pay', {
-								billId: bill.billId,
-								payMethod: '在线支付'
-							})
-							uni.hideLoading()
-							uni.showToast({
-								title: '支付成功',
-								icon: 'success'
-							})
-							// 重新加载账单列表
-							this.loadBills()
-						} catch (err) {
-							uni.hideLoading()
-							uni.showToast({
-								title: err.msg || '支付失败',
-								icon: 'none'
-							})
+						uni.hideLoading()
+						if (prepayRes.code !== 200) {
+							uni.showToast({ title: prepayRes.msg || '发起支付失败', icon: 'none' })
+							return
 						}
+						const p = prepayRes.data
+						// 2. 调起微信支付
+						// #ifdef MP-WEIXIN
+						uni.requestPayment({
+							provider: 'wxpay',
+							timeStamp: p.timeStamp,
+							nonceStr:  p.nonceStr,
+							package:   p.package,
+							signType:  p.signType || 'RSA',
+							paySign:   p.paySign,
+							success: () => {
+								uni.showToast({ title: '支付处理中...', icon: 'loading', duration: 10000 })
+								this.pollSyncBill(bill.billNo)
+							},
+							fail: (err) => {
+								const msg = err.errMsg || ''
+								uni.showToast({
+									title: msg.indexOf('cancel') >= 0 ? '已取消支付' : '支付失败，请重试',
+									icon: 'none'
+								})
+							}
+						})
+						// #endif
+					} catch (e) {
+						uni.hideLoading()
+						console.error('支付失败:', e)
+						uni.showToast({ title: '支付失败，请重试', icon: 'none' })
 					}
 				}
 			})
+		},
+
+		// 轮询账单状态（回调可能延迟，最多 5 次每次 2s）
+		async pollSyncBill(billNo, maxRetry = 5) {
+			for (let i = 0; i < maxRetry; i++) {
+				try {
+					const res = await syncPayResult(billNo)
+					const data = res && res.data
+					if (data && data.paid) {
+						uni.hideToast()
+						uni.showToast({ title: '支付成功', icon: 'success' })
+						this.loadBills()
+						return
+					}
+				} catch (e) {
+					// 忽略单次失败，继续重试
+				}
+				await new Promise(r => setTimeout(r, 2000))
+			}
+			uni.hideToast()
+			uni.showToast({ title: '支付状态确认中，请稍后刷新', icon: 'none' })
+			this.loadBills()
 		},
 
 		// 切换Tab

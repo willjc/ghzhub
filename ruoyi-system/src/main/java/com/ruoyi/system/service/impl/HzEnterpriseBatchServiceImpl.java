@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzEnterpriseBatch;
@@ -139,6 +140,11 @@ public class HzEnterpriseBatchServiceImpl extends ServiceImpl<HzEnterpriseBatchM
     @Override
     @Transactional
     public int saveEnterpriseBatchWithHouses(HzEnterpriseBatch enterpriseBatch, List<Long> houseIds) {
+        // 房源占用冲突校验：同一房源不能被两个未截止的批次同时占用
+        if (houseIds != null && !houseIds.isEmpty()) {
+            checkHouseOccupation(houseIds, enterpriseBatch.getBatchId());
+        }
+
         // 生成批次编号
         if (enterpriseBatch.getBatchNo() == null || enterpriseBatch.getBatchNo().isEmpty()) {
             enterpriseBatch.setBatchNo(generateBatchNo());
@@ -198,6 +204,48 @@ public class HzEnterpriseBatchServiceImpl extends ServiceImpl<HzEnterpriseBatchM
                 "LEFT JOIN hz_house h ON bh.house_id = h.house_id " +
                 "WHERE bh.batch_id = ? AND bh.del_flag = '0' AND h.del_flag = '0'";
         return jdbcTemplate.queryForList(sql, batchId);
+    }
+
+    /**
+     * 房源占用冲突校验
+     * 检查待分配房源是否已被其他未截止批次占用（按批次截止日期 >= 当前时间）
+     *
+     * @param houseIds       待分配房源ID列表
+     * @param currentBatchId 当前批次ID（修改场景下用于排除自身，新增传 null）
+     */
+    private void checkHouseOccupation(List<Long> houseIds, Long currentBatchId) {
+        if (houseIds == null || houseIds.isEmpty()) return;
+
+        // 拼 IN 子句占位符
+        StringBuilder placeholders = new StringBuilder();
+        for (int i = 0; i < houseIds.size(); i++) {
+            if (i > 0) placeholders.append(",");
+            placeholders.append("?");
+        }
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT bh.house_id, b.batch_name, h.house_no ")
+           .append("FROM hz_enterprise_batch_house bh ")
+           .append("JOIN hz_enterprise_batch b ON bh.batch_id = b.batch_id ")
+           .append("LEFT JOIN hz_house h ON bh.house_id = h.house_id ")
+           .append("WHERE bh.del_flag = '0' AND b.del_flag = '0' ")
+           .append("AND bh.house_id IN (").append(placeholders).append(") ")
+           .append("AND (b.check_out_date IS NULL OR b.check_out_date >= NOW()) ");
+
+        List<Object> args = new ArrayList<>(houseIds);
+        if (currentBatchId != null) {
+            sql.append("AND b.batch_id <> ? ");
+            args.add(currentBatchId);
+        }
+        sql.append("LIMIT 1");
+
+        List<Map<String, Object>> conflicts = jdbcTemplate.queryForList(sql.toString(), args.toArray());
+        if (!conflicts.isEmpty()) {
+            Map<String, Object> first = conflicts.get(0);
+            String houseNo = first.get("house_no") != null ? first.get("house_no").toString() : String.valueOf(first.get("house_id"));
+            String batchName = first.get("batch_name") != null ? first.get("batch_name").toString() : "";
+            throw new ServiceException("房源「" + houseNo + "」已被批次「" + batchName + "」占用，无法重复分配");
+        }
     }
 
     /**

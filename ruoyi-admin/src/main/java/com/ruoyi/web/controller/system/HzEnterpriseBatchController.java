@@ -119,6 +119,18 @@ public class HzEnterpriseBatchController extends BaseController {
         try {
             // 解析批次信息
             Map<String, Object> batchInfo = (Map<String, Object>) params.get("batchInfo");
+            if (batchInfo == null) {
+                return error("批次信息不能为空");
+            }
+            // 必填字段校验
+            String[] requiredKeys = {"batchName", "enterpriseName", "contactPerson", "contactPhone", "projectIds"};
+            String[] requiredLabels = {"批次名称", "企业名称", "联系人", "联系电话", "项目"};
+            for (int i = 0; i < requiredKeys.length; i++) {
+                Object v = batchInfo.get(requiredKeys[i]);
+                if (v == null || v.toString().trim().isEmpty()) {
+                    return error(requiredLabels[i] + "不能为空");
+                }
+            }
             HzEnterpriseBatch enterpriseBatch = new HzEnterpriseBatch();
 
             if (batchInfo.get("batchId") != null) {
@@ -185,7 +197,14 @@ public class HzEnterpriseBatchController extends BaseController {
                 // 获取优惠金额
                 java.math.BigDecimal discountAmount = java.math.BigDecimal.ZERO;
                 if (batchInfo.get("discountAmount") != null) {
-                    discountAmount = new java.math.BigDecimal(batchInfo.get("discountAmount").toString());
+                    try {
+                        discountAmount = new java.math.BigDecimal(batchInfo.get("discountAmount").toString());
+                    } catch (NumberFormatException nfe) {
+                        return error("优惠金额格式错误");
+                    }
+                    if (discountAmount.compareTo(java.math.BigDecimal.ZERO) < 0) {
+                        return error("优惠金额不能为负数");
+                    }
                 }
 
                 // 计算总价和优惠后总价
@@ -225,7 +244,7 @@ public class HzEnterpriseBatchController extends BaseController {
 
             return toAjax(result);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("保存企业批次失败", e);
             return error("保存失败: " + e.getMessage());
         }
     }

@@ -7,9 +7,11 @@ import com.ruoyi.common.utils.DateUtils;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzEnterpriseBill;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.mapper.HzBillMapper;
 import com.ruoyi.system.mapper.HzContractMapper;
+import com.ruoyi.system.mapper.HzEnterpriseBillMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.service.IHzHouseOrderService;
 import com.ruoyi.system.service.IHzUserMessageService;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,6 +58,9 @@ public class WechatPayController extends BaseController {
 
     @Autowired
     private IHzUserMessageService messageService;
+
+    @Autowired
+    private HzEnterpriseBillMapper enterpriseBillMapper;
 
     /**
      * 预支付
@@ -135,6 +141,52 @@ public class WechatPayController extends BaseController {
     }
 
     /**
+     * 企业账单预支付（仅 JSAPI）
+     * 请求体：{ billId, openid }
+     */
+    @PostMapping("/prepayEnterprise")
+    public AjaxResult prepayEnterprise(@RequestBody Map<String, Object> params) {
+        Object billIdObj = params.get("billId");
+        String openid = (String) params.get("openid");
+
+        if (billIdObj == null) return error("账单ID不能为空");
+        if (openid == null || openid.isEmpty()) return error("JSAPI 支付需要传入 openid");
+
+        Long billId;
+        try {
+            billId = Long.valueOf(billIdObj.toString());
+        } catch (NumberFormatException e) {
+            return error("账单ID格式错误");
+        }
+
+        HzEnterpriseBill bill = enterpriseBillMapper.selectEnterpriseBillById(billId);
+        if (bill == null) return error("账单不存在");
+        if ("2".equals(bill.getBillStatus())) return error("账单已支付");
+        if (!"1".equals(bill.getBillStatus())) return error("账单未通过审核，暂不能支付");
+
+        BigDecimal finalAmount = bill.getFinalAmount();
+        if (finalAmount == null || finalAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            return error("账单金额异常");
+        }
+
+        int totalFen = finalAmount.multiply(new BigDecimal("100")).intValue();
+        String batchName = bill.getBatchName() != null ? bill.getBatchName() : bill.getBillNo();
+        String desc = "港好住-企业批次：" + batchName;
+        if (desc.length() > 127) {
+            desc = desc.substring(0, 127);
+        }
+
+        try {
+            Map<String, String> jsapiParams = wechatPayService.prepayJsapi(
+                    bill.getBillNo(), totalFen, desc, openid, notifyUrl);
+            return success(jsapiParams);
+        } catch (Exception e) {
+            logger.error("企业账单微信预支付失败，billNo={}", bill.getBillNo(), e);
+            return error("预支付失败：" + e.getMessage());
+        }
+    }
+
+    /**
      * 微信支付结果回调
      * /h5/** 已在 SecurityConfig 中 permitAll，无需额外配置
      */
@@ -175,7 +227,30 @@ public class WechatPayController extends BaseController {
             HzBill bill = billMapper.selectOne(wrapper);
 
             if (bill == null) {
-                logger.error("【微信回调】按 billNo={} 查不到账单，请检查 out_trade_no 是否与 hz_bill.bill_no 一致", outTradeNo);
+                // 兜底：尝试匹配企业账单
+                LambdaQueryWrapper<HzEnterpriseBill> ebWrapper = new LambdaQueryWrapper<>();
+                ebWrapper.eq(HzEnterpriseBill::getBillNo, outTradeNo)
+                         .eq(HzEnterpriseBill::getDelFlag, "0")
+                         .last("LIMIT 1");
+                HzEnterpriseBill enterpriseBill = enterpriseBillMapper.selectOne(ebWrapper);
+                if (enterpriseBill != null) {
+                    if ("2".equals(enterpriseBill.getBillStatus())) {
+                        logger.info("【微信回调-企业账单】已支付（幂等），outTradeNo={}", outTradeNo);
+                    } else {
+                        enterpriseBill.setBillStatus("2");
+                        enterpriseBill.setPayTime(new Date());
+                        enterpriseBill.setPayMethod("wechat");
+                        enterpriseBill.setTransactionNo(transactionId);
+                        enterpriseBill.setUpdateTime(new Date());
+                        enterpriseBillMapper.updateEnterpriseBill(enterpriseBill);
+                        logger.info("【微信回调-企业账单】状态已更新为已支付，billId={}, outTradeNo={}",
+                                enterpriseBill.getBillId(), outTradeNo);
+                    }
+                    resp.put("code", "SUCCESS");
+                    resp.put("message", "成功");
+                    return ResponseEntity.ok(resp);
+                }
+                logger.error("【微信回调】按 outTradeNo={} 在 hz_bill / hz_enterprise_bill 中均查不到账单", outTradeNo);
                 // 仍返回 SUCCESS 防止微信无限重试
                 resp.put("code", "SUCCESS");
                 resp.put("message", "成功");
@@ -265,7 +340,18 @@ public class WechatPayController extends BaseController {
         if (bill == null && billNo.matches("\\d+")) {
             bill = billMapper.selectById(Long.parseLong(billNo));
         }
-        if (bill == null) return error("账单不存在");
+        if (bill == null) {
+            // 兜底：按企业账单 billNo 查询
+            LambdaQueryWrapper<HzEnterpriseBill> ebWrapper = new LambdaQueryWrapper<>();
+            ebWrapper.eq(HzEnterpriseBill::getBillNo, billNo)
+                     .eq(HzEnterpriseBill::getDelFlag, "0")
+                     .last("LIMIT 1");
+            HzEnterpriseBill enterpriseBill = enterpriseBillMapper.selectOne(ebWrapper);
+            if (enterpriseBill != null) {
+                return syncEnterpriseBillPay(enterpriseBill);
+            }
+            return error("账单不存在");
+        }
 
         // 已支付无需同步
         if ("1".equals(bill.getBillStatus())) {
@@ -369,6 +455,46 @@ public class WechatPayController extends BaseController {
         result.put("transactionNo", bill.getTransactionNo());
         result.put("payTime", bill.getPayTime());
         return success(result);
+    }
+
+    /**
+     * 企业账单主动查单同步（兜底：回调未到达时使用）
+     */
+    private AjaxResult syncEnterpriseBillPay(HzEnterpriseBill enterpriseBill) {
+        // 已支付无需同步
+        if ("2".equals(enterpriseBill.getBillStatus())) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("paid", true);
+            data.put("billStatus", "2");
+            return success(data);
+        }
+        try {
+            Map<String, Object> wxResult = wechatPayService.queryByOutTradeNo(enterpriseBill.getBillNo());
+            String tradeState = (String) wxResult.get("trade_state");
+            String transactionId = (String) wxResult.get("transaction_id");
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("tradeState", tradeState);
+
+            if ("SUCCESS".equals(tradeState)) {
+                enterpriseBill.setBillStatus("2");
+                enterpriseBill.setPayTime(new Date());
+                enterpriseBill.setPayMethod("wechat");
+                enterpriseBill.setTransactionNo(transactionId);
+                enterpriseBill.setUpdateTime(new Date());
+                enterpriseBillMapper.updateEnterpriseBill(enterpriseBill);
+                logger.info("企业账单主动查单同步成功，billNo={}", enterpriseBill.getBillNo());
+                data.put("paid", true);
+                data.put("billStatus", "2");
+            } else {
+                data.put("paid", false);
+                data.put("billStatus", enterpriseBill.getBillStatus());
+            }
+            return success(data);
+        } catch (Exception e) {
+            logger.error("企业账单主动查单失败，billNo={}", enterpriseBill.getBillNo(), e);
+            return error("查单失败：" + e.getMessage());
+        }
     }
 
     private String getClientIp(HttpServletRequest request) {

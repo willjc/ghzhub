@@ -19,8 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
 
@@ -180,20 +179,18 @@ public class HzEnterpriseBillAppController extends BaseController {
     @GetMapping("/downloadTemplate")
     public void downloadTemplate(HttpServletResponse response) {
         try {
-            // 从静态资源目录读取模版文件
+            // 从静态资源目录读取模版文件（用 InputStream 兼容 jar 部署）
             Resource resource = resourceLoader.getResource("classpath:static/template/人员名单模版.xlsx");
             if (!resource.exists()) {
-                // 如果模版文件不存在，返回提示
                 response.setContentType("text/plain;charset=UTF-8");
                 response.getWriter().write("模版文件不存在，请联系管理员");
                 return;
             }
 
-            File file = resource.getFile();
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setHeader("Content-Disposition", "attachment; filename=personnel_template.xlsx");
 
-            try (FileInputStream fis = new FileInputStream(file);
+            try (InputStream fis = resource.getInputStream();
                  OutputStream os = response.getOutputStream()) {
                 byte[] buffer = new byte[1024];
                 int len;
@@ -216,24 +213,13 @@ public class HzEnterpriseBillAppController extends BaseController {
 
     /**
      * 支付企业账单
+     * 已废弃：用户端在线支付请使用 /h5/pay/wechat/prepayEnterprise 走微信支付链路。
+     * 该接口仅保留用于兼容旧客户端，直接拒绝以避免绕过支付。
      */
+    @Deprecated
     @PostMapping("/pay")
     public AjaxResult pay(@RequestBody(required = false) com.alibaba.fastjson2.JSONObject params) {
-        if (params == null) {
-            return error("参数不能为空");
-        }
-        Long billId = params.getLong("billId");
-        String payMethod = params.getString("payMethod");
-        String transactionNo = params.getString("transactionNo");
-
-        if (billId == null) {
-            return error("账单ID不能为空");
-        }
-
-        // 简单实现：直接标记为已支付
-        // 实际项目应对接支付接口
-        int result = enterpriseBillService.payBill(billId, payMethod != null ? payMethod : "在线支付", transactionNo);
-        return toAjax(result);
+        return error("该支付入口已停用，请更新客户端后通过微信支付完成缴费");
     }
 
     /**

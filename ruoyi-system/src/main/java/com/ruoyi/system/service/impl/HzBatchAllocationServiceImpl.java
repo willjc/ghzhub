@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzBatchAllocation;
@@ -115,6 +116,9 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
     @Override
     @Transactional
     public int deleteBatchAllocationById(Long batchId) {
+        // 删除前释放房源状态（house_status='1' 已预订 → '0' 空置；'2' 已出租不动）
+        releaseHouseStatusByBatch(batchId);
+
         // 使用 LambdaUpdateWrapper 逻辑删除批次
         LambdaUpdateWrapper<HzBatchAllocation> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(HzBatchAllocation::getBatchId, batchId)
@@ -183,6 +187,9 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
             if (oldBatch != null) {
                 batch.setAllocatedCount(oldBatch.getHouseCount());
             }
+        } else if ("2".equals(approveStatus)) {
+            // 审批驳回：若此前已被通过过（房源已锁为已预订），需回滚
+            releaseHouseStatusByBatch(batchId);
         }
 
         return this.updateById(batch) ? 1 : 0;
@@ -191,6 +198,9 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
     @Override
     @Transactional
     public int cancelBatchAllocation(Long batchId) {
+        // 作废前释放房源状态
+        releaseHouseStatusByBatch(batchId);
+
         HzBatchAllocation batch = new HzBatchAllocation();
         batch.setBatchId(batchId);
         batch.setBatchStatus("2"); // 已作废
@@ -369,6 +379,15 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
             batchId = Long.valueOf(batchInfo.get("batchId").toString());
         }
         boolean isUpdate = (batchId != null);
+
+        // 房源占用冲突校验：同一房源不允许被多个未作废/未驳回的批次同时占用
+        List<Long> newHouseIds = new ArrayList<>();
+        for (Map<String, Object> houseMap : houseList) {
+            if (houseMap.get("houseId") != null) {
+                newHouseIds.add(Long.valueOf(houseMap.get("houseId").toString()));
+            }
+        }
+        checkHouseOccupation(newHouseIds, batchId);
 
         // 1. 保存或更新批次信息
         HzBatchAllocation batch = new HzBatchAllocation();
@@ -633,6 +652,103 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
             return false;
         }
         return phone.matches("^1[3-9]\\d{9}$");
+    }
+
+    /**
+     * 校验房源占用冲突：传入的 houseIds 中若存在已被其他未作废/未驳回的配租批次占用的房源，则抛异常拒绝保存。
+     * 修改场景下排除自身 currentBatchId。
+     *
+     * @param houseIds       本次待保存的房源ID列表
+     * @param currentBatchId 当前批次ID（新增传 null）
+     */
+    private void checkHouseOccupation(List<Long> houseIds, Long currentBatchId) {
+        if (houseIds == null || houseIds.isEmpty()) {
+            return;
+        }
+
+        // 1. 查找占用这些房源的关联记录（排除自身批次、排除已逻辑删除）
+        LambdaQueryWrapper<HzBatchHouse> bhWrapper = new LambdaQueryWrapper<>();
+        bhWrapper.in(HzBatchHouse::getHouseId, houseIds)
+                 .eq(HzBatchHouse::getDelFlag, "0");
+        if (currentBatchId != null) {
+            bhWrapper.ne(HzBatchHouse::getBatchId, currentBatchId);
+        }
+        List<HzBatchHouse> occupiedList = batchHouseMapper.selectList(bhWrapper);
+        if (occupiedList.isEmpty()) {
+            return;
+        }
+
+        // 2. 取出涉及的批次ID，进一步过滤出"有效"批次（未删除、未作废、未驳回）
+        Set<Long> batchIds = occupiedList.stream()
+                .map(HzBatchHouse::getBatchId)
+                .collect(Collectors.toSet());
+        LambdaQueryWrapper<HzBatchAllocation> batchWrapper = new LambdaQueryWrapper<>();
+        batchWrapper.in(HzBatchAllocation::getBatchId, batchIds)
+                    .eq(HzBatchAllocation::getDelFlag, "0")
+                    .ne(HzBatchAllocation::getBatchStatus, "2")    // 排除已作废
+                    .ne(HzBatchAllocation::getApproveStatus, "2"); // 排除已驳回
+        List<HzBatchAllocation> activeBatches = batchAllocationMapper.selectList(batchWrapper);
+        if (activeBatches.isEmpty()) {
+            return;
+        }
+
+        // 3. 取第一条冲突明细，组织友好的报错信息
+        Set<Long> activeBatchIds = activeBatches.stream()
+                .map(HzBatchAllocation::getBatchId)
+                .collect(Collectors.toSet());
+        HzBatchHouse firstConflict = occupiedList.stream()
+                .filter(bh -> activeBatchIds.contains(bh.getBatchId()))
+                .findFirst()
+                .orElse(null);
+        if (firstConflict == null) {
+            return;
+        }
+        HzBatchAllocation conflictBatch = activeBatches.stream()
+                .filter(b -> b.getBatchId().equals(firstConflict.getBatchId()))
+                .findFirst()
+                .orElse(null);
+        String batchName = conflictBatch != null && conflictBatch.getBatchName() != null
+                ? conflictBatch.getBatchName() : "其他批次";
+
+        // 房源编码：优先用 hz_batch_house 上记录的 house_code，回退到 house_id
+        String houseDesc = firstConflict.getHouseCode() != null
+                ? firstConflict.getHouseCode() : String.valueOf(firstConflict.getHouseId());
+
+        throw new ServiceException("房源「" + houseDesc + "」已被批次「" + batchName + "」占用，无法重复分配");
+    }
+
+    /**
+     * 释放批次关联的房源状态：将 house_status='1'（已预订）回滚为 '0'（空置）。
+     * 已签合同（house_status='2' 已出租）的房源不动，避免误释放正在履约的合同。
+     *
+     * @param batchId 批次ID
+     */
+    private void releaseHouseStatusByBatch(Long batchId) {
+        if (batchId == null) {
+            return;
+        }
+        // 查询批次下所有未删除的关联房源
+        LambdaQueryWrapper<HzBatchHouse> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(HzBatchHouse::getBatchId, batchId)
+               .eq(HzBatchHouse::getDelFlag, "0");
+        List<HzBatchHouse> batchHouses = batchHouseMapper.selectList(wrapper);
+        if (batchHouses.isEmpty()) {
+            return;
+        }
+
+        for (HzBatchHouse bh : batchHouses) {
+            HzHouse house = houseMapper.selectById(bh.getHouseId());
+            if (house == null) {
+                continue;
+            }
+            // 仅释放"已预订"，"已出租"等其他状态保持不动
+            if ("1".equals(house.getHouseStatus())) {
+                HzHouse update = new HzHouse();
+                update.setHouseId(bh.getHouseId());
+                update.setHouseStatus("0");
+                houseMapper.updateById(update);
+            }
+        }
     }
 
     @Override
