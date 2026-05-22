@@ -67,13 +67,32 @@ public class HzCommitmentAppController extends BaseController {
     }
 
     /**
+     * 根据模板编码获取承诺书内容（适用于无项目场景，如代购补贴）
+     */
+    @GetMapping("/templateByCode")
+    public AjaxResult getTemplateByCode(@RequestParam("code") String code) {
+        HzCommitmentTemplate template = commitmentTemplateService.selectTemplateByCode(code);
+        if (template == null) {
+            return error("未找到承诺书模板：" + code);
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("templateId", template.getTemplateId());
+        result.put("commitmentType", template.getCommitmentType());
+        result.put("commitmentContent", template.getTemplateContent());
+        result.put("templateName", template.getTemplateName());
+        result.put("templateCode", template.getTemplateCode());
+        return success(result);
+    }
+
+    /**
      * 提交签署的承诺书
      */
     @PostMapping("/sign")
     public AjaxResult signCommitment(@RequestBody Map<String, Object> params) {
         try {
-            // 1. 获取参数
-            Long projectId = Long.valueOf(params.get("projectId").toString());
+            // 1. 获取参数（projectId 在代购补贴等无项目场景下可为空）
+            Long projectId = params.get("projectId") != null && !"".equals(params.get("projectId").toString())
+                    ? Long.valueOf(params.get("projectId").toString()) : null;
             Long tenantId = params.get("tenantId") != null ? Long.valueOf(params.get("tenantId").toString()) : null;
             String commitmentType = params.get("commitmentType").toString();
             String commitmentContent = params.get("commitmentContent").toString();

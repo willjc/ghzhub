@@ -174,7 +174,20 @@
 			"root": "pages/coupon",
 			"name": "pkg-coupon",
 			"pages": [
-				{ "path": "index", "style": { "navigationBarTitleText": "优惠券" } }
+				{ "path": "index", "style": { "navigationBarTitleText": "优惠券" } },
+				{ "path": "my", "style": { "navigationBarTitleText": "我的优惠券" } }
+			]
+		},
+		{
+			"root": "subpkg/purchase",
+			"name": "pkg-purchase",
+			"pages": [
+				{ "path": "contract-filing-list", "style": { "navigationBarTitleText": "合同备案" } },
+				{ "path": "contract-filing-submit", "style": { "navigationBarTitleText": "提交备案" } },
+				{ "path": "contract-filing-detail", "style": { "navigationBarTitleText": "备案详情" } },
+				{ "path": "subsidy-list", "style": { "navigationBarTitleText": "代购补贴" } },
+				{ "path": "subsidy-submit", "style": { "navigationBarTitleText": "申请补贴" } },
+				{ "path": "subsidy-detail", "style": { "navigationBarTitleText": "补贴详情" } }
 			]
 		},
 		{

@@ -1,63 +1,72 @@
 <template>
 	<view class="page">
-		<!-- 优惠券功能未启用时的占位提示 -->
-		<view class="empty-coupon" v-if="!couponEnabled">
-			<image class="empty-icon" src="/static/fangyaun/优惠券@2x.png" mode="aspectFit"></image>
-			<text class="empty-text">暂无优惠券</text>
-			<text class="empty-desc">优惠券功能即将上线，敬请期待</text>
+		<!-- 顶部 tab：可领取 / 我的优惠券 -->
+		<view class="tab-bar">
+			<view class="tab-item active">
+				<text class="tab-text">可领取</text>
+			</view>
+			<view class="tab-item" @click="goMy">
+				<text class="tab-text">我的优惠券</text>
+			</view>
 		</view>
 
-		<!-- 优惠券列表（功能启用后显示） -->
-		<scroll-view class="scroll-content" scroll-y v-if="couponEnabled">
+		<!-- 空状态 -->
+		<view class="empty-coupon" v-if="!loading && couponList.length === 0">
+			<image class="empty-icon" src="/static/fangyaun/优惠券@2x.png" mode="aspectFit"></image>
+			<text class="empty-text">暂无可领取优惠券</text>
+		</view>
+
+		<!-- 优惠券列表 -->
+		<scroll-view class="scroll-content" scroll-y v-if="couponList.length > 0">
 			<view class="coupon-list">
 				<view
 					class="coupon-item"
 					v-for="(item, index) in couponList"
-					:key="index"
+					:key="item.id"
 				>
 					<view
 						class="coupon-card"
-						:class="{ expired: item.isExpired }"
+						:class="{ expired: isExpired(item) }"
 					>
 						<view class="coupon-card-content">
 							<!-- 左侧金额区域 -->
 							<view
 								class="coupon-left"
-								:class="{ 'coupon-bg-expired': item.isExpired, 'coupon-bg-normal': !item.isExpired }"
+								:class="{ 'coupon-bg-expired': isExpired(item), 'coupon-bg-normal': !isExpired(item) }"
 							>
 								<view class="coupon-amount-wrapper">
-									<text class="coupon-symbol">¥</text>
-									<text class="coupon-amount">{{ item.amount }}</text>
+									<template v-if="item.couponType === 2">
+										<text class="coupon-amount">{{ item.discountRate }}</text>
+										<text class="coupon-symbol">%</text>
+									</template>
+									<template v-else>
+										<text class="coupon-symbol">¥</text>
+										<text class="coupon-amount">{{ item.discountAmount }}</text>
+									</template>
 								</view>
-								<text class="coupon-condition">{{ item.condition }}</text>
+								<text class="coupon-condition">{{ buildCondition(item) }}</text>
 							</view>
 
 							<!-- 右侧信息区域 -->
 							<view class="coupon-right">
 								<view class="coupon-info-wrapper">
 									<view class="coupon-info">
-										<text class="coupon-scope">{{ item.scope }}</text>
-										<text class="coupon-validity">有效期至{{ item.validity }}</text>
+										<text class="coupon-scope">{{ item.couponName }}</text>
+										<text class="coupon-validity">有效期至{{ formatDate(item.validEndDate) }}</text>
 									</view>
 
 									<!-- 操作按钮 -->
 									<view class="coupon-action">
 										<view
 											class="action-btn"
-											:class="{ expired: item.isExpired }"
+											:class="{ expired: isExpired(item) || item.hasReceived }"
 											@click="handleClaim(item, index)"
 										>
-											<text class="action-text">{{ item.isExpired ? '已过期' : '立即领取' }}</text>
+											<text class="action-text">{{ buildBtnText(item) }}</text>
 										</view>
 									</view>
 								</view>
 							</view>
-						</view>
-
-						<!-- 详细信息（如果有） -->
-						<view class="coupon-details" v-if="item.communities || item.types">
-							<text class="detail-item" v-if="item.communities">可用小区: {{ item.communities }}</text>
-							<text class="detail-item" v-if="item.types">可用类型: {{ item.types }}</text>
 						</view>
 					</view>
 				</view>
@@ -67,57 +76,74 @@
 </template>
 
 <script>
+	import { getAvailableCoupons, receiveCoupon } from '@/api/coupon.js'
+
 	export default {
 		data() {
 			return {
-				couponEnabled: false,  // 优惠券功能开关，后续接入时改为 true
-				couponList: [
-					{
-						amount: 200,
-						condition: '满10000元可用',
-						scope: '全场通用',
-						validity: '2026.08.31',
-						isExpired: false
-					},
-					{
-						amount: 200,
-						condition: '满10000元可用',
-						scope: '仅限保租房可用',
-						validity: '2026.08.31',
-						isExpired: false
-					},
-					{
-						amount: 200,
-						condition: '满10000元可用',
-						scope: '仅限保租房可用',
-						validity: '2026.08.31',
-						communities: '美好人间一期、保利心语一期',
-						types: '保租房、市场化租赁',
-						isExpired: false
-					},
-					{
-						amount: 200,
-						condition: '满10000元可用',
-						scope: '仅限保租房可用',
-						validity: '2026.08.31',
-						isExpired: true
-					}
-				]
+				loading: false,
+				tenantId: null,
+				couponList: []
 			}
 		},
 		onLoad() {
-
+			try {
+				const u = uni.getStorageSync('userInfo')
+				if (u && u.userId) this.tenantId = u.userId
+			} catch (e) {}
+			this.loadList()
+		},
+		onShow() {
+			this.loadList()
 		},
 		methods: {
-			handleClaim(item, index) {
-				if (item.isExpired) {
+			async loadList() {
+				this.loading = true
+				try {
+					const res = await getAvailableCoupons(this.tenantId)
+					this.couponList = res.data || []
+				} catch (e) {
+					console.error(e)
+				} finally {
+					this.loading = false
+				}
+			},
+			isExpired(item) {
+				if (!item.validEndDate) return false
+				return new Date(item.validEndDate.replace(/-/g, '/')).getTime() < Date.now()
+			},
+			buildCondition(item) {
+				if (item.couponType === 2) {
+					return item.minAmount > 0 ? `满${item.minAmount}元可用` : '全场通用'
+				}
+				return item.minAmount > 0 ? `满${item.minAmount}元可用` : '无门槛'
+			},
+			buildBtnText(item) {
+				if (this.isExpired(item)) return '已过期'
+				if (item.hasReceived) return '已领取'
+				if (item.totalCount > 0 && item.receivedCount >= item.totalCount) return '已领完'
+				return '立即领取'
+			},
+			formatDate(s) {
+				if (!s) return ''
+				return s.substring(0, 10).replace(/-/g, '.')
+			},
+			async handleClaim(item) {
+				if (this.isExpired(item) || item.hasReceived) return
+				if (!this.tenantId) {
+					uni.showToast({ title: '请先登录', icon: 'none' })
 					return
 				}
-				console.log('领取优惠券:', item)
-				uni.showToast({
-					title: '领取成功',
-					icon: 'success'
-				})
+				try {
+					await receiveCoupon(item.id, this.tenantId)
+					uni.showToast({ title: '领取成功', icon: 'success' })
+					this.loadList()
+				} catch (e) {
+					uni.showToast({ title: e.msg || e.message || '领取失败', icon: 'none' })
+				}
+			},
+			goMy() {
+				uni.navigateTo({ url: '/pages/coupon/my' })
 			}
 		}
 	}
@@ -130,6 +156,32 @@
 		display: flex;
 		flex-direction: column;
 		min-height: 100vh;
+	}
+
+	.tab-bar {
+		display: flex;
+		background: #ffffff;
+		border-bottom: 1rpx solid #eee;
+	}
+
+	.tab-item {
+		flex: 1;
+		text-align: center;
+		padding: 24rpx 0;
+	}
+
+	.tab-text {
+		font-size: 28rpx;
+		color: #666;
+	}
+
+	.tab-item.active .tab-text {
+		color: #3388ff;
+		font-weight: 500;
+	}
+
+	.tab-item.active {
+		border-bottom: 4rpx solid #3388ff;
 	}
 
 	/* 空状态 */

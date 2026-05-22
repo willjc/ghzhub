@@ -9,6 +9,14 @@ export function getCommitmentContent(projectId) {
 }
 
 /**
+ * 根据模板编码获取承诺书内容（无项目场景，如代购补贴）
+ * @param {String} code 模板编码（如 SUBSIDY_COMMITMENT_V1.0）
+ */
+export function getTemplateByCode(code) {
+  return get('/h5/app/commitment/templateByCode', { code })
+}
+
+/**
  * 提交签署的承诺书
  * @param {Object} data 承诺书数据
  */
