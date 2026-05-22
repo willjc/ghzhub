@@ -142,7 +142,11 @@
 				{ "path": "repair", "style": { "navigationBarTitleText": "物业报修" } },
 				{ "path": "repair-submit", "style": { "navigationBarTitleText": "报修申请" } },
 				{ "path": "repair-detail", "style": { "navigationBarTitleText": "报修详情" } },
-				{ "path": "enterprise", "style": { "navigationBarTitleText": "企业客户" } }
+				{ "path": "enterprise", "style": { "navigationBarTitleText": "企业客户" } },
+				{ "path": "service-order", "style": { "navigationBarTitleText": "服务订单" } },
+				{ "path": "service-order-detail", "style": { "navigationBarTitleText": "订单详情" } },
+				{ "path": "cleaning-submit", "style": { "navigationBarTitleText": "保洁申请" } },
+				{ "path": "moving-submit", "style": { "navigationBarTitleText": "搬家申请" } }
 			]
 		},
 		{

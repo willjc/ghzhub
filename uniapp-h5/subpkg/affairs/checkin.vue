@@ -57,7 +57,7 @@
 				<view
 					class="countdown-bar"
 					v-if="item.statusCode === '0' && item.contractId && countdownMap[item.contractId] && countdownMap[item.contractId].showCountdown"
-					:class="getCountdownLevelClass(countdownMap[item.contractId].remainingSeconds, countdownMap[item.contractId].totalSeconds)"
+					:class="countdownLevelMap[item.contractId]"
 				>
 					<view class="countdown-header">
 						<text class="countdown-title">⏰ 入住办理倒计时</text>
@@ -166,6 +166,25 @@
 		onUnload() {
 			if (this._checkinTimer) clearInterval(this._checkinTimer)
 			if (this._countdownTimer) clearInterval(this._countdownTimer)
+		},
+		computed: {
+			// 倒计时颜色级别映射（小程序 :class 不支持方法调用，预先算好查表）
+			countdownLevelMap() {
+				const map = {}
+				Object.keys(this.countdownMap || {}).forEach(cid => {
+					const c = this.countdownMap[cid]
+					if (!c) return
+					if (!c.remainingSeconds || c.remainingSeconds <= 0) {
+						map[cid] = 'countdown-danger'
+					} else if (c.remainingSeconds < 24 * 3600) {
+						map[cid] = 'countdown-danger'
+					} else {
+						const ratio = c.totalSeconds > 0 ? c.remainingSeconds / c.totalSeconds : 0
+						map[cid] = ratio < 0.5 ? 'countdown-warning' : 'countdown-normal'
+					}
+				})
+				return map
+			}
 		},
 		onShow() {
 			// 每次页面显示时重新加载列表数据，确保显示最新状态
