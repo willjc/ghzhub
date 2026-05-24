@@ -55,7 +55,7 @@
 										<text class="coupon-validity">有效期至{{ formatDate(item.validEndDate) }}</text>
 									</view>
 									<view class="coupon-action">
-										<view class="status-tag" :class="statusClass(item)">
+										<view class="status-tag" :class="{ unused: item.receiveStatus === 1, used: item.receiveStatus === 2, expired: item.receiveStatus !== 1 && item.receiveStatus !== 2 }">
 											<text>{{ statusText(item) }}</text>
 										</view>
 									</view>

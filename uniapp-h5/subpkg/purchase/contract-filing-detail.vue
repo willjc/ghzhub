@@ -3,7 +3,7 @@
 		<view class="card" v-if="detail.filingId">
 			<view class="card-header">
 				<text class="filing-no">{{ detail.filingNo }}</text>
-				<text class="status-tag" :class="statusClass(detail.approveStatus)">{{ statusText(detail.approveStatus) }}</text>
+				<text class="status-tag" :class="{ 'status-pending': detail.approveStatus === '0', 'status-success': detail.approveStatus === '1', 'status-reject': detail.approveStatus === '2' }">{{ statusText(detail.approveStatus) }}</text>
 			</view>
 
 			<view class="info-row"><text class="lbl">签约人</text><text class="val">{{ detail.signName }}</text></view>

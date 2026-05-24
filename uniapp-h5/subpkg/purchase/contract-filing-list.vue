@@ -11,7 +11,7 @@
 			<view class="card" v-for="item in dataList" :key="item.filingId" @click="goDetail(item)">
 				<view class="card-header">
 					<text class="filing-no">{{ item.filingNo }}</text>
-					<text class="status-tag" :class="statusClass(item.approveStatus)">{{ statusText(item.approveStatus) }}</text>
+					<text class="status-tag" :class="{ 'status-pending': item.approveStatus === '0', 'status-success': item.approveStatus === '1', 'status-reject': item.approveStatus === '2' }">{{ statusText(item.approveStatus) }}</text>
 				</view>
 				<view class="card-row"><text class="lbl">签约人：</text><text class="val">{{ item.signName }}</text></view>
 				<view class="card-row"><text class="lbl">签约单位：</text><text class="val">{{ item.signUnit }}</text></view>

@@ -1,6 +1,12 @@
 <template>
 	<view class="page">
 		<view class="scroll-content">
+			<!-- 渠道说明置顶提示 -->
+			<view class="notice-bar">
+				<text class="notice-icon">!</text>
+				<text class="notice-text">此投诉为本小程序自有投诉渠道，非微信官方投诉渠道</text>
+			</view>
+
 			<!-- 投诉及建议 -->
 			<view class="form-card">
 				<view class="section-title">
@@ -301,6 +307,41 @@ export default {
 		flex: 1;
 		overflow: hidden;
 		padding-bottom: 180rpx;
+	}
+
+	/* 渠道说明置顶提示 */
+	.notice-bar {
+		display: flex;
+		align-items: center;
+		width: 702rpx;
+		margin: 24rpx 24rpx 0 24rpx;
+		padding: 20rpx 24rpx;
+		box-sizing: border-box;
+		background: #fff7e6;
+		border: 2rpx solid #ffd591;
+		border-radius: 16rpx;
+	}
+
+	.notice-icon {
+		width: 32rpx;
+		height: 32rpx;
+		line-height: 32rpx;
+		text-align: center;
+		border-radius: 50%;
+		background: #fa8c16;
+		color: #ffffff;
+		font-size: 24rpx;
+		font-weight: 600;
+		margin-right: 16rpx;
+		flex-shrink: 0;
+	}
+
+	.notice-text {
+		flex: 1;
+		color: #d46b08;
+		font-size: 26rpx;
+		line-height: 36rpx;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
 	}
 
 	/* 表单卡片 */

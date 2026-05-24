@@ -185,7 +185,18 @@
             </el-radio-group>
           </el-form-item>
           <el-form-item label="学历审核意见" prop="educationAuditOpinion" v-if="form.educationAuditStatus === '2'">
-            <el-input v-model="form.educationAuditOpinion" type="textarea" placeholder="请输入驳回理由" :rows="3" />
+            <div class="opinion-presets">
+              <span class="preset-label">快捷填入：</span>
+              <el-tag
+                v-for="(text, idx) in educationOpinionPresets"
+                :key="'eop'+idx"
+                size="small"
+                effect="plain"
+                class="preset-tag"
+                @click="applyEduPreset(text)"
+              >{{ text }}</el-tag>
+            </div>
+            <el-input v-model="form.educationAuditOpinion" type="textarea" placeholder="请输入驳回理由（可点击上方快捷标签自动填入，也可手动编辑）" :rows="3" />
           </el-form-item>
         </div>
 
@@ -219,7 +230,18 @@
             </el-radio-group>
           </el-form-item>
           <el-form-item label="社保审核意见" prop="socialAuditOpinion" v-if="form.socialAuditStatus === '2'">
-            <el-input v-model="form.socialAuditOpinion" type="textarea" placeholder="请输入驳回理由" :rows="3" />
+            <div class="opinion-presets">
+              <span class="preset-label">快捷填入：</span>
+              <el-tag
+                v-for="(text, idx) in socialOpinionPresets"
+                :key="'sop'+idx"
+                size="small"
+                effect="plain"
+                class="preset-tag"
+                @click="applySocPreset(text)"
+              >{{ text }}</el-tag>
+            </div>
+            <el-input v-model="form.socialAuditOpinion" type="textarea" placeholder="请输入驳回理由（可点击上方快捷标签自动填入，也可手动编辑）" :rows="3" />
           </el-form-item>
         </div>
 
@@ -339,7 +361,18 @@ export default {
         handleResult: null
       },
       form: {},
-      rules: {}
+      rules: {},
+      // 学历审核意见预填项
+      educationOpinionPresets: [
+        '国内学历申述未通过',
+        '国外学历申述未通过',
+        '博士申述未通过',
+        '高层次人才、紧缺人才申述未通过'
+      ],
+      // 社保审核意见预填项
+      socialOpinionPresets: [
+        '港区筹建的人才公寓配租对象为航空港区创新创业的大学专科(含)以上学历人才。您可提供在岗就业证明，如工作证明。'
+      ]
     };
   },
   computed: {
@@ -527,6 +560,14 @@ export default {
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
+    // 学历审核意见预填（覆盖式）
+    applyEduPreset(text) {
+      this.$set(this.form, 'educationAuditOpinion', text);
+    },
+    // 社保审核意见预填（覆盖式）
+    applySocPreset(text) {
+      this.$set(this.form, 'socialAuditOpinion', text);
+    },
     viewImages(attachments) {
       if (attachments) {
         this.previewImages = attachments.split(',').filter(img => img);
@@ -606,5 +647,32 @@ export default {
   border-bottom: 1px dashed #dcdfe6;
   display: flex;
   align-items: center;
+}
+
+/* 审核意见快捷预填 */
+.opinion-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+.opinion-presets .preset-label {
+  font-size: 12px;
+  color: #909399;
+  margin-right: 4px;
+}
+
+.opinion-presets .preset-tag {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.opinion-presets .preset-tag:hover {
+  background-color: #ecf5ff;
+  color: #409eff;
+  border-color: #b3d8ff;
 }
 </style>

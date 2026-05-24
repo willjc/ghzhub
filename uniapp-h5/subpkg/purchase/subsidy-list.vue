@@ -11,7 +11,7 @@
 			<view class="card" v-for="item in dataList" :key="item.applyId" @click="goDetail(item)">
 				<view class="card-header">
 					<text class="apply-no">{{ item.applyNo }}</text>
-					<text class="status-tag" :class="statusClass(item.approveStatus)">{{ statusText(item.approveStatus) }}</text>
+					<text class="status-tag" :class="{ 'status-pending': item.approveStatus === '0', 'status-success': item.approveStatus === '1', 'status-reject': item.approveStatus === '2' }">{{ statusText(item.approveStatus) }}</text>
 				</view>
 				<view class="card-row"><text class="lbl">申请人：</text><text class="val">{{ item.applyName }}</text></view>
 				<view class="card-row"><text class="lbl">补贴金额：</text><text class="val amount">¥{{ item.subsidyAmount }}</text></view>
