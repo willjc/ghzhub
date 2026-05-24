@@ -139,7 +139,18 @@
           <el-radio-group v-model="rejectForm.auditOpinion" style="display:flex;flex-direction:column;gap:12px;">
             <el-radio label="请重新上传工作证明">请重新上传工作证明</el-radio>
             <el-radio label="经审核，您不符合郑州航空港区人才公寓申请政策，请于3个工作日内退房。">经审核，您不符合郑州航空港区人才公寓申请政策，请于3个工作日内退房</el-radio>
+            <el-radio label="__other__">其他</el-radio>
           </el-radio-group>
+          <el-input
+            v-if="rejectForm.auditOpinion === '__other__'"
+            v-model="rejectForm.customOpinion"
+            type="textarea"
+            :rows="3"
+            maxlength="500"
+            show-word-limit
+            placeholder="请输入驳回原因"
+            style="margin-top: 10px;"
+          />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -204,7 +215,7 @@ export default {
       detailOpen: false,
       detailData: {},
       rejectOpen: false,
-      rejectForm: { documentId: null, auditOpinion: "" },
+      rejectForm: { documentId: null, auditOpinion: "", customOpinion: "" },
       dateRange: [],
       queryParams: {
         pageNum: 1,
@@ -265,7 +276,7 @@ export default {
     },
     /** 驳回：打开弹窗 */
     handleReject(row) {
-      this.rejectForm = { documentId: row.documentId, auditOpinion: "" };
+      this.rejectForm = { documentId: row.documentId, auditOpinion: "", customOpinion: "" };
       this.rejectOpen = true;
     },
     submitReject() {
@@ -273,10 +284,20 @@ export default {
         this.$modal.msgWarning("请选择驳回原因");
         return;
       }
+      // 其他：取自定义内容作为最终驳回原因
+      let finalOpinion = this.rejectForm.auditOpinion;
+      if (finalOpinion === '__other__') {
+        const custom = (this.rejectForm.customOpinion || '').trim();
+        if (!custom) {
+          this.$modal.msgWarning("请输入驳回原因");
+          return;
+        }
+        finalOpinion = custom;
+      }
       auditDocument({
         documentId: this.rejectForm.documentId,
         auditStatus: '2',
-        auditOpinion: this.rejectForm.auditOpinion
+        auditOpinion: finalOpinion
       }).then(() => {
         this.$modal.msgSuccess("已驳回，通知已发送给用户");
         this.rejectOpen = false;
