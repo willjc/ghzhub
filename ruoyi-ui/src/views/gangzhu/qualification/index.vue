@@ -20,8 +20,7 @@
       <el-form-item label="处理状态" prop="handleResult">
         <el-select v-model="queryParams.handleResult" placeholder="请选择处理状态" clearable>
           <el-option label="待处理" value="0" />
-          <el-option label="已通过" value="1" />
-          <el-option label="已拒绝" value="2" />
+          <el-option label="已处理" value="done" />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -85,11 +84,26 @@
       <el-table-column label="处理状态" align="center" prop="handleResult" width="100">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.handleResult === '0'" type="warning">待处理</el-tag>
-          <el-tag v-else-if="scope.row.handleResult === '1'" type="success">已通过</el-tag>
-          <el-tag v-else-if="scope.row.handleResult === '2'" type="danger">已拒绝</el-tag>
+          <el-tag v-else type="success">已处理</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="处理意见" align="center" prop="handleOpinion" show-overflow-tooltip />
+      <el-table-column label="处理意见" align="center" width="180">
+        <template slot-scope="scope">
+          <div v-if="scope.row.educationAuditStatus" style="margin-bottom:4px;">
+            <span style="color:#606266;font-size:12px;margin-right:4px;">学历：</span>
+            <el-tag v-if="scope.row.educationAuditStatus === '1'" size="mini" type="success">通过</el-tag>
+            <el-tag v-else-if="scope.row.educationAuditStatus === '2'" size="mini" type="danger">不通过</el-tag>
+            <el-tag v-else size="mini" type="warning">待审核</el-tag>
+          </div>
+          <div v-if="scope.row.socialAuditStatus">
+            <span style="color:#606266;font-size:12px;margin-right:4px;">社保：</span>
+            <el-tag v-if="scope.row.socialAuditStatus === '1'" size="mini" type="success">通过</el-tag>
+            <el-tag v-else-if="scope.row.socialAuditStatus === '2'" size="mini" type="danger">不通过</el-tag>
+            <el-tag v-else size="mini" type="warning">待审核</el-tag>
+          </div>
+          <span v-if="!scope.row.educationAuditStatus && !scope.row.socialAuditStatus" style="color:#bbb;">-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="申诉时间" align="center" prop="appealTime" width="160" />
       <el-table-column label="处理时间" align="center" prop="handleTime" width="160" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180">
@@ -315,8 +329,7 @@
         </el-descriptions-item>
         <el-descriptions-item label="处理状态">
           <el-tag v-if="detailData.handleResult === '0'" type="warning">待处理</el-tag>
-          <el-tag v-else-if="detailData.handleResult === '1'" type="success">已通过</el-tag>
-          <el-tag v-else-if="detailData.handleResult === '2'" type="danger">已拒绝</el-tag>
+          <el-tag v-else type="success">已处理</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="处理人">{{ detailData.handlerName || '未处理' }}</el-descriptions-item>
         <el-descriptions-item label="处理时间" :span="2">{{ detailData.handleTime || '未处理' }}</el-descriptions-item>

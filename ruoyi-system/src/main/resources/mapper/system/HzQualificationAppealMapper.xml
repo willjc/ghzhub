@@ -53,6 +53,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             a.handle_opinion,
             a.handle_by,
             a.handle_time,
+            a.education_audit_status,
+            a.education_audit_opinion,
+            a.social_audit_status,
+            a.social_audit_opinion,
             a.status,
             a.create_by,
             a.create_time,
@@ -68,9 +72,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             u.work_unit,
             u.unit_contact,
             COALESCE(u.education, '无') as current_education,
-            a.appeal_reason as new_education
+            a.appeal_reason as new_education,
+            su.nick_name as handler_name
         FROM hz_qualification_appeal a
         LEFT JOIN hz_user u ON a.tenant_id = u.user_id
+        LEFT JOIN sys_user su ON a.handle_by = su.user_id
         ${ew.customSqlSegment}
     </select>
 

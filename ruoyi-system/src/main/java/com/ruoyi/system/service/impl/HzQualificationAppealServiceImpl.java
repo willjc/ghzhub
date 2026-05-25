@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzQualificationAppeal;
 import com.ruoyi.system.domain.HzQualificationAppealVO;
@@ -65,7 +66,12 @@ public class HzQualificationAppealServiceImpl extends ServiceImpl<HzQualificatio
             wrapper.eq("a.tenant_id", appeal.getTenantId());
         }
         if (StringUtils.isNotEmpty(appeal.getHandleResult())) {
-            wrapper.eq("a.handle_result", appeal.getHandleResult());
+            // “done” → 已处理（1 或 2）；其他值走精确匹配
+            if ("done".equalsIgnoreCase(appeal.getHandleResult())) {
+                wrapper.in("a.handle_result", "1", "2");
+            } else {
+                wrapper.eq("a.handle_result", appeal.getHandleResult());
+            }
         }
         if (StringUtils.isNotEmpty(appeal.getAppealReason())) {
             wrapper.like("a.appeal_reason", appeal.getAppealReason());
@@ -162,6 +168,15 @@ public class HzQualificationAppealServiceImpl extends ServiceImpl<HzQualificatio
         appeal.setHandleResult(summaryStatus);
         appeal.setHandleOpinion(buildSummaryOpinion(appeal.getEducationAuditOpinion(), appeal.getSocialAuditOpinion()));
         appeal.setHandleTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        // 记录处理人（当前登录后台用户 user_id）—— 详情页“处理人”依赖该字段 LEFT JOIN sys_user 取 nick_name
+        try {
+            Long operatorId = SecurityUtils.getUserId();
+            if (operatorId != null) {
+                appeal.setHandleBy(String.valueOf(operatorId));
+            }
+        } catch (Exception ignore) {
+            // 非 Web 上下文调用时不阐出，避免影响主流程
+        }
         // status：摘要状态非 0 则置为「已处理」
         if (!"0".equals(summaryStatus)) {
             appeal.setStatus("1");
