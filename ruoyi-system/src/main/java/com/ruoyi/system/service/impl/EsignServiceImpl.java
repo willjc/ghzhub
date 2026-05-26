@@ -986,6 +986,17 @@ public class EsignServiceImpl implements EsignService {
             rentBill.setDueDate(billDueDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
             rentBill.setBillDate(billDueDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
 
+            // 期次信息：第(i+1)期，起止日期
+            rentBill.setBillSeq(i + 1);
+            rentBill.setPeriodStartDate(billDueDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
+            if (i == billCount - 1) {
+                // 末期对齐合同结束日
+                rentBill.setPeriodEndDate(contract.getEndDate());
+            } else {
+                LocalDate periodEnd = startDate.plusMonths((long)(i + 1) * paymentCycle).minusDays(1);
+                rentBill.setPeriodEndDate(periodEnd.format(DateTimeFormatter.ISO_LOCAL_DATE));
+            }
+
             int monthsForThisBill = Math.min(paymentCycle, rentMonths - i * paymentCycle);
             BigDecimal billAmount = monthlyRent.multiply(new BigDecimal(monthsForThisBill));
             if (i < freeRentPeriods) billAmount = BigDecimal.ZERO;
@@ -1071,6 +1082,16 @@ public class EsignServiceImpl implements EsignService {
             rentBill.setBillPeriod(billDueDate.format(DateTimeFormatter.ofPattern("yyyy-MM")));
             rentBill.setDueDate(billDueDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
             rentBill.setBillDate(billDueDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
+
+            // 期次信息：第(i+1)期，起止日期
+            rentBill.setBillSeq(i + 1);
+            rentBill.setPeriodStartDate(billDueDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
+            if (i == billCount - 1) {
+                rentBill.setPeriodEndDate(contract.getEndDate());
+            } else {
+                LocalDate periodEnd = startDate.plusMonths((long)(i + 1) * paymentCycle).minusDays(1);
+                rentBill.setPeriodEndDate(periodEnd.format(DateTimeFormatter.ISO_LOCAL_DATE));
+            }
 
             int monthsForThisBill = Math.min(paymentCycle, rentMonths - i * paymentCycle);
             BigDecimal billAmount = monthlyRent.multiply(new BigDecimal(monthsForThisBill));

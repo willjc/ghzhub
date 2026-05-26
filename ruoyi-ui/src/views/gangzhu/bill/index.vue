@@ -134,7 +134,14 @@
       <el-table-column label="账单金额(元)" align="center" prop="billAmount" width="120" />
       <el-table-column label="已支付(元)" align="center" prop="paidAmount" width="120" />
       <el-table-column label="未支付(元)" align="center" prop="unpaidAmount" width="120" />
-      <el-table-column label="账期" align="center" prop="billPeriod" width="120" />
+      <el-table-column label="账期" align="center" width="180">
+        <template slot-scope="scope">
+          <span v-if="scope.row.billSeq">第{{ scope.row.billSeq }}期
+            <span style="color:#999;font-size:12px;">({{ formatShortDate(scope.row.periodStartDate) }}-{{ formatShortDate(scope.row.periodEndDate) }})</span>
+          </span>
+          <span v-else>{{ scope.row.billPeriod }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="应付日期" align="center" prop="dueDate" width="120" />
       <el-table-column label="账单状态" align="center" prop="billStatus" width="100">
         <template slot-scope="scope">
@@ -188,7 +195,10 @@
         <el-descriptions-item label="租户姓名">{{ detailData.tenantName }}</el-descriptions-item>
         <el-descriptions-item label="所属合同">{{ detailData.contractNo }}</el-descriptions-item>
         <el-descriptions-item label="房源编号">{{ detailData.houseCode }}</el-descriptions-item>
-        <el-descriptions-item label="账期">{{ detailData.billPeriod }}</el-descriptions-item>
+        <el-descriptions-item label="账期">
+          <span v-if="detailData.billSeq">第{{ detailData.billSeq }}期（{{ detailData.periodStartDate }} 至 {{ detailData.periodEndDate }}）</span>
+          <span v-else>{{ detailData.billPeriod }}</span>
+        </el-descriptions-item>
         <el-descriptions-item label="账单金额">{{ detailData.billAmount }} 元</el-descriptions-item>
         <el-descriptions-item label="已支付金额">{{ detailData.paidAmount }} 元</el-descriptions-item>
         <el-descriptions-item label="未支付金额">{{ detailData.unpaidAmount }} 元</el-descriptions-item>
@@ -313,6 +323,13 @@ export default {
       this.download('system/bill/export', {
         ...this.queryParams
       }, `bill_${new Date().getTime()}.xlsx`)
+    },
+    /** 日期格式化：yyyy-MM-dd → MM.DD */
+    formatShortDate(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length < 3) return dateStr;
+      return parts[1] + '.' + parts[2];
     }
   }
 };

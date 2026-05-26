@@ -294,9 +294,12 @@
 				if (bill.billType === '1') {
 					period = '押金'
 				} else if (bill.billType === '2') {
-					// 租金账单，从bill_period提取期数
-					// bill_period格式：2026-01
-					period = bill.billPeriod ? `${bill.billPeriod}房租` : '房租'
+					// 租金账单，显示期次
+					if (bill.billSeq) {
+						period = `第${bill.billSeq}期房租`
+					} else {
+						period = bill.billPeriod ? `${bill.billPeriod}房租` : '房租'
+					}
 				} else if (bill.billType === '3') {
 					period = '水费'
 				} else if (bill.billType === '4') {
@@ -311,7 +314,14 @@
 
 				// 格式化账单周期
 				let dateRange = ''
-				if (bill.billDate) {
+				if (bill.periodStartDate && bill.periodEndDate) {
+					// 有起止日期时显示 MM.DD-MM.DD
+					const startParts = bill.periodStartDate.split('-')
+					const endParts = bill.periodEndDate.split('-')
+					if (startParts.length >= 3 && endParts.length >= 3) {
+						dateRange = `${startParts[1]}.${startParts[2]}-${endParts[1]}.${endParts[2]}`
+					}
+				} else if (bill.billDate) {
 					const billDate = new Date(bill.billDate)
 					const year = billDate.getFullYear()
 					const month = String(billDate.getMonth() + 1).padStart(2, '0')

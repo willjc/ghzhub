@@ -65,6 +65,18 @@ public class HzBill extends BaseEntity {
     @TableField("bill_period")
     private String billPeriod;
 
+    /** 期数序号(租金:1,2,3...;押金:NULL) */
+    @TableField("bill_seq")
+    private Integer billSeq;
+
+    /** 本期起始日 */
+    @TableField("period_start_date")
+    private String periodStartDate;
+
+    /** 本期结束日 */
+    @TableField("period_end_date")
+    private String periodEndDate;
+
     /** 账单金额 */
     @Excel(name = "账单金额")
     @TableField("bill_amount")
@@ -205,6 +217,30 @@ public class HzBill extends BaseEntity {
 
     public String getBillPeriod() {
         return billPeriod;
+    }
+
+    public void setBillSeq(Integer billSeq) {
+        this.billSeq = billSeq;
+    }
+
+    public Integer getBillSeq() {
+        return billSeq;
+    }
+
+    public void setPeriodStartDate(String periodStartDate) {
+        this.periodStartDate = periodStartDate;
+    }
+
+    public String getPeriodStartDate() {
+        return periodStartDate;
+    }
+
+    public void setPeriodEndDate(String periodEndDate) {
+        this.periodEndDate = periodEndDate;
+    }
+
+    public String getPeriodEndDate() {
+        return periodEndDate;
     }
 
     public void setBillAmount(BigDecimal billAmount) {
