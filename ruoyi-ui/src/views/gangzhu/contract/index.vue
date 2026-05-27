@@ -176,7 +176,9 @@
           <el-tag v-else-if="detailForm.contractStatus === '2'" type="primary">已签署</el-tag>
           <el-tag v-else-if="detailForm.contractStatus === '3'" type="success">履行中</el-tag>
           <el-tag v-else-if="detailForm.contractStatus === '4'" type="danger">已到期</el-tag>
-          <el-tag v-else type="info">已解约</el-tag>
+          <el-tag v-else-if="detailForm.contractStatus === '5'" type="info">已解约</el-tag>
+          <el-tag v-else-if="detailForm.contractStatus === '6'" type="info">已失效</el-tag>
+          <el-tag v-else type="info">未知状态</el-tag>
         </div>
       </div>
 
@@ -322,49 +324,55 @@
         </div>
       </div>
 
-      <!-- 签名区域 -->
-      <div class="detail-section" v-if="detailForm.tenantSignature">
+      <!-- 未签署/已失效合同：内容、签名、附件均不展示，给出统一提示 -->
+      <div class="detail-section" v-if="['0','1','6'].includes(detailForm.contractStatus)">
         <div class="section-title">
-          <i class="el-icon-edit"></i>
-          <span>租户签名</span>
-        </div>
-        <div class="signature-area">
-          <img :src="getImageUrl(detailForm.tenantSignature)" alt="租户签名" class="signature-img" />
-        </div>
-      </div>
-
-      <!-- 合同附件 -->
-      <div class="detail-section" v-if="detailForm.contractFile">
-        <div class="section-title">
-          <i class="el-icon-document"></i>
-          <span>合同附件</span>
-        </div>
-        <div class="attachment-area">
-          <el-tag type="info" size="small">{{ getFileName(detailForm.contractFile) }}</el-tag>
-          <el-button type="primary" size="small" icon="el-icon-download" @click="downloadContract(detailForm.contractFile)">下载合同</el-button>
-        </div>
-      </div>
-
-      <!-- 电子合同 PDF（e签宝签署后的链接） -->
-      <div class="detail-section" v-if="detailForm.contractContent && detailForm.contractContent.startsWith('http')">
-        <div class="section-title">
-          <i class="el-icon-document-copy"></i>
-          <span>电子合同</span>
-        </div>
-        <div class="attachment-area">
-          <el-button type="primary" size="small" icon="el-icon-view"
-            @click="handleViewPdf(detailForm)">查看 PDF</el-button>
-          <span style="color:#999;font-size:12px;margin-left:8px;">链接实时刷新，点击后在新标签页打开</span>
-        </div>
-      </div>
-      <!-- 合同内容（非 URL 的老数据，保留展示） -->
-      <div class="detail-section" v-else-if="detailForm.contractContent && !detailForm.contractContent.startsWith('http')">
-        <div class="section-title">
-          <i class="el-icon-document-copy"></i>
+          <i class="el-icon-warning-outline"></i>
           <span>合同内容</span>
         </div>
-        <div class="contract-content" v-html="detailForm.contractContent"></div>
+        <div style="padding:16px;color:#909399;font-size:14px;background:#f4f4f5;border-radius:4px;">
+          该合同未完成电子签署，无生效合同内容
+        </div>
       </div>
+
+      <!-- 已签署及之后状态：展示签名/附件/电子合同PDF -->
+      <template v-else>
+        <!-- 签名区域 -->
+        <div class="detail-section" v-if="detailForm.tenantSignature">
+          <div class="section-title">
+            <i class="el-icon-edit"></i>
+            <span>租户签名</span>
+          </div>
+          <div class="signature-area">
+            <img :src="getImageUrl(detailForm.tenantSignature)" alt="租户签名" class="signature-img" />
+          </div>
+        </div>
+
+        <!-- 合同附件 -->
+        <div class="detail-section" v-if="detailForm.contractFile">
+          <div class="section-title">
+            <i class="el-icon-document"></i>
+            <span>合同附件</span>
+          </div>
+          <div class="attachment-area">
+            <el-tag type="info" size="small">{{ getFileName(detailForm.contractFile) }}</el-tag>
+            <el-button type="primary" size="small" icon="el-icon-download" @click="downloadContract(detailForm.contractFile)">下载合同</el-button>
+          </div>
+        </div>
+
+        <!-- 电子合同 PDF（e签宝签署后的链接） -->
+        <div class="detail-section" v-if="detailForm.contractContent && detailForm.contractContent.startsWith('http')">
+          <div class="section-title">
+            <i class="el-icon-document-copy"></i>
+            <span>电子合同</span>
+          </div>
+          <div class="attachment-area">
+            <el-button type="primary" size="small" icon="el-icon-view"
+              @click="handleViewPdf(detailForm)">查看 PDF</el-button>
+            <span style="color:#999;font-size:12px;margin-left:8px;">链接实时刷新，点击后在新标签页打开</span>
+          </div>
+        </div>
+      </template>
       </el-tab-pane>
 
       <!-- Tab 2：缴费记录 -->
