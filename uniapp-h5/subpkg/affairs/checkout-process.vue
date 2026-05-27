@@ -135,7 +135,8 @@
 				datePickerValue: [0, 0, 0],
 				years: [],
 				months: [],
-				days: []
+				days: [],
+				minDateObj: null // 最早可选日期 = 今天+1
 			}
 		},
 		onLoad(options) {
@@ -218,26 +219,83 @@
 				return ''
 			},
 
-			// 初始化日期选择器
+			// 初始化日期选择器（最早可选 = 今天+1天）
 			initDatePicker() {
-				const currentYear = new Date().getFullYear()
+				const minDate = new Date()
+				minDate.setDate(minDate.getDate() + 1) // 明天
+				this.minDateObj = {
+					year: minDate.getFullYear(),
+					month: minDate.getMonth() + 1,
+					day: minDate.getDate()
+				}
+				const startYear = this.minDateObj.year
 				this.years = []
-				for (let i = currentYear; i <= currentYear + 5; i++) {
+				for (let i = startYear; i <= startYear + 5; i++) {
 					this.years.push(i)
 				}
 				this.months = Array.from({ length: 12 }, (_, i) => i + 1)
-				this.days = Array.from({ length: 31 }, (_, i) => i + 1)
+				// 默认定位到明天
+				this.datePickerValue = [
+					0,
+					this.minDateObj.month - 1,
+					this.minDateObj.day - 1
+				]
+				this.refreshDays()
+			},
+
+			// 根据当前选中的年月重算可选的天数（过滤不存在的日期、过滤今天及之前）
+			refreshDays() {
+				const yearIdx = this.datePickerValue[0] || 0
+				const monthIdx = this.datePickerValue[1] || 0
+				const year = this.years[yearIdx]
+				const month = this.months[monthIdx]
+				// 该月总天数
+				const lastDay = new Date(year, month, 0).getDate()
+				let startDay = 1
+				// 如果是最早可选的年月，起始日从 minDate 开始
+				if (this.minDateObj && year === this.minDateObj.year && month === this.minDateObj.month) {
+					startDay = this.minDateObj.day
+				}
+				// 如果选的是 minDate 之前的月份（不应该出现，防护），置空
+				if (this.minDateObj && (year < this.minDateObj.year || (year === this.minDateObj.year && month < this.minDateObj.month))) {
+					this.days = []
+					return
+				}
+				const arr = []
+				for (let d = startDay; d <= lastDay; d++) {
+					arr.push(d)
+				}
+				this.days = arr
+				// 防护：如果原 day 索引超出，重置为 0
+				if (this.datePickerValue[2] >= this.days.length) {
+					this.$set(this.datePickerValue, 2, 0)
+				}
 			},
 
 			// 显示日期选择器
 			showDatePicker() {
-				this.datePickerValue = [0, 0, 0]
+				// 打开时重新定位到明天
+				if (this.minDateObj) {
+					this.datePickerValue = [
+						0,
+						this.minDateObj.month - 1,
+						0
+					]
+					this.refreshDays()
+				}
 				this.showDatePickerPopup = true
 			},
 
 			// 日期变化
 			onDateChange(e) {
-				this.datePickerValue = e.detail.value
+				const newVal = e.detail.value.slice()
+				const oldYearIdx = this.datePickerValue[0]
+				const oldMonthIdx = this.datePickerValue[1]
+				this.datePickerValue = newVal
+				// 年或月变化时重新计算 days
+				if (newVal[0] !== oldYearIdx || newVal[1] !== oldMonthIdx) {
+					this.refreshDays()
+				}
 			},
 
 			// 确认日期
@@ -245,6 +303,19 @@
 				const year = this.years[this.datePickerValue[0]]
 				const month = this.months[this.datePickerValue[1]]
 				const day = this.days[this.datePickerValue[2]]
+
+				if (!year || !month || !day) {
+					uni.showToast({ title: '请选择有效日期', icon: 'none' })
+					return
+				}
+
+				// 二次校验：必须 ≥ 明天
+				const pick = new Date(year, month - 1, day)
+				const min = new Date(this.minDateObj.year, this.minDateObj.month - 1, this.minDateObj.day)
+				if (pick.getTime() < min.getTime()) {
+					uni.showToast({ title: '计划退租日期最早为明天', icon: 'none' })
+					return
+				}
 
 				// 格式化为 yyyy-MM-dd 格式（后端要求的格式）
 				const monthStr = month < 10 ? '0' + month : month

@@ -152,4 +152,17 @@ public class HzCheckOutController extends BaseController {
         List<Map<String, Object>> bills = checkoutService.selectContractBillList(contractId);
         return success(bills);
     }
+
+    /**
+     * 按日精算退租租金（审批页动态调用）
+     * <p>
+     * 入参：contractId / planCheckoutDate（yyyy-MM-dd）
+     * 返回：{ rentRefund, currentPeriodOwed, detail }
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:checkout:query')")
+    @GetMapping("/calculateRentRefund")
+    public AjaxResult calculateRentRefund(@RequestParam("contractId") Long contractId,
+                                          @RequestParam("planCheckoutDate") String planCheckoutDate) {
+        return success(checkoutService.calculateRentRefund(contractId, planCheckoutDate));
+    }
 }

@@ -180,4 +180,18 @@ public interface IHzCheckoutService {
      * @return 账单列表
      */
     public List<Map<String, Object>> selectContractBillList(Long contractId);
+
+    /**
+     * 按日精算退租租金（覆盖不满一月/满一月/未缴当期/未入住 4 种场景）
+     * <p>
+     * 返回体字段：
+     * - rentRefund：应退租金（情况一/二/四 场景下 > 0）
+     * - currentPeriodOwed：当期未缴按日折算金额（情况三 场景下 > 0，从应退总额中扣）
+     * - detail：计算明细（人类可读）
+     *
+     * @param contractId 合同ID
+     * @param planCheckoutDate 计划退租日期（yyyy-MM-dd）
+     * @return 计算结果
+     */
+    public Map<String, Object> calculateRentRefund(Long contractId, String planCheckoutDate);
 }

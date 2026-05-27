@@ -38,12 +38,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import com.ruoyi.system.domain.HzBill;
 
 /**
  * 退租Service业务层处理
@@ -876,5 +880,166 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
             case "2": return "已取消";
             default: return "未知";
         }
+    }
+
+    /**
+     * 按日精算退租租金。覆盖 4 种场景：
+     * <p>
+     * 情况一：不满一月退租，退租当期已缴 → rentRefund = 已缴 - 日租金×入住天数
+     * 情况二：满一月退租，退租当期(下一期)已缴 → 同上
+     * 情况三：退租当期未缴费 → currentPeriodOwed = 日租金×入住天数（从应退总额中扣）
+     * 情况四：未入住（退租日 <= 合同生效日） → 全部已付租金账单全额退
+     * <p>
+     * 精度要求：日租金 = 月租金 / 当期天数，先保留 2 位小数（HALF_UP）再乘入住天数。
+     * 入住天数 含两端：end - start + 1。
+     */
+    @Override
+    public Map<String, Object> calculateRentRefund(Long contractId, String planCheckoutDate) {
+        Map<String, Object> result = new HashMap<>();
+        BigDecimal rentRefund = BigDecimal.ZERO;
+        BigDecimal currentPeriodOwed = BigDecimal.ZERO;
+        StringBuilder detail = new StringBuilder();
+
+        // 1. 参数校验 + 查合同
+        if (contractId == null || StringUtils.isEmpty(planCheckoutDate)) {
+            result.put("rentRefund", BigDecimal.ZERO);
+            result.put("currentPeriodOwed", BigDecimal.ZERO);
+            result.put("detail", "参数不足");
+            return result;
+        }
+        HzContract contract = contractMapper.selectById(contractId);
+        if (contract == null || StringUtils.isEmpty(contract.getStartDate())) {
+            result.put("rentRefund", BigDecimal.ZERO);
+            result.put("currentPeriodOwed", BigDecimal.ZERO);
+            result.put("detail", "合同不存在或生效日为空");
+            return result;
+        }
+        BigDecimal monthlyRent = contract.getRentPrice() != null ? contract.getRentPrice() : BigDecimal.ZERO;
+        LocalDate contractStart;
+        LocalDate planDate;
+        try {
+            contractStart = LocalDate.parse(contract.getStartDate().substring(0, 10));
+            planDate = LocalDate.parse(planCheckoutDate.substring(0, 10));
+        } catch (Exception e) {
+            result.put("rentRefund", BigDecimal.ZERO);
+            result.put("currentPeriodOwed", BigDecimal.ZERO);
+            result.put("detail", "日期格式错误");
+            return result;
+        }
+
+        // 2. 查询该合同所有租金账单（含未付）按期数升序
+        LambdaQueryWrapper<HzBill> billQuery = new LambdaQueryWrapper<>();
+        billQuery.eq(HzBill::getContractId, contractId)
+                 .eq(HzBill::getBillType, "2")
+                 .eq(HzBill::getDelFlag, "0")
+                 .orderByAsc(HzBill::getBillSeq);
+        List<HzBill> rentBills = billMapper.selectList(billQuery);
+
+        // 3. 情况四：未入住（退租日 <= 合同生效日）
+        if (!planDate.isAfter(contractStart)) {
+            BigDecimal allPaid = BigDecimal.ZERO;
+            for (HzBill b : rentBills) {
+                if ("1".equals(b.getBillStatus()) && b.getPaidAmount() != null) {
+                    allPaid = allPaid.add(b.getPaidAmount());
+                }
+            }
+            rentRefund = allPaid;
+            detail.append("情况四：未入住（退租日 ≤ 合同生效日），全部已付租金账单全额退还 ¥")
+                  .append(rentRefund);
+            result.put("rentRefund", rentRefund.setScale(2, RoundingMode.HALF_UP));
+            result.put("currentPeriodOwed", BigDecimal.ZERO);
+            result.put("detail", detail.toString());
+            return result;
+        }
+
+        // 4. 找退租日所在的当期账单（period_start_date ≤ planDate ≤ period_end_date）
+        HzBill currentBill = null;
+        for (HzBill b : rentBills) {
+            if (StringUtils.isEmpty(b.getPeriodStartDate()) || StringUtils.isEmpty(b.getPeriodEndDate())) {
+                continue;
+            }
+            try {
+                LocalDate ps = LocalDate.parse(b.getPeriodStartDate().substring(0, 10));
+                LocalDate pe = LocalDate.parse(b.getPeriodEndDate().substring(0, 10));
+                if (!planDate.isBefore(ps) && !planDate.isAfter(pe)) {
+                    currentBill = b;
+                    break;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // 5. 兑底：退租日不在任何账单期内（超过合同期限） → 仅退退租日之后已缴的
+        if (currentBill == null) {
+            BigDecimal futureRefund = BigDecimal.ZERO;
+            for (HzBill b : rentBills) {
+                if (!"1".equals(b.getBillStatus()) || StringUtils.isEmpty(b.getPeriodStartDate())) continue;
+                try {
+                    LocalDate ps = LocalDate.parse(b.getPeriodStartDate().substring(0, 10));
+                    if (ps.isAfter(planDate) && b.getPaidAmount() != null) {
+                        futureRefund = futureRefund.add(b.getPaidAmount());
+                    }
+                } catch (Exception ignored) {}
+            }
+            rentRefund = futureRefund;
+            detail.append("退租日不在任何账单期内（超出合同期限），仅退退租日之后已缴账单共 ¥")
+                  .append(rentRefund);
+            result.put("rentRefund", rentRefund.setScale(2, RoundingMode.HALF_UP));
+            result.put("currentPeriodOwed", BigDecimal.ZERO);
+            result.put("detail", detail.toString());
+            return result;
+        }
+
+        // 6. 计算当期日租金 + 入住天数
+        LocalDate ps = LocalDate.parse(currentBill.getPeriodStartDate().substring(0, 10));
+        LocalDate pe = LocalDate.parse(currentBill.getPeriodEndDate().substring(0, 10));
+        long periodDays = ChronoUnit.DAYS.between(ps, pe) + 1;     // 当期天数（含两端）
+        long stayDays = ChronoUnit.DAYS.between(ps, planDate) + 1;   // 入住天数（含两端）
+
+        // 关键：先保留 2 位小数（HALF_UP）再乘入住天数
+        BigDecimal dailyRent = monthlyRent.divide(BigDecimal.valueOf(periodDays), 2, RoundingMode.HALF_UP);
+        BigDecimal currentPeriodPay = dailyRent.multiply(BigDecimal.valueOf(stayDays))
+                                                .setScale(2, RoundingMode.HALF_UP);
+
+        detail.append(String.format("退租日所在期：第%d期(%s～%s)，共%d天\n",
+                currentBill.getBillSeq() != null ? currentBill.getBillSeq() : 0, ps, pe, periodDays));
+        detail.append(String.format("日租金 = ¥%s / %d = ¥%s\n", monthlyRent.toPlainString(), periodDays, dailyRent.toPlainString()));
+        detail.append(String.format("入住天数 = %d 天，当期应付 = ¥%s × %d = ¥%s\n",
+                stayDays, dailyRent.toPlainString(), stayDays, currentPeriodPay.toPlainString()));
+
+        boolean currentPaid = "1".equals(currentBill.getBillStatus());
+        if (currentPaid) {
+            // 情况一/二：当期已缴 → 退 (已付 - 当期应付)
+            BigDecimal paid = currentBill.getPaidAmount() != null ? currentBill.getPaidAmount() : BigDecimal.ZERO;
+            BigDecimal currentRefund = paid.subtract(currentPeriodPay);
+            if (currentRefund.compareTo(BigDecimal.ZERO) < 0) currentRefund = BigDecimal.ZERO;
+            rentRefund = rentRefund.add(currentRefund);
+            detail.append(String.format("当期已缴 ¥%s，应退 ¥%s\n", paid.toPlainString(), currentRefund.toPlainString()));
+        } else {
+            // 情况三：当期未缴 → 从应退总额中扣当期应付
+            currentPeriodOwed = currentPeriodPay;
+            detail.append(String.format("当期未缴费，从应退总额中扣 ¥%s\n", currentPeriodOwed.toPlainString()));
+        }
+
+        // 7. 当期之后已缴的（用户多缴） → 全额退
+        BigDecimal futureRefund = BigDecimal.ZERO;
+        for (HzBill b : rentBills) {
+            if (b == currentBill) continue;
+            if (!"1".equals(b.getBillStatus()) || StringUtils.isEmpty(b.getPeriodStartDate())) continue;
+            try {
+                LocalDate bps = LocalDate.parse(b.getPeriodStartDate().substring(0, 10));
+                if (bps.isAfter(pe) && b.getPaidAmount() != null) {
+                    futureRefund = futureRefund.add(b.getPaidAmount());
+                }
+            } catch (Exception ignored) {}
+        }
+        if (futureRefund.compareTo(BigDecimal.ZERO) > 0) {
+            rentRefund = rentRefund.add(futureRefund);
+            detail.append(String.format("当期之后已缴账单（多缴）全额退 ¥%s\n", futureRefund.toPlainString()));
+        }
+
+        result.put("rentRefund", rentRefund.setScale(2, RoundingMode.HALF_UP));
+        result.put("currentPeriodOwed", currentPeriodOwed.setScale(2, RoundingMode.HALF_UP));
+        result.put("detail", detail.toString());
+        return result;
     }
 }

@@ -352,11 +352,21 @@
               <el-form-item label="应退租金">
                 <span style="color: #67C23A; font-weight: bold;">¥{{ fmt(refundableRent) }}</span>
                 <el-tag v-if="isNotCheckedIn" size="mini" type="warning" style="margin-left:6px;">未入住·全额退</el-tag>
-                <el-tooltip :content="isNotCheckedIn ? '该合同尚未办理入住，已付租金应全额退回' : '从已支付的租金账单中统计，表示未使用月份应退还的租金'" placement="top">
+                <el-tooltip :content="refundResult.detail || (isNotCheckedIn ? '该合同尚未办理入住，已付租金应全额退回' : '后端按日精算：月租/当期天数(保留两位)×入住天数为当期应付租金，其余已付部分全额退')" placement="top">
                   <i class="el-icon-question" style="margin-left: 5px; color: #909399;"></i>
                 </el-tooltip>
               </el-form-item>
             </el-col>
+            <el-col :span="8">
+              <el-form-item label="当期居住扣款">
+                <span :style="{ color: currentPeriodOwed > 0 ? '#E6A23C' : '#909399', fontWeight: 'bold' }">¥{{ fmt(currentPeriodOwed) }}</span>
+                <el-tooltip content="未缴当期房租场景：当期应付租金（按入住天数按日折算）从押金中扣除" placement="top">
+                  <i class="el-icon-question" style="margin-left: 5px; color: #909399;"></i>
+                </el-tooltip>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row>
             <el-col :span="8">
               <el-form-item label="应退押金(元)">
                 <el-input-number
@@ -428,9 +438,10 @@
             <el-col :span="24">
               <el-form-item label="计算说明">
                 <div style="color: #909399; font-size: 12px; line-height: 1.8;">
-                  <p>• 应退总额 = 应退押金 + 应退租金 - 违约金 - 损坏扣款 - 水费 - 电费 - 燃气费 - 暖气费 - 物业费 - 未付账单</p>
+                  <p>• 应退总额 = 应退押金 + 应退租金 - 违约金 - 损坏扣款 - 水费 - 电费 - 燃气费 - 暖气费 - 物业费 - 未付账单 - 当期居住扣款</p>
                   <p>• 应退押金: 默认 = 合同押金 ¥{{ fmt(currentForm.deposit || 0) }}；如部分扣留请在此调整</p>
-                  <p>• 应退租金: <span v-if="isNotCheckedIn" style="color:#E6A23C;">未办理入住 → 全部已付租金 ¥{{ fmt(refundableRent) }} 全额退回</span><span v-else>从已支付的租金账单中统计退租日期之后的月份（当前 ¥{{ fmt(refundableRent) }}）</span></p>
+                  <p>• 应退租金（后端按日精算）: <span v-if="refundResult.detail" style="color:#409EFF;">{{ refundResult.detail }}</span><span v-else-if="isNotCheckedIn" style="color:#E6A23C;">未办理入住 → 全部已付租金 ¥{{ fmt(refundableRent) }} 全额退回</span><span v-else>当前 ¥{{ fmt(refundableRent) }}</span></p>
+                  <p v-if="currentPeriodOwed > 0" style="color:#E6A23C;">• 当期居住扣款: 未缴当期房租 → 当期应付 ¥{{ fmt(currentPeriodOwed) }} 从押金中扣除</p>
                   <p>• 建议金额: <span style="color: #67C23A; font-weight: bold;">¥{{ fmt(calculatedRefund) }}</span>（可直接编辑上方"应退总额"输入框调整）</p>
                   <p style="color:#F56C6C;">⚠ 退款时按「应退押金 + (应退总额 - 应退押金)」拆成两笔分别原路退回，请确保应退押金 ≤ 应退总额</p>
                 </div>
@@ -654,7 +665,7 @@
 </template>
 
 <script>
-import { listCheckout, getCheckout, delCheckout, approveCheckout, calculateCheckout, getCheckoutRecordByApplyId, getContractBills } from "@/api/gangzhu/checkout";
+import { listCheckout, getCheckout, delCheckout, approveCheckout, calculateCheckout, getCheckoutRecordByApplyId, getContractBills, calculateRentRefund } from "@/api/gangzhu/checkout";
 
 export default {
   name: "CheckOut",
@@ -714,7 +725,14 @@ export default {
       recordForm: {},
 
       // 详情页账单列表
-      billList: []
+      billList: [],
+
+      // 应退租金计算结果（来自后端按日精算接口）
+      refundResult: {
+        rentRefund: 0,           // 应退租金
+        currentPeriodOwed: 0,    // 当期居住扣款（情况三：未缴当期房租从押金扣）
+        detail: ''               // 计算明细说明
+      }
     };
   },
   created() {
@@ -726,8 +744,14 @@ export default {
       const s = this.currentForm.checkinStatus;
       return s === null || s === undefined || s === '' || s === '0';
     },
-    // 计算应退租金（未入住→全部已付租金；已入住→退租日期之后的月份）
+    // 应退租金：优先用后端接口返回的按日精算结果；后端未返回时退化为前端计算
     refundableRent() {
+      // 优先使用后端接口计算结果
+      if (this.refundResult && Number(this.refundResult.rentRefund) >= 0 && this.refundResult.detail) {
+        return Number(this.refundResult.rentRefund);
+      }
+
+      // 退化：未调用接口时使用原有逻辑
       // 1. 筛选已支付的租金账单 (billType = '2' 表示租金, billStatus = '1' 表示已支付)
       const paidRentBills = this.billList.filter(bill =>
         bill.billType === '2' && bill.billStatus === '1'
@@ -757,6 +781,10 @@ export default {
       // 5. 统计应退租金总额
       return refundableBills.reduce((sum, bill) => sum + Number(bill.paidAmount || 0), 0);
     },
+    // 当期居住扣款（情况三：未缴当期房租，按日折算从押金扣除）
+    currentPeriodOwed() {
+      return Number(this.refundResult && this.refundResult.currentPeriodOwed) || 0;
+    },
     // 计算建议的应退总额（供管理员参考）
     calculatedRefund() {
       // 应退押金：优先用管理员手填，否则合同押金
@@ -772,7 +800,7 @@ export default {
       const property = Number(this.approveForm.propertyFee || 0);
       const unpaid = Number(this.currentForm.unpaidBills || 0);
 
-      const result = depositRefund + refundableRent - penalty - damage - water - electric - gas - heating - property - unpaid;
+      const result = depositRefund + refundableRent - penalty - damage - water - electric - gas - heating - property - unpaid - this.currentPeriodOwed;
       return Math.max(0, result);
     },
     // 计算应退总额（优先使用管理员手动输入的值，如果没有则使用计算值）
@@ -916,11 +944,39 @@ export default {
         refundAmount: null, // 先设置为null，加载账单后会自动计算
         depositRefund: (row.depositRefund !== null && row.depositRefund !== undefined && Number(row.depositRefund) > 0) ? row.depositRefund : (row.deposit || 0) // 默认=合同押金（0 也视为未填，走兜底）
       };
-
+    
+      // 重置按日精算结果
+      this.refundResult = { rentRefund: 0, currentPeriodOwed: 0, detail: '' };
+    
+      // 调用后端接口计算应退租金（按日精算）
+      this.fetchRentRefund(row.contractId, row.planCheckoutDate);
+    
       // 加载账单列表
       this.loadContractBills(row.contractId);
-
+    
       this.approveOpen = true;
+    },
+    
+    // 调用后端按日精算接口，计算应退租金 + 当期居住扣款
+    fetchRentRefund(contractId, planCheckoutDate) {
+      if (!contractId || !planCheckoutDate) {
+        this.refundResult = { rentRefund: 0, currentPeriodOwed: 0, detail: '' };
+        return Promise.resolve();
+      }
+      return calculateRentRefund(contractId, planCheckoutDate).then(res => {
+        const data = res.data || {};
+        this.refundResult = {
+          rentRefund: Number(data.rentRefund) || 0,
+          currentPeriodOwed: Number(data.currentPeriodOwed) || 0,
+          detail: data.detail || '后端未返回计算明细'
+        };
+        // 重新计算 refundAmount
+        if (this.billList && this.billList.length > 0) {
+          this.approveForm.refundAmount = this.calculateInitialRefund();
+        }
+      }).catch(() => {
+        this.refundResult = { rentRefund: 0, currentPeriodOwed: 0, detail: '计算接口调用失败，已退化为前端默认计算' };
+      });
     },
 
     // 加载合同账单列表
@@ -949,28 +1005,32 @@ export default {
       const depositRefund = Number(this.approveForm.depositRefund) > 0
         ? Number(this.approveForm.depositRefund) : Number(this.currentForm.deposit || 0);
 
-      // 判断"未入住"
-      const ckStatus = this.currentForm.checkinStatus;
-      const isNotCheckedIn = (ckStatus === null || ckStatus === undefined || ckStatus === '' || ckStatus === '0');
-
-      // 计算应退租金
+      // 应退租金：优先用后端接口返回的按日精算结果
       let refundableRent = 0;
-      const paidRentBills = (this.billList || []).filter(bill =>
-        bill.billType === '2' && bill.billStatus === '1'
-      );
-
-      if (isNotCheckedIn) {
-        // 未入住：全部已付租金全额退
-        refundableRent = paidRentBills.reduce((sum, bill) => sum + Number(bill.paidAmount || 0), 0);
-      } else if (this.currentForm.planCheckoutDate) {
-        const planCheckoutDate = new Date(this.currentForm.planCheckoutDate);
-        const refundableBills = paidRentBills.filter(bill => {
-          if (!bill.billPeriod) return false;
-          const [year, month] = bill.billPeriod.split('-');
-          const billDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-          return billDate > planCheckoutDate;
-        });
-        refundableRent = refundableBills.reduce((sum, bill) => sum + Number(bill.paidAmount || 0), 0);
+      let currentPeriodOwed = 0;
+      const useBackend = this.refundResult && this.refundResult.detail;
+      if (useBackend) {
+        refundableRent = Number(this.refundResult.rentRefund) || 0;
+        currentPeriodOwed = Number(this.refundResult.currentPeriodOwed) || 0;
+      } else {
+        // 退化：后端接口未返回时使用原有逻辑
+        const ckStatus = this.currentForm.checkinStatus;
+        const isNotCheckedIn = (ckStatus === null || ckStatus === undefined || ckStatus === '' || ckStatus === '0');
+        const paidRentBills = (this.billList || []).filter(bill =>
+          bill.billType === '2' && bill.billStatus === '1'
+        );
+        if (isNotCheckedIn) {
+          refundableRent = paidRentBills.reduce((sum, bill) => sum + Number(bill.paidAmount || 0), 0);
+        } else if (this.currentForm.planCheckoutDate) {
+          const planCheckoutDate = new Date(this.currentForm.planCheckoutDate);
+          const refundableBills = paidRentBills.filter(bill => {
+            if (!bill.billPeriod) return false;
+            const [year, month] = bill.billPeriod.split('-');
+            const billDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+            return billDate > planCheckoutDate;
+          });
+          refundableRent = refundableBills.reduce((sum, bill) => sum + Number(bill.paidAmount || 0), 0);
+        }
       }
 
       const penalty = Number(this.approveForm.penaltyAmount || 0);
@@ -982,7 +1042,7 @@ export default {
       const property = Number(this.approveForm.propertyFee || 0);
       const unpaid = Number(this.currentForm.unpaidBills || 0);
 
-      const result = depositRefund + refundableRent - penalty - damage - water - electric - gas - heating - property - unpaid;
+      const result = depositRefund + refundableRent - penalty - damage - water - electric - gas - heating - property - unpaid - currentPeriodOwed;
       return Math.max(0, Number(result.toFixed(2)));
     },
 

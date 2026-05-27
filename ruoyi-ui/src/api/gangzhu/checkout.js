@@ -84,3 +84,12 @@ export function getContractBills(contractId) {
     method: 'get'
   })
 }
+
+// 按日精算退租租金（返回 rentRefund / currentPeriodOwed / detail）
+export function calculateRentRefund(contractId, planCheckoutDate) {
+  return request({
+    url: '/system/checkout/calculateRentRefund',
+    method: 'get',
+    params: { contractId, planCheckoutDate }
+  })
+}
