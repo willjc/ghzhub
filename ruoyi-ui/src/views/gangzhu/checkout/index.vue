@@ -268,6 +268,11 @@
         <el-divider content-position="left">审批操作</el-divider>
         <el-form-item label="审批意见" required>
           <el-input v-model="approveForm.approveOpinion" type="textarea" placeholder="请输入审批意见" :rows="2" />
+          <div style="margin-top: 6px;">
+            <span style="color: #909399; font-size: 12px; margin-right: 8px;">快捷填入：</span>
+            <el-tag size="small" effect="plain" type="success" style="cursor: pointer;"
+                    @click="fillApproveOpinion('同意')">同意</el-tag>
+          </div>
         </el-form-item>
 
         <!-- 显示费用计算按钮 -->
@@ -919,6 +924,11 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.handleQuery();
+    },
+
+    // 快捷预填审批意见
+    fillApproveOpinion(text) {
+      this.$set(this.approveForm, 'approveOpinion', text);
     },
 
     // 打开审批对话框

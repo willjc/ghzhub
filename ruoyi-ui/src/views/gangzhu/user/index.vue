@@ -73,23 +73,58 @@
       <el-table-column label="用户ID" align="center" prop="userId" width="80" />
       <el-table-column label="手机号（登录账号）" align="center" prop="phone" min-width="130" show-overflow-tooltip />
       <el-table-column label="联系电话" align="center" prop="contactPhone" min-width="120" show-overflow-tooltip />
-      <el-table-column label="昵称" align="center" prop="nickname" width="120" show-overflow-tooltip />
       <el-table-column label="真实姓名" align="center" prop="realName" width="100" />
-      <el-table-column label="性别" align="center" prop="gender" width="80">
+      <el-table-column label="性别" align="center" prop="gender" width="70">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.sys_user_sex" :value="scope.row.gender"/>
+        </template>
+      </el-table-column>
+      <el-table-column label="年龄" align="center" width="70">
+        <template slot-scope="scope">
+          <span v-if="calcAge(scope.row.idCard)">{{ calcAge(scope.row.idCard) }}</span>
+          <span v-else style="color: #909399">-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="身份证号" align="center" width="170">
+        <template slot-scope="scope">
+          <span v-if="scope.row.idCard">{{ maskIdCard(scope.row.idCard) }}</span>
+          <span v-else style="color: #909399">-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="学历" align="center" prop="education" width="90">
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.hz_education_type" :value="scope.row.education" v-if="scope.row.education"/>
+          <span v-else style="color: #909399">-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="身份类型" align="center" prop="identityType" width="100">
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.hz_identity_type" :value="scope.row.identityType" v-if="scope.row.identityType"/>
+          <span v-else style="color: #909399">-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="工作单位" align="center" prop="workUnit" min-width="160" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span v-if="scope.row.workUnit">{{ scope.row.workUnit }}</span>
+          <span v-else style="color: #909399">-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="单位性质" align="center" prop="unitNature" width="110">
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.hz_unit_nature" :value="scope.row.unitNature" v-if="scope.row.unitNature"/>
+          <span v-else style="color: #909399">-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="实名认证" align="center" prop="authStatus" width="100">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.authStatus === '2'" type="success" size="mini">已认证</el-tag>
+          <el-tag v-else-if="scope.row.authStatus === '1'" type="warning" size="mini">已填资料</el-tag>
+          <el-tag v-else type="info" size="mini">未认证</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="来源类型" align="center" prop="sourceType" width="110">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.hz_user_source_type" :value="scope.row.sourceType"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="第三方ID" align="center" min-width="150" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <span v-if="scope.row.sourceType === '1'">{{ scope.row.wechatOpenid }}</span>
-          <span v-else-if="scope.row.sourceType === '2'">{{ scope.row.zhaohaoUserId }}</span>
-          <span v-else style="color: #909399">-</span>
         </template>
       </el-table-column>
       <el-table-column label="状态" align="center" width="80">
@@ -164,6 +199,10 @@
           <dict-tag :options="dict.type.sys_user_sex" :value="userData.gender"/>
         </el-descriptions-item>
         <el-descriptions-item label="身份证号">{{ userData.idCard }}</el-descriptions-item>
+        <el-descriptions-item label="年龄">
+          <span v-if="calcAge(userData.idCard)">{{ calcAge(userData.idCard) }} 岁</span>
+          <span v-else style="color: #909399">-</span>
+        </el-descriptions-item>
         <el-descriptions-item label="学历">
           <dict-tag :options="dict.type.hz_education_type" :value="userData.education" v-if="userData.education"/>
           <span v-else style="color: #909399">未填写</span>
@@ -452,6 +491,27 @@ export default {
     downloadAttachment(url) {
       const fullUrl = this.getImageUrl(url);
       window.open(fullUrl, '_blank');
+    },
+    /** 根据身份证号计算年龄（18 位身份证第 7-14 位为出生日期 yyyyMMdd） */
+    calcAge(idCard) {
+      if (!idCard || idCard.length !== 18) return '';
+      const birthYear = parseInt(idCard.substring(6, 10), 10);
+      const birthMonth = parseInt(idCard.substring(10, 12), 10);
+      const birthDay = parseInt(idCard.substring(12, 14), 10);
+      if (!birthYear || !birthMonth || !birthDay) return '';
+      const now = new Date();
+      let age = now.getFullYear() - birthYear;
+      const m = now.getMonth() + 1 - birthMonth;
+      if (m < 0 || (m === 0 && now.getDate() < birthDay)) {
+        age--;
+      }
+      return age >= 0 && age < 150 ? age : '';
+    },
+    /** 身份证号脱敏：保留前 3 位和后 1 位，中间打 * */
+    maskIdCard(idCard) {
+      if (!idCard) return '';
+      if (idCard.length < 5) return idCard;
+      return idCard.substring(0, 3) + '*'.repeat(idCard.length - 4) + idCard.substring(idCard.length - 1);
     }
   }
 };
