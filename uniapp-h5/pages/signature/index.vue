@@ -51,6 +51,8 @@ import SmoothSignature from 'smooth-signature'
 // #endif
 import { submitCheckInConfirm } from '@/api/checkin.js'
 import { submitCheckoutConfirm, submitCheckoutApply } from '@/api/checkout.js'
+import config from '@/config/index'
+import { BASE_URL } from '@/utils/request'
 
 export default {
 	data() {
@@ -330,9 +332,10 @@ export default {
 		uploadSignatureToServer(tempFilePath) {
 			return new Promise((resolve, reject) => {
 				const token = uni.getStorageSync('token') || ''
-				const config = require('@/config/index').default
+				// 与 contract-filing-submit / appeal-submit / subsidy-submit 保持一致：
+				// 使用顶部静态 import 的 config，避免运行时 require ES Module 在小程序中 .default 取不到的问题
 				uni.uploadFile({
-					url: config.baseUrl + '/common/upload',
+					url: (config.uploadUrl || BASE_URL) + '/common/upload',
 					filePath: tempFilePath,
 					name: 'file',
 					header: {
@@ -420,8 +423,10 @@ export default {
 			} catch (error) {
 				uni.hideLoading()
 				console.error('提交入住确认失败:', error)
+				// 优先显示后端返回的真实错误信息，避免兜底文案覆盖真实失败原因
+				const realMsg = (error && (error.msg || error.message)) || ''
 				uni.showToast({
-					title: '提交失败，请重试',
+					title: realMsg || '提交失败，请重试',
 					icon: 'none'
 				})
 			} finally {
@@ -480,8 +485,10 @@ export default {
 			} catch (error) {
 				uni.hideLoading()
 				console.error('提交退租确认失败:', error)
+				// 优先显示后端返回的真实错误信息，避免兜底文案覆盖真实失败原因
+				const realMsg = (error && (error.msg || error.message)) || ''
 				uni.showToast({
-					title: '提交失败，请重试',
+					title: realMsg || '提交失败，请重试',
 					icon: 'none'
 				})
 			} finally {
@@ -545,8 +552,10 @@ export default {
 			} catch (error) {
 				uni.hideLoading()
 				console.error('提交退租申请失败:', error)
+				// 优先显示后端返回的真实错误信息，避免兜底文案覆盖真实失败原因
+				const realMsg = (error && (error.msg || error.message)) || ''
 				uni.showToast({
-					title: '提交失败，请重试',
+					title: realMsg || '提交失败，请重试',
 					icon: 'none'
 				})
 			} finally {

@@ -46,7 +46,7 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
     private HzHouseMapper houseMapper;
 
     @Override
-    public TableDataInfo selectRefundList(Page<HzCheckoutApply> page, String refundNo, String contractNo, String refundStatus, Long projectId, String refundType) {
+    public TableDataInfo selectRefundList(Page<HzCheckoutApply> page, String refundNo, String contractNo, String refundStatus, Long projectId, String refundType, String tenantName) {
         // 构建退租申请查询条件（已确认且有退款金额）
         LambdaQueryWrapper<HzCheckoutApply> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzCheckoutApply::getApplyStatus, "5")
@@ -81,6 +81,18 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
                 return emptyResult();
             }
             wrapper.in(HzCheckoutApply::getContractId, contractIds);
+        }
+
+        // 租户姓名过滤：使用合同表的 tenant_name 快照（合同签约时确定，不会因后续改名失效）
+        if (tenantName != null && !tenantName.isEmpty()) {
+            LambdaQueryWrapper<HzContract> nameWrapper = new LambdaQueryWrapper<>();
+            nameWrapper.like(HzContract::getTenantName, tenantName);
+            List<Long> nameContractIds = contractMapper.selectList(nameWrapper)
+                    .stream().map(HzContract::getContractId).collect(Collectors.toList());
+            if (nameContractIds.isEmpty()) {
+                return emptyResult();
+            }
+            wrapper.in(HzCheckoutApply::getContractId, nameContractIds);
         }
 
         // 项目过滤：通过 house.project_id 查出 house_id 集合，再按 apply.house_id 过滤
@@ -193,6 +205,7 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
             HzContract contract = contractMapper.selectById(checkout.getContractId());
             if (contract != null) {
                 vo.setContractNo(contract.getContractNo());
+                vo.setTenantName(contract.getTenantName());
             }
         }
 

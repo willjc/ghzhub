@@ -9,6 +9,14 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="姓名" prop="tenantName">
+        <el-input
+          v-model="queryParams.tenantName"
+          placeholder="请输入租户姓名"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="合同编号" prop="contractNo">
         <el-input
           v-model="queryParams.contractNo"
@@ -55,6 +63,7 @@
 
     <el-table v-loading="loading" :data="refundList">
       <el-table-column label="退款编号" align="center" prop="refundNo" width="100" />
+      <el-table-column label="姓名" align="center" prop="tenantName" width="100" show-overflow-tooltip />
       <el-table-column label="合同编号" align="center" prop="contractNo" min-width="150" show-overflow-tooltip />
       <el-table-column label="退款类型" align="center" prop="refundType" width="140">
         <template slot-scope="scope">
@@ -275,6 +284,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         refundNo: null,
+        tenantName: null,
         contractNo: null,
         refundStatus: null,
         projectId: null,

@@ -64,7 +64,8 @@ public class HzRefundController extends BaseController {
                 query.getContractNo(),
                 query.getRefundStatus(),
                 query.getProjectId(),
-                query.getRefundType()
+                query.getRefundType(),
+                query.getTenantName()
         );
     }
 
