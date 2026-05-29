@@ -9,6 +9,14 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="姓名" prop="tenantName">
+        <el-input
+          v-model="queryParams.tenantName"
+          placeholder="请输入租户姓名"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="申请状态" prop="applyStatus">
         <el-select v-model="queryParams.applyStatus" placeholder="请选择申请状态" clearable>
           <el-option label="审批中" value="0" />
@@ -30,6 +38,7 @@
 
     <el-table v-loading="loading" :data="checkOutList" @selection-change="handleSelectionChange">
       <el-table-column label="申请ID" align="center" prop="applyId" width="80" />
+      <el-table-column label="姓名" align="center" prop="tenantName" width="100" show-overflow-tooltip />
       <el-table-column label="合同编号" align="center" prop="contractNo" width="150" show-overflow-tooltip />
       <el-table-column label="房源" align="center" min-width="220" show-overflow-tooltip>
         <template slot-scope="scope">
@@ -476,6 +485,7 @@
       <el-divider content-position="left">申请信息</el-divider>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="申请ID">{{ detailForm.applyId }}</el-descriptions-item>
+        <el-descriptions-item label="姓名">{{ detailForm.tenantName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="合同编号">{{ detailForm.contractNo || '-' }}</el-descriptions-item>
         <el-descriptions-item label="房源">
           <span v-if="detailForm.projectName || detailForm.buildingName || detailForm.houseNo">
@@ -682,6 +692,7 @@ export default {
         pageSize: 10,
         applyId: null,
         applyStatus: null,
+        tenantName: null,
       },
 
       // 当前选中行

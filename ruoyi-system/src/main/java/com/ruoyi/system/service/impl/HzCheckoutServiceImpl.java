@@ -115,6 +115,24 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
         wrapper.eq(HzCheckoutApply::getDelFlag, "0")
                .eq(hzCheckoutApply.getApplyStatus() != null, HzCheckoutApply::getApplyStatus, hzCheckoutApply.getApplyStatus())
                .orderByDesc(HzCheckoutApply::getApplyTime);
+
+        // 租户姓名过滤：使用合同表的 tenant_name 快照（合同签约时确定，不会因后续改名失效）
+        if (StringUtils.isNotEmpty(hzCheckoutApply.getTenantName())) {
+            LambdaQueryWrapper<HzContract> nameWrapper = new LambdaQueryWrapper<>();
+            nameWrapper.like(HzContract::getTenantName, hzCheckoutApply.getTenantName());
+            List<Long> nameContractIds = contractMapper.selectList(nameWrapper)
+                    .stream().map(HzContract::getContractId).collect(java.util.stream.Collectors.toList());
+            if (nameContractIds.isEmpty()) {
+                TableDataInfo empty = new TableDataInfo();
+                empty.setRows(new ArrayList<>());
+                empty.setTotal(0);
+                empty.setCode(200);
+                empty.setMsg("查询成功");
+                return empty;
+            }
+            wrapper.in(HzCheckoutApply::getContractId, nameContractIds);
+        }
+
         IPage<HzCheckoutApply> pageResult = this.page(page, wrapper);
         List<HzCheckoutApply> applyList = pageResult.getRecords();
 
@@ -180,6 +198,7 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                 HzContract contract = contractMapper.selectById(apply.getContractId());
                 if (contract != null) {
                     vo.setContractNo(contract.getContractNo());
+                    vo.setTenantName(contract.getTenantName());
                     vo.setStartDate(contract.getStartDate());
                     vo.setEndDate(contract.getEndDate());
                     vo.setRentMonths(contract.getRentMonths());

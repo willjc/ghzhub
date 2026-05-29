@@ -150,6 +150,13 @@ public class HzCheckoutApply extends BaseEntity {
     @TableField("del_flag")
     private String delFlag;
 
+    /** 租户姓名（仅查询参数透传，不映射数据库；按 hz_contract.tenant_name 模糊查询） */
+    @TableField(exist = false)
+    private String tenantName;
+
+    public void setTenantName(String tenantName) { this.tenantName = tenantName; }
+    public String getTenantName() { return tenantName; }
+
     public void setApplyId(Long applyId) { this.applyId = applyId; }
     public Long getApplyId() { return applyId; }
     

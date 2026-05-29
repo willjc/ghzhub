@@ -58,6 +58,10 @@ public class HzCheckoutApplyVO {
     @Excel(name = "合同编号")
     private String contractNo;
 
+    /** 租户姓名（合同签约时快照，取自 hz_contract.tenant_name） */
+    @Excel(name = "姓名")
+    private String tenantName;
+
     /** 合同开始日期 */
     private String startDate;
 
@@ -287,6 +291,14 @@ public class HzCheckoutApplyVO {
 
     public void setContractNo(String contractNo) {
         this.contractNo = contractNo;
+    }
+
+    public String getTenantName() {
+        return tenantName;
+    }
+
+    public void setTenantName(String tenantName) {
+        this.tenantName = tenantName;
     }
 
     public String getStartDate() {

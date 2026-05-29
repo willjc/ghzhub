@@ -134,6 +134,7 @@
       <el-divider content-position="left">申请信息</el-divider>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="退款编号">{{ detailForm.refundNo }}</el-descriptions-item>
+        <el-descriptions-item label="姓名">{{ detailForm.tenantName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="合同编号">{{ detailForm.contractNo || '-' }}</el-descriptions-item>
         <el-descriptions-item label="退款金额">
           <span style="color: #f56c6c; font-weight: bold; font-size: 16px;">¥{{ detailForm.refundAmount }}</span>
