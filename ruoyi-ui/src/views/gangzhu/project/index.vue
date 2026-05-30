@@ -211,7 +211,7 @@
           <el-alert type="info" :closable="false" style="padding: 8px 16px;">
             <template slot="title">
               <span style="color: #606266;">如果不清楚坐标，请使用</span>
-              <a href="https://lbs.amap.com/tools/picker" target="_blank" style="color: #409EFF; text-decoration: none; margin: 0 4px;">高德地图坐标拾取器</a>
+              <a href="https://lbs.qq.com/getPoint/" target="_blank" style="color: #409EFF; text-decoration: none; margin: 0 4px;">腾讯地图坐标拾取器</a>
               <span style="color: #606266;">来选择坐标</span>
             </template>
           </el-alert>

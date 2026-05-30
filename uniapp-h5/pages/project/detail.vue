@@ -153,6 +153,8 @@ export default {
 					this.projectInfo = {
 						projectName: project.projectName || '未命名项目',
 						address: project.address || '地址未填写',
+						latitude: project.latitude ? parseFloat(project.latitude) : null,
+						longitude: project.longitude ? parseFloat(project.longitude) : null,
 						distance: this.calculateDistance(project.latitude, project.longitude),
 						totalHouses: Math.max(0, (project.totalHouses || 0) - (project.offlineHouses || 0)),
 						distribution: project.distribution || '',
@@ -199,10 +201,15 @@ export default {
 		},
 
 		openNavigation() {
-			// 打开地图导航
+			const lat = this.projectInfo.latitude
+			const lng = this.projectInfo.longitude
+			if (!lat || !lng) {
+				uni.showToast({ title: '该项目暂无坐标信息', icon: 'none' })
+				return
+			}
 			uni.openLocation({
-				latitude: 34.5,
-				longitude: 113.8,
+				latitude: lat,
+				longitude: lng,
 				name: this.projectInfo.projectName,
 				address: this.projectInfo.address,
 				fail: (err) => {
