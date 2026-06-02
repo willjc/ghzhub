@@ -264,10 +264,10 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
                 .map(Long::valueOf)
                 .collect(Collectors.toList());
 
-        // 查询状态为空置(0)的房源
+        // 查询状态为修缮中(3)的房源（修缮状态下可进行批次配租）
         LambdaQueryWrapper<HzHouse> wrapper = new LambdaQueryWrapper<>();
         wrapper.in(HzHouse::getProjectId, projectIdList)
-                .eq(HzHouse::getHouseStatus, "0") // 0=空置
+                .eq(HzHouse::getHouseStatus, "3") // 3=修缮中
                 .eq(HzHouse::getStatus, "0") // 0=正常
                 .orderByAsc(HzHouse::getProjectId, HzHouse::getHouseCode);
 
@@ -745,7 +745,7 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
             if ("1".equals(house.getHouseStatus())) {
                 HzHouse update = new HzHouse();
                 update.setHouseId(bh.getHouseId());
-                update.setHouseStatus("0");
+                update.setHouseStatus("3"); // 回退为修缮中（批次配租的房源来源状态）
                 houseMapper.updateById(update);
             }
         }
