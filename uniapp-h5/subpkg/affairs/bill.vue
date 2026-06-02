@@ -46,6 +46,10 @@
 							<text class="bill-label">账单金额：</text>
 							<text class="bill-value">{{ bill.amount }}元</text>
 						</view>
+						<view class="bill-info carry-over-info" v-if="bill.carryOverAmount > 0">
+							<text class="bill-label">上期结转：</text>
+							<text class="bill-value carry-over-value">已抵扣{{ bill.carryOverAmount }}元</text>
+						</view>
 						<view class="bill-info">
 							<text class="bill-label">账单周期：</text>
 							<text class="bill-value">{{ bill.dateRange }}</text>
@@ -374,6 +378,8 @@
 					contractNo: bill.contractNo || '',
 					room: fullRoomNo || '-',
 					amount: parseFloat(bill.billAmount),
+					carryOverAmount: bill.carryOverAmount ? parseFloat(bill.carryOverAmount) : 0,
+					carryOverSource: bill.carryOverSource || '',
 					dateRange: dateRange,
 					payTime: payTimeStr,
 					remark: bill.remark || '',  // 人才公寓 7 折分档明细备注（仅命中时有值）
@@ -718,6 +724,19 @@
 		color: #92400e;
 		word-break: break-all;
 		white-space: normal;
+	}
+
+	/* 结转信息样式 */
+	.carry-over-info {
+		background: #f0fdf4;
+		border-radius: 8rpx;
+		padding: 6rpx 12rpx;
+		margin-top: 4rpx;
+	}
+
+	.carry-over-value {
+		color: #16a34a;
+		font-weight: 500;
 	}
 	
 	/* 空状态 */

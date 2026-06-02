@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.HzRoleProjectMapper">
+
+    <!-- 根据多个角色ID查询绑定的项目ID列表（去重） -->
+    <select id="selectProjectIdsByRoleIds" resultType="java.lang.Long">
+        SELECT DISTINCT project_id FROM hz_role_project
+        WHERE role_id IN
+        <foreach collection="roleIds" item="roleId" open="(" separator="," close=")">
+            #{roleId}
+        </foreach>
+    </select>
+
+</mapper>

@@ -194,4 +194,13 @@ public interface IHzCheckoutService {
      * @return 计算结果
      */
     public Map<String, Object> calculateRentRefund(Long contractId, String planCheckoutDate);
+
+    /**
+     * 管理方确认退租（非阻塞留痕操作）
+     *
+     * @param applyId 退租申请ID
+     * @param opinion 确认意见
+     * @return 结果
+     */
+    public int managerConfirmCheckout(Long applyId, String opinion);
 }

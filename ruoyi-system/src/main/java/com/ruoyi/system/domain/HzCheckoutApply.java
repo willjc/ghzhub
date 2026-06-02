@@ -147,6 +147,19 @@ public class HzCheckoutApply extends BaseEntity {
     @TableField("tenant_signature")
     private String tenantSignature;
 
+    /** 管理方确认人 */
+    @TableField("manager_confirm_by")
+    private String managerConfirmBy;
+
+    /** 管理方确认时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @TableField("manager_confirm_time")
+    private Date managerConfirmTime;
+
+    /** 管理方确认意见 */
+    @TableField("manager_confirm_opinion")
+    private String managerConfirmOpinion;
+
     @TableField("del_flag")
     private String delFlag;
 
@@ -252,4 +265,13 @@ public class HzCheckoutApply extends BaseEntity {
 
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
     public String getDelFlag() { return delFlag; }
+
+    public void setManagerConfirmBy(String managerConfirmBy) { this.managerConfirmBy = managerConfirmBy; }
+    public String getManagerConfirmBy() { return managerConfirmBy; }
+
+    public void setManagerConfirmTime(Date managerConfirmTime) { this.managerConfirmTime = managerConfirmTime; }
+    public Date getManagerConfirmTime() { return managerConfirmTime; }
+
+    public void setManagerConfirmOpinion(String managerConfirmOpinion) { this.managerConfirmOpinion = managerConfirmOpinion; }
+    public String getManagerConfirmOpinion() { return managerConfirmOpinion; }
 }

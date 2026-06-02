@@ -21,6 +21,7 @@ import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.service.IHzCheckoutService;
 import com.ruoyi.system.service.IHzContractService;
+import com.ruoyi.system.service.IHzRoleProjectService;
 import com.ruoyi.system.service.IHzUserMessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -59,6 +60,9 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
 
     @Autowired
     private IHzUserMessageService messageService;
+
+    @Autowired
+    private IHzRoleProjectService roleProjectService;
 
     @Override
     public HzContract selectContractById(Long contractId) {
@@ -143,6 +147,14 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
                .eq(StringUtils.isNotEmpty(contractStatus), HzContract::getContractStatus, contractStatus)
                .eq(HzContract::getDelFlag, "0")
                .orderByDesc(HzContract::getCreateTime);
+
+        // 项目权限过滤
+        List<Long> allowedProjectIds = roleProjectService.getCurrentUserProjectIds();
+        if (allowedProjectIds != null && !allowedProjectIds.isEmpty()) {
+            wrapper.in(HzContract::getProjectId, allowedProjectIds);
+        } else if (allowedProjectIds != null && allowedProjectIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
 
         // 签约时间范围（前端 params.beginSignTime / endSignTime）
         if (contract != null && contract.getParams() != null) {

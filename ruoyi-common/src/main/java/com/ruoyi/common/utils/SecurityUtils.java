@@ -2,6 +2,7 @@ package com.ruoyi.common.utils;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -173,6 +174,47 @@ public class SecurityUtils
     {
         return roles.stream().filter(StringUtils::hasText)
                 .anyMatch(x -> Constants.SUPER_ADMIN.equals(x) || PatternMatchUtils.simpleMatch(x, role));
+    }
+
+    /**
+     * 判断当前用户是否为纯物业角色（排除admin超管）
+     * admin虽然能通过hasRole()的所有检查，但业务上应走管理方逻辑
+     *
+     * @return 仅当用户角色包含property且不包含admin时返回true
+     */
+    public static boolean isPropertyRole()
+    {
+        List<SysRole> roleList = getLoginUser().getUser().getRoles();
+        Set<String> roleKeys = roleList.stream().map(SysRole::getRoleKey).collect(Collectors.toSet());
+        // admin超管不走物业审批逻辑
+        if (roleKeys.contains(Constants.SUPER_ADMIN))
+        {
+            return false;
+        }
+        return roleKeys.contains("property");
+    }
+
+    /**
+     * 判断当前用户是否为管理方角色（admin视为管理方）
+     *
+     * @return admin或拥有manager角色时返回true
+     */
+    public static boolean isManagerRole()
+    {
+        List<SysRole> roleList = getLoginUser().getUser().getRoles();
+        Set<String> roleKeys = roleList.stream().map(SysRole::getRoleKey).collect(Collectors.toSet());
+        return roleKeys.contains(Constants.SUPER_ADMIN) || roleKeys.contains("manager");
+    }
+
+    /**
+     * 获取当前用户的角色Key列表
+     *
+     * @return 角色Key列表
+     */
+    public static List<String> getRoleKeys()
+    {
+        List<SysRole> roleList = getLoginUser().getUser().getRoles();
+        return roleList.stream().map(SysRole::getRoleKey).collect(Collectors.toList());
     }
 
 }

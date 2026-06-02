@@ -10,6 +10,7 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.*;
 import com.ruoyi.system.mapper.HzHouseExchangeMapper;
 import com.ruoyi.system.service.*;
+import com.ruoyi.system.service.IHzRoleProjectService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,9 @@ public class HzHouseExchangeServiceImpl extends ServiceImpl<HzHouseExchangeMappe
     @Autowired
     private IHzUserMessageService userMessageService;
 
+    @Autowired
+    private IHzRoleProjectService roleProjectService;
+
     @Override
     public HzHouseExchange selectExchangeById(Long exchangeId) {
         // 使用详情查询方法获取完整信息（含原房源和目标房源）
@@ -70,13 +74,26 @@ public class HzHouseExchangeServiceImpl extends ServiceImpl<HzHouseExchangeMappe
 
     @Override
     public List<HzHouseExchange> selectExchangeList(HzHouseExchange exchange) {
+        injectProjectFilter(exchange);
         return baseMapper.selectExchangeListWithRelations(exchange);
     }
 
     @Override
     public IPage<HzHouseExchange> selectExchangePage(HzHouseExchange exchange, int pageNum, int pageSize) {
+        injectProjectFilter(exchange);
         Page<HzHouseExchange> page = new Page<>(pageNum, pageSize);
         return baseMapper.selectExchangePageWithRelations(page, exchange);
+    }
+
+    /** 注入项目权限过滤到params */
+    private void injectProjectFilter(HzHouseExchange exchange) {
+        List<Long> projectIds = roleProjectService.getCurrentUserProjectIds();
+        if (projectIds != null) {
+            if (exchange.getParams() == null) {
+                exchange.setParams(new java.util.HashMap<>());
+            }
+            exchange.getParams().put("projectIds", projectIds);
+        }
     }
 
     @Override
@@ -170,7 +187,7 @@ public class HzHouseExchangeServiceImpl extends ServiceImpl<HzHouseExchangeMappe
             return 0;
         }
 
-        if ("1".equals(approveResult)) { // 审核通过 - 执行换房逻辑
+        if ("1".equals(approveResult)) { // 审核通过 - 创建合同草稿，等待用户签署
             // 2. 检查目标房源是否已分配
             if (exchange.getNewHouseId() == null) {
                 logger.error("审核通过但未分配目标房源: exchangeId={}", exchangeId);
@@ -197,10 +214,7 @@ public class HzHouseExchangeServiceImpl extends ServiceImpl<HzHouseExchangeMappe
                 throw new RuntimeException("目标房源不存在");
             }
 
-            // 6. 查询原房源信息
-            HzHouse oldHouse = houseService.selectHouseById(exchange.getOldHouseId());
-
-            // 7. 创建新合同（复制原合同信息，替换房源）
+            // 6. 创建新合同草稿（status=0，等待用户签署后生效）
             HzContract newContract = new HzContract();
             newContract.setContractNo(contractService.generateContractNo());
             newContract.setContractType("3"); // 3=换房合同
@@ -216,11 +230,9 @@ public class HzHouseExchangeServiceImpl extends ServiceImpl<HzHouseExchangeMappe
             newContract.setRentPrice(newHouse.getRentPrice() != null ? newHouse.getRentPrice() : BigDecimal.ZERO);
             newContract.setDeposit(newHouse.getDeposit() != null ? newHouse.getDeposit() : BigDecimal.ZERO);
 
-            // 计算新合同的起止日期
+            // 计算新合同的起止日期（签署回调时会更新startDate为实际签署日）
             LocalDate startDate = LocalDate.parse(exchangeTime);
             newContract.setStartDate(exchangeTime);
-
-            // 保持原合同的结束日期不变，或根据需要重新计算
             newContract.setEndDate(oldContract.getEndDate());
 
             // 计算租期月数
@@ -229,32 +241,11 @@ public class HzHouseExchangeServiceImpl extends ServiceImpl<HzHouseExchangeMappe
 
             newContract.setPaymentCycle(oldContract.getPaymentCycle());
             newContract.setPaymentDay(oldContract.getPaymentDay());
-            newContract.setContractStatus("1"); // 生效中
+            newContract.setContractStatus("0"); // 草稿（等待用户e签宝签署）
             newContract.setIsRenewed("0");
             contractService.insertContract(newContract);
 
-            // 8. 终止旧合同
-            HzContract updateOldContract = new HzContract();
-            updateOldContract.setContractId(oldContract.getContractId());
-            updateOldContract.setContractStatus("2"); // 已终止
-            updateOldContract.setEndDate(exchangeTime); // 终止日期为换房日期
-            contractService.updateContract(updateOldContract);
-
-            // 9. 更新旧房源状态为空置
-            if (oldHouse != null) {
-                HzHouse updateOldHouse = new HzHouse();
-                updateOldHouse.setHouseId(oldHouse.getHouseId());
-                updateOldHouse.setHouseStatus("0"); // 空置
-                houseService.updateHouse(updateOldHouse);
-            }
-
-            // 10. 更新目标房源状态为已出租
-            HzHouse updateNewHouse = new HzHouse();
-            updateNewHouse.setHouseId(newHouse.getHouseId());
-            updateNewHouse.setHouseStatus("1"); // 已出租
-            houseService.updateHouse(updateNewHouse);
-
-            // 11. 更新换房申请记录
+            // 7. 更新换房申请记录：状态改为“待签署”
             HzHouseExchange updateExchange = new HzHouseExchange();
             updateExchange.setExchangeId(exchangeId);
             updateExchange.setApproveResult(approveResult);
@@ -263,11 +254,11 @@ public class HzHouseExchangeServiceImpl extends ServiceImpl<HzHouseExchangeMappe
             updateExchange.setApproveTime(DateUtils.getTime());
             updateExchange.setExchangeTime(exchangeTime);
             updateExchange.setNewContractId(newContract.getContractId());
-            updateExchange.setStatus("1"); // 已完成
+            updateExchange.setStatus("3"); // 3=待签署（等待用户签署新合同）
             this.updateById(updateExchange);
 
-            // 12. 发送换房提醒消息
-            sendExchangeMessage(exchange, oldHouse, newHouse);
+            // 8. 发送消息提示用户签署新合同
+            sendExchangeSignMessage(exchange, newHouse);
 
             return 1;
 
@@ -316,9 +307,31 @@ public class HzHouseExchangeServiceImpl extends ServiceImpl<HzHouseExchangeMappe
     }
 
     /**
-     * 发送换房提醒消息
+     * 发送换房签署提醒消息
      */
-    private void sendExchangeMessage(HzHouseExchange exchange, HzHouse oldHouse, HzHouse newHouse) {
+    private void sendExchangeSignMessage(HzHouseExchange exchange, HzHouse newHouse) {
+        try {
+            String newAddress = buildFullAddress(newHouse);
+
+            HzUserMessage message = new HzUserMessage();
+            message.setUserId(exchange.getTenantId());
+            message.setMessageType("exchange");
+            message.setMessageTitle("换房已批准");
+            message.setMessageContent("您的换房申请已批准，目标房源为" + newAddress + "，请尽快签署新合同。");
+            message.setIsRead("0");
+            message.setDelFlag("0");
+            userMessageService.insertMessage(message);
+
+            logger.info("换房签署消息发送成功: userId={}", exchange.getTenantId());
+        } catch (Exception e) {
+            logger.error("发送换房签署消息失败: exchangeId={}", exchange.getExchangeId(), e);
+        }
+    }
+
+    /**
+     * 发送换房完成消息
+     */
+    private void sendExchangeCompleteMessage(HzHouseExchange exchange, HzHouse oldHouse, HzHouse newHouse) {
         try {
             // 构建原房源和目标房源的完整地址
             String oldAddress = buildFullAddress(oldHouse);

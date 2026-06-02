@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzHouseImage;
@@ -23,6 +24,8 @@ import com.ruoyi.system.mapper.HzUnitMapper;
 import com.ruoyi.system.mapper.HzHouseTypeMapper;
 import com.ruoyi.system.mapper.HzHouseVrMapper;
 import com.ruoyi.system.service.IHzHouseService;
+import com.ruoyi.system.service.IHzHouseStatusAuditService;
+import com.ruoyi.system.service.IHzRoleProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,6 +65,12 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
     @Autowired
     private HzHouseVrMapper houseVrMapper;
 
+    @Autowired
+    private IHzRoleProjectService roleProjectService;
+
+    @Autowired
+    private IHzHouseStatusAuditService houseStatusAuditService;
+
     /**
      * 查询房源列表（支持分页，带项目名称）
      *
@@ -71,6 +80,14 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
     @Override
     public IPage<HzHouse> selectHouseList(HzHouse house)
     {
+        // 注入项目权限过滤
+        List<Long> projectIds = roleProjectService.getCurrentUserProjectIds();
+        if (projectIds != null) {
+            if (house.getParams() == null) {
+                house.setParams(new HashMap<>());
+            }
+            house.getParams().put("projectIds", projectIds);
+        }
         // 获取分页参数
         Page<HzHouse> page = com.ruoyi.common.utils.PageUtils.getPage();
         // 使用 XML 中定义的关联查询，获取项目名称
@@ -478,7 +495,8 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
 
     /**
      * 按项目批量修改房源状态（受控过渡白名单）。
-     * 白名单：仅 0/3/4 之间可互转；1/2 状态跳过（有订单/合同联动）。
+     * 管理方：仅 0/3/4 之间可互转，直接修改；
+     * 物业：目标3/4直接修改，目标0/1/2走审批。
      */
     @Override
     @Transactional
@@ -488,16 +506,41 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
         {
             throw new ServiceException("项目ID不能为空");
         }
-        Set<String> allowed = new HashSet<>(Arrays.asList("0", "3", "4"));
+
+        boolean isProperty = SecurityUtils.isPropertyRole();
+        // 物业可申请的目标状态包含0/1/2/3/4，但0/1/2需审批
+        Set<String> allowed = isProperty
+                ? new HashSet<>(Arrays.asList("0", "1", "2", "3", "4"))
+                : new HashSet<>(Arrays.asList("0", "3", "4"));
         if (targetStatus == null || !allowed.contains(targetStatus))
         {
-            throw new ServiceException("目标状态非法，仅支持 0(空置)/3(维修中)/4(下架)");
+            throw new ServiceException("目标状态非法");
         }
 
-        // 统计项目下房源总数
+        // 物业角色 + 目标状态0/1/2 → 走审批流程
+        Set<String> auditRequired = new HashSet<>(Arrays.asList("0", "1", "2"));
+        if (isProperty && auditRequired.contains(targetStatus))
+        {
+            // 查询该项目下可变更的房源（状态为0/3/4且非目标状态的）
+            List<HzHouse> houses = this.list(new LambdaQueryWrapper<HzHouse>()
+                    .eq(HzHouse::getProjectId, projectId)
+                    .in(HzHouse::getHouseStatus, "0", "3", "4")
+                    .ne(HzHouse::getHouseStatus, targetStatus)
+                    .select(HzHouse::getHouseId));
+            List<Long> houseIds = houses.stream().map(HzHouse::getHouseId).collect(java.util.stream.Collectors.toList());
+            int submitted = 0;
+            if (!houseIds.isEmpty()) {
+                submitted = houseStatusAuditService.batchSubmitStatusChange(houseIds, targetStatus);
+            }
+            Map<String, Integer> result = new LinkedHashMap<>();
+            result.put("total", houseIds.size());
+            result.put("submitted", submitted);
+            return result;
+        }
+
+        // 管理方 或 物业目标3/4：直接修改
         long total = this.count(new LambdaQueryWrapper<HzHouse>()
                 .eq(HzHouse::getProjectId, projectId));
-        // 统计已预订 / 已出租（将被跳过）
         long skippedBooked = this.count(new LambdaQueryWrapper<HzHouse>()
                 .eq(HzHouse::getProjectId, projectId)
                 .eq(HzHouse::getHouseStatus, "1"));
@@ -505,7 +548,6 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
                 .eq(HzHouse::getProjectId, projectId)
                 .eq(HzHouse::getHouseStatus, "2"));
 
-        // 仅更新白名单源状态（0/3/4），且非目标状态的房源
         LambdaUpdateWrapper<HzHouse> uw = new LambdaUpdateWrapper<HzHouse>()
                 .eq(HzHouse::getProjectId, projectId)
                 .in(HzHouse::getHouseStatus, "0", "3", "4")
@@ -523,7 +565,8 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
 
     /**
      * 按房源ID列表批量修改房源状态（受控过渡白名单）。
-     * 白名单：仅 0/3/4 之间可互转；1/2 状态跳过（有订单/合同联动）。
+     * 管理方：仅 0/3/4 之间可互转，直接修改；
+     * 物业：目标3/4直接修改，目标0/1/2走审批。
      */
     @Override
     @Transactional
@@ -533,16 +576,30 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
         {
             throw new ServiceException("房源ID不能为空");
         }
-        Set<String> allowed = new HashSet<>(Arrays.asList("0", "3", "4"));
+
+        boolean isProperty = SecurityUtils.isPropertyRole();
+        Set<String> allowed = isProperty
+                ? new HashSet<>(Arrays.asList("0", "1", "2", "3", "4"))
+                : new HashSet<>(Arrays.asList("0", "3", "4"));
         if (targetStatus == null || !allowed.contains(targetStatus))
         {
-            throw new ServiceException("目标状态非法，仅支持 0(空置)/3(维修中)/4(下架)");
+            throw new ServiceException("目标状态非法");
         }
 
-        // 统计选中房源总数
+        // 物业角色 + 目标状态0/1/2 → 走审批流程
+        Set<String> auditRequired = new HashSet<>(Arrays.asList("0", "1", "2"));
+        if (isProperty && auditRequired.contains(targetStatus))
+        {
+            int submitted = houseStatusAuditService.batchSubmitStatusChange(houseIds, targetStatus);
+            Map<String, Integer> result = new LinkedHashMap<>();
+            result.put("total", houseIds.size());
+            result.put("submitted", submitted);
+            return result;
+        }
+
+        // 管理方 或 物业目标3/4：直接修改
         long total = this.count(new LambdaQueryWrapper<HzHouse>()
                 .in(HzHouse::getHouseId, houseIds));
-        // 统计已预订 / 已出租（将被跳过）
         long skippedBooked = this.count(new LambdaQueryWrapper<HzHouse>()
                 .in(HzHouse::getHouseId, houseIds)
                 .eq(HzHouse::getHouseStatus, "1"));
@@ -550,7 +607,6 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
                 .in(HzHouse::getHouseId, houseIds)
                 .eq(HzHouse::getHouseStatus, "2"));
 
-        // 仅更新白名单源状态（0/3/4），且非目标状态的房源
         LambdaUpdateWrapper<HzHouse> uw = new LambdaUpdateWrapper<HzHouse>()
                 .in(HzHouse::getHouseId, houseIds)
                 .in(HzHouse::getHouseStatus, "0", "3", "4")

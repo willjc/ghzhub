@@ -134,6 +134,12 @@
       <el-table-column label="账单金额(元)" align="center" prop="billAmount" width="120" />
       <el-table-column label="已支付(元)" align="center" prop="paidAmount" width="120" />
       <el-table-column label="未支付(元)" align="center" prop="unpaidAmount" width="120" />
+      <el-table-column label="结转抵扣(元)" align="center" prop="carryOverAmount" width="120">
+        <template slot-scope="scope">
+          <span v-if="scope.row.carryOverAmount && parseFloat(scope.row.carryOverAmount) > 0" style="color: #67c23a;">{{ scope.row.carryOverAmount }}</span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="账期" align="center" width="180">
         <template slot-scope="scope">
           <span v-if="scope.row.billSeq">第{{ scope.row.billSeq }}期
@@ -202,6 +208,10 @@
         <el-descriptions-item label="账单金额">{{ detailData.billAmount }} 元</el-descriptions-item>
         <el-descriptions-item label="已支付金额">{{ detailData.paidAmount }} 元</el-descriptions-item>
         <el-descriptions-item label="未支付金额">{{ detailData.unpaidAmount }} 元</el-descriptions-item>
+        <el-descriptions-item label="结转抵扣" v-if="detailData.carryOverAmount && parseFloat(detailData.carryOverAmount) > 0">
+          <span style="color: #67c23a; font-weight: bold;">{{ detailData.carryOverAmount }} 元</span>
+          <span style="color: #909399; margin-left: 8px;">(来源：{{ detailData.carryOverSource || '上期合同结转' }})</span>
+        </el-descriptions-item>
         <el-descriptions-item label="滞纳金">{{ detailData.lateFee || 0 }} 元</el-descriptions-item>
         <el-descriptions-item label="账单日期">{{ detailData.billDate }}</el-descriptions-item>
         <el-descriptions-item label="应付日期">{{ detailData.dueDate }}</el-descriptions-item>

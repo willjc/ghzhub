@@ -139,6 +139,14 @@ public class HzBill extends BaseEntity {
     @TableField("overdue_days")
     private Integer overdueDays;
 
+    /** 结转金额（换房时从老合同结转） */
+    @TableField("carry_over_amount")
+    private BigDecimal carryOverAmount;
+
+    /** 结转来源（原合同编号） */
+    @TableField("carry_over_source")
+    private String carryOverSource;
+
     public void setBillId(Long billId) {
         this.billId = billId;
     }
@@ -353,6 +361,22 @@ public class HzBill extends BaseEntity {
 
     public void setOverdueDays(Integer overdueDays) {
         this.overdueDays = overdueDays;
+    }
+
+    public BigDecimal getCarryOverAmount() {
+        return carryOverAmount;
+    }
+
+    public void setCarryOverAmount(BigDecimal carryOverAmount) {
+        this.carryOverAmount = carryOverAmount;
+    }
+
+    public String getCarryOverSource() {
+        return carryOverSource;
+    }
+
+    public void setCarryOverSource(String carryOverSource) {
+        this.carryOverSource = carryOverSource;
     }
 
 

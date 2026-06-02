@@ -29,6 +29,7 @@ import com.ruoyi.system.mapper.HzBuildingMapper;
 import com.ruoyi.system.mapper.HzUnitMapper;
 import com.ruoyi.system.domain.HzRefundApply;
 import com.ruoyi.system.service.IHzCheckoutService;
+import com.ruoyi.system.service.IHzRoleProjectService;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.utils.SecurityUtils;
 import org.slf4j.Logger;
@@ -92,6 +93,9 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
     private HzUnitMapper unitMapper;
 
     @Autowired
+    private IHzRoleProjectService roleProjectService;
+
+    @Autowired
     private com.ruoyi.system.mapper.HzHouseTypeFacilityMapper houseTypeFacilityMapper;
 
     @Override
@@ -115,6 +119,22 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
         wrapper.eq(HzCheckoutApply::getDelFlag, "0")
                .eq(hzCheckoutApply.getApplyStatus() != null, HzCheckoutApply::getApplyStatus, hzCheckoutApply.getApplyStatus())
                .orderByDesc(HzCheckoutApply::getApplyTime);
+
+        // 项目权限过滤：通过houseId关联house表的projectId
+        List<Long> projectIds = roleProjectService.getCurrentUserProjectIds();
+        if (projectIds != null) {
+            if (projectIds.isEmpty()) {
+                TableDataInfo empty = new TableDataInfo();
+                empty.setRows(new ArrayList<>());
+                empty.setTotal(0);
+                empty.setCode(200);
+                empty.setMsg("查询成功");
+                return empty;
+            }
+            wrapper.inSql(HzCheckoutApply::getHouseId,
+                    "SELECT house_id FROM hz_house WHERE project_id IN (" +
+                    projectIds.stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(",")) + ")");
+        }
 
         // 租户姓名过滤：使用合同表的 tenant_name 快照（合同签约时确定，不会因后续改名失效）
         if (StringUtils.isNotEmpty(hzCheckoutApply.getTenantName())) {
@@ -1060,5 +1080,23 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
         result.put("currentPeriodOwed", currentPeriodOwed.setScale(2, RoundingMode.HALF_UP));
         result.put("detail", detail.toString());
         return result;
+    }
+
+    @Override
+    public int managerConfirmCheckout(Long applyId, String opinion) {
+        HzCheckoutApply apply = checkoutApplyMapper.selectById(applyId);
+        if (apply == null) {
+            throw new com.ruoyi.common.exception.ServiceException("退租申请不存在");
+        }
+        // 仅已完成的退租可确认
+        if (!"5".equals(apply.getApplyStatus())) {
+            throw new com.ruoyi.common.exception.ServiceException("只能对已完成的退租进行确认");
+        }
+        LambdaUpdateWrapper<HzCheckoutApply> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(HzCheckoutApply::getApplyId, applyId)
+               .set(HzCheckoutApply::getManagerConfirmBy, SecurityUtils.getUsername())
+               .set(HzCheckoutApply::getManagerConfirmTime, new Date())
+               .set(HzCheckoutApply::getManagerConfirmOpinion, opinion);
+        return this.update(wrapper) ? 1 : 0;
     }
 }

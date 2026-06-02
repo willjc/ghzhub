@@ -9,6 +9,12 @@
 					<text class="info-value" :class="statusClassMap[item.status] || ''">{{ getStatusText(item.status) }}</text>
 				</view>
 
+				<!-- 待签署提示框 -->
+				<view class="sign-tip-box" v-if="item.status === '3'">
+					<text class="sign-tip-icon">✍️</text>
+					<text class="sign-tip-text">换房已批准，请签署新合同后完成换房</text>
+				</view>
+
 				<!-- 原房源信息 -->
 				<view class="section-title">原房源</view>
 				<view class="info-section">
@@ -22,13 +28,13 @@
 					</view>
 				</view>
 
-				<!-- 换房箭头指示（仅已完成时显示） -->
+				<!-- 换房箭头指示（已完成时显示） -->
 				<view class="exchange-arrow" v-if="item.status === '1' && item.newFullAddress">
 					<text class="arrow-text">↓ 换房成功 ↓</text>
 				</view>
 
-				<!-- 目标房源信息（仅已完成时显示） -->
-				<view v-if="item.status === '1' && item.newFullAddress">
+				<!-- 目标房源信息（已完成或待签署时显示） -->
+				<view v-if="(item.status === '1' || item.status === '3') && item.newFullAddress">
 					<view class="section-title">目标房源</view>
 					<view class="info-section">
 						<view class="info-row">
@@ -40,6 +46,19 @@
 							<text class="info-value">{{ item.exchangeTime || '-' }}</text>
 						</view>
 					</view>
+				</view>
+
+				<!-- 签署新合同按钮（待签署状态） -->
+				<view class="sign-btn-container" v-if="item.status === '3' && item.newContractId">
+					<view class="sign-btn" @click="goSignContract(item)">
+						<text class="sign-btn-text">签署新合同</text>
+					</view>
+				</view>
+
+				<!-- 入住提示（已完成状态） -->
+				<view class="sign-tip-box checkin-tip" v-if="item.status === '1'">
+					<text class="sign-tip-icon">✅</text>
+					<text class="sign-tip-text">换房已完成，请办理新房入住手续</text>
 				</view>
 
 				<!-- 申请信息 -->
@@ -94,7 +113,8 @@
 				statusClassMap: {
 					'0': 'status-pending',
 					'1': 'status-approved',
-					'2': 'status-rejected'
+					'2': 'status-rejected',
+					'3': 'status-signing'
 				}
 			}
 		},
@@ -155,9 +175,17 @@
 				const textMap = {
 					'0': '待审核',
 					'1': '已完成',
-					'2': '已拒绝'
+					'2': '已拒绝',
+					'3': '待签署'
 				}
 				return textMap[status] || '未知'
+			},
+
+			// 跳转签署新合同
+			goSignContract(item) {
+				uni.navigateTo({
+					url: `/pages/contract/sign?contractId=${item.newContractId}&isExchange=true`
+				})
 			},
 
 			// 申请调换
@@ -265,6 +293,60 @@
 
 	.status-rejected {
 		color: #fa5740;
+	}
+
+	.status-signing {
+		color: #0f73ff;
+	}
+
+	/* 签署提示框 */
+	.sign-tip-box {
+		background: #fff7ed;
+		border: 1rpx solid #ffd6a5;
+		border-radius: 12rpx;
+		padding: 16rpx 20rpx;
+		margin-bottom: 16rpx;
+		display: flex;
+		align-items: center;
+	}
+
+	.sign-tip-box.checkin-tip {
+		background: #f0fdf4;
+		border-color: #86efac;
+	}
+
+	.sign-tip-icon {
+		font-size: 32rpx;
+		margin-right: 12rpx;
+	}
+
+	.sign-tip-text {
+		font-size: 24rpx;
+		color: #78350f;
+	}
+
+	.checkin-tip .sign-tip-text {
+		color: #166534;
+	}
+
+	/* 签署按钮 */
+	.sign-btn-container {
+		margin: 16rpx 0;
+	}
+
+	.sign-btn {
+		height: 76rpx;
+		border-radius: 16rpx;
+		background: linear-gradient(270deg, #4fc7ff 0%, #0f73ff 100%);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.sign-btn-text {
+		color: #ffffff;
+		font-size: 30rpx;
+		font-weight: 600;
 	}
 
 	/* 底部按钮 */

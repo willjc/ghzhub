@@ -14,6 +14,7 @@
           <el-option label="待审核" value="0" />
           <el-option label="已完成" value="1" />
           <el-option label="已拒绝" value="2" />
+          <el-option label="待签署" value="3" />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -39,6 +40,7 @@
           <el-tag v-if="scope.row.status === '0'" type="warning">待审核</el-tag>
           <el-tag v-else-if="scope.row.status === '1'" type="success">已完成</el-tag>
           <el-tag v-else-if="scope.row.status === '2'" type="danger">已拒绝</el-tag>
+          <el-tag v-else-if="scope.row.status === '3'" type="primary">待签署</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280">
@@ -98,6 +100,7 @@
           <el-tag v-if="detailForm.status === '0'" type="warning">待审核</el-tag>
           <el-tag v-else-if="detailForm.status === '1'" type="success">已完成</el-tag>
           <el-tag v-else-if="detailForm.status === '2'" type="danger">已拒绝</el-tag>
+          <el-tag v-else-if="detailForm.status === '3'" type="primary">待签署</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="审核意见" v-if="detailForm.approveOpinion">
           {{ detailForm.approveOpinion }}

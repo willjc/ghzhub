@@ -165,4 +165,16 @@ public class HzCheckOutController extends BaseController {
                                           @RequestParam("planCheckoutDate") String planCheckoutDate) {
         return success(checkoutService.calculateRentRefund(contractId, planCheckoutDate));
     }
+
+    /**
+     * 管理方确认退租（非阻塞留痕）
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:checkout:confirm')")
+    @Log(title = "管理方确认退租", businessType = BusinessType.UPDATE)
+    @PostMapping("/managerConfirm")
+    public AjaxResult managerConfirm(@RequestBody Map<String, Object> requestData) {
+        Long applyId = Long.valueOf(requestData.get("applyId").toString());
+        String opinion = requestData.get("opinion") != null ? requestData.get("opinion").toString() : "";
+        return toAjax(checkoutService.managerConfirmCheckout(applyId, opinion));
+    }
 }

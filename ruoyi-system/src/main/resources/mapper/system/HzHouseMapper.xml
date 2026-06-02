@@ -26,6 +26,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="house.projectId != null">
                 AND h.project_id = #{house.projectId}
             </if>
+            <if test="house.params != null and house.params.projectIds != null and house.params.projectIds.size() > 0">
+                AND h.project_id IN
+                <foreach collection="house.params.projectIds" item="pid" open="(" separator="," close=")">
+                    #{pid}
+                </foreach>
+            </if>
             <if test="house.buildingId != null">
                 AND h.building_id = #{house.buildingId}
             </if>

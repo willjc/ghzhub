@@ -25,8 +25,8 @@
 
       <!-- 顶部 Banner -->
       <view class="banner">
-        <view class="banner-tag">{{ isRenew ? '续租合同' : '电子合同' }}</view>
-        <text class="banner-title">{{ isRenew ? '续租签署确认' : '合同签署确认' }}</text>
+        <view class="banner-tag">{{ isExchange ? '换房合同' : (isRenew ? '续租合同' : '电子合同') }}</view>
+        <text class="banner-title">{{ isExchange ? '换房合同签署' : (isRenew ? '续租签署确认' : '合同签署确认') }}</text>
         <text class="banner-project">{{ projectName }}</text>
       </view>
 
@@ -175,8 +175,9 @@
         <text class="state-emoji">✅</text>
       </view>
       <text class="state-title">签署成功</text>
-      <text class="state-desc">{{ isRenew ? '续租合同已签署成功' : '合同已签署成功，正在跳转至押金缴费...' }}</text>
-      <button class="btn-main" v-if="!isRenew" @click="goToBill">立即缴纳押金</button>
+      <text class="state-desc">{{ doneDesc }}</text>
+      <button class="btn-main" v-if="!isRenew && !isExchange" @click="goToBill">立即缴纳押金</button>
+      <button class="btn-main" v-if="isExchange" @click="goToExchange">查看换房进度</button>
       <button class="btn-ghost" @click="goBack">返回合同列表</button>
     </view>
 
@@ -236,6 +237,8 @@ export default {
       // 续租模式
       isRenew: false,
       oldContractId: null,
+      // 换房模式
+      isExchange: false,
       // 批次配租模式（日期由批次固定，不可编辑）
       isBatchMode: false,
       // 预订倒计时
@@ -273,6 +276,10 @@ export default {
     }
     if (options.oldContractId) {
       this.oldContractId = parseInt(options.oldContractId)
+    }
+    // 接收换房参数
+    if (options.isExchange === 'true' || options.isExchange === true) {
+      this.isExchange = true
     }
     // 接收预订锁定过期时间（仅从选房流程跳转时有值）
     if (options.lockExpireTime && this.orderNo) {
@@ -342,6 +349,12 @@ export default {
     // 倒计时已结束
     countdownExpired() {
       return this.showLockCountdown && this.countdownSeconds <= 0
+    },
+    // 签署成功描述文本
+    doneDesc() {
+      if (this.isExchange) return '换房合同已签署成功，换房已完成，请办理新房入住手续'
+      if (this.isRenew) return '续租合同已签署成功'
+      return '合同已签署成功，正在跳转至押金缴费...'
     }
   },
   methods: {
@@ -558,7 +571,11 @@ export default {
           if (res.code === 200 && res.data && res.data.signed) {
             this.stopPolling()
             this.step = 'done'
-            setTimeout(() => { this.goToBill() }, 2000)
+            if (this.isExchange) {
+              setTimeout(() => { this.goToExchange() }, 2000)
+            } else {
+              setTimeout(() => { this.goToBill() }, 2000)
+            }
           }
         } catch (e) { /* ignore */ }
       }, 5000)
@@ -581,7 +598,11 @@ export default {
           if (res.code === 200 && res.data && res.data.signed) {
             this.stopPolling()
             this.step = 'done'
-            setTimeout(() => { this.goToBill() }, 2000)
+            if (this.isExchange) {
+              setTimeout(() => { this.goToExchange() }, 2000)
+            } else {
+              setTimeout(() => { this.goToBill() }, 2000)
+            }
             return
           }
         } catch (e) {
@@ -609,7 +630,11 @@ export default {
         if (res.code === 200 && res.data && res.data.signed) {
           this.stopPolling()
           this.step = 'done'
-          setTimeout(() => { this.goToBill() }, 2000)
+          if (this.isExchange) {
+            setTimeout(() => { this.goToExchange() }, 2000)
+          } else {
+            setTimeout(() => { this.goToBill() }, 2000)
+          }
         } else {
           uni.showToast({ title: '签署尚未完成，请稍候再试', icon: 'none' })
         }
@@ -624,6 +649,13 @@ export default {
       uni.removeStorageSync('esign_contractId')
       uni.removeStorageSync('esign_userId')
       uni.redirectTo({ url: '/subpkg/affairs/contract?esign_done=1' })
+    },
+
+    goToExchange() {
+      this.stopPolling()
+      uni.removeStorageSync('esign_contractId')
+      uni.removeStorageSync('esign_userId')
+      uni.redirectTo({ url: '/subpkg/affairs/exchange' })
     },
 
     goBack() {

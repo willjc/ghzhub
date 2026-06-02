@@ -51,6 +51,7 @@ public class EsignServiceImpl implements EsignService {
     private final HzHouseTypeFacilityMapper houseTypeFacilityMapper;
     private final IHzCheckInService checkInService;
     private final IHzUserMessageService messageService;
+    private final HzHouseExchangeMapper houseExchangeMapper;
 
     public EsignServiceImpl(HzUserMapper userMapper, HzContractMapper contractMapper,
                             HzHouseOrderMapper orderMapper, HzBillMapper billMapper,
@@ -58,7 +59,8 @@ public class EsignServiceImpl implements EsignService {
                             HzBuildingMapper buildingMapper, HzUnitMapper unitMapper,
                             HzHouseFacilityMapper houseFacilityMapper,
                             HzHouseTypeFacilityMapper houseTypeFacilityMapper,
-                            IHzCheckInService checkInService, IHzUserMessageService messageService) {
+                            IHzCheckInService checkInService, IHzUserMessageService messageService,
+                            HzHouseExchangeMapper houseExchangeMapper) {
         this.userMapper = userMapper;
         this.contractMapper = contractMapper;
         this.orderMapper = orderMapper;
@@ -71,6 +73,7 @@ public class EsignServiceImpl implements EsignService {
         this.houseTypeFacilityMapper = houseTypeFacilityMapper;
         this.checkInService = checkInService;
         this.messageService = messageService;
+        this.houseExchangeMapper = houseExchangeMapper;
     }
 
     // ==================== 实名认证 ====================
@@ -750,8 +753,8 @@ public class EsignServiceImpl implements EsignService {
         }
 
         // 签署完成，执行与回调相同的后续逻辑
-        // 续租合同直接进入履行中(3)，新签合同进入已签署(2)
-        String newStatus = "2".equals(contract.getContractType()) ? "3" : "2";
+        // 续租/换房合同直接进入履行中(3)，新签合同进入已签署(2)
+        String newStatus = ("2".equals(contract.getContractType()) || "3".equals(contract.getContractType())) ? "3" : "2";
         contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
                 .eq(HzContract::getContractId, contractId)
                 .set(HzContract::getContractStatus, newStatus)
@@ -774,31 +777,44 @@ public class EsignServiceImpl implements EsignService {
             log.warn("获取已签PDF链接失败（不影响主流程）: {}", e.getMessage());
         }
 
-        // 根据合同类型区分账单生成
-        if ("2".equals(contract.getContractType())) {
+        // 换房合同走专用结算逻辑
+        if ("3".equals(contract.getContractType())) {
+            handleExchangeSettlement(contract);
+            log.info("主动查询：换房合同结算完成，contractId={}", contractId);
+        } else if ("2".equals(contract.getContractType())) {
+            // 续租合同仅生成租金账单
             generateRentBillsOnly(contract);
+            generateCheckInRecord(contract);
             log.info("主动查询：续租合同仅生成租金账单，contractId={}", contractId);
         } else {
+            // 新签合同生成押金+租金账单
             generateBills(contract);
+            generateCheckInRecord(contract);
             log.info("主动查询：新签合同生成押金+租金账单，contractId={}", contractId);
         }
-        generateCheckInRecord(contract);
 
-        HzHouseOrder order = orderMapper.selectOne(new LambdaQueryWrapper<HzHouseOrder>()
-                .eq(HzHouseOrder::getContractId, contractId).last("LIMIT 1"));
-        if (order != null && "0".equals(order.getOrderStatus())) {
-            orderMapper.update(null, new LambdaUpdateWrapper<HzHouseOrder>()
-                    .eq(HzHouseOrder::getOrderNo, order.getOrderNo())
-                    .set(HzHouseOrder::getOrderStatus, "1"));
+        if (!"3".equals(contract.getContractType())) {
+            HzHouseOrder order = orderMapper.selectOne(new LambdaQueryWrapper<HzHouseOrder>()
+                    .eq(HzHouseOrder::getContractId, contractId).last("LIMIT 1"));
+            if (order != null && "0".equals(order.getOrderStatus())) {
+                orderMapper.update(null, new LambdaUpdateWrapper<HzHouseOrder>()
+                        .eq(HzHouseOrder::getOrderNo, order.getOrderNo())
+                        .set(HzHouseOrder::getOrderStatus, "1"));
+            }
         }
 
         log.info("主动查询签署完成，已更新合同/账单/入住记录 contractId={}", contractId);
 
         // 发送合同签署成功消息
         try {
-            String msgContent = "2".equals(contract.getContractType())
-                    ? "您的续租合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳租金"
-                    : "您的合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳押金";
+            String msgContent;
+            if ("3".equals(contract.getContractType())) {
+                msgContent = "您的换房合同 " + contract.getContractNo() + " 已签署成功，换房已完成，请办理新房入住手续";
+            } else if ("2".equals(contract.getContractType())) {
+                msgContent = "您的续租合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳租金";
+            } else {
+                msgContent = "您的合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳押金";
+            }
             messageService.sendMessage(contract.getTenantId(), "contract", "合同签署成功", msgContent);
         } catch (Exception e) {
             log.warn("发送合同签署成功消息失败，不影响主流程: {}", e.getMessage());
@@ -859,8 +875,8 @@ public class EsignServiceImpl implements EsignService {
         if (contract == null) { log.warn("e签宝回调未找到对应合同 flowId={}", flowId); return; }
         if ("2".equals(contract.getContractStatus()) || "3".equals(contract.getContractStatus())) { log.info("合同已处理，忽略重复回调 flowId={}", flowId); return; }
 
-        // 1. 更新合同状态：续租合同直接进入履行中(3)，新签合同进入已签署(2)
-        String newStatus = "2".equals(contract.getContractType()) ? "3" : "2";
+        // 1. 更新合同状态：续租/换房直接进入履行中(3)，新签进入已签署(2)
+        String newStatus = ("2".equals(contract.getContractType()) || "3".equals(contract.getContractType())) ? "3" : "2";
         contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
                 .eq(HzContract::getContractId, contract.getContractId())
                 .set(HzContract::getContractStatus, newStatus)
@@ -882,8 +898,12 @@ public class EsignServiceImpl implements EsignService {
             log.warn("获取已签合同PDF链接失败，不影响主流程：{}", e.getMessage());
         }
 
-        // 3. 根据合同类型区分账单生成 — 失败则整个事务回滚
-        if ("2".equals(contract.getContractType())) {
+        // 3. 根据合同类型区分处理 — 失败则整个事务回滚
+        if ("3".equals(contract.getContractType())) {
+            // 换房合同：执行换房结算逻辑
+            handleExchangeSettlement(contract);
+            log.info("签署回调：换房合同结算完成，contractId={}", contract.getContractId());
+        } else if ("2".equals(contract.getContractType())) {
             // 续租合同：仅生成租金账单，不生成押金
             generateRentBillsOnly(contract);
             log.info("签署回调：续租合同仅生成租金账单，contractId={}", contract.getContractId());
@@ -893,29 +913,273 @@ public class EsignServiceImpl implements EsignService {
             log.info("签署回调：新签合同生成押金+租金账单，contractId={}", contract.getContractId());
         }
 
-        // 4. 生成入住记录
+        // 4. 生成入住记录（换房合同也需要新入住记录）
         generateCheckInRecord(contract);
         log.info("签署回调：入住记录生成成功，contractId={}", contract.getContractId());
 
-        // 5. 推进预订单状态
-        HzHouseOrder order = orderMapper.selectOne(new LambdaQueryWrapper<HzHouseOrder>()
-                .eq(HzHouseOrder::getContractId, contract.getContractId()).last("LIMIT 1"));
-        if (order != null && "0".equals(order.getOrderStatus())) {
-            orderMapper.update(null, new LambdaUpdateWrapper<HzHouseOrder>()
-                    .eq(HzHouseOrder::getOrderNo, order.getOrderNo())
-                    .set(HzHouseOrder::getOrderStatus, "1")); // 1=待付押金
-            log.info("预订单推进至待付押金 orderNo={}", order.getOrderNo());
+        // 5. 推进预订单状态（换房合同无预订单，跳过）
+        if (!"3".equals(contract.getContractType())) {
+            HzHouseOrder order = orderMapper.selectOne(new LambdaQueryWrapper<HzHouseOrder>()
+                    .eq(HzHouseOrder::getContractId, contract.getContractId()).last("LIMIT 1"));
+            if (order != null && "0".equals(order.getOrderStatus())) {
+                orderMapper.update(null, new LambdaUpdateWrapper<HzHouseOrder>()
+                        .eq(HzHouseOrder::getOrderNo, order.getOrderNo())
+                        .set(HzHouseOrder::getOrderStatus, "1")); // 1=待付押金
+                log.info("预订单推进至待付押金 orderNo={}", order.getOrderNo());
+            }
         }
 
         // 6. 发送合同签署成功消息
         try {
-            String msgContent = "2".equals(contract.getContractType())
-                    ? "您的续租合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳租金"
-                    : "您的合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳押金";
+            String msgContent;
+            if ("3".equals(contract.getContractType())) {
+                msgContent = "您的换房合同 " + contract.getContractNo() + " 已签署成功，请办理入住手续";
+            } else if ("2".equals(contract.getContractType())) {
+                msgContent = "您的续租合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳租金";
+            } else {
+                msgContent = "您的合同 " + contract.getContractNo() + " 已签署成功，请及时缴纳押金";
+            }
             messageService.sendMessage(contract.getTenantId(), "contract", "合同签署成功", msgContent);
         } catch (Exception e) {
             log.warn("发送合同签署成功消息失败，不影响主流程: {}", e.getMessage());
         }
+    }
+
+    // ==================== 换房结算 ====================
+
+    /**
+     * 换房合同签署回调后的结算逻辑：
+     * 1. 更新新合同startDate为签署当天
+     * 2. 终止老合同
+     * 3. 计算老合同剩余租金结余
+     * 4. 关闭老合同未到期账单
+     * 5. 生成新合同账单（含结转）
+     * 6. 房源状态变更
+     * 7. 更新换房申请状态
+     */
+    private void handleExchangeSettlement(HzContract newContract) {
+        String signDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+        // 更新新合同startDate为签署当天
+        contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                .eq(HzContract::getContractId, newContract.getContractId())
+                .set(HzContract::getStartDate, signDate));
+        newContract.setStartDate(signDate);
+
+        // 重算租期月数
+        long months = java.time.temporal.ChronoUnit.MONTHS.between(
+                LocalDate.parse(signDate), LocalDate.parse(newContract.getEndDate()));
+        newContract.setRentMonths((int) months);
+        contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                .eq(HzContract::getContractId, newContract.getContractId())
+                .set(HzContract::getRentMonths, (int) months));
+
+        // 查找换房申请记录
+        HzHouseExchange exchange = houseExchangeMapper.selectOne(
+                new LambdaQueryWrapper<HzHouseExchange>()
+                        .eq(HzHouseExchange::getNewContractId, newContract.getContractId())
+                        .eq(HzHouseExchange::getDelFlag, "0")
+                        .last("LIMIT 1"));
+        if (exchange == null) {
+            log.error("换房回调：未找到关联的换房申请，newContractId={}", newContract.getContractId());
+            throw new RuntimeException("未找到关联的换房申请");
+        }
+
+        // 查询老合同
+        HzContract oldContract = contractMapper.selectById(exchange.getOldContractId());
+        if (oldContract == null) {
+            log.error("换房回调：老合同不存在，oldContractId={}", exchange.getOldContractId());
+            throw new RuntimeException("老合同不存在");
+        }
+
+        // ① 终止老合同
+        contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                .eq(HzContract::getContractId, oldContract.getContractId())
+                .set(HzContract::getContractStatus, "5") // 5=已解约
+                .set(HzContract::getEndDate, signDate));
+
+        // ② 计算老合同剩余租金结余
+        BigDecimal carryOver = calculateCarryOver(oldContract, signDate);
+
+        // ③ 关闭老合同未到期账单（periodStartDate > 签署当天）
+        List<HzBill> oldBills = billMapper.selectList(new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, oldContract.getContractId())
+                .eq(HzBill::getBillType, "2")
+                .eq(HzBill::getDelFlag, "0"));
+        for (HzBill bill : oldBills) {
+            if (bill.getPeriodStartDate() != null) {
+                try {
+                    LocalDate ps = LocalDate.parse(bill.getPeriodStartDate().substring(0, 10));
+                    if (ps.isAfter(LocalDate.parse(signDate))) {
+                        billMapper.update(null, new LambdaUpdateWrapper<HzBill>()
+                                .eq(HzBill::getBillId, bill.getBillId())
+                                .set(HzBill::getBillStatus, "4")); // 4=已关闭
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        // ④ 生成新合同账单（含结转）
+        generateExchangeBills(newContract, carryOver, oldContract.getContractNo());
+
+        // ⑤ 房源状态变更
+        if (exchange.getOldHouseId() != null) {
+            houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                    .eq(HzHouse::getHouseId, exchange.getOldHouseId())
+                    .in(HzHouse::getHouseStatus, "1", "2")
+                    .set(HzHouse::getHouseStatus, "0")); // 旧房源→空置
+        }
+        houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                .eq(HzHouse::getHouseId, newContract.getHouseId())
+                .set(HzHouse::getHouseStatus, "2")); // 新房源→已出租
+
+        // ⑥ 更新换房申请状态为已完成
+        houseExchangeMapper.update(null, new LambdaUpdateWrapper<HzHouseExchange>()
+                .eq(HzHouseExchange::getExchangeId, exchange.getExchangeId())
+                .set(HzHouseExchange::getStatus, "1")); // 1=已完成
+
+        log.info("换房结算完成：oldContract={}, newContract={}, carryOver={}",
+                oldContract.getContractNo(), newContract.getContractNo(), carryOver);
+    }
+
+    /**
+     * 计算老合同剩余租金结余：
+     * 查询老合同最后一笔已付租金账单的periodEndDate→“已付覆盖截止日”
+     * 剩余租金 = (已付覆盖截止日 - 签署当天) × (日租金)
+     */
+    private BigDecimal calculateCarryOver(HzContract oldContract, String signDate) {
+        // 查询老合同已付租金账单，按期数降序
+        List<HzBill> paidBills = billMapper.selectList(new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, oldContract.getContractId())
+                .eq(HzBill::getBillType, "2")
+                .eq(HzBill::getBillStatus, "1")
+                .eq(HzBill::getDelFlag, "0")
+                .orderByDesc(HzBill::getBillSeq));
+
+        if (paidBills.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
+        // 取最后一笔已付账单的periodEndDate
+        HzBill lastPaid = paidBills.get(0);
+        if (lastPaid.getPeriodEndDate() == null) {
+            return BigDecimal.ZERO;
+        }
+
+        LocalDate paidCoverEnd = LocalDate.parse(lastPaid.getPeriodEndDate().substring(0, 10));
+        LocalDate signDay = LocalDate.parse(signDate);
+
+        // 如果已付覆盖截止日 <= 签署日，无结余
+        if (!paidCoverEnd.isAfter(signDay)) {
+            return BigDecimal.ZERO;
+        }
+
+        // 剩余天数
+        long remainDays = java.time.temporal.ChronoUnit.DAYS.between(signDay, paidCoverEnd);
+        // 日租金 = 月租 / 30
+        BigDecimal monthlyRent = oldContract.getRentPrice() != null ? oldContract.getRentPrice() : BigDecimal.ZERO;
+        BigDecimal dailyRent = monthlyRent.divide(BigDecimal.valueOf(30), 2, java.math.RoundingMode.HALF_UP);
+        BigDecimal carryOver = dailyRent.multiply(BigDecimal.valueOf(remainDays)).setScale(2, java.math.RoundingMode.HALF_UP);
+
+        log.info("换房结转计算：已付覆盖至{}  签署日{}  剩余{}  日租金{}  结转{}",
+                paidCoverEnd, signDay, remainDays, dailyRent, carryOver);
+        return carryOver;
+    }
+
+    /**
+     * 换房合同账单生成（含结转）：
+     * - 押金账单：1000元，已支付（押金转移，不退不收）
+     * - 首期租金账单：billAmount=全额，paidAmount=结转金额，unpaidAmount=差额
+     * - 后续租金账单：正常生成
+     */
+    private void generateExchangeBills(HzContract contract, BigDecimal carryOver, String oldContractNo) {
+        // 检查是否已生成
+        Long existCount = billMapper.selectCount(new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, contract.getContractId()));
+        if (existCount > 0) {
+            log.info("换房合同{}的账单已存在，跳过", contract.getContractId());
+            return;
+        }
+
+        // 1. 押金账单（已支付 - 押金转移）
+        BigDecimal deposit = contract.getDeposit() != null ? contract.getDeposit() : new BigDecimal("1000");
+        HzBill depositBill = new HzBill();
+        depositBill.setBillNo("YJ" + DateUtils.dateTimeNow(DateUtils.YYYYMMDDHHMMSS));
+        depositBill.setContractId(contract.getContractId());
+        depositBill.setTenantId(contract.getTenantId());
+        depositBill.setTenantName(contract.getTenantName());
+        depositBill.setHouseId(contract.getHouseId());
+        depositBill.setHouseCode(contract.getHouseCode());
+        depositBill.setBillType("1"); // 押金
+        depositBill.setBillPeriod(contract.getStartDate());
+        depositBill.setBillAmount(deposit);
+        depositBill.setPaidAmount(deposit); // 已支付（押金转移）
+        depositBill.setUnpaidAmount(BigDecimal.ZERO);
+        depositBill.setBillDate(contract.getStartDate());
+        depositBill.setDueDate(contract.getStartDate());
+        depositBill.setLateFee(BigDecimal.ZERO);
+        depositBill.setBillStatus("1"); // 已支付
+        depositBill.setDelFlag("0");
+        depositBill.setRemark("换房押金转移（不退不收）");
+        billMapper.insert(depositBill);
+
+        // 2. 租金账单
+        int paymentCycle = Integer.parseInt(contract.getPaymentCycle());
+        int rentMonths = contract.getRentMonths() != null ? contract.getRentMonths() : 1;
+        BigDecimal monthlyRent = contract.getRentPrice();
+        int billCount = rentMonths / paymentCycle;
+        if (rentMonths % paymentCycle != 0) billCount++;
+        if (billCount <= 0) billCount = 1;
+
+        LocalDate startDate = LocalDate.parse(contract.getStartDate(), DateTimeFormatter.ISO_LOCAL_DATE);
+        for (int i = 0; i < billCount; i++) {
+            HzBill rentBill = new HzBill();
+            rentBill.setBillNo("ZJ" + DateUtils.dateTimeNow(DateUtils.YYYYMMDDHHMMSS) + String.format("%02d", i + 1));
+            rentBill.setContractId(contract.getContractId());
+            rentBill.setTenantId(contract.getTenantId());
+            rentBill.setTenantName(contract.getTenantName());
+            rentBill.setHouseId(contract.getHouseId());
+            rentBill.setHouseCode(contract.getHouseCode());
+            rentBill.setBillType("2"); // 租金
+
+            LocalDate billDueDate = startDate.plusMonths((long) i * paymentCycle);
+            rentBill.setBillPeriod(billDueDate.format(DateTimeFormatter.ofPattern("yyyy-MM")));
+            rentBill.setDueDate(billDueDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
+            rentBill.setBillDate(billDueDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
+
+            rentBill.setBillSeq(i + 1);
+            rentBill.setPeriodStartDate(billDueDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
+            if (i == billCount - 1) {
+                rentBill.setPeriodEndDate(contract.getEndDate());
+            } else {
+                LocalDate periodEnd = startDate.plusMonths((long)(i + 1) * paymentCycle).minusDays(1);
+                rentBill.setPeriodEndDate(periodEnd.format(DateTimeFormatter.ISO_LOCAL_DATE));
+            }
+
+            int monthsForThisBill = Math.min(paymentCycle, rentMonths - i * paymentCycle);
+            BigDecimal billAmount = monthlyRent.multiply(new BigDecimal(monthsForThisBill));
+            rentBill.setBillAmount(billAmount);
+            rentBill.setLateFee(BigDecimal.ZERO);
+            rentBill.setDelFlag("0");
+
+            if (i == 0 && carryOver.compareTo(BigDecimal.ZERO) > 0) {
+                // 首期账单：包含结转
+                BigDecimal paidFromCarry = carryOver.min(billAmount); // 结转不超过账单金额
+                BigDecimal unpaid = billAmount.subtract(paidFromCarry);
+                rentBill.setPaidAmount(paidFromCarry);
+                rentBill.setUnpaidAmount(unpaid.compareTo(BigDecimal.ZERO) > 0 ? unpaid : BigDecimal.ZERO);
+                rentBill.setBillStatus(unpaid.compareTo(BigDecimal.ZERO) <= 0 ? "1" : "0");
+                rentBill.setCarryOverAmount(paidFromCarry);
+                rentBill.setCarryOverSource(oldContractNo);
+            } else {
+                rentBill.setPaidAmount(BigDecimal.ZERO);
+                rentBill.setUnpaidAmount(billAmount);
+                rentBill.setBillStatus("0"); // 待支付
+            }
+            billMapper.insert(rentBill);
+        }
+        log.info("换房合同 {} 生成账单成功：押金1条(转移)，租金{}条，首期结转¥{}",
+                contract.getContractNo(), billCount, carryOver);
     }
 
     // ==================== 账单生成（从 HzContractAppController 搬迁）====================

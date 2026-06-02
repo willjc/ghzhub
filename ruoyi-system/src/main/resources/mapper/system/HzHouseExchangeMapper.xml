@@ -57,10 +57,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="tenantId != null"> AND e.tenant_id = #{tenantId} </if>
         <if test="status != null and status != ''"> AND e.status = #{status} </if>
         <if test="approveResult != null and approveResult != ''"> AND e.approve_result = #{approveResult} </if>
+        <if test="params != null and params.projectIds != null and params.projectIds.size() > 0">
+            AND old_h.project_id IN
+            <foreach collection="params.projectIds" item="pid" open="(" separator="," close=")">
+                #{pid}
+            </foreach>
+        </if>
         ORDER BY e.create_time DESC
     </select>
 
-    <!-- 分页查询调换房申请（���关联信息） -->
+    <!-- 分页查询调换房申请（带关联信息） -->
     <select id="selectExchangePageWithRelations" resultType="com.ruoyi.system.domain.HzHouseExchange">
         SELECT
           e.exchange_id, e.tenant_id, e.old_contract_id, e.old_house_id, e.old_house_code,
@@ -94,6 +100,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="exchange.tenantId != null"> AND e.tenant_id = #{exchange.tenantId} </if>
         <if test="exchange.status != null and exchange.status != ''"> AND e.status = #{exchange.status} </if>
         <if test="exchange.approveResult != null and exchange.approveResult != ''"> AND e.approve_result = #{exchange.approveResult} </if>
+        <if test="exchange.params != null and exchange.params.projectIds != null and exchange.params.projectIds.size() > 0">
+            AND old_h.project_id IN
+            <foreach collection="exchange.params.projectIds" item="pid" open="(" separator="," close=")">
+                #{pid}
+            </foreach>
+        </if>
         ORDER BY e.create_time DESC
     </select>
 

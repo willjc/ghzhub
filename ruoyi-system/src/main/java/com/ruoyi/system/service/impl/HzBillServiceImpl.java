@@ -11,6 +11,7 @@ import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzBillVO;
 import com.ruoyi.system.mapper.HzBillMapper;
 import com.ruoyi.system.service.IHzBillService;
+import com.ruoyi.system.service.IHzRoleProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 账单Service业务层处理
@@ -31,6 +33,9 @@ public class HzBillServiceImpl extends ServiceImpl<HzBillMapper, HzBill> impleme
 
     @Autowired
     private HzBillMapper billMapper;
+
+    @Autowired
+    private IHzRoleProjectService roleProjectService;
 
     @Override
     public HzBill selectBillById(Long billId) {
@@ -95,6 +100,8 @@ public class HzBillServiceImpl extends ServiceImpl<HzBillMapper, HzBill> impleme
                .eq(StringUtils.isNotEmpty(bill.getBillStatus()), HzBill::getBillStatus, bill.getBillStatus())
                .eq(HzBill::getDelFlag, "0")
                .orderByDesc(HzBill::getCreateTime);
+        // 项目权限过滤
+        injectBillProjectFilter(wrapper);
         return this.list(wrapper);
     }
 
@@ -110,7 +117,21 @@ public class HzBillServiceImpl extends ServiceImpl<HzBillMapper, HzBill> impleme
                .eq(StringUtils.isNotEmpty(bill.getBillStatus()), HzBill::getBillStatus, bill.getBillStatus())
                .eq(HzBill::getDelFlag, "0")
                .orderByDesc(HzBill::getCreateTime);
+        // 项目权限过滤
+        injectBillProjectFilter(wrapper);
         return this.page(page, wrapper);
+    }
+
+    /** 账单查询注入项目权限过滤（通过house_id关联房源表的project_id） */
+    private void injectBillProjectFilter(LambdaQueryWrapper<HzBill> wrapper) {
+        List<Long> projectIds = roleProjectService.getCurrentUserProjectIds();
+        if (projectIds != null && !projectIds.isEmpty()) {
+            wrapper.inSql(HzBill::getHouseId,
+                    "SELECT house_id FROM hz_house WHERE project_id IN (" +
+                    projectIds.stream().map(String::valueOf).collect(Collectors.joining(",")) + ")");
+        } else if (projectIds != null && projectIds.isEmpty()) {
+            wrapper.apply("1=0"); // 无权限，返回空
+        }
     }
 
     @Override
@@ -211,5 +232,34 @@ public class HzBillServiceImpl extends ServiceImpl<HzBillMapper, HzBill> impleme
     public IPage<HzBillVO> selectBillVOPage(HzBill bill) {
         Page<HzBillVO> page = com.ruoyi.common.utils.PageUtils.getPage();
         return billMapper.selectBillVOPage(page, bill);
+    }
+
+    @Override
+    public java.util.Map<String, Object> checkTenantArrears(Long contractId) {
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        if (contractId == null) {
+            result.put("hasArrears", false);
+            result.put("arrearsCount", 0);
+            result.put("arrearsAmount", BigDecimal.ZERO);
+            return result;
+        }
+
+        // 查询未支付账单：billStatus in (0=待支付, 2=逾期, 3=部分支付)
+        LambdaQueryWrapper<HzBill> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(HzBill::getContractId, contractId)
+               .eq(HzBill::getDelFlag, "0")
+               .in(HzBill::getBillStatus, "0", "2", "3");
+        List<HzBill> arrearsBills = this.list(wrapper);
+
+        BigDecimal totalArrears = BigDecimal.ZERO;
+        for (HzBill bill : arrearsBills) {
+            BigDecimal unpaid = bill.getUnpaidAmount() != null ? bill.getUnpaidAmount() : BigDecimal.ZERO;
+            totalArrears = totalArrears.add(unpaid);
+        }
+
+        result.put("hasArrears", !arrearsBills.isEmpty());
+        result.put("arrearsCount", arrearsBills.size());
+        result.put("arrearsAmount", totalArrears);
+        return result;
     }
 }

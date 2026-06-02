@@ -147,4 +147,13 @@ public interface IHzBillService {
      * 检查并更新逾期账单
      */
     public void checkAndUpdateOverdueBills();
+
+    /**
+     * 欠费前置校验（退租/换房/续租通用）
+     * 查询指定合同下是否有未支付账单
+     *
+     * @param contractId 合同ID
+     * @return 欠费信息：hasArrears(是否欠费), arrearsCount(欠费笔数), arrearsAmount(欠费总额)
+     */
+    public java.util.Map<String, Object> checkTenantArrears(Long contractId);
 }
