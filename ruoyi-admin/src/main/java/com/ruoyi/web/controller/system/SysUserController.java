@@ -35,6 +35,7 @@ import com.ruoyi.system.service.ISysDeptService;
 import com.ruoyi.system.service.ISysPostService;
 import com.ruoyi.system.service.ISysRoleService;
 import com.ruoyi.system.service.ISysUserService;
+import com.ruoyi.system.service.IHzRoleProjectService;
 
 /**
  * 用户信息
@@ -56,6 +57,9 @@ public class SysUserController extends BaseController
 
     @Autowired
     private ISysPostService postService;
+
+    @Autowired
+    private IHzRoleProjectService roleProjectService;
 
     /**
      * 获取用户列表
@@ -261,5 +265,36 @@ public class SysUserController extends BaseController
     public AjaxResult deptTree(SysDept dept)
     {
         return success(deptService.selectDeptTreeList(dept));
+    }
+
+    /**
+     * 查询用户已绑定的项目ID列表
+     */
+    @PreAuthorize("@ss.hasPermi('system:user:query')")
+    @GetMapping("/projectIds/{userId}")
+    public AjaxResult getProjectIds(@PathVariable("userId") Long userId)
+    {
+        return success(roleProjectService.getProjectIdsByUserId(userId));
+    }
+
+    /**
+     * 保存用户-项目绑定
+     */
+    @PreAuthorize("@ss.hasPermi('system:user:edit')")
+    @Log(title = "用户管理", businessType = BusinessType.GRANT)
+    @PutMapping("/assignProject")
+    public AjaxResult assignProject(@RequestBody java.util.Map<String, Object> params)
+    {
+        Long userId = Long.valueOf(params.get("userId").toString());
+        @SuppressWarnings("unchecked")
+        java.util.List<Integer> list = (java.util.List<Integer>) params.get("projectIds");
+        java.util.List<Long> projectIds = new java.util.ArrayList<>();
+        if (list != null) {
+            for (Integer id : list) {
+                projectIds.add(id.longValue());
+            }
+        }
+        roleProjectService.saveUserProjects(userId, projectIds);
+        return success();
     }
 }

@@ -6,7 +6,7 @@ import com.ruoyi.system.domain.HzRoleProject;
 import java.util.List;
 
 /**
- * 角色-项目绑定Service接口
+ * 用户-项目绑定Service接口
  *
  * @author ruoyi
  */
@@ -22,18 +22,18 @@ public interface IHzRoleProjectService extends IService<HzRoleProject> {
     List<Long> getCurrentUserProjectIds();
 
     /**
-     * 根据角色ID查询绑定的项目ID列表
+     * 根据用户ID查询绑定的项目ID列表
      *
-     * @param roleId 角色ID
+     * @param userId 用户ID
      * @return 项目ID列表
      */
-    List<Long> getProjectIdsByRoleId(Long roleId);
+    List<Long> getProjectIdsByUserId(Long userId);
 
     /**
-     * 保存角色-项目绑定关系（先删后增）
+     * 保存用户-项目绑定关系（先删后增）
      *
-     * @param roleId 角色ID
+     * @param userId 用户ID
      * @param projectIds 项目ID列表
      */
-    void saveRoleProjects(Long roleId, List<Long> projectIds);
+    void saveUserProjects(Long userId, List<Long> projectIds);
 }

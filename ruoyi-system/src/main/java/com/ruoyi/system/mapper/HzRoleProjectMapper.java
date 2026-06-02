@@ -10,7 +10,7 @@ import com.ruoyi.system.domain.HzRoleProject;
 import java.util.List;
 
 /**
- * 角色-项目绑定Mapper接口
+ * 用户-项目绑定Mapper接口
  *
  * @author ruoyi
  */
@@ -18,19 +18,11 @@ import java.util.List;
 public interface HzRoleProjectMapper extends BaseMapper<HzRoleProject> {
 
     /**
-     * 根据角色ID查询绑定的项目ID列表
+     * 根据用户ID查询绑定的项目ID列表
      *
-     * @param roleId 角色ID
+     * @param userId 用户ID
      * @return 项目ID列表
      */
-    @Select("SELECT project_id FROM hz_role_project WHERE role_id = #{roleId}")
-    List<Long> selectProjectIdsByRoleId(@Param("roleId") Long roleId);
-
-    /**
-     * 根据多个角色ID查询绑定的项目ID列表（去重）
-     *
-     * @param roleIds 角色ID列表
-     * @return 项目ID列表
-     */
-    List<Long> selectProjectIdsByRoleIds(@Param("roleIds") List<Long> roleIds);
+    @Select("SELECT project_id FROM hz_user_project WHERE user_id = #{userId}")
+    List<Long> selectProjectIdsByUserId(@Param("userId") Long userId);
 }

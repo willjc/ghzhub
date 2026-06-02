@@ -14,10 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
- * 角色-项目绑定Service业务层处理
+ * 用户-项目绑定Service业务层处理
  *
  * @author ruoyi
  */
@@ -32,43 +31,39 @@ public class HzRoleProjectServiceImpl extends ServiceImpl<HzRoleProjectMapper, H
             return null;
         }
 
-        // 获取当前用户的角色列表
-        List<SysRole> roles = loginUser.getUser().getRoles();
-        if (roles == null || roles.isEmpty()) {
-            return new ArrayList<>();
-        }
-
         // 检查是否包含管理方角色（管理方不限制）
-        for (SysRole role : roles) {
-            if ("manager".equals(role.getRoleKey()) || "admin".equals(role.getRoleKey())) {
-                return null;
+        List<SysRole> roles = loginUser.getUser().getRoles();
+        if (roles != null) {
+            for (SysRole role : roles) {
+                if ("manager".equals(role.getRoleKey()) || "admin".equals(role.getRoleKey())) {
+                    return null;
+                }
             }
         }
 
-        // 物业角色：查询绑定的项目ID列表
-        List<Long> roleIds = roles.stream().map(SysRole::getRoleId).collect(Collectors.toList());
-        List<Long> projectIds = baseMapper.selectProjectIdsByRoleIds(roleIds);
+        // 物业角色：按用户ID查询绑定的项目
+        List<Long> projectIds = baseMapper.selectProjectIdsByUserId(loginUser.getUserId());
         return projectIds != null ? projectIds : new ArrayList<>();
     }
 
     @Override
-    public List<Long> getProjectIdsByRoleId(Long roleId) {
-        return baseMapper.selectProjectIdsByRoleId(roleId);
+    public List<Long> getProjectIdsByUserId(Long userId) {
+        return baseMapper.selectProjectIdsByUserId(userId);
     }
 
     @Override
     @Transactional
-    public void saveRoleProjects(Long roleId, List<Long> projectIds) {
-        // 先删除该角色的所有绑定
+    public void saveUserProjects(Long userId, List<Long> projectIds) {
+        // 先删除该用户的所有绑定
         this.remove(new LambdaQueryWrapper<HzRoleProject>()
-                .eq(HzRoleProject::getRoleId, roleId));
+                .eq(HzRoleProject::getUserId, userId));
 
         // 重新插入
         if (projectIds != null && !projectIds.isEmpty()) {
             List<HzRoleProject> list = new ArrayList<>();
             for (Long projectId : projectIds) {
                 HzRoleProject rp = new HzRoleProject();
-                rp.setRoleId(roleId);
+                rp.setUserId(userId);
                 rp.setProjectId(projectId);
                 rp.setCreateTime(new Date());
                 list.add(rp);

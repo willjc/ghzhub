@@ -8,11 +8,11 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
 
 /**
- * 角色-项目绑定关联对象 hz_role_project
+ * 用户-项目绑定关联对象 hz_user_project
  *
  * @author ruoyi
  */
-@TableName("hz_role_project")
+@TableName("hz_user_project")
 public class HzRoleProject {
     private static final long serialVersionUID = 1L;
 
@@ -20,9 +20,9 @@ public class HzRoleProject {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 角色ID */
-    @TableField("role_id")
-    private Long roleId;
+    /** 用户ID */
+    @TableField("user_id")
+    private Long userId;
 
     /** 项目ID */
     @TableField("project_id")
@@ -40,12 +40,12 @@ public class HzRoleProject {
         this.id = id;
     }
 
-    public Long getRoleId() {
-        return roleId;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setRoleId(Long roleId) {
-        this.roleId = roleId;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public Long getProjectId() {

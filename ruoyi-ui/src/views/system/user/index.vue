@@ -82,6 +82,7 @@
                     <el-dropdown-menu slot="dropdown">
                       <el-dropdown-item command="handleResetPwd" icon="el-icon-key" v-hasPermi="['system:user:resetPwd']">重置密码</el-dropdown-item>
                       <el-dropdown-item command="handleAuthRole" icon="el-icon-circle-check" v-hasPermi="['system:user:edit']">分配角色</el-dropdown-item>
+                      <el-dropdown-item command="handleAssignProject" icon="el-icon-office-building" v-hasPermi="['system:user:edit']">分配项目</el-dropdown-item>
                     </el-dropdown-menu>
                   </el-dropdown>
                 </template>
@@ -179,6 +180,26 @@
       </div>
     </el-dialog>
 
+    <!-- 分配项目对话框 -->
+    <el-dialog title="分配项目" :visible.sync="openProject" width="500px" append-to-body>
+      <el-form label-width="80px">
+        <el-form-item label="用户名称">
+          <el-input :value="projectForm.userName" :disabled="true" />
+        </el-form-item>
+        <el-form-item label="绑定项目">
+          <el-checkbox-group v-model="checkedProjectIds">
+            <el-checkbox v-for="p in allProjectList" :key="p.projectId" :label="p.projectId" style="display:block;margin-left:0;margin-bottom:6px">
+              {{ p.projectName }}
+            </el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitProject">确 定</el-button>
+        <el-button @click="openProject = false">取 消</el-button>
+      </div>
+    </el-dialog>
+
     <!-- 用户导入对话框 -->
     <el-dialog :title="upload.title" :visible.sync="upload.open" width="400px" append-to-body>
       <el-upload ref="upload" :limit="1" accept=".xlsx, .xls" :headers="upload.headers" :action="upload.url + '?updateSupport=' + upload.updateSupport" :disabled="upload.isUploading" :on-progress="handleFileUploadProgress" :on-success="handleFileSuccess" :auto-upload="false" drag>
@@ -202,6 +223,8 @@
 
 <script>
 import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, deptTreeSelect } from "@/api/system/user"
+import { listProject } from "@/api/gangzhu/project"
+import request from '@/utils/request'
 import { getToken } from "@/utils/auth"
 import Treeselect from "@riophae/vue-treeselect"
 import "@riophae/vue-treeselect/dist/vue-treeselect.css"
@@ -236,6 +259,14 @@ export default {
       enabledDeptOptions: undefined,
       // 是否显示弹出层
       open: false,
+      // 是否显示分配项目弹出层
+      openProject: false,
+      // 分配项目表单
+      projectForm: { userId: undefined, userName: '' },
+      // 全部项目列表
+      allProjectList: [],
+      // 已选中的项目ID列表
+      checkedProjectIds: [],
       // 部门名称
       deptName: undefined,
       // 默认密码
@@ -432,6 +463,9 @@ export default {
         case "handleAuthRole":
           this.handleAuthRole(row)
           break
+        case "handleAssignProject":
+          this.handleAssignProject(row)
+          break
         default:
           break
       }
@@ -485,6 +519,30 @@ export default {
     handleAuthRole: function(row) {
       const userId = row.userId
       this.$router.push("/system/user-auth/role/" + userId)
+    },
+    /** 分配项目操作 */
+    handleAssignProject(row) {
+      this.projectForm = { userId: row.userId, userName: row.userName }
+      // 加载全部项目
+      listProject({ pageNum: 1, pageSize: 1000, status: "0" }).then(res => {
+        this.allProjectList = res.rows || res.data || []
+      })
+      // 加载当前用户已绑定项目
+      request({ url: '/system/user/projectIds/' + row.userId, method: 'get' }).then(res => {
+        this.checkedProjectIds = res.data || []
+      })
+      this.openProject = true
+    },
+    /** 提交分配项目 */
+    submitProject() {
+      request({
+        url: '/system/user/assignProject',
+        method: 'put',
+        data: { userId: this.projectForm.userId, projectIds: this.checkedProjectIds }
+      }).then(() => {
+        this.$modal.msgSuccess("分配成功")
+        this.openProject = false
+      })
     },
     /** 提交按钮 */
     submitForm: function() {
