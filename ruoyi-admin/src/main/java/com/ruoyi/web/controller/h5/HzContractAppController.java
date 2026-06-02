@@ -363,8 +363,26 @@ public class HzContractAppController extends BaseController {
         Long oldContractId = params.containsKey("oldContractId") && params.get("oldContractId") != null
                 ? Long.parseLong(params.get("oldContractId").toString()) : null;
 
+        // 检测房源是否属于配租批次（优先使用批次日期）
+        boolean isBatchMode = false;
+        String batchStartDate = null;
+        String batchEndDate = null;
+        try {
+            BatchPreferenceVo batchPref = batchHouseMapper.selectBatchPreferenceByHouseId(houseId);
+            if (batchPref != null && batchPref.getEntryStartDate() != null && batchPref.getEntryEndDate() != null) {
+                isBatchMode = true;
+                batchStartDate = batchPref.getEntryStartDate();
+                batchEndDate = batchPref.getEntryEndDate();
+            }
+        } catch (Exception ex) {
+            logger.warn("查询批次日期失败，走默认逻辑: {}", ex.getMessage());
+        }
+
         LocalDate startDate;
-        if (oldContractId != null) {
+        if (isBatchMode) {
+            // 批次配租模式：使用批次入驻日期
+            startDate = LocalDate.parse(batchStartDate);
+        } else if (oldContractId != null) {
             // 续租模式：从原合同到期日开始
             HzContract oldContract = contractService.selectContractById(oldContractId);
             if (oldContract == null) {
@@ -418,8 +436,14 @@ public class HzContractAppController extends BaseController {
         tenant.setPhone("13800138000");
 
         // 7. 计算结束日期
-        LocalDate end = startDate.plusMonths(rentMonths);
-        String endDate = end.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String endDate;
+        if (isBatchMode) {
+            // 批次配租模式：使用批次入驻结束日期
+            endDate = batchEndDate;
+        } else {
+            LocalDate end = startDate.plusMonths(rentMonths);
+            endDate = end.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        }
 
         // 8. 替换合同模版变量
         // 押金优先使用房源自身的押金，若房源未配置则回退到合同模版的押金
@@ -449,6 +473,7 @@ public class HzContractAppController extends BaseController {
         result.put("totalAmount", house.getRentPrice().multiply(new BigDecimal(rentMonths)).add(depositAmount));
         result.put("startDate", startDateStr);
         result.put("endDate", endDate);
+        result.put("isBatchMode", isBatchMode);
         result.put("projectName", project.getProjectName());
         result.put("houseAddress", houseAddress);
         result.put("houseCode", house.getHouseNo());
@@ -534,9 +559,29 @@ public class HzContractAppController extends BaseController {
                 return error("获取用户信息失败，请重新登录");
             }
 
-            // 合同生效日期自动计算为当前日期 + 3天
-            LocalDate startDateLocal = LocalDate.now().plusDays(3);
-            String startDate = startDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
+            // 检测房源是否属于配租批次（优先使用批次日期）
+            boolean isBatchMode = false;
+            String batchStartDateStr = null;
+            String batchEndDateStr = null;
+            try {
+                BatchPreferenceVo batchPref = batchHouseMapper.selectBatchPreferenceByHouseId(houseId);
+                if (batchPref != null && batchPref.getEntryStartDate() != null && batchPref.getEntryEndDate() != null) {
+                    isBatchMode = true;
+                    batchStartDateStr = batchPref.getEntryStartDate();
+                    batchEndDateStr = batchPref.getEntryEndDate();
+                }
+            } catch (Exception ex) {
+                logger.warn("查询批次日期失败，走默认逻辑: {}", ex.getMessage());
+            }
+
+            // 合同生效日期：批次配租使用批次日期，否则当前日期+3天
+            String startDate;
+            if (isBatchMode) {
+                startDate = batchStartDateStr;
+            } else {
+                LocalDate startDateLocal = LocalDate.now().plusDays(3);
+                startDate = startDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
+            }
 
             // 1. 处理签名图片（e签宝模式下不再需要手写签名，签名由e签宝完成）
             String signatureUrl = "";
@@ -661,8 +706,13 @@ public class HzContractAppController extends BaseController {
                     : (template.getDepositAmount() != null ? template.getDepositAmount() : BigDecimal.ZERO);
             contract.setDeposit(houseDeposit);
 
-            contract.setStartDate(startDate);  // 使用自动计算的生效日期（签字日期+3天）
-            contract.setEndDate(endDate);
+            contract.setStartDate(startDate);  // 批次配租使用批次日期，否则签字日期+3天
+            // 批次配租模式：使用批次入驻结束日期覆盖前端传入的endDate
+            if (isBatchMode) {
+                contract.setEndDate(batchEndDateStr);
+            } else {
+                contract.setEndDate(endDate);
+            }
             contract.setRentMonths(rentMonths);
 
             // 转换支付周期：模板中是英文全称，合同表中是单字符代码

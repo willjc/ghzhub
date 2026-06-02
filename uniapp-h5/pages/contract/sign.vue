@@ -84,7 +84,7 @@
             <text class="row-value price" v-if="!isRenew">¥ {{ deposit }}</text>
             <text class="row-value renew-free" v-else>续租免押金</text>
           </view>
-          <view class="row row-picker">
+          <view class="row row-picker" v-if="!isBatchMode">
             <text class="row-label">租期</text>
             <picker
               mode="selector"
@@ -236,6 +236,8 @@ export default {
       // 续租模式
       isRenew: false,
       oldContractId: null,
+      // 批次配租模式（日期由批次固定，不可编辑）
+      isBatchMode: false,
       // 预订倒计时
       lockExpireTime: null,
       countdown: '10:00',
@@ -403,6 +405,7 @@ export default {
         this.rentPrice = res.data.rentPrice || '0'
         this.deposit = res.data.deposit || '0'
         this.endDate = res.data.endDate || ''
+        this.isBatchMode = res.data.isBatchMode || false
         this.projectName = res.data.projectName || ''
         // URL 参数优先；API 返回作为备用
         if (!this.houseCode) {

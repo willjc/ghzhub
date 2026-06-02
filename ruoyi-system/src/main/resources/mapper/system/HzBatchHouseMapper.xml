@@ -4,12 +4,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ruoyi.system.mapper.HzBatchHouseMapper">
 
-    <!-- 根据房源ID查找配租批次的优惠信息 -->
+    <!-- 根据房源ID查找配租批次的优惠信息及入驻日期 -->
     <select id="selectBatchPreferenceByHouseId" resultType="com.ruoyi.system.domain.vo.BatchPreferenceVo">
         SELECT
             ba.batch_id as batchId,
             ba.preferential_type as preferentialType,
-            ba.free_rent_periods as freeRentPeriods
+            ba.free_rent_periods as freeRentPeriods,
+            DATE_FORMAT(ba.entry_start_date, '%Y-%m-%d') as entryStartDate,
+            DATE_FORMAT(ba.entry_end_date, '%Y-%m-%d') as entryEndDate
         FROM hz_batch_house bh
         INNER JOIN hz_batch_allocation ba ON bh.batch_id = ba.batch_id
         WHERE bh.house_id = #{houseId}

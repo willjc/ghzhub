@@ -16,6 +16,12 @@ public class BatchPreferenceVo {
     /** 免租期数 */
     private Integer freeRentPeriods;
 
+    /** 入驻开始日期 */
+    private String entryStartDate;
+
+    /** 入驻结束日期 */
+    private String entryEndDate;
+
     public Long getBatchId() {
         return batchId;
     }
@@ -40,12 +46,30 @@ public class BatchPreferenceVo {
         this.freeRentPeriods = freeRentPeriods;
     }
 
+    public String getEntryStartDate() {
+        return entryStartDate;
+    }
+
+    public void setEntryStartDate(String entryStartDate) {
+        this.entryStartDate = entryStartDate;
+    }
+
+    public String getEntryEndDate() {
+        return entryEndDate;
+    }
+
+    public void setEntryEndDate(String entryEndDate) {
+        this.entryEndDate = entryEndDate;
+    }
+
     @Override
     public String toString() {
         return "BatchPreferenceVo{" +
                 "batchId=" + batchId +
                 ", preferentialType='" + preferentialType + '\'' +
                 ", freeRentPeriods=" + freeRentPeriods +
+                ", entryStartDate='" + entryStartDate + '\'' +
+                ", entryEndDate='" + entryEndDate + '\'' +
                 '}';
     }
 }

@@ -829,6 +829,14 @@ export default {
             return;
           }
 
+          // 校验入驻日期是否为整月（endDate = startDate + N个月 - 1天）
+          if (this.form.entryStartDate && this.form.entryEndDate) {
+            if (!this.isWholeMonth(this.form.entryStartDate, this.form.entryEndDate)) {
+              this.$modal.msgError('入驻日期必须为整月（例如：3月28日~4月27日为1个整月）');
+              return;
+            }
+          }
+
           // 检查房源和人员数量是否一致
           if (this.selectedHouses.length !== this.tenantList.length) {
             this.$modal.msgError('房源数量和人员数量必须一致');
@@ -999,6 +1007,36 @@ export default {
         // 切换到无优惠时，清空免租期数
         this.form.freeRentPeriods = 0;
       }
+    },
+    /**
+     * 校验两个日期是否为整月
+     * 规则：endDate = startDate + N个月 - 1天（N>=1）
+     * 例如：3月28日~4月27日 = 1个整月
+     */
+    isWholeMonth(startTimestamp, endTimestamp) {
+      const start = new Date(startTimestamp);
+      const end = new Date(endTimestamp);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+      if (end <= start) return false;
+      // 尝试 N = 1 ~ 36 个月
+      for (let n = 1; n <= 36; n++) {
+        // 安全加月：处理跨月天数不足的情况
+        let year = start.getFullYear();
+        let month = start.getMonth() + n;
+        let day = start.getDate();
+        year += Math.floor(month / 12);
+        month = month % 12;
+        // 目标月天数不足时取最后一天
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        if (day > daysInMonth) day = daysInMonth;
+        // expectedEnd = 目标日期 - 1天
+        const target = new Date(year, month, day);
+        target.setDate(target.getDate() - 1);
+        target.setHours(0, 0, 0, 0);
+        if (target.getTime() === end.getTime()) return true;
+      }
+      return false;
     }
   }
 };
