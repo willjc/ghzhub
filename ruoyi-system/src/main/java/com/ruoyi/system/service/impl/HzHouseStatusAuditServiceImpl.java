@@ -17,6 +17,7 @@ import com.ruoyi.system.service.IHzRoleProjectService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,7 @@ public class HzHouseStatusAuditServiceImpl extends ServiceImpl<HzHouseStatusAudi
     private static final Logger logger = LoggerFactory.getLogger(HzHouseStatusAuditServiceImpl.class);
 
     @Autowired
+    @Lazy
     private IHzHouseService houseService;
 
     @Autowired
