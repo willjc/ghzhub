@@ -34,6 +34,7 @@ import com.ruoyi.system.domain.SysUserRole;
 import com.ruoyi.system.service.ISysDeptService;
 import com.ruoyi.system.service.ISysRoleService;
 import com.ruoyi.system.service.ISysUserService;
+import com.ruoyi.system.service.IHzRoleProjectService;
 
 /**
  * 角色信息
@@ -58,6 +59,9 @@ public class SysRoleController extends BaseController
 
     @Autowired
     private ISysDeptService deptService;
+
+    @Autowired
+    private IHzRoleProjectService roleProjectService;
 
     @PreAuthorize("@ss.hasPermi('system:role:list')")
     @GetMapping("/list")
@@ -277,5 +281,36 @@ public class SysRoleController extends BaseController
         ajax.put("checkedKeys", deptService.selectDeptListByRoleId(roleId));
         ajax.put("depts", deptService.selectDeptTreeList(new SysDept()));
         return ajax;
+    }
+
+    /**
+     * 查询角色已绑定的项目ID列表
+     */
+    @PreAuthorize("@ss.hasPermi('system:role:query')")
+    @GetMapping(value = "/projectIds/{roleId}")
+    public AjaxResult getProjectIds(@PathVariable("roleId") Long roleId)
+    {
+        return success(roleProjectService.getProjectIdsByRoleId(roleId));
+    }
+
+    /**
+     * 保存角色-项目绑定
+     */
+    @PreAuthorize("@ss.hasPermi('system:role:edit')")
+    @Log(title = "角色管理", businessType = BusinessType.GRANT)
+    @PutMapping("/assignProject")
+    public AjaxResult assignProject(@RequestBody java.util.Map<String, Object> params)
+    {
+        Long roleId = Long.valueOf(params.get("roleId").toString());
+        @SuppressWarnings("unchecked")
+        java.util.List<Integer> list = (java.util.List<Integer>) params.get("projectIds");
+        java.util.List<Long> projectIds = new java.util.ArrayList<>();
+        if (list != null) {
+            for (Integer id : list) {
+                projectIds.add(id.longValue());
+            }
+        }
+        roleProjectService.saveRoleProjects(roleId, projectIds);
+        return success();
     }
 }

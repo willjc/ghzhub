@@ -141,6 +141,8 @@
                 v-hasPermi="['system:role:edit']">数据权限</el-dropdown-item>
               <el-dropdown-item command="handleAuthUser" icon="el-icon-user"
                 v-hasPermi="['system:role:edit']">分配用户</el-dropdown-item>
+              <el-dropdown-item command="handleAssignProject" icon="el-icon-office-building"
+                v-hasPermi="['system:role:edit']">分配项目</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
         </template>
@@ -207,6 +209,26 @@
       </div>
     </el-dialog>
 
+    <!-- 分配项目对话框 -->
+    <el-dialog title="分配项目" :visible.sync="openProject" width="500px" append-to-body>
+      <el-form :model="form" label-width="80px">
+        <el-form-item label="角色名称">
+          <el-input v-model="form.roleName" :disabled="true" />
+        </el-form-item>
+        <el-form-item label="绑定项目">
+          <el-checkbox-group v-model="checkedProjectIds">
+            <el-checkbox v-for="p in allProjectList" :key="p.projectId" :label="p.projectId" style="display:block;margin-left:0;margin-bottom:6px">
+              {{ p.projectName }}
+            </el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitProject">确 定</el-button>
+        <el-button @click="openProject = false">取 消</el-button>
+      </div>
+    </el-dialog>
+
     <!-- 分配角色数据权限对话框 -->
     <el-dialog :title="title" :visible.sync="openDataScope" width="500px" append-to-body>
       <el-form :model="form" label-width="80px">
@@ -254,6 +276,8 @@
 <script>
 import { listRole, getRole, delRole, addRole, updateRole, dataScope, changeRoleStatus, deptTreeSelect } from "@/api/system/role"
 import { treeselect as menuTreeselect, roleMenuTreeselect } from "@/api/system/menu"
+import { listProject } from "@/api/gangzhu/project"
+import request from '@/utils/request'
 
 export default {
   name: "Role",
@@ -280,6 +304,12 @@ export default {
       open: false,
       // 是否显示弹出层（数据权限）
       openDataScope: false,
+      // 是否显示弹出层（分配项目）
+      openProject: false,
+      // 全部项目列表
+      allProjectList: [],
+      // 已选中的项目ID列表
+      checkedProjectIds: [],
       menuExpand: false,
       menuNodeAll: false,
       deptExpand: true,
@@ -463,6 +493,9 @@ export default {
         case "handleAuthUser":
           this.handleAuthUser(row)
           break
+        case "handleAssignProject":
+          this.handleAssignProject(row)
+          break
         default:
           break
       }
@@ -550,6 +583,30 @@ export default {
     handleAuthUser: function(row) {
       const roleId = row.roleId
       this.$router.push("/system/role-auth/user/" + roleId)
+    },
+    /** 分配项目操作 */
+    handleAssignProject(row) {
+      this.form = { roleId: row.roleId, roleName: row.roleName }
+      // 加载全部项目
+      listProject({ pageNum: 1, pageSize: 1000, status: "0" }).then(res => {
+        this.allProjectList = res.rows || res.data || []
+      })
+      // 加载当前角色已绑定项目
+      request({ url: '/system/role/projectIds/' + row.roleId, method: 'get' }).then(res => {
+        this.checkedProjectIds = res.data || []
+      })
+      this.openProject = true
+    },
+    /** 提交分配项目 */
+    submitProject() {
+      request({
+        url: '/system/role/assignProject',
+        method: 'put',
+        data: { roleId: this.form.roleId, projectIds: this.checkedProjectIds }
+      }).then(() => {
+        this.$modal.msgSuccess("分配成功")
+        this.openProject = false
+      })
     },
     /** 提交按钮 */
     submitForm: function() {
