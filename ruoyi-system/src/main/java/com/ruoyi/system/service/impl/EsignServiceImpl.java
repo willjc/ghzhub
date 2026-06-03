@@ -470,13 +470,14 @@ public class EsignServiceImpl implements EsignService {
         // ── 设施数量字段（数字13~57）──────────────────────────────────
         // 设施名称(DB) → componentId 映射（一对一直接映射）
         String[][] facilityMapping = {
-            // DB设施名 → componentId (模板控件名)
+            // DB设施名 → componentId (合同模板控件)
+            {"电视",         "df9310d42f124edf986744f92edc78aa"},   // 数字13
             {"空调",         "1346c3069a2a434f920c7b0ed652ca9b"},   // 数字14
             {"洗衣机",       "e0fe08cd3faa49beb984fea7d67ef55f"},   // 数字15
             {"冰箱",         "55bea9110f2e4e35aa890351a47f9e8d"},   // 数字16
             {"热水器",       "af27c759b2774ec0add8e3721c9b58eb"},   // 数字17
             {"燃气灶",       "085c6aa3fe8b4d7cb57f22f8264ece1c"},   // 数字18
-            {"抽烟机",       "d990367bea0f4d9b9d5bbab7016f5d3b"},   // 数字19 (模板:抽油烟机)
+            {"抽油烟机",     "d990367bea0f4d9b9d5bbab7016f5d3b"},   // 数字19
             {"客厅灯具",     "a24748a0897e458e9c4c60f7c196414e"},   // 数字20
             {"卧室灯具",     "74196081487f4adfa78bb01c29eb0dd3"},   // 数字21
             {"厨房灯具",     "f37dcc62d1cf47baaf52904c8aa4f344"},   // 数字22
@@ -489,23 +490,29 @@ public class EsignServiceImpl implements EsignService {
             {"软管",         "7089eec143744baa86d21eacb4f63a46"},   // 数字29
             {"马桶",         "3dd55ec8849c43a0b54be1d3931efd53"},   // 数字30
             {"厨房水龙头",   "96fadc84185e4a1d93fe8c9806a08368"},   // 数字31
-            {"厨房洗菜池",   "ef259c5b62844c4da2956d20537844e4"},   // 数字32 (模板:洗菜池)
+            {"洗菜池",       "ef259c5b62844c4da2956d20537844e4"},   // 数字32
+            {"墙面",         "ab92c18d58614881aaf3bdec381920cd"},   // 数字33
+            {"地板",         "3aaf69df97be45c6aca3ed0632b4dfba"},   // 数字34
+            {"地毯",         "fe9eaa91e1c64f30b8e503fc61fee38b"},   // 数字35
             {"电闸盒",       "0b53c3e723d9469c93ec342d4f139545"},   // 数字36
             {"瓷砖",         "7e5e2672996b4c988e146e1bb4e9a6f1"},   // 数字37
-            {"房间防盗门",   "8fbd8eae96124314920024f917efba0d"},   // 数字38 (模板:入户门)
+            {"入户门",       "8fbd8eae96124314920024f917efba0d"},   // 数字38
+            {"密码锁",       "bac3286c5f8046ed924291c2e4888ea1"},   // 数字39
             {"套房内门",     "6e12233b06114fdcaecea860555b8e6c"},   // 数字40
+            {"厨房推拉门",   "cf3857e2240544819dad9c3501b7f139"},   // 数字41
+            {"窗户",         "1c395eb1e2534fa0866976ce3d236a56"},   // 数字42
             {"客厅窗帘",     "7dce049c63a34c49a032bca9d423f2f9"},   // 数字43
             {"卧室窗帘",     "28480bbc9c494c40bfdd91484977a752"},   // 数字44
-            {"茶几",         "e461395d06d948cf95dc0d457ecc2479"},   // 数字45 (模板:客厅茶几)
+            {"客厅茶几",     "e461395d06d948cf95dc0d457ecc2479"},   // 数字45
             {"餐桌",         "cf8bfbf7579444959f8c02e026a26ffd"},   // 数字46
             {"椅子",         "eb5d547ee12d4c78adc8e1cf0abdaa54"},   // 数字47
-            {"书桌",         "7242352de39c4bcbb79249f7e214af73"},   // 数字48 (模板:桌子)
+            {"桌子",         "7242352de39c4bcbb79249f7e214af73"},   // 数字48
             {"电视柜",       "3739cea4aa2d46fa9a2a040e042dbe79"},   // 数字49
             {"橱柜",         "d8313e95517c450587c5f0f654aa953a"},   // 数字50
             {"鞋柜",         "ed76e70778a64a7b90e3ff5edf3913b5"},   // 数字51
             {"衣柜",         "55295008996341bea97d72652f6b69da"},   // 数字52
             {"床头柜",       "b5168a2851cf49b69a2397dbea906773"},   // 数字53
-            {"客厅沙发",     "ebb3a484b0f24858aa22a78addf7572d"},   // 数字54 (模板:沙发)
+            {"沙发",         "ebb3a484b0f24858aa22a78addf7572d"},   // 数字54
             {"床",           "c47c22ae46dd41bdbdad92d50008bd7f"},   // 数字55
             {"床垫",         "e27d7ac150c1477aa6c9e3ac03650652"},   // 数字56
             {"晾衣架",       "0a638a08ce044b128809553f91b3e3bb"},   // 数字57
@@ -519,45 +526,7 @@ public class EsignServiceImpl implements EsignService {
             }
         }
 
-        // 数字13: 电视
-        int tvQty = facilityQtyMap.getOrDefault("电视", 0);
-        if (tvQty > 0) {
-            sb.append("  {\"componentId\": \"df9310d42f124edf986744f92edc78aa\", \"componentValue\": \"").append(tvQty).append("\"},\n");
-        }
-        // 数字33: 墙面（汇总: 客厅墙面+卧室墙面+厨房墙面+卫生间墙面）
-        int wallQty = facilityQtyMap.getOrDefault("客厅墙面", 0)
-                    + facilityQtyMap.getOrDefault("卧室墙面", 0)
-                    + facilityQtyMap.getOrDefault("厨房墙面", 0)
-                    + facilityQtyMap.getOrDefault("卫生间墙面", 0);
-        if (wallQty > 0) {
-            sb.append("  {\"componentId\": \"ab92c18d58614881aaf3bdec381920cd\", \"componentValue\": \"").append(wallQty).append("\"},\n");
-        }
-        // 数字34: 地板（DB: 房间地板）
-        int floorQty = facilityQtyMap.getOrDefault("房间地板", 0);
-        if (floorQty > 0) {
-            sb.append("  {\"componentId\": \"3aaf69df97be45c6aca3ed0632b4dfba\", \"componentValue\": \"").append(floorQty).append("\"},\n");
-        }
-        // 数字35: 地毯
-        int carpetQty = facilityQtyMap.getOrDefault("地毯", 0);
-        if (carpetQty > 0) {
-            sb.append("  {\"componentId\": \"fe9eaa91e1c64f30b8e503fc61fee38b\", \"componentValue\": \"").append(carpetQty).append("\"},\n");
-        }
-        // 数字39: 密码锁
-        int lockQty = facilityQtyMap.getOrDefault("密码锁", 0);
-        if (lockQty > 0) {
-            sb.append("  {\"componentId\": \"bac3286c5f8046ed924291c2e4888ea1\", \"componentValue\": \"").append(lockQty).append("\"},\n");
-        }
-        // 数字41: 厨房推拉门
-        int kitchenDoorQty = facilityQtyMap.getOrDefault("厨房推拉门", 0);
-        if (kitchenDoorQty > 0) {
-            sb.append("  {\"componentId\": \"cf3857e2240544819dad9c3501b7f139\", \"componentValue\": \"").append(kitchenDoorQty).append("\"},\n");
-        }
-        // 数字42: 窗户（汇总: 客厅窗户+卧室窗户）
-        int windowQty = facilityQtyMap.getOrDefault("客厅窗户", 0)
-                      + facilityQtyMap.getOrDefault("卧室窗户", 0);
-        if (windowQty > 0) {
-            sb.append("  {\"componentId\": \"1c395eb1e2534fa0866976ce3d236a56\", \"componentValue\": \"").append(windowQty).append("\"},\n");
-        }
+        // 所有设施现在都通过 facilityMapping 一对一映射，无需额外汇总逻辑
 
         // ── 单行文本11: 项目地址（文本控件可接受空字符串）──
         sb.append("  {\"componentId\": \"72bf22dc56d24723a715a1f2546346c2\", \"componentValue\": \"").append(escapeJson(truncateForEsign(projectAddress, 20, "单行文本11-项目地址", ctxContractId))).append("\"}\n");

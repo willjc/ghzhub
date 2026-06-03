@@ -583,7 +583,7 @@ public class HzHouseAppController extends BaseController {
                 if (!name.isEmpty()) {
                     Map<String, Object> map = new HashMap<>();
                     map.put("facilityName", name);
-                    map.put("facilityCategory", "其他");
+                    map.put("facilityCategory", "墙地面类");
                     map.put("quantity", 1);
                     map.put("itemStatus", "完好");
                     map.put("remark", "");

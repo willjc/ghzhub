@@ -776,7 +776,7 @@ export default {
       facilityHouseTypeList: [],
       allFacilityItems: [],
       facilityConfigList: [],
-      facilityCategories: ['电器类', '门窗类', '灯类', '卫浴区', '家具类', '洗菜池', '其他'],
+      facilityCategories: ['电气类', '灯具类', '卫浴类', '厨房类', '墙地面类', '门窗类', '家具类'],
       facilitySaving: false,
       // 批量修改房源状态对话框
       batchStatusDialog: {

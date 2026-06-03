@@ -976,7 +976,7 @@ export default {
       houseFacilityDialogVisible: false,
       houseFacilityList: [],
       allFacilityItems: [],
-      facilityCategories: ['电器类', '门窗类', '灯类', '卫浴区', '家具类', '洗菜池', '其他'],
+      facilityCategories: ['电气类', '灯具类', '卫浴类', '厨房类', '墙地面类', '门窗类', '家具类'],
       houseFacilityCount: 0,
       houseFacilitySaving: false,
       // 是否显示导入对话框

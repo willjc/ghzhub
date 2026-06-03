@@ -108,7 +108,7 @@
 				},
 
 				equipmentList: [],
-				facilityCategories: ['电器类', '门窗类', '灯类', '卫浴区', '家具类', '洗菜池', '其他']
+				facilityCategories: ['电气类', '灯具类', '卫浴类', '厨房类', '墙地面类', '门窗类', '家具类']
 			}
 		},
 		onLoad(options) {
@@ -180,7 +180,7 @@
 			// 按类别过滤设施
 			getEquipmentByCategory(category) {
 				return this.equipmentList.filter(item =>
-					(item.facilityCategory || '其他') === category
+					(item.facilityCategory || '墙地面类') === category
 				)
 			},
 
