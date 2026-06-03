@@ -84,20 +84,9 @@
             <text class="row-value price" v-if="!isRenew">¥ {{ deposit }}</text>
             <text class="row-value renew-free" v-else>续租免押金</text>
           </view>
-          <view class="row row-picker" v-if="!isBatchMode">
+          <view class="row" v-if="!isBatchMode">
             <text class="row-label">租期</text>
-            <picker
-              mode="selector"
-              :range="rentMonthsOptions"
-              range-key="label"
-              :value="rentMonthsIndex"
-              @change="onRentMonthsChange"
-            >
-              <view class="picker-btn">
-                <text class="picker-val">{{ rentMonths }} 个月</text>
-                <text class="picker-arrow">›</text>
-              </view>
-            </picker>
+            <text class="row-value">12 个月</text>
           </view>
           <view class="row">
             <text class="row-label">合同期限</text>
@@ -265,8 +254,8 @@ export default {
     this.projectId = options.projectId ? parseInt(options.projectId) : null
     this.contractId = options.contractId ? parseInt(options.contractId) : null
     this.orderNo = options.orderNo || null
-    this.rentMonths = options.rentMonths ? parseInt(options.rentMonths) : 12
-    this.rentMonthsIndex = this.rentMonths - 1
+    this.rentMonths = 12
+    this.rentMonthsIndex = 11
     if (options.houseCode) {
       this.houseCode = decodeURIComponent(options.houseCode)
     }
@@ -371,6 +360,7 @@ export default {
         this.startDate = start.toISOString().split('T')[0]
         const end = new Date(start)
         end.setMonth(end.getMonth() + m)
+        end.setDate(end.getDate() - 1)
         this.endDate = end.toISOString().split('T')[0]
       }
     },

@@ -441,7 +441,7 @@ public class HzContractAppController extends BaseController {
             // 批次配租模式：使用批次入驻结束日期
             endDate = batchEndDate;
         } else {
-            LocalDate end = startDate.plusMonths(rentMonths);
+            LocalDate end = startDate.plusMonths(rentMonths).minusDays(1);
             endDate = end.format(DateTimeFormatter.ISO_LOCAL_DATE);
         }
 
@@ -848,8 +848,8 @@ public class HzContractAppController extends BaseController {
             String oldEndDate = oldContract.getEndDate();
             LocalDate startDateLocal = LocalDate.parse(oldEndDate.substring(0, 10));
             String startDate = startDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
-            // 结束日期 = 起始日 + 租月
-            LocalDate endDateLocal = startDateLocal.plusMonths(rentMonths);
+            // 结束日期 = 起始日 + 租月 - 1天
+            LocalDate endDateLocal = startDateLocal.plusMonths(rentMonths).minusDays(1);
             String endDateCalc = endDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
             // 如果前端未传endDate或为空，使用计算值
             if (endDate == null || endDate.isEmpty()) {
