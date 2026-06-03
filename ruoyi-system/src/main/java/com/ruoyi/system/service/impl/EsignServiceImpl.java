@@ -519,7 +519,11 @@ public class EsignServiceImpl implements EsignService {
             }
         }
 
-        // 数字13: 电视（DB无此设施，跳过）
+        // 数字13: 电视
+        int tvQty = facilityQtyMap.getOrDefault("电视", 0);
+        if (tvQty > 0) {
+            sb.append("  {\"componentId\": \"df9310d42f124edf986744f92edc78aa\", \"componentValue\": \"").append(tvQty).append("\"},\n");
+        }
         // 数字33: 墙面（汇总: 客厅墙面+卧室墙面+厨房墙面+卫生间墙面）
         int wallQty = facilityQtyMap.getOrDefault("客厅墙面", 0)
                     + facilityQtyMap.getOrDefault("卧室墙面", 0)
@@ -533,7 +537,21 @@ public class EsignServiceImpl implements EsignService {
         if (floorQty > 0) {
             sb.append("  {\"componentId\": \"3aaf69df97be45c6aca3ed0632b4dfba\", \"componentValue\": \"").append(floorQty).append("\"},\n");
         }
-        // 数字35: 地毯 / 数字39: 密码锁 / 数字41: 厨房推拉门（DB无，跳过）
+        // 数字35: 地毯
+        int carpetQty = facilityQtyMap.getOrDefault("地毯", 0);
+        if (carpetQty > 0) {
+            sb.append("  {\"componentId\": \"fe9eaa91e1c64f30b8e503fc61fee38b\", \"componentValue\": \"").append(carpetQty).append("\"},\n");
+        }
+        // 数字39: 密码锁
+        int lockQty = facilityQtyMap.getOrDefault("密码锁", 0);
+        if (lockQty > 0) {
+            sb.append("  {\"componentId\": \"bac3286c5f8046ed924291c2e4888ea1\", \"componentValue\": \"").append(lockQty).append("\"},\n");
+        }
+        // 数字41: 厨房推拉门
+        int kitchenDoorQty = facilityQtyMap.getOrDefault("厨房推拉门", 0);
+        if (kitchenDoorQty > 0) {
+            sb.append("  {\"componentId\": \"cf3857e2240544819dad9c3501b7f139\", \"componentValue\": \"").append(kitchenDoorQty).append("\"},\n");
+        }
         // 数字42: 窗户（汇总: 客厅窗户+卧室窗户）
         int windowQty = facilityQtyMap.getOrDefault("客厅窗户", 0)
                       + facilityQtyMap.getOrDefault("卧室窗户", 0);
