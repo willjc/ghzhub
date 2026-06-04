@@ -228,6 +228,9 @@ public class HzContractController extends BaseController
             item.put("billDate",      b.getBillDate());
             item.put("dueDate",       b.getDueDate());
             item.put("billPeriod",    b.getBillPeriod());
+            item.put("billSeq",       b.getBillSeq());
+            item.put("periodStartDate", b.getPeriodStartDate());
+            item.put("periodEndDate",   b.getPeriodEndDate());
             return item;
         }).collect(Collectors.toList()));
         return success(result);
