@@ -75,3 +75,15 @@ qietu/
 # 文档/方案（本地参考文件）
 docs/superpowers/
 uploadfile/*.zip
+
+# 一次性迁移脚本和中间产物
+id_mappings.json
+fix_tenant_mapping.py
+migrate_data.py
+PAGINATION_CHECKLIST.csv
+PAGINATION_REPAIR_REPORT.txt
+delete_analysis_report.txt
+detailed_query_results.md
+
+# Claude/AI 临时文件
+tmpclaude-*
