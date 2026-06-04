@@ -861,6 +861,8 @@ public class EsignServiceImpl implements EsignService {
         HzContract contract = contractMapper.selectOne(new LambdaQueryWrapper<HzContract>().eq(HzContract::getEsignFlowId, flowId).last("LIMIT 1"));
         if (contract == null) { log.warn("e签宝回调未找到对应合同 flowId={}", flowId); return; }
         if ("2".equals(contract.getContractStatus()) || "3".equals(contract.getContractStatus())) { log.info("合同已处理，忽略重复回调 flowId={}", flowId); return; }
+        // 拦截超时失效的合同：预订单过期后定时任务已将合同标记为6，不允许e签宝回调"复活"已失效合同
+        if ("6".equals(contract.getContractStatus())) { log.warn("合同已超时失效，拒绝e签宝回调 flowId={} contractId={}", flowId, contract.getContractId()); return; }
 
         // 1. 更新合同状态：续租/换房直接进入履行中(3)，新签进入已签署(2)
         String newStatus = ("2".equals(contract.getContractType()) || "3".equals(contract.getContractType())) ? "3" : "2";
