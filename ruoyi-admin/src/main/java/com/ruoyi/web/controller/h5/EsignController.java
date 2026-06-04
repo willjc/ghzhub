@@ -7,6 +7,7 @@ import com.ruoyi.system.domain.HzUser;
 import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.mapper.HzUserMapper;
 import com.ruoyi.system.service.EsignService;
+import com.ruoyi.system.service.IHzUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ public class EsignController extends BaseController {
     @Autowired private EsignService esignService;
     @Autowired private HzContractMapper contractMapper;
     @Autowired private HzUserMapper userMapper;
+    @Autowired private IHzUserService userService;
 
     // ==================== 实名认证 ====================
 
@@ -50,6 +52,8 @@ public class EsignController extends BaseController {
                     .eq(HzUser::getUserId, userId).set(HzUser::getRealName, realName));
         }
         if (idCard != null && !idCard.isBlank()) {
+            // 身份证账号自动合并：如果该身份证已存在于其他旧账号，自动迁移业务数据
+            userService.mergeUserByIdCard(userId, idCard);
             userMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<HzUser>()
                     .eq(HzUser::getUserId, userId).set(HzUser::getIdCard, idCard));
         }

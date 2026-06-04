@@ -105,4 +105,14 @@ public interface IHzUserService extends IService<HzUser> {
      */
     HzUser loginOrRegisterByWechat(String openid, String unionid, String phone);
 
+    /**
+     * 身份证账号自动合并：当用户实名认证时发现身份证已存在于其他账号，
+     * 自动将旧账号的业务数据迁移到当前账号
+     *
+     * @param currentUserId 当前登录的用户ID
+     * @param idCard 身份证号
+     * @return true=发生了合并, false=无需合并
+     */
+    boolean mergeUserByIdCard(Long currentUserId, String idCard);
+
 }

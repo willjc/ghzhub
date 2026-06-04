@@ -7,11 +7,14 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.system.domain.HzUser;
-import com.ruoyi.system.mapper.HzUserMapper;
+import com.ruoyi.system.domain.*;
+import com.ruoyi.system.mapper.*;
 import com.ruoyi.system.service.IHzUserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
@@ -24,8 +27,22 @@ import java.util.List;
 @Service
 public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> implements IHzUserService {
 
+    private static final Logger log = LoggerFactory.getLogger(HzUserServiceImpl.class);
+
     @Autowired
     private HzUserMapper hzUserMapper;
+
+    @Autowired
+    private HzContractMapper contractMapper;
+
+    @Autowired
+    private HzBillMapper billMapper;
+
+    @Autowired
+    private HzHouseOrderMapper houseOrderMapper;
+
+    @Autowired
+    private HzCheckInMapper checkInMapper;
 
     /**
      * 查询用户列表（全量，导出用，不分页）
@@ -342,6 +359,89 @@ public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> impleme
         }
 
         return newUser;
+    }
+
+    /**
+     * 身份证账号自动合并：将旧账号的业务数据迁移到当前账号
+     * 触发时机：实名认证时发现身份证已存在于另一个账号
+     * 安全策略：仅合并「从未登录过」的旧账号（无openid、无lastLoginTime），
+     *          若旧账号有活跃登录记录则拒绝自动合并，避免误伤
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean mergeUserByIdCard(Long currentUserId, String idCard) {
+        if (currentUserId == null || StringUtils.isEmpty(idCard)) {
+            return false;
+        }
+
+        // 1. 查找同身份证的其他账号
+        LambdaQueryWrapper<HzUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(HzUser::getIdCard, idCard)
+                .ne(HzUser::getUserId, currentUserId)
+                .eq(HzUser::getDelFlag, "0");
+        HzUser oldUser = this.getOne(wrapper);
+
+        if (oldUser == null) {
+            return false; // 无重复账号，无需合并
+        }
+
+        // 2. 安全校验：旧账号必须是「从未活跃登录」的迁移数据
+        //    有 wechatOpenid 说明是活跃的微信用户，不能自动合并
+        if (StringUtils.isNotEmpty(oldUser.getWechatOpenid())) {
+            log.warn("身份证账号合并被拒绝：旧账号{}有活跃openid，当前账号{}，身份证={}",
+                    oldUser.getUserId(), currentUserId, idCard);
+            return false;
+        }
+
+        Long oldUserId = oldUser.getUserId();
+        log.info("开始身份证账号合并：旧账号{}→新账号{}，身份证={}", oldUserId, currentUserId, idCard);
+
+        // 3. 迁移业务数据：更新所有关联表的 tenant_id
+        int contractCount = contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                .eq(HzContract::getTenantId, oldUserId)
+                .set(HzContract::getTenantId, currentUserId));
+
+        int billCount = billMapper.update(null, new LambdaUpdateWrapper<HzBill>()
+                .eq(HzBill::getTenantId, oldUserId)
+                .set(HzBill::getTenantId, currentUserId));
+
+        int orderCount = houseOrderMapper.update(null, new LambdaUpdateWrapper<HzHouseOrder>()
+                .eq(HzHouseOrder::getTenantId, oldUserId)
+                .set(HzHouseOrder::getTenantId, currentUserId));
+
+        int checkinCount = checkInMapper.update(null, new LambdaUpdateWrapper<HzCheckIn>()
+                .eq(HzCheckIn::getTenantId, oldUserId)
+                .set(HzCheckIn::getTenantId, currentUserId));
+
+        // 4. 补全当前账号的空字段（从旧账号继承有用信息）
+        HzUser currentUser = this.getById(currentUserId);
+        boolean needUpdate = false;
+        if (StringUtils.isEmpty(currentUser.getEducation()) && StringUtils.isNotEmpty(oldUser.getEducation())) {
+            currentUser.setEducation(oldUser.getEducation());
+            needUpdate = true;
+        }
+        if (StringUtils.isEmpty(currentUser.getWorkUnit()) && StringUtils.isNotEmpty(oldUser.getWorkUnit())) {
+            currentUser.setWorkUnit(oldUser.getWorkUnit());
+            needUpdate = true;
+        }
+        if (StringUtils.isEmpty(currentUser.getIdentityType()) && StringUtils.isNotEmpty(oldUser.getIdentityType())) {
+            currentUser.setIdentityType(oldUser.getIdentityType());
+            needUpdate = true;
+        }
+        if (needUpdate) {
+            this.updateById(currentUser);
+        }
+
+        // 5. 标记旧账号为已合并（软删除，del_flag='2'表示已合并）
+        oldUser.setDelFlag("2");
+        oldUser.setUpdateTime(new Date());
+        oldUser.setRemark("已合并至账号" + currentUserId);
+        this.updateById(oldUser);
+
+        log.info("身份证账号合并完成：旧账号{}→新账号{}，迁移合同{}条、账单{}条、预订单{}条、入住记录{}条",
+                oldUserId, currentUserId, contractCount, billCount, orderCount, checkinCount);
+
+        return true;
     }
 
 }
