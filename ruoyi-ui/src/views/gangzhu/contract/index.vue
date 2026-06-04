@@ -380,7 +380,14 @@
         <el-table :data="contractBills" border size="mini" style="width:100%">
           <el-table-column label="账单类型"   prop="billTypeText"   width="80" align="center" />
           <el-table-column label="账单号"     prop="billNo"         min-width="160" show-overflow-tooltip />
-          <el-table-column label="账期"       prop="billPeriod"     width="90"  align="center" />
+          <el-table-column label="账期" width="160" align="center">
+            <template slot-scope="{ row }">
+              <span v-if="row.billSeq">第{{ row.billSeq }}期
+                <span style="color:#999;font-size:12px;">({{ formatShortDate(row.periodStartDate) }}~{{ formatShortDate(row.periodEndDate) }})</span>
+              </span>
+              <span v-else>{{ row.billPeriod }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="账单金额"   prop="billAmount"     width="100" align="right" />
           <el-table-column label="已缴金额"   prop="paidAmount"     width="100" align="right" />
           <el-table-column label="状态"       width="90"            align="center">
@@ -391,7 +398,12 @@
             </template>
           </el-table-column>
           <el-table-column label="支付时间"   prop="payTime"        width="160" />
-          <el-table-column label="支付方式"   prop="payMethod"      width="80"  align="center" />
+          <el-table-column label="支付方式" width="90" align="center">
+            <template slot-scope="{ row }">
+              <span v-if="row.payMethod === '2' || row.payMethod === 'wechat'">微信支付</span>
+              <span v-else>{{ row.payMethod || '-' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="微信订单号" prop="transactionNo"  min-width="200" show-overflow-tooltip />
           <el-table-column label="到期日"     prop="dueDate"        width="100" align="center" />
         </el-table>
@@ -498,6 +510,13 @@ export default {
     this.getProjectList();
   },
   methods: {
+    /** 格式化日期为 MM-DD */
+    formatShortDate(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length >= 3) return parts[1] + '-' + parts[2];
+      return dateStr;
+    },
     /** 查看合同 PDF（调接口获取实时链接，新标签打开） */
     handleViewPdf(row) {
       const contractId = row.contractId;
