@@ -1,7 +1,6 @@
 package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.system.domain.HzHouseTypeFacility;
 import com.ruoyi.system.mapper.HzHouseTypeFacilityMapper;
@@ -34,18 +33,14 @@ public class HzHouseTypeFacilityServiceImpl extends ServiceImpl<HzHouseTypeFacil
     }
 
     /**
-     * 批量保存户型设施（先逻辑删除旧数据，再批量插入新数据）
+     * 批量保存户型设施（先物理删除旧数据，再批量插入新数据）
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void batchSave(Long houseTypeId, List<HzHouseTypeFacility> list)
     {
-        // 逻辑删除旧数据
-        LambdaUpdateWrapper<HzHouseTypeFacility> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.eq(HzHouseTypeFacility::getHouseTypeId, houseTypeId)
-                     .eq(HzHouseTypeFacility::getDelFlag, "0")
-                     .set(HzHouseTypeFacility::getDelFlag, "1");
-        this.update(updateWrapper);
+        // 物理删除旧数据（绕过@TableLogic，避免唯一键冲突）
+        this.baseMapper.physicalDeleteByHouseTypeId(houseTypeId);
 
         // 批量插入新数据
         if (list != null && !list.isEmpty())

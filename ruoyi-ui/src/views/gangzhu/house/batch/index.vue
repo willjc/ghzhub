@@ -354,7 +354,7 @@
             >
               <el-table-column label="序号" type="index" width="60" align="center" />
               <el-table-column label="房源编号" prop="houseCode" width="150" />
-              <el-table-column label="房间号" prop="houseNo" width="120" />
+              <el-table-column label="楼栋-单元-房间号" prop="houseNo" min-width="160" show-overflow-tooltip />
               <el-table-column label="租金(元/月)" prop="rentPrice" width="120" align="center" />
               <el-table-column label="匹配" width="80" align="center">
                 <template>
@@ -589,7 +589,7 @@ export default {
         const tenant = this.tenantList[i] || {};
         result.push({
           houseCode: house.houseCode,
-          houseNo: house.houseNo,
+          houseNo: [house.buildingName, house.unitName, house.houseNo].filter(Boolean).join('-'),
           rentPrice: house.rentPrice,
           tenantName: tenant.tenantName,
           idCard: tenant.idCard,
@@ -951,7 +951,20 @@ export default {
     handleImportExcel({ file }) {
       importTenants(file).then(response => {
         if (response.code === 200) {
-          this.tenantList = response.data || [];
+          const list = response.data || [];
+          // 校验导入数据格式
+          const errors = this.validateTenantList(list);
+          if (errors.length > 0) {
+            this.$alert(
+              '<div style="max-height:300px;overflow-y:auto;"><ul style="padding-left:20px;margin:0;">' +
+              errors.map(e => '<li style="color:#F56C6C;margin-bottom:4px;">' + e + '</li>').join('') +
+              '</ul></div>',
+              '导入数据校验失败',
+              { dangerouslyUseHTMLString: true, type: 'warning', confirmButtonText: '知道了' }
+            );
+            return;
+          }
+          this.tenantList = list;
           this.$modal.msgSuccess('导入成功！共导入 ' + this.tenantList.length + ' 人');
         } else {
           this.$modal.msgError(response.msg || '导入失败');
@@ -960,24 +973,69 @@ export default {
         this.$modal.msgError('导入失败，请检查文件格式: ' + (err.msg || ''));
       });
     },
+    /**
+     * 校验人员列表数据格式
+     * @returns {string[]} 错误信息数组，空数组表示全部通过
+     */
+    validateTenantList(list) {
+      const errors = [];
+      const idCardReg = /(^\d{15}$)|(^\d{17}([0-9]|X|x)$)/;
+      const phoneReg = /^1[3-9]\d{9}$/;
+      list.forEach((item, idx) => {
+        const row = idx + 1;
+        if (!item.tenantName || !item.tenantName.trim()) {
+          errors.push('第' + row + '行：姓名不能为空');
+        }
+        if (!item.idCard || !item.idCard.trim()) {
+          errors.push('第' + row + '行：身份证号不能为空');
+        } else if (!idCardReg.test(item.idCard.trim())) {
+          errors.push('第' + row + '行：身份证号格式不正确（' + item.idCard + '）');
+        }
+        if (!item.phone || !item.phone.trim()) {
+          errors.push('第' + row + '行：手机号不能为空');
+        } else if (!phoneReg.test(item.phone.trim())) {
+          errors.push('第' + row + '行：手机号格式不正确（' + item.phone + '）');
+        }
+      });
+      return errors;
+    },
     /** 手动添加人员 */
     handleAddTenant() {
-      this.$prompt('请输入人员信息（格式: 姓名,身份证号,手机号）', '添加人员', {
-        inputPlaceholder: '例如: 张三,410123199001011234,13800138000',
+      this.$prompt('请输入人员信息，用逗号分隔（中英文逗号均可）', '添加人员', {
+        inputPlaceholder: '姓名，身份证号，手机号　例如: 张三,410123199001011234,13800138000',
         confirmButtonText: '确定',
         cancelButtonText: '取消',
+        closeOnClickModal: false,
+        closeOnPressEscape: false,
         inputValidator: (value) => {
           if (!value) {
             return '请输入人员信息';
           }
-          const parts = value.split(',');
+          // 统一分隔符：中文逗号、中文顿号、分号都转为英文逗号
+          const normalized = value.replace(/[，、；;]/g, ',');
+          const parts = normalized.split(',');
           if (parts.length !== 3) {
-            return '格式错误，请按照格式输入: 姓名,身份证号,手机号';
+            return '格式错误，请输入三项信息用逗号分隔：姓名,身份证号,手机号';
+          }
+          const name = parts[0].trim();
+          const idCard = parts[1].trim();
+          const phone = parts[2].trim();
+          if (!name) {
+            return '姓名不能为空';
+          }
+          const idCardReg = /(^\d{15}$)|(^\d{17}([0-9]|X|x)$)/;
+          if (!idCardReg.test(idCard)) {
+            return '身份证号格式不正确，应为15位或18位（当前输入：' + idCard + '）';
+          }
+          const phoneReg = /^1[3-9]\d{9}$/;
+          if (!phoneReg.test(phone)) {
+            return '手机号格式不正确，应为11位手机号（当前输入：' + phone + '）';
           }
           return true;
         }
       }).then(({ value }) => {
-        const parts = value.split(',');
+        const normalized = value.replace(/[，、；;]/g, ',');
+        const parts = normalized.split(',');
         this.tenantList.push({
           tenantName: parts[0].trim(),
           idCard: parts[1].trim(),

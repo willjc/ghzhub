@@ -103,12 +103,15 @@ public class RentReminderTask {
         return wrapper;
     }
 
-    /** 公共查询条件：租金 + 待支付 + 未删除 */
+    /** 公共查询条件：租金 + 待支付 + 未删除 + 排除已终止合同 */
     private LambdaQueryWrapper<HzBill> baseWrapper() {
         LambdaQueryWrapper<HzBill> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzBill::getBillType, BILL_TYPE_RENT)
                 .eq(HzBill::getBillStatus, BILL_STATUS_UNPAID)
-                .eq(HzBill::getDelFlag, "0");
+                .eq(HzBill::getDelFlag, "0")
+                // 排除合同已到期(4)、已解约(5)、超时失效(6)的账单
+                .notInSql(HzBill::getContractId,
+                        "SELECT contract_id FROM hz_contract WHERE contract_status IN ('4','5','6')");
         return wrapper;
     }
 
