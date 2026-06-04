@@ -150,7 +150,7 @@ springdoc:
 referer:
   # 防盗链开关
   enabled: false
-  # 允许的域名列表
+  # 允许的域名
   allowed-domains: localhost,127.0.0.1,ruoyi.vip,www.ruoyi.vip
 
 # 防止XSS攻击
