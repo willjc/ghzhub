@@ -5,21 +5,27 @@ import com.ruoyi.system.mapper.HzBillMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzDocumentMapper;
 import com.ruoyi.system.mapper.HzCheckInMapper;
+import com.ruoyi.system.mapper.HzUserMapper;
+import com.ruoyi.system.mapper.HzBatchTenantMapper;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzDocument;
 import com.ruoyi.system.domain.HzCheckIn;
+import com.ruoyi.system.domain.HzUser;
+import com.ruoyi.system.domain.HzBatchTenant;
 import com.ruoyi.system.service.IHzContractService;
 import com.ruoyi.system.service.IHzUserMessageService;
 import com.ruoyi.system.service.ISysConfigService;
 import com.ruoyi.system.service.WechatPayService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -75,6 +81,12 @@ public class ContractExpireTask {
 
     @Autowired
     private WechatPayService wechatPayService;
+
+    @Autowired
+    private HzUserMapper userMapper;
+
+    @Autowired
+    private HzBatchTenantMapper batchTenantMapper;
 
     /**
      * 合同到期自动释放房源（每天凌晨1点执行）
@@ -176,6 +188,11 @@ public class ContractExpireTask {
         int count = 0;
 
         for (HzContract contract : contracts) {
+            // 批次配租用户豁免所有时效限制
+            if (isBatchTenant(contract.getTenantId())) {
+                continue;
+            }
+
             LocalDateTime signTime = parseDateTime(contract.getSignTime());
             if (signTime == null) {
                 continue;
@@ -214,6 +231,11 @@ public class ContractExpireTask {
         int count = 0;
 
         for (HzContract contract : contracts) {
+            // 批次配租用户豁免所有时效限制
+            if (isBatchTenant(contract.getTenantId())) {
+                continue;
+            }
+
             Date createTime = contract.getCreateTime();
             if (createTime == null) {
                 continue;
@@ -247,6 +269,11 @@ public class ContractExpireTask {
         int count = 0;
 
         for (HzContract contract : contracts) {
+            // 批次配租用户豁免所有时效限制
+            if (isBatchTenant(contract.getTenantId())) {
+                continue;
+            }
+
             // 查询已支付的押金账单
             HzBill depositBill = billMapper.selectOne(
                     new LambdaQueryWrapper<HzBill>()
@@ -400,6 +427,11 @@ public class ContractExpireTask {
         int cancelCount = 0;
         for (HzContract contract : candidates) {
             try {
+                // 批次配租用户豁免入住超时解约
+                if (isBatchTenant(contract.getTenantId())) {
+                    continue;
+                }
+
                 // 用户提交过任何入住申请（status>=1）即永久豁免
                 Long submittedCheckin = checkInMapper.selectCount(
                         new LambdaQueryWrapper<HzCheckIn>()
@@ -586,5 +618,21 @@ public class ContractExpireTask {
         } catch (Exception e) {
             return defaultValue;
         }
+    }
+
+    /**
+     * 判断指定租户是否为批次配租用户
+     * 依据：hz_user.id_card 命中 hz_batch_tenant（未删除）任一记录
+     */
+    private boolean isBatchTenant(Long tenantId) {
+        if (tenantId == null) return false;
+        HzUser user = userMapper.selectById(tenantId);
+        if (user == null || !StringUtils.hasText(user.getIdCard())) return false;
+        QueryWrapper<HzBatchTenant> wrapper = new QueryWrapper<>();
+        wrapper.eq("id_card", user.getIdCard())
+                .eq("del_flag", "0")
+                .last("LIMIT 1");
+        Long count = batchTenantMapper.selectCount(wrapper);
+        return count != null && count > 0;
     }
 }

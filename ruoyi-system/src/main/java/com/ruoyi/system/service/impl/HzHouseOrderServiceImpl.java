@@ -4,17 +4,23 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.system.domain.HzBatchTenant;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzDocument;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzHouseOrder;
+import com.ruoyi.system.domain.HzUser;
+import com.ruoyi.system.mapper.HzBatchTenantMapper;
 import com.ruoyi.system.mapper.HzBillMapper;
 import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.mapper.HzDocumentMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzHouseOrderMapper;
+import com.ruoyi.system.mapper.HzUserMapper;
 import com.ruoyi.system.service.IHzHouseOrderService;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import org.springframework.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +58,12 @@ public class HzHouseOrderServiceImpl
     @Autowired
     private HzBillMapper billMapper;
 
+    @Autowired
+    private HzUserMapper userMapper;
+
+    @Autowired
+    private HzBatchTenantMapper batchTenantMapper;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public AjaxResult createOrder(Long tenantId, Long houseId) {
@@ -74,7 +86,10 @@ public class HzHouseOrderServiceImpl
         // 3. 查询房源信息
         HzHouse house = houseMapper.selectById(houseId);
 
-        // 4. 创建预订单
+        // 4. 判断是否为批次配租用户
+        boolean isBatch = checkIsBatchTenant(tenantId);
+
+        // 5. 创建预订单
         HzHouseOrder order = new HzHouseOrder();
         order.setOrderNo(generateOrderNo());
         order.setTenantId(tenantId);
@@ -83,12 +98,15 @@ public class HzHouseOrderServiceImpl
         order.setDepositAmount(house.getDeposit() != null ? house.getDeposit() : BigDecimal.ZERO);
         order.setRentPrice(house.getRentPrice() != null ? house.getRentPrice() : BigDecimal.ZERO);
         order.setOrderStatus("0"); // 待签约
-        order.setIsBatchAlloc("0");
+        order.setIsBatchAlloc(isBatch ? "1" : "0");
 
-        // 锁定10分钟
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.MINUTE, 10);
-        order.setLockExpireTime(cal.getTime());
+        if (!isBatch) {
+            // 普通用户：锁定10分钟
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.MINUTE, 10);
+            order.setLockExpireTime(cal.getTime());
+        }
+        // 批次配租用户：不设置锁定时间，无时效限制
         order.setDelFlag("0");
         order.setCreateTime(new Date());
 
@@ -347,5 +365,21 @@ public class HzHouseOrderServiceImpl
         String ts = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         int rand = (int) (Math.random() * 9000) + 1000;
         return "HO" + ts + rand;
+    }
+
+    /**
+     * 判断指定租户是否为批次配租用户
+     * 依据：hz_user.id_card 命中 hz_batch_tenant（未删除）任一记录
+     */
+    private boolean checkIsBatchTenant(Long tenantId) {
+        if (tenantId == null) return false;
+        HzUser user = userMapper.selectById(tenantId);
+        if (user == null || !StringUtils.hasText(user.getIdCard())) return false;
+        QueryWrapper<HzBatchTenant> wrapper = new QueryWrapper<>();
+        wrapper.eq("id_card", user.getIdCard())
+                .eq("del_flag", "0")
+                .last("LIMIT 1");
+        Long count = batchTenantMapper.selectCount(wrapper);
+        return count != null && count > 0;
     }
 }
