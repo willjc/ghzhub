@@ -266,15 +266,14 @@
               style="width: 100%"
             >
               <el-table-column type="selection" width="50" align="center" />
-              <el-table-column label="项目名称" prop="projectName" min-width="150" show-overflow-tooltip />
-              <el-table-column label="房源编号" prop="houseCode" width="120" show-overflow-tooltip />
+              <el-table-column label="项目名称" prop="projectName" min-width="120" show-overflow-tooltip />
               <el-table-column label="楼栋" prop="buildingName" width="100" show-overflow-tooltip />
               <el-table-column label="单元" prop="unitName" width="100" show-overflow-tooltip />
               <el-table-column label="房间号" prop="houseNo" width="100" />
               <el-table-column label="楼层" prop="floor" width="70" align="center" />
               <el-table-column label="户型" prop="houseTypeName" width="120" show-overflow-tooltip />
-              <el-table-column label="面积(㎡)" prop="area" width="90" align="center" />
-              <el-table-column label="租金(元/月)" prop="rentPrice" width="110" align="center" />
+              <el-table-column label="面积(㎡)" prop="area" width="80" align="center" />
+              <el-table-column label="租金(元/月)" prop="rentPrice" width="100" align="center" />
             </el-table>
           </el-col>
 
@@ -465,7 +464,7 @@
     </el-dialog>
 
     <!-- 审批对话框 -->
-    <el-dialog title="审批配组批次" :visible.sync="approveOpen" width="600px" append-to-body>
+    <el-dialog title="审批配组批次" :visible.sync="approveOpen" width="700px" append-to-body>
       <el-form ref="approveForm" :model="approveForm" label-width="100px">
         <el-form-item label="批次名称">
           <span>{{ approveRow.batchName }}</span>
@@ -473,8 +472,29 @@
         <el-form-item label="批次编号">
           <span>{{ approveRow.batchNo }}</span>
         </el-form-item>
+        <el-form-item label="合同日期">
+          <span v-if="approveRow.entryStartDate && approveRow.entryEndDate" style="color: #409EFF; font-weight: bold;">
+            {{ parseTime(approveRow.entryStartDate, '{y}-{m}-{d}') }} ~ {{ parseTime(approveRow.entryEndDate, '{y}-{m}-{d}') }}
+          </span>
+          <span v-else style="color: #909399">未设置</span>
+        </el-form-item>
+        <el-form-item label="免租政策">
+          <el-tag v-if="!approveRow.preferentialType || approveRow.preferentialType === '0'" type="info" size="small">无优惠（不免租）</el-tag>
+          <el-tag v-else-if="approveRow.preferentialType === '1'" type="danger" size="small">免租 {{ approveRow.freeRentPeriods || 0 }} 期</el-tag>
+        </el-form-item>
         <el-form-item label="房源数量">
           <span>{{ approveRow.houseCount }}套</span>
+        </el-form-item>
+        <el-form-item label="分配房间">
+          <el-table :data="approveHouseList" border size="mini" style="width: 100%" max-height="200">
+            <el-table-column label="房间位置" min-width="220">
+              <template slot-scope="scope">
+                <span>{{ scope.row.projectName }}{{ scope.row.buildingName }}{{ scope.row.unitName }}{{ scope.row.houseNo }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="匹配人员" prop="tenantName" width="100" align="center" />
+            <el-table-column label="租金(元/月)" prop="rentPrice" width="100" align="center" />
+          </el-table>
         </el-form-item>
         <el-form-item label="申请时间">
           <span>{{ parseTime(approveRow.applyTime) }}</span>
@@ -518,6 +538,7 @@ export default {
       viewOpen: false,
       approveOpen: false,
       approveRow: {},
+      approveHouseList: [],
       approveForm: {
         batchId: null,
         approveStatus: '1',
@@ -899,6 +920,13 @@ export default {
         approveStatus: '1',
         remark: ''
       };
+      // 加载该批次的房源分配信息
+      this.approveHouseList = [];
+      getBatchHouses(row.batchId).then(res => {
+        if (res.code === 200) {
+          this.approveHouseList = res.data || [];
+        }
+      });
       this.approveOpen = true;
     },
     /** 提交审批 */
