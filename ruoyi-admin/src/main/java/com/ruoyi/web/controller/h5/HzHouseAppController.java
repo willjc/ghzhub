@@ -376,6 +376,34 @@ public class HzHouseAppController extends BaseController {
         result.put("houseStatus", house.getHouseStatus());
         result.put("houseStatusText", getHouseStatusText(house.getHouseStatus()));
 
+        // 判断当前用户是否为该房源的批次配租用户
+        boolean isBatchAssigned = false;
+        Long userId = getHzUserIdFromToken();
+        if (userId != null) {
+            HzUser user = userMapper.selectById(userId);
+            if (user != null) {
+                if (isPreviewPhone(user.getPhone())) {
+                    isBatchAssigned = true;
+                } else if (StringUtils.isNotEmpty(user.getIdCard())) {
+                    QueryWrapper<HzBatchTenant> tenantWrapper = new QueryWrapper<>();
+                    tenantWrapper.eq("id_card", user.getIdCard())
+                            .eq("del_flag", "0");
+                    List<HzBatchTenant> batchTenants = batchTenantMapper.selectList(tenantWrapper);
+                    if (!batchTenants.isEmpty()) {
+                        List<Long> tenantIds = batchTenants.stream()
+                                .map(HzBatchTenant::getId)
+                                .collect(Collectors.toList());
+                        QueryWrapper<HzBatchHouse> bhWrapper = new QueryWrapper<>();
+                        bhWrapper.in("tenant_id", tenantIds)
+                                .eq("house_id", houseId);
+                        Long matchCount = batchHouseMapper.selectCount(bhWrapper);
+                        isBatchAssigned = matchCount != null && matchCount > 0;
+                    }
+                }
+            }
+        }
+        result.put("isBatchAssigned", isBatchAssigned);
+
         return AjaxResult.success(result);
     }
 

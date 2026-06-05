@@ -114,8 +114,8 @@
 			<view class="reserve-btn" @click="reserveRoom">
 				<text class="reserve-text">预约看房</text>
 			</view>
-			<view class="select-btn" :class="{ 'select-btn-disabled': houseStatus === '1' || houseStatus === '2' }" @click="selectRoom">
-				<text class="select-text">{{ houseStatus === '1' ? '已被选定' : houseStatus === '2' ? '已出租' : '房源选定' }}</text>
+		<view class="select-btn" :class="{ 'select-btn-disabled': !isBatchAssigned && (houseStatus === '1' || houseStatus === '2') }" @click="selectRoom">
+				<text class="select-text">{{ (!isBatchAssigned && houseStatus === '1') ? '已被选定' : houseStatus === '2' ? '已出租' : '房源选定' }}</text>
 			</view>
 		</view>
 	</view>
@@ -134,6 +134,7 @@ import config from '@/config/index'
 				roomId: '',
 				projectId: '',
 				houseStatus: '0',  // 房源状态：0-空闲 1-已预订 2-已出租
+				isBatchAssigned: false,  // 是否为批次配租分配给当前用户的房源
 				activeImageTab: 'vr',
 				imageTabs: [
 					{ key: 'vr', name: 'VR' },
@@ -318,7 +319,7 @@ import config from '@/config/index'
 				})
 			},
 			async selectRoom() {
-				if (this.houseStatus === '1' || this.houseStatus === '2') {
+				if (!this.isBatchAssigned && (this.houseStatus === '1' || this.houseStatus === '2')) {
 					return
 				}
 				const userInfo = uni.getStorageSync('userInfo')
@@ -399,6 +400,11 @@ import config from '@/config/index'
 						// 保存房源状态
 						if (data.houseStatus !== undefined && data.houseStatus !== null) {
 							this.houseStatus = String(data.houseStatus)
+						}
+
+						// 保存批次配租标记
+						if (data.isBatchAssigned) {
+							this.isBatchAssigned = true
 						}
 
 						// 配套设施映射
