@@ -11,6 +11,7 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzBatchAllocation;
 import com.ruoyi.system.domain.HzBatchHouse;
 import com.ruoyi.system.domain.HzBatchTenant;
+import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.domain.HzBuilding;
@@ -18,6 +19,7 @@ import com.ruoyi.system.domain.HzUnit;
 import com.ruoyi.system.mapper.HzBatchAllocationMapper;
 import com.ruoyi.system.mapper.HzBatchHouseMapper;
 import com.ruoyi.system.mapper.HzBatchTenantMapper;
+import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.mapper.HzBuildingMapper;
@@ -65,6 +67,9 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
 
     @Autowired
     private HzUnitMapper unitMapper;
+
+    @Autowired
+    private HzContractMapper contractMapper;
 
     @Override
     public List<HzBatchAllocation> selectBatchAllocationList(HzBatchAllocation batch) {
@@ -581,7 +586,7 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
 
         List<HzBatchTenant> tenantList = batchTenantMapper.selectList(wrapper);
 
-        // 转换为Map格式并关联房源信息
+        // 转换为Map格式并关联房源信息和进度状态
         return tenantList.stream().map(tenant -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", tenant.getId());
@@ -602,8 +607,48 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
             map.put("allocationStatus", tenant.getAllocationStatus());
             map.put("allocationTime", tenant.getAllocationTime());
 
+            // 动态计算进度状态: 0未分配 1已分配 2已签订合同 3已缴纳押金
+            String progressStatus = calculateProgressStatus(tenant);
+            map.put("progressStatus", progressStatus);
+
             return map;
         }).collect(Collectors.toList());
+    }
+
+    /**
+     * 计算批次租户的进度状态
+     * 0=未分配, 1=已分配, 2=已签订合同, 3=已缴纳押金
+     */
+    private String calculateProgressStatus(HzBatchTenant tenant) {
+        // 未分配
+        if (!"1".equals(tenant.getAllocationStatus())) {
+            return "0";
+        }
+        // 已分配，查询是否有关联合同
+        if (StringUtils.isEmpty(tenant.getIdCard())) {
+            return "1";
+        }
+        // 通过身份证号查找该批次关联的合同（batchId匹配）
+        LambdaQueryWrapper<HzContract> contractWrapper = new LambdaQueryWrapper<>();
+        contractWrapper.eq(HzContract::getTenantIdCard, tenant.getIdCard())
+                .eq(HzContract::getBatchId, tenant.getBatchId())
+                .eq(HzContract::getDelFlag, "0")
+                .last("LIMIT 1");
+        HzContract contract = contractMapper.selectOne(contractWrapper);
+        if (contract == null) {
+            return "1"; // 已分配，无合同
+        }
+        // 合同状态>=3（履行中）说明押金已缴纳
+        String contractStatus = contract.getContractStatus();
+        if (contractStatus != null && Integer.parseInt(contractStatus) >= 3) {
+            return "3"; // 已缴纳押金
+        }
+        // 合同状态>=2（已签署）说明合同已签
+        if (contractStatus != null && Integer.parseInt(contractStatus) >= 2) {
+            return "2"; // 已签订合同
+        }
+        // 合同状态 0/1（草稿/待签署），仍算已分配
+        return "1";
     }
 
     /**

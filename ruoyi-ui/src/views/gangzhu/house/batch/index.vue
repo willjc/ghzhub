@@ -238,11 +238,12 @@
               <el-input-number
                 v-model="form.freeRentPeriods"
                 :min="1"
+                :max="entryMonths || 36"
                 :disabled="form.approveStatus === '1'"
                 placeholder="请输入免租期数"
                 style="width: 200px"
               />
-              <span style="margin-left: 10px; color: #909399;">期</span>
+              <span style="margin-left: 10px; color: #909399;">期（最多{{ entryMonths || '--' }}期）</span>
             </el-form-item>
           </el-col>
         </el-row>
@@ -445,10 +446,13 @@
         <el-table-column label="身份证号" prop="idCard" min-width="180" show-overflow-tooltip />
         <el-table-column label="手机号" prop="phone" width="130" />
         <el-table-column label="分配房源" prop="houseNo" width="120" />
-        <el-table-column label="分配状态" align="center" width="100">
+        <el-table-column label="进度状态" align="center" width="120">
           <template slot-scope="scope">
-            <el-tag v-if="scope.row.allocationStatus === '0'" type="info" size="small">未分配</el-tag>
-            <el-tag v-else type="success" size="small">已分配</el-tag>
+            <el-tag v-if="scope.row.progressStatus === '0'" type="info" size="small">未分配</el-tag>
+            <el-tag v-else-if="scope.row.progressStatus === '1'" type="" size="small">已分配</el-tag>
+            <el-tag v-else-if="scope.row.progressStatus === '2'" type="warning" size="small">已签订合同</el-tag>
+            <el-tag v-else-if="scope.row.progressStatus === '3'" type="success" size="small">已缴纳押金</el-tag>
+            <el-tag v-else type="" size="small">已分配</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="分配时间" prop="allocationTime" width="160">
@@ -601,6 +605,30 @@ export default {
     }
   },
   computed: {
+    // 计算入住月数（entryStartDate 到 entryEndDate 之间的整月数）
+    entryMonths() {
+      if (!this.form.entryStartDate || !this.form.entryEndDate) return null
+      const start = new Date(this.form.entryStartDate)
+      const end = new Date(this.form.entryEndDate)
+      if (end <= start) return null
+      // 尝试 N=1~36
+      for (let n = 1; n <= 36; n++) {
+        let year = start.getFullYear()
+        let month = start.getMonth() + n
+        let day = start.getDate()
+        year += Math.floor(month / 12)
+        month = month % 12
+        const daysInMonth = new Date(year, month + 1, 0).getDate()
+        if (day > daysInMonth) day = daysInMonth
+        const target = new Date(year, month, day)
+        target.setDate(target.getDate() - 1)
+        target.setHours(0, 0, 0, 0)
+        const endNorm = new Date(end)
+        endNorm.setHours(0, 0, 0, 0)
+        if (target.getTime() === endNorm.getTime()) return n
+      }
+      return null
+    },
     // 计算匹配预览数据
     matchPreviewData() {
       const result = [];
@@ -854,6 +882,14 @@ export default {
           if (this.form.entryStartDate && this.form.entryEndDate) {
             if (!this.isWholeMonth(this.form.entryStartDate, this.form.entryEndDate)) {
               this.$modal.msgError('入驻日期必须为整月（例如：3月28日~4月27日为1个整月）');
+              return;
+            }
+          }
+
+          // 校验免租期数不超过入住月数
+          if (this.form.preferentialType === '1' && this.form.freeRentPeriods > 0) {
+            if (this.entryMonths && this.form.freeRentPeriods > this.entryMonths) {
+              this.$modal.msgError('免租期数（' + this.form.freeRentPeriods + '期）不能超过入住月数（' + this.entryMonths + '个月），请重新填写');
               return;
             }
           }
