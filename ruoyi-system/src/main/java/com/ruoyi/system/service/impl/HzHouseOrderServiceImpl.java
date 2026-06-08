@@ -173,7 +173,15 @@ public class HzHouseOrderServiceImpl
         order.setOrderStatus("5"); // 已取消
         order.setUpdateTime(new Date());
         updateById(order);
-        orderMapper.releaseHouse(order.getHouseId());
+        // 批次配租订单：房源回退到'3'(修缮中)；普通订单：房源释放为'0'(空置)
+        if ("1".equals(order.getIsBatchAlloc())) {
+            houseMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<HzHouse>()
+                    .eq(HzHouse::getHouseId, order.getHouseId())
+                    .eq(HzHouse::getHouseStatus, "1")
+                    .set(HzHouse::getHouseStatus, "3"));
+        } else {
+            orderMapper.releaseHouse(order.getHouseId());
+        }
     }
 
     @Override

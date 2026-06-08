@@ -346,16 +346,21 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
     @Override
     @Transactional
     public void expireContractAndReleaseHouse(Long contractId, Long houseId) {
-        // 1. 合同状态更新为超时失效
+        // 1. 查询合同信息（判断是否为批次配租合同）
+        HzContract contract = baseMapper.selectById(contractId);
+        // 2. 合同状态更新为超时失效
         baseMapper.update(null, new LambdaUpdateWrapper<HzContract>()
                 .eq(HzContract::getContractId, contractId)
                 .set(HzContract::getContractStatus, "6"));
-        // 2. 释放关联房源
+        // 3. 释放关联房源
         if (houseId != null) {
+            // 批次配租合同：房源回退到'3'(修缮中)，保留在配租池中
+            // 普通合同：房源释放为'0'(空置)
+            String targetStatus = (contract != null && contract.getBatchId() != null) ? "3" : "0";
             houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
                     .eq(HzHouse::getHouseId, houseId)
                     .eq(HzHouse::getHouseStatus, "1")
-                    .set(HzHouse::getHouseStatus, "0"));
+                    .set(HzHouse::getHouseStatus, targetStatus));
         }
     }
 

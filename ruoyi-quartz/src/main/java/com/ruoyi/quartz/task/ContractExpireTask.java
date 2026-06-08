@@ -188,10 +188,7 @@ public class ContractExpireTask {
         int count = 0;
 
         for (HzContract contract : contracts) {
-            // 批次配租用户豁免所有时效限制
-            if (isBatchTenant(contract.getTenantId())) {
-                continue;
-            }
+            // 批次配租用户押金缴纳时效与普通用户相同，不豁免
 
             LocalDateTime signTime = parseDateTime(contract.getSignTime());
             if (signTime == null) {
