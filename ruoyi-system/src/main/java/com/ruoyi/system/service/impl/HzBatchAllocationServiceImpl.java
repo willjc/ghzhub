@@ -510,6 +510,20 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
             batchTenantMapper.updateById(tenant);
         }
 
+        // 4. 如果批次已审批通过，编辑保存后自动将新房源状态改为已预订
+        if ("1".equals(batch.getApproveStatus())) {
+            LambdaQueryWrapper<HzBatchHouse> approvedHouseWrapper = new LambdaQueryWrapper<>();
+            approvedHouseWrapper.eq(HzBatchHouse::getBatchId, batchId)
+                    .eq(HzBatchHouse::getDelFlag, "0");
+            List<HzBatchHouse> newBatchHouses = batchHouseMapper.selectList(approvedHouseWrapper);
+            for (HzBatchHouse bh : newBatchHouses) {
+                HzHouse house = new HzHouse();
+                house.setHouseId(bh.getHouseId());
+                house.setHouseStatus("1"); // 已预订
+                houseMapper.updateById(house);
+            }
+        }
+
         return 1;
     }
 
