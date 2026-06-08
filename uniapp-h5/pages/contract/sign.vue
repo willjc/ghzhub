@@ -678,9 +678,17 @@ export default {
 
     formatCountdown() {
       const s = Math.max(0, this.countdownSeconds)
-      const min = String(Math.floor(s / 60)).padStart(2, '0')
+      const days = Math.floor(s / 86400)
+      const hours = Math.floor((s % 86400) / 3600)
+      const min = String(Math.floor((s % 3600) / 60)).padStart(2, '0')
       const sec = String(s % 60).padStart(2, '0')
-      this.countdown = `${min}:${sec}`
+      if (days > 0) {
+        this.countdown = `${days}天 ${String(hours).padStart(2, '0')}:${min}:${sec}`
+      } else if (hours > 0) {
+        this.countdown = `${String(hours).padStart(2, '0')}:${min}:${sec}`
+      } else {
+        this.countdown = `${min}:${sec}`
+      }
     },
 
     clearLockCountdown() {

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.system.domain.HzBatchHouse;
 import com.ruoyi.system.domain.HzBatchTenant;
+import com.ruoyi.system.domain.vo.BatchPreferenceVo;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzDocument;
@@ -29,6 +30,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -119,8 +124,20 @@ public class HzHouseOrderServiceImpl
             // 普通用户：锁定10分钟
             cal.add(Calendar.MINUTE, 10);
         } else {
-            // 批次配租用户：设置极远过期时间（永不过期），满足数据库NOT NULL约束
-            cal.set(2099, Calendar.DECEMBER, 31, 23, 59, 59);
+            // 批次配租用户：截止日期为配租批次的入住结束日期(entry_end_date) 23:59:59
+            try {
+                BatchPreferenceVo batchPref = batchHouseMapper.selectBatchPreferenceByHouseId(houseId);
+                if (batchPref != null && batchPref.getEntryEndDate() != null) {
+                    LocalDate endDate = LocalDate.parse(batchPref.getEntryEndDate(), DateTimeFormatter.ISO_LOCAL_DATE);
+                    LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+                    cal.setTime(Date.from(endDateTime.atZone(ZoneId.systemDefault()).toInstant()));
+                } else {
+                    // 查询不到批次信息时回退为远期时间
+                    cal.set(2099, Calendar.DECEMBER, 31, 23, 59, 59);
+                }
+            } catch (Exception e) {
+                cal.set(2099, Calendar.DECEMBER, 31, 23, 59, 59);
+            }
         }
         order.setLockExpireTime(cal.getTime());
         order.setDelFlag("0");
