@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.system.domain.HzBatchHouse;
 import com.ruoyi.system.domain.HzBatchTenant;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzContract;
@@ -11,6 +12,7 @@ import com.ruoyi.system.domain.HzDocument;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzHouseOrder;
 import com.ruoyi.system.domain.HzUser;
+import com.ruoyi.system.mapper.HzBatchHouseMapper;
 import com.ruoyi.system.mapper.HzBatchTenantMapper;
 import com.ruoyi.system.mapper.HzBillMapper;
 import com.ruoyi.system.mapper.HzContractMapper;
@@ -64,6 +66,9 @@ public class HzHouseOrderServiceImpl
     @Autowired
     private HzBatchTenantMapper batchTenantMapper;
 
+    @Autowired
+    private HzBatchHouseMapper batchHouseMapper;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public AjaxResult createOrder(Long tenantId, Long houseId) {
@@ -77,17 +82,26 @@ public class HzHouseOrderServiceImpl
             return AjaxResult.error("您已预订过该房源，请勿重复操作");
         }
 
-        // 2. 原子锁定房源（house_status: 空置→已预订），利用数据库行级锁保证并发安全
-        int locked = orderMapper.lockHouse(houseId);
-        if (locked == 0) {
-            return AjaxResult.error("该房源已被他人选中，请重新选择");
+        // 2. 提前判断是否为批次配租用户
+        boolean isBatch = checkIsBatchTenant(tenantId);
+
+        // 3. 房源锁定逻辑（批次配租 vs 普通用户）
+        if (isBatch) {
+            // 批次配租用户：校验该房源是否确实分配给了该用户
+            if (!verifyBatchHouseAssignment(tenantId, houseId)) {
+                return AjaxResult.error("该房源未分配给您，无法选定");
+            }
+            // 房源已在批次审批通过时设为'1'（已预订），无需再次lockHouse
+        } else {
+            // 普通用户：原子锁定房源（house_status: 空置→已预订）
+            int locked = orderMapper.lockHouse(houseId);
+            if (locked == 0) {
+                return AjaxResult.error("该房源已被他人选中，请重新选择");
+            }
         }
 
-        // 3. 查询房源信息
+        // 4. 查询房源信息
         HzHouse house = houseMapper.selectById(houseId);
-
-        // 4. 判断是否为批次配租用户
-        boolean isBatch = checkIsBatchTenant(tenantId);
 
         // 5. 创建预订单
         HzHouseOrder order = new HzHouseOrder();
@@ -114,7 +128,7 @@ public class HzHouseOrderServiceImpl
 
         Map<String, Object> data = new HashMap<>();
         data.put("orderNo", order.getOrderNo());
-        data.put("lockExpireTime", order.getLockExpireTime().getTime());
+        data.put("lockExpireTime", order.getLockExpireTime() != null ? order.getLockExpireTime().getTime() : null);
         data.put("depositAmount", order.getDepositAmount());
         return AjaxResult.success(data);
     }
@@ -381,5 +395,35 @@ public class HzHouseOrderServiceImpl
                 .last("LIMIT 1");
         Long count = batchTenantMapper.selectCount(wrapper);
         return count != null && count > 0;
+    }
+
+    /**
+     * 校验批次配租房源归属：该房源是否确实分配给了该用户
+     * 通过 hz_user.id_card → hz_batch_tenant.id → hz_batch_house.tenant_id + house_id 三表匹配
+     */
+    private boolean verifyBatchHouseAssignment(Long tenantId, Long houseId) {
+        if (tenantId == null || houseId == null) return false;
+        HzUser user = userMapper.selectById(tenantId);
+        if (user == null || !StringUtils.hasText(user.getIdCard())) return false;
+
+        // 查出该用户在 hz_batch_tenant 中的所有记录ID
+        QueryWrapper<HzBatchTenant> tenantWrapper = new QueryWrapper<>();
+        tenantWrapper.eq("id_card", user.getIdCard())
+                .eq("del_flag", "0");
+        List<HzBatchTenant> batchTenants = batchTenantMapper.selectList(tenantWrapper);
+        if (batchTenants == null || batchTenants.isEmpty()) return false;
+
+        // 检查 hz_batch_house 中是否存在 tenant_id 匹配且 house_id 匹配的记录
+        List<Long> tenantIds = new java.util.ArrayList<>();
+        for (HzBatchTenant bt : batchTenants) {
+            tenantIds.add(bt.getId());
+        }
+        QueryWrapper<HzBatchHouse> houseWrapper = new QueryWrapper<>();
+        houseWrapper.in("tenant_id", tenantIds)
+                .eq("house_id", houseId)
+                .eq("del_flag", "0")
+                .last("LIMIT 1");
+        Long matchCount = batchHouseMapper.selectCount(houseWrapper);
+        return matchCount != null && matchCount > 0;
     }
 }
