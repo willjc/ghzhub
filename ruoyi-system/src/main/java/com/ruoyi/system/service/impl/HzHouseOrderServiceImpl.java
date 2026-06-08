@@ -114,13 +114,15 @@ public class HzHouseOrderServiceImpl
         order.setOrderStatus("0"); // 待签约
         order.setIsBatchAlloc(isBatch ? "1" : "0");
 
+        Calendar cal = Calendar.getInstance();
         if (!isBatch) {
             // 普通用户：锁定10分钟
-            Calendar cal = Calendar.getInstance();
             cal.add(Calendar.MINUTE, 10);
-            order.setLockExpireTime(cal.getTime());
+        } else {
+            // 批次配租用户：设置极远过期时间（永不过期），满足数据库NOT NULL约束
+            cal.set(2099, Calendar.DECEMBER, 31, 23, 59, 59);
         }
-        // 批次配租用户：不设置锁定时间，无时效限制
+        order.setLockExpireTime(cal.getTime());
         order.setDelFlag("0");
         order.setCreateTime(new Date());
 
