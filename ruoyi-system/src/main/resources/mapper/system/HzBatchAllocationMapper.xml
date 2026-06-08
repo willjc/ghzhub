@@ -64,7 +64,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </if>
         </where>
         GROUP BY b.batch_id
-        ORDER BY b.create_time DESC
+        ORDER BY b.create_time DESC, b.batch_id DESC
     </select>
 
     <select id="selectBatchAllocationPage" resultMap="HzBatchAllocationResult">
@@ -82,7 +82,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </if>
         </where>
         GROUP BY b.batch_id
-        ORDER BY b.create_time DESC
+        ORDER BY b.create_time DESC, b.batch_id DESC
     </select>
 
 </mapper>
