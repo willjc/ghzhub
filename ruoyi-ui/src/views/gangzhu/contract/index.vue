@@ -130,7 +130,7 @@
         </template>
       </el-table-column>
       <el-table-column label="合同生效日期" align="center" prop="startDate" width="120" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240">
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -146,6 +146,15 @@
             @click="handleViewPdf(scope.row)"
             v-hasPermi="['gangzhu:contract:query']"
           >查看合同</el-button>
+          <el-button
+            v-if="scope.row.contractStatus === '2' || scope.row.contractStatus === '3'"
+            size="mini"
+            type="text"
+            icon="el-icon-circle-close"
+            style="color: #F56C6C;"
+            @click="handleForceCheckout(scope.row)"
+            v-hasPermi="['gangzhu:checkout:forceCheckout']"
+          >退租</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -464,6 +473,25 @@
       </div>
     </el-dialog>
 
+    <!-- 管理员直接退租对话框 -->
+    <el-dialog title="管理员直接退租" :visible.sync="forceCheckoutOpen" width="500px" append-to-body>
+      <el-form ref="forceCheckoutForm" :model="forceCheckoutForm" :rules="forceCheckoutRules" label-width="100px">
+        <el-form-item label="租户姓名">
+          <span>{{ forceCheckoutForm.tenantName }}</span>
+        </el-form-item>
+        <el-form-item label="合同编号">
+          <span>{{ forceCheckoutForm.contractNo }}</span>
+        </el-form-item>
+        <el-form-item label="退租原因" prop="checkoutReason">
+          <el-input v-model="forceCheckoutForm.checkoutReason" type="textarea" placeholder="请输入退租原因" :rows="3" />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="forceCheckoutOpen = false">取 消</el-button>
+        <el-button type="danger" @click="submitForceCheckout">确认退租</el-button>
+      </div>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -471,6 +499,7 @@
 import { listContract, getContract,
          getContractBills, getContractDocuments, auditDocument, getContractPdfUrl } from "@/api/gangzhu/contract";
 import { listProject } from "@/api/gangzhu/project";
+import { adminForceCheckout } from "@/api/gangzhu/checkout";
 
 export default {
   name: "Contract",
@@ -489,6 +518,17 @@ export default {
       contractBills: [],       // 缴费记录
       contractDocs: [],        // 用户资料
       currentDetailContractId: null, // 当前查看的合同 ID
+      // 管理员直接退租
+      forceCheckoutOpen: false,
+      forceCheckoutForm: {
+        contractId: null,
+        tenantName: '',
+        contractNo: '',
+        checkoutReason: ''
+      },
+      forceCheckoutRules: {
+        checkoutReason: [{ required: true, message: '请输入退租原因', trigger: 'blur' }]
+      },
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -659,6 +699,31 @@ export default {
       this.download('system/contract/export', {
         ...this.queryParams
       }, `contract_${new Date().getTime()}.xlsx`)
+    },
+    /** 管理员直接退租 */
+    handleForceCheckout(row) {
+      this.forceCheckoutForm = {
+        contractId: row.contractId,
+        tenantName: row.tenantName,
+        contractNo: row.contractNo,
+        checkoutReason: ''
+      };
+      this.forceCheckoutOpen = true;
+    },
+    submitForceCheckout() {
+      this.$refs['forceCheckoutForm'].validate(valid => {
+        if (!valid) return;
+        this.$modal.confirm('确认对该合同执行退租操作？合同将变为"已解约"，房源将释放为"空置"。').then(() => {
+          adminForceCheckout({
+            contractId: this.forceCheckoutForm.contractId,
+            checkoutReason: this.forceCheckoutForm.checkoutReason
+          }).then(() => {
+            this.$modal.msgSuccess('退租成功');
+            this.forceCheckoutOpen = false;
+            this.getList();
+          });
+        }).catch(() => {});
+      });
     }
   }
 };

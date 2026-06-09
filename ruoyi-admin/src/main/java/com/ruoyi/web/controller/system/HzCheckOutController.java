@@ -177,4 +177,17 @@ public class HzCheckOutController extends BaseController {
         String opinion = requestData.get("opinion") != null ? requestData.get("opinion").toString() : "";
         return toAjax(checkoutService.managerConfirmCheckout(applyId, opinion));
     }
+
+    /**
+     * 管理员直接退租（无需用户确认，一步完成合同终止+房源释放）
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:checkout:forceCheckout')")
+    @Log(title = "管理员直接退租", businessType = BusinessType.UPDATE)
+    @PostMapping("/adminForceCheckout")
+    public AjaxResult adminForceCheckout(@RequestBody Map<String, Object> requestData) {
+        Long contractId = Long.valueOf(requestData.get("contractId").toString());
+        String checkoutReason = requestData.get("checkoutReason") != null ?
+                requestData.get("checkoutReason").toString() : "管理员操作退租";
+        return toAjax(checkoutService.adminForceCheckout(contractId, checkoutReason));
+    }
 }

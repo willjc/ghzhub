@@ -1099,4 +1099,66 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                .set(HzCheckoutApply::getManagerConfirmOpinion, opinion);
         return this.update(wrapper) ? 1 : 0;
     }
+
+    @Override
+    @Transactional
+    public int adminForceCheckout(Long contractId, String checkoutReason) {
+        // 1. 查询合同信息
+        HzContract contract = contractMapper.selectById(contractId);
+        if (contract == null) {
+            throw new com.ruoyi.common.exception.ServiceException("合同不存在");
+        }
+        // 校验合同状态必须为已签署(2)或履行中(3)
+        if (!"2".equals(contract.getContractStatus()) && !"3".equals(contract.getContractStatus())) {
+            throw new com.ruoyi.common.exception.ServiceException("该合同状态不允许退租");
+        }
+
+        String adminUser = SecurityUtils.getUsername();
+        Date now = new Date();
+
+        // 2. 创建退租申请记录（审计留痕），直接设为已完成
+        HzCheckoutApply apply = new HzCheckoutApply();
+        apply.setContractId(contractId);
+        apply.setTenantId(contract.getTenantId());
+        apply.setHouseId(contract.getHouseId());
+        apply.setApplyTime(now);
+        apply.setPlanCheckoutDate(now);
+        apply.setCheckoutReason(checkoutReason);
+        apply.setApplyStatus("5"); // 直接已完成
+        apply.setApproveBy(adminUser);
+        apply.setApproveTime(now);
+        apply.setApproveOpinion("管理员直接退租");
+        apply.setCreateBy(adminUser);
+        apply.setDelFlag("0");
+        checkoutApplyMapper.insert(apply);
+
+        // 3. 创建退租记录
+        HzCheckoutRecord record = new HzCheckoutRecord();
+        record.setApplyId(apply.getApplyId());
+        record.setContractId(contractId);
+        record.setTenantId(contract.getTenantId());
+        record.setHouseId(contract.getHouseId());
+        record.setCheckoutDate(now);
+        record.setCheckoutTime(now);
+        record.setRefundStatus("0");
+        record.setDelFlag("0");
+        checkoutRecordMapper.insert(record);
+
+        // 4. 更新合同状态为已解约(5)
+        contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                .eq(HzContract::getContractId, contractId)
+                .set(HzContract::getContractStatus, "5"));
+
+        // 5. 释放房源：已预订(1)/已出租(2) → 空置(0)
+        if (contract.getHouseId() != null) {
+            houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                    .eq(HzHouse::getHouseId, contract.getHouseId())
+                    .in(HzHouse::getHouseStatus, "1", "2")
+                    .set(HzHouse::getHouseStatus, "0"));
+        }
+
+        logger.info("[管理员直接退租] contractId={}, tenant={}, house={}, operator={}",
+                contractId, contract.getTenantId(), contract.getHouseId(), adminUser);
+        return 1;
+    }
 }

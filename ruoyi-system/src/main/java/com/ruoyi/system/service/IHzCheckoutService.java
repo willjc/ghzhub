@@ -203,4 +203,13 @@ public interface IHzCheckoutService {
      * @return 结果
      */
     public int managerConfirmCheckout(Long applyId, String opinion);
+
+    /**
+     * 管理员直接退租（无需用户确认，一步完成合同终止+房源释放）
+     *
+     * @param contractId 合同ID
+     * @param checkoutReason 退租原因
+     * @return 结果
+     */
+    public int adminForceCheckout(Long contractId, String checkoutReason);
 }

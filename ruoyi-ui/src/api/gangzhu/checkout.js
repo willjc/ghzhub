@@ -77,6 +77,15 @@ export function getCheckoutRecordByApplyId(applyId) {
   })
 }
 
+// 管理员直接退租
+export function adminForceCheckout(data) {
+  return request({
+    url: '/system/checkout/adminForceCheckout',
+    method: 'post',
+    data: data
+  })
+}
+
 // 获取合同的账单列表（用于退租审批时查看缴费记录）
 export function getContractBills(contractId) {
   return request({
