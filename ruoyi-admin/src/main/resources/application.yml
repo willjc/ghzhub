@@ -163,7 +163,7 @@ xss:
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*
 
-# 郑好办对接配置
+# 郑好办的对接配置
 zhenghaoban:
   # 网关配置
   gateway:
