@@ -12,12 +12,14 @@ import com.ruoyi.system.domain.HzCheckoutApply;
 import com.ruoyi.system.domain.HzCheckoutRecord;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzHouse;
+import com.ruoyi.system.domain.HzHouseOrder;
 import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.mapper.HzCheckInMapper;
 import com.ruoyi.system.mapper.HzCheckoutApplyMapper;
 import com.ruoyi.system.mapper.HzCheckoutRecordMapper;
 import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
+import com.ruoyi.system.mapper.HzHouseOrderMapper;
 import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.service.IHzCheckoutService;
 import com.ruoyi.system.service.IHzContractService;
@@ -48,6 +50,9 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
 
     @Autowired
     private HzHouseMapper houseMapper;
+
+    @Autowired
+    private HzHouseOrderMapper houseOrderMapper;
 
     @Autowired
     private HzProjectMapper projectMapper;
@@ -362,6 +367,12 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
                     .eq(HzHouse::getHouseStatus, "1")
                     .set(HzHouse::getHouseStatus, targetStatus));
         }
+        // 4. 级联更新关联订单状态为已过期，避免阻塞重新选房
+        houseOrderMapper.update(null, new LambdaUpdateWrapper<HzHouseOrder>()
+                .eq(HzHouseOrder::getContractId, contractId)
+                .in(HzHouseOrder::getOrderStatus, "0", "1", "2")
+                .set(HzHouseOrder::getOrderStatus, "4")
+                .set(HzHouseOrder::getUpdateTime, new Date()));
     }
 
     /**
