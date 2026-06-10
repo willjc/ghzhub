@@ -682,13 +682,18 @@ public class HzContractAppController extends BaseController {
             // 5.1 获取批次优惠信息（如果该房源属于配租批次）
             try {
                 BatchPreferenceVo batchPreference = batchHouseMapper.selectBatchPreferenceByHouseId(houseId);
-                if (batchPreference != null && "1".equals(batchPreference.getPreferentialType())) {
-                    // 有免租优惠
+                if (batchPreference != null) {
+                    // 始终记录批次ID（用于配租方式判定：集中分配/常规分配）
                     contract.setBatchId(batchPreference.getBatchId());
-                    contract.setFreeRentPeriods(batchPreference.getFreeRentPeriods());
-                    logger.info("房源 {} 属于配租批次 {}，享受免租 {} 期优惠", houseId, batchPreference.getBatchId(), batchPreference.getFreeRentPeriods());
+                    if ("1".equals(batchPreference.getPreferentialType())) {
+                        // 有免租优惠
+                        contract.setFreeRentPeriods(batchPreference.getFreeRentPeriods());
+                        logger.info("房源 {} 属于配租批次 {}，享受免租 {} 期优惠", houseId, batchPreference.getBatchId(), batchPreference.getFreeRentPeriods());
+                    } else {
+                        contract.setFreeRentPeriods(0);
+                    }
                 } else {
-                    // 无优惠
+                    // 非批次配租
                     contract.setFreeRentPeriods(0);
                 }
             } catch (Exception ex) {
