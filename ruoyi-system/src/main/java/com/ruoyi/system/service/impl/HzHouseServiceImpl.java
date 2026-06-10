@@ -16,7 +16,9 @@ import com.ruoyi.system.domain.HzBuilding;
 import com.ruoyi.system.domain.HzUnit;
 import com.ruoyi.system.domain.HzHouseType;
 import com.ruoyi.system.domain.HzHouseVr;
+import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.mapper.HzHouseMapper;
+import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.mapper.HzHouseImageMapper;
 import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.mapper.HzBuildingMapper;
@@ -64,6 +66,9 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
 
     @Autowired
     private HzHouseVrMapper houseVrMapper;
+
+    @Autowired
+    private HzContractMapper contractMapper;
 
     @Autowired
     private IHzRoleProjectService roleProjectService;
@@ -199,6 +204,25 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
                     .orderByAsc(HzHouseVr::getSortOrder);
             List<HzHouseVr> vrs = houseVrMapper.selectList(vrWrapper);
             result.put("vrs", vrs);
+
+            // 查询当前租户（合同状态: 2=已签署, 3=履行中）
+            LambdaQueryWrapper<HzContract> currentWrapper = new LambdaQueryWrapper<>();
+            currentWrapper.eq(HzContract::getHouseId, houseId)
+                    .in(HzContract::getContractStatus, "2", "3")
+                    .eq(HzContract::getDelFlag, "0")
+                    .orderByDesc(HzContract::getCreateTime)
+                    .last("LIMIT 1");
+            HzContract currentTenant = contractMapper.selectOne(currentWrapper);
+            result.put("currentTenant", currentTenant);
+
+            // 查询历史租户（合同状态: 4=已到期, 5=已解约）
+            LambdaQueryWrapper<HzContract> historyWrapper = new LambdaQueryWrapper<>();
+            historyWrapper.eq(HzContract::getHouseId, houseId)
+                    .in(HzContract::getContractStatus, "4", "5")
+                    .eq(HzContract::getDelFlag, "0")
+                    .orderByDesc(HzContract::getCreateTime);
+            List<HzContract> historyTenants = contractMapper.selectList(historyWrapper);
+            result.put("historyTenants", historyTenants);
         }
 
         return result;

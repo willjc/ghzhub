@@ -630,6 +630,50 @@
           </el-col>
         </el-row>
 
+        <!-- 租户信息 -->
+        <el-card class="detail-card" style="margin-top: 20px;">
+          <div slot="header" class="card-header">
+            <span><i class="el-icon-user"></i> 租户信息</span>
+          </div>
+          <!-- 当前租户 -->
+          <div style="margin-bottom: 16px;">
+            <div style="font-weight: bold; margin-bottom: 8px; color: #409EFF;">当前租户</div>
+            <div v-if="detailData.currentTenant">
+              <el-row :gutter="20">
+                <el-col :span="8"><div class="info-item"><label>姓名:</label><span>{{ detailData.currentTenant.tenantName }}</span></div></el-col>
+                <el-col :span="8"><div class="info-item"><label>电话:</label><span>{{ detailData.currentTenant.tenantPhone }}</span></div></el-col>
+                <el-col :span="8"><div class="info-item"><label>身份证号:</label><span>{{ detailData.currentTenant.tenantIdCard }}</span></div></el-col>
+                <el-col :span="8"><div class="info-item"><label>合同编号:</label><span>{{ detailData.currentTenant.contractNo }}</span></div></el-col>
+                <el-col :span="8"><div class="info-item"><label>合同期限:</label><span>{{ detailData.currentTenant.startDate }} ~ {{ detailData.currentTenant.endDate }}</span></div></el-col>
+                <el-col :span="8"><div class="info-item"><label>合同状态:</label>
+                  <el-tag v-if="detailData.currentTenant.contractStatus === '2'" type="success" size="small">已签署</el-tag>
+                  <el-tag v-else-if="detailData.currentTenant.contractStatus === '3'" type="primary" size="small">履行中</el-tag>
+                </div></el-col>
+              </el-row>
+            </div>
+            <div v-else style="color: #909399;">暂无当前租户</div>
+          </div>
+          <!-- 历史租户 -->
+          <div>
+            <div style="font-weight: bold; margin-bottom: 8px; color: #909399;">历史租户</div>
+            <el-table v-if="detailData.historyTenants && detailData.historyTenants.length > 0" :data="detailData.historyTenants" size="small" border style="width: 100%;">
+              <el-table-column label="姓名" prop="tenantName" width="100" />
+              <el-table-column label="电话" prop="tenantPhone" width="130" />
+              <el-table-column label="合同编号" prop="contractNo" width="180" />
+              <el-table-column label="合同期限" min-width="200">
+                <template slot-scope="scope">{{ scope.row.startDate }} ~ {{ scope.row.endDate }}</template>
+              </el-table-column>
+              <el-table-column label="状态" width="80" align="center">
+                <template slot-scope="scope">
+                  <el-tag v-if="scope.row.contractStatus === '4'" type="info" size="mini">已到期</el-tag>
+                  <el-tag v-else-if="scope.row.contractStatus === '5'" type="warning" size="mini">已解约</el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div v-else style="color: #909399;">暂无历史租户</div>
+          </div>
+        </el-card>
+
         <!-- 房源图片 - 分类展示 -->
         <el-card class="detail-card" style="margin-top: 20px;" v-if="detailData.images && detailData.images.length > 0">
           <div slot="header" class="card-header">
