@@ -392,11 +392,19 @@ public class HzHouseOrderServiceImpl
         if (firstRent == null || !"1".equals(firstRent.getBillStatus())) return;
 
         // 双条件齐全 → 推进合同到「3 履行中」
-        contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+        int updated = contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
                 .eq(HzContract::getContractId, contractId)
                 .in(HzContract::getContractStatus, "1", "2")
                 .set(HzContract::getContractStatus, "3")
                 .set(HzContract::getUpdateTime, new Date()));
+
+        // 合同成功推进到履行中后，同步将房源状态更新为「2 已出租」
+        if (updated > 0 && contract.getHouseId() != null) {
+            houseMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<HzHouse>()
+                    .eq(HzHouse::getHouseId, contract.getHouseId())
+                    .in(HzHouse::getHouseStatus, "0", "1") // 空置或已预订 → 已出租
+                    .set(HzHouse::getHouseStatus, "2"));
+        }
     }
 
     /**
