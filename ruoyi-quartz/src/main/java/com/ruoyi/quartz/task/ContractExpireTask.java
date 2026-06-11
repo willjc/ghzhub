@@ -15,9 +15,11 @@ import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.domain.HzUser;
 import com.ruoyi.system.domain.HzBatchTenant;
 import com.ruoyi.system.service.IHzContractService;
+import com.ruoyi.system.service.IHzHouseOrderService;
 import com.ruoyi.system.service.IHzUserMessageService;
 import com.ruoyi.system.service.ISysConfigService;
 import com.ruoyi.system.service.WechatPayService;
+import com.ruoyi.common.utils.DateUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -81,6 +83,9 @@ public class ContractExpireTask {
 
     @Autowired
     private WechatPayService wechatPayService;
+
+    @Autowired
+    private IHzHouseOrderService houseOrderService;
 
     @Autowired
     private HzUserMapper userMapper;
@@ -204,6 +209,11 @@ public class ContractExpireTask {
                                 .eq(HzBill::getBillStatus, "1"));
 
                 if (paidDeposit == null || paidDeposit == 0) {
+                    // 失效前主动向微信查单，防止回调丢失导致误失效
+                    if (tryRecoverPaymentFromWechat(contract)) {
+                        log.info("合同 {} 微信查单确认已支付，跳过失效", contract.getContractId());
+                        continue;
+                    }
                     expireContract(contract, "签署后30分钟未缴押金");
                     count++;
                 }
@@ -312,6 +322,73 @@ public class ContractExpireTask {
             }
         }
         return count;
+    }
+
+    /**
+     * 失效前主动向微信查单，确认押金是否实际已支付（防止回调丢失导致误失效）。
+     * 如果微信确认已支付，则补录本地账单状态并触发合同状态推进，返回 true（跳过失效）。
+     * 如果微信确认未支付或查询失败，返回 false（继续失效流程）。
+     */
+    private boolean tryRecoverPaymentFromWechat(HzContract contract) {
+        // 查询该合同的押金账单
+        HzBill depositBill = billMapper.selectOne(
+                new LambdaQueryWrapper<HzBill>()
+                        .eq(HzBill::getContractId, contract.getContractId())
+                        .eq(HzBill::getBillType, "1")
+                        .eq(HzBill::getBillStatus, "0")
+                        .eq(HzBill::getDelFlag, "0")
+                        .last("LIMIT 1"));
+        if (depositBill == null || depositBill.getBillNo() == null) {
+            return false;
+        }
+
+        try {
+            Map<String, Object> wxResult = wechatPayService.queryByOutTradeNo(depositBill.getBillNo());
+            String tradeState = (String) wxResult.get("trade_state");
+            String transactionId = (String) wxResult.get("transaction_id");
+
+            if (!"SUCCESS".equals(tradeState)) {
+                log.info("微信查单确认未支付，contractId={}, billNo={}, tradeState={}",
+                        contract.getContractId(), depositBill.getBillNo(), tradeState);
+                return false;
+            }
+
+            // 微信确认已支付，补录本地账单
+            depositBill.setBillStatus("1");
+            depositBill.setPaidAmount(depositBill.getBillAmount());
+            depositBill.setUnpaidAmount(java.math.BigDecimal.ZERO);
+            depositBill.setPayTime(DateUtils.getTime());
+            depositBill.setPayMethod("wechat");
+            depositBill.setTransactionNo(transactionId);
+            billMapper.updateById(depositBill);
+            log.info("微信查单兜底：押金账单已补录为已支付，contractId={}, billNo={}, transactionId={}",
+                    contract.getContractId(), depositBill.getBillNo(), transactionId);
+
+            // 触发订单状态推进（押金支付成功 → 订单进入下一阶段）
+            if (depositBill.getOrderNo() != null && !depositBill.getOrderNo().isEmpty()) {
+                try {
+                    houseOrderService.onDepositPaid(depositBill.getOrderNo());
+                } catch (Exception e) {
+                    log.warn("微信查单兜底：onDepositPaid 执行异常，不影响主流程, contractId={}: {}",
+                            contract.getContractId(), e.getMessage());
+                }
+            }
+
+            // 触发合同状态推进（检查押金+首期租金是否双满足）
+            try {
+                houseOrderService.tryAdvanceContractToFulfilling(contract.getContractId());
+            } catch (Exception e) {
+                log.warn("微信查单兜底：tryAdvanceContractToFulfilling 执行异常，不影响主流程, contractId={}: {}",
+                        contract.getContractId(), e.getMessage());
+            }
+
+            return true;
+        } catch (Exception e) {
+            // 查单失败（网络超时等），安全兜底：按未支付处理，继续走失效流程
+            log.warn("微信查单失败，按未支付处理继续失效, contractId={}, billNo={}: {}",
+                    contract.getContractId(), depositBill.getBillNo(), e.getMessage());
+            return false;
+        }
     }
 
     /**
