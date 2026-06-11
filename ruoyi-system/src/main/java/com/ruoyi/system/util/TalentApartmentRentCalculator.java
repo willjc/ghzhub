@@ -12,7 +12,7 @@ import java.math.RoundingMode;
  * 3. 学历 -> 面积上限：
  *      博士(7) -> 90 ㎡
  *      大专(4) / 本科(5) / 硕士(6) -> 70 ㎡
- *      其它（含 null / 1 小学 / 2 初中 / 3 高中）-> 不适用（依靠资格申诉前置拦截）
+ *      其它（含 null / 1 小学 / 2 初中）-> 不适用（依靠资格申诉前置拦截）
  * 4. 超出面积上限部分按"标准价"计算（即 rent_price / 0.7 反推得到的市场价）
  * 5. 押金不参与 7 折逻辑（由调用方自行处理）
  */
@@ -37,12 +37,13 @@ public final class TalentApartmentRentCalculator {
         switch (education.trim()) {
             case "7": // 博士
                 return new BigDecimal("90");
+            case "3": // 高中（按本科标准分档）
             case "4": // 大专
             case "5": // 本科
             case "6": // 硕士
                 return new BigDecimal("70");
             default:
-                return null; // 1/2/3 小初高 不适用
+                return null; // 1/2 小学/初中 不适用
         }
     }
 
