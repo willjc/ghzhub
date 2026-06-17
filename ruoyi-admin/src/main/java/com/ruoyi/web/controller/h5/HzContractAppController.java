@@ -760,9 +760,14 @@ public class HzContractAppController extends BaseController {
                 }
 
                 // 更新预订单：关联合同ID，状态从 '0'(待签约) 改为 '1'(待付押金)
+                // 同时将锁房到期时间延长至30分钟（与押金支付超时对齐），
+                // 避免签约耗时较长导致原10分钟锁房到期后房源被误释放
                 if (result > 0) {
                     matchedOrder.setContractId(contract.getContractId());
                     matchedOrder.setOrderStatus("1");
+                    java.util.Calendar lockCal = java.util.Calendar.getInstance();
+                    lockCal.add(java.util.Calendar.MINUTE, 30);
+                    matchedOrder.setLockExpireTime(lockCal.getTime());
                     matchedOrder.setUpdateTime(new java.util.Date());
                     houseOrderService.updateById(matchedOrder);
                 }
