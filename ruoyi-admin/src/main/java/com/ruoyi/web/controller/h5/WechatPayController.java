@@ -115,12 +115,13 @@ public class WechatPayController extends BaseController {
         int totalFen = bill.getUnpaidAmount()
                            .multiply(new BigDecimal("100"))
                            .intValue();
-        String desc = "港好住-押金缴纳";
+        // 根据账单类型动态设置描述，避免与微信首次请求参数不一致
+        String desc = buildBillDesc(bill);
 
         try {
             if ("jsapi".equals(payType)) {
                 if (openid == null || openid.isEmpty()) return error("JSAPI 支付需要传入 openid");
-                Map<String, String> jsapiParams = wechatPayService.prepayJsapi(
+                Map<String, String> jsapiParams = prepayJsapiWithRetry(
                         billNo, totalFen, desc, openid, notifyUrl);
                 return success(jsapiParams);
 
@@ -138,6 +139,62 @@ public class WechatPayController extends BaseController {
             logger.error("微信预支付失败，billNo={}", billNo, e);
             return error("预支付失败：" + e.getMessage());
         }
+    }
+
+    /**
+     * 根据账单类型构造微信支付描述。
+     * 1=押金 2=租金 3=水费 4=电费 5=燃气费 6=物业费 7=其他
+     */
+    private String buildBillDesc(HzBill bill) {
+        String type = bill.getBillType();
+        if ("1".equals(type)) return "港好住-押金缴纳";
+        if ("2".equals(type)) return "港好住-房租缴纳";
+        if ("3".equals(type)) return "港好住-水费缴纳";
+        if ("4".equals(type)) return "港好住-电费缴纳";
+        if ("5".equals(type)) return "港好住-燃气费缴纳";
+        if ("6".equals(type)) return "港好住-物业费缴纳";
+        return "港好住-费用缴纳";
+    }
+
+    /**
+     * JSAPI 预支付，带"请求重入参数不一致"自动恢复。
+     * 微信会缓存首次预下单的参数，若账单金额/描述发生过变化（如迁移数据修正、代码迭代），
+     * 同一 out_trade_no 重提交将被拒绝。此时自动关闭旧订单，并使用临时后缀重试。
+     */
+    private Map<String, String> prepayJsapiWithRetry(String billNo, int totalFen, String desc,
+                                                     String openid, String notifyUrl) {
+        try {
+            return wechatPayService.prepayJsapi(billNo, totalFen, desc, openid, notifyUrl);
+        } catch (Exception e) {
+            String msg = e.getMessage() == null ? "" : e.getMessage();
+            boolean isReentryConflict = msg.contains("INVALID_REQUEST")
+                    && (msg.contains("请求重入") || msg.contains("参数与首次请求"));
+            if (!isReentryConflict) {
+                throw e;
+            }
+            // 尝试关闭旧订单，失败不阻断后续重试
+            try {
+                wechatPayService.closeOrder(billNo);
+                logger.warn("微信预支付参数冲突，已关闭旧订单：billNo={}", billNo);
+            } catch (Exception closeEx) {
+                logger.warn("关闭旧微信订单失败（可能已关闭/过期），继续重试：{}", closeEx.getMessage());
+            }
+            // out_trade_no 上限 32 字符，-R- + 6位 共 9 字符，预留够用
+            String retryOutTradeNo = billNo + "-R-" + (System.currentTimeMillis() % 1000000);
+            Map<String, String> ret = wechatPayService.prepayJsapi(
+                    retryOutTradeNo, totalFen, desc, openid, notifyUrl);
+            logger.info("微信预支付重试成功，原billNo={}, retryOutTradeNo={}", billNo, retryOutTradeNo);
+            return ret;
+        }
+    }
+
+    /**
+     * 将可能带重试后缀的 out_trade_no 还原为原始 billNo。
+     * 后缀格式：-R-\d+
+     */
+    private String stripRetrySuffix(String outTradeNo) {
+        if (outTradeNo == null) return null;
+        return outTradeNo.replaceAll("-R-\\d+$", "");
     }
 
     /**
@@ -212,24 +269,27 @@ public class WechatPayController extends BaseController {
             String tradeState    = (String) notifyData.get("trade_state");
             String outTradeNo    = (String) notifyData.get("out_trade_no");
             String transactionId = (String) notifyData.get("transaction_id");
-
+            
+            // 如果是重试下单生成的 out_trade_no，还原为原始 billNo 后再查账单
+            String lookupBillNo = stripRetrySuffix(outTradeNo);
+            
             if (!"SUCCESS".equals(tradeState)) {
                 logger.warn("【微信回调】支付未成功，tradeState={}, outTradeNo={}", tradeState, outTradeNo);
                 resp.put("code", "SUCCESS");
                 resp.put("message", "成功");
                 return ResponseEntity.ok(resp);
             }
-
+            
             LambdaQueryWrapper<HzBill> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(HzBill::getBillNo, outTradeNo)
+            wrapper.eq(HzBill::getBillNo, lookupBillNo)
                    .eq(HzBill::getDelFlag, "0")
                    .last("LIMIT 1");
             HzBill bill = billMapper.selectOne(wrapper);
-
+            
             if (bill == null) {
                 // 兜底：尝试匹配企业账单
                 LambdaQueryWrapper<HzEnterpriseBill> ebWrapper = new LambdaQueryWrapper<>();
-                ebWrapper.eq(HzEnterpriseBill::getBillNo, outTradeNo)
+                ebWrapper.eq(HzEnterpriseBill::getBillNo, lookupBillNo)
                          .eq(HzEnterpriseBill::getDelFlag, "0")
                          .last("LIMIT 1");
                 HzEnterpriseBill enterpriseBill = enterpriseBillMapper.selectOne(ebWrapper);

@@ -28,6 +28,13 @@ public interface WechatPayService {
     Map<String, Object> queryByOutTradeNo(String outTradeNo) throws Exception;
 
     /**
+     * 关闭微信支付订单（用于解决out_trade_no参数冲突问题）
+     *
+     * @param outTradeNo 商户订单号
+     */
+    void closeOrder(String outTradeNo);
+
+    /**
      * 申请微信退款（原路退款）
      *
      * @param transactionId 原支付微信交易号

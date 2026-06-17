@@ -9,6 +9,7 @@ import com.wechat.pay.java.service.payments.h5.model.PrepayRequest;
 import com.wechat.pay.java.service.payments.h5.model.PrepayResponse;
 import com.wechat.pay.java.service.payments.jsapi.JsapiServiceExtension;
 import com.wechat.pay.java.service.payments.jsapi.model.Amount;
+import com.wechat.pay.java.service.payments.jsapi.model.CloseOrderRequest;
 import com.wechat.pay.java.service.payments.jsapi.model.Payer;
 import com.wechat.pay.java.service.payments.jsapi.model.PrepayWithRequestPaymentResponse;
 import com.wechat.pay.java.service.payments.jsapi.model.QueryOrderByOutTradeNoRequest;
@@ -175,6 +176,19 @@ public class WechatPayServiceImpl implements WechatPayService {
         result.put("trade_state_desc", transaction.getTradeStateDesc());
         result.put("success_time", transaction.getSuccessTime());
         return result;
+    }
+
+    /**
+     * 关闭微信支付订单
+     * 用于解决 out_trade_no 参数冲突（"请求重入时，参数与首次请求时不一致"）
+     */
+    @Override
+    public void closeOrder(String outTradeNo) {
+        CloseOrderRequest request = new CloseOrderRequest();
+        request.setMchid(mchId);
+        request.setOutTradeNo(outTradeNo);
+        jsapiService.closeOrder(request);
+        log.info("微信订单已关闭，outTradeNo={}", outTradeNo);
     }
 
     /**
