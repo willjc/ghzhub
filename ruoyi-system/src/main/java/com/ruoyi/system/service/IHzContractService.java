@@ -61,6 +61,14 @@ public interface IHzContractService {
     List<HzContract> selectContractList(HzContract contract);
 
     /**
+     * 按合同ID列表批量查询合同（用于勾选导出）
+     *
+     * @param contractIds 合同ID数组
+     * @return 合同列表
+     */
+    List<HzContract> selectContractListByIds(Long[] contractIds);
+
+    /**
      * 分页查询合同
      *
      * @param contract 合同

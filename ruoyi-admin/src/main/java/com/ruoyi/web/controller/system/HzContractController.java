@@ -85,9 +85,17 @@ public class HzContractController extends BaseController
     @PreAuthorize("@ss.hasPermi('gangzhu:contract:export')")
     @Log(title = "合同管理", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
-    public void export(HttpServletResponse response, HzContract contract)
+    public void export(HttpServletResponse response, HzContract contract,
+                       @RequestParam(required = false) Long[] contractIds)
     {
-        List<HzContract> list = contractService.selectContractList(contract);
+        List<HzContract> list;
+        if (contractIds != null && contractIds.length > 0) {
+            // 勾选导出：仅导出指定 ids 的合同
+            list = contractService.selectContractListByIds(contractIds);
+        } else {
+            // 全量导出：按搜索条件查
+            list = contractService.selectContractList(contract);
+        }
         ExcelUtil<HzContract> util = new ExcelUtil<HzContract>(HzContract.class);
         util.exportExcel(response, list, "合同数据");
     }

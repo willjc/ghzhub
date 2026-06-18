@@ -696,9 +696,12 @@ export default {
         this.queryParams.params["beginSignTime"] = this.daterangeSignTime[0];
         this.queryParams.params["endSignTime"] = this.daterangeSignTime[1];
       }
-      this.download('system/contract/export', {
-        ...this.queryParams
-      }, `contract_${new Date().getTime()}.xlsx`)
+      // 勾选导出：将选中的合同 ids 传给后端
+      const exportParams = { ...this.queryParams };
+      if (this.ids && this.ids.length > 0) {
+        exportParams.contractIds = this.ids;
+      }
+      this.download('system/contract/export', exportParams, `contract_${new Date().getTime()}.xlsx`)
     },
     /** 管理员直接退租 */
     handleForceCheckout(row) {

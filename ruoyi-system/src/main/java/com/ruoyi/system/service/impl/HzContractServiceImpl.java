@@ -216,6 +216,42 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
     }
 
     @Override
+    public List<HzContract> selectContractListByIds(Long[] contractIds) {
+        if (contractIds == null || contractIds.length == 0) {
+            return java.util.Collections.emptyList();
+        }
+        LambdaQueryWrapper<HzContract> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(HzContract::getContractId, contractIds)
+               .eq(HzContract::getDelFlag, "0")
+               .orderByDesc(HzContract::getCreateTime);
+        List<HzContract> result = this.list(wrapper);
+
+        // 回填导出所需的虚拟字段：projectName + allocationType（逻辑同 selectContractList）
+        if (!result.isEmpty()) {
+            Set<Long> projectIds = result.stream()
+                .map(HzContract::getProjectId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+            Map<Long, String> projectNameMap = new HashMap<>();
+            if (!projectIds.isEmpty()) {
+                List<HzProject> projects = projectMapper.selectList(
+                    new LambdaQueryWrapper<HzProject>()
+                        .in(HzProject::getProjectId, projectIds)
+                        .eq(HzProject::getDelFlag, "0")
+                );
+                for (HzProject p : projects) {
+                    projectNameMap.put(p.getProjectId(), p.getProjectName());
+                }
+            }
+            for (HzContract c : result) {
+                c.setProjectName(projectNameMap.getOrDefault(c.getProjectId(), ""));
+                c.setAllocationType(computeAllocationType(c.getBatchId(), c.getRemark()));
+            }
+        }
+        return result;
+    }
+
+    @Override
     public IPage<HzContract> selectContractPage(HzContract contract, int pageNum, int pageSize) {
         Page<HzContract> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<HzContract> wrapper = new LambdaQueryWrapper<>();
