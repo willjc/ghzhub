@@ -343,13 +343,18 @@ public class ContractExpireTask {
         }
 
         try {
-            Map<String, Object> wxResult = wechatPayService.queryByOutTradeNo(depositBill.getBillNo());
+            // 优先使用 last_out_trade_no（实际下到微信、可能带 -R- 后缀）查微信。
+            // 原始 billNo 在重试场景下已被 closeOrder 关闭，查不到 SUCCESS。
+            String lookupOutTradeNo = (depositBill.getLastOutTradeNo() != null && !depositBill.getLastOutTradeNo().isEmpty())
+                    ? depositBill.getLastOutTradeNo()
+                    : depositBill.getBillNo();
+            Map<String, Object> wxResult = wechatPayService.queryByOutTradeNo(lookupOutTradeNo);
             String tradeState = (String) wxResult.get("trade_state");
             String transactionId = (String) wxResult.get("transaction_id");
 
             if (!"SUCCESS".equals(tradeState)) {
-                log.info("微信查单确认未支付，contractId={}, billNo={}, tradeState={}",
-                        contract.getContractId(), depositBill.getBillNo(), tradeState);
+                log.info("微信查单确认未支付，contractId={}, billNo={}, queriedOutTradeNo={}, tradeState={}",
+                        contract.getContractId(), depositBill.getBillNo(), lookupOutTradeNo, tradeState);
                 return false;
             }
 
@@ -361,8 +366,8 @@ public class ContractExpireTask {
             depositBill.setPayMethod("wechat");
             depositBill.setTransactionNo(transactionId);
             billMapper.updateById(depositBill);
-            log.info("微信查单兜底：押金账单已补录为已支付，contractId={}, billNo={}, transactionId={}",
-                    contract.getContractId(), depositBill.getBillNo(), transactionId);
+            log.info("微信查单兜底：押金账单已补录为已支付，contractId={}, billNo={}, queriedOutTradeNo={}, transactionId={}",
+                    contract.getContractId(), depositBill.getBillNo(), lookupOutTradeNo, transactionId);
 
             // 触发订单状态推进（押金支付成功 → 订单进入下一阶段）
             if (depositBill.getOrderNo() != null && !depositBill.getOrderNo().isEmpty()) {
@@ -389,6 +394,86 @@ public class ContractExpireTask {
                     contract.getContractId(), depositBill.getBillNo(), e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * 扫描未支付账单，主动向微信查单兜底，补回回调丢失场景。
+     * <p>背景：2026-06-18 发现张阁阁代付房租后未勾账问题——原有 tryRecoverPaymentFromWechat
+     * 只覆盖押金（bill_type=1）且只在合同超时失效扫描时才调用，租金回调丢失无人被顶。</p>
+     * <p>本方法扫描范围：hz_bill 中 bill_status='0'、last_out_trade_no 非空（表明曾下单到微信）、
+     * 且下单时间超过 5 分钟的账单。逆向查微信、确认 SUCCESS 后补回本地状态。</p>
+     * <p>sys_job 配置：invoke_target = contractExpireTask.recoverLostWechatNotify()，建议每 5 分钟执行一次。</p>
+     */
+    public int recoverLostWechatNotify() {
+        // 扫描所有未支付、已下单到微信、且距下单超过 5 分钟的账单
+        // 不限 bill_type：押金（原 tryRecoverPaymentFromWechat 仅在失效扫描时才被动调用）、租金、水电燃、物业费全部覆盖
+        // 限制 update_time 在 24 小时内，避免重复扫描老账单造成微信查单压力
+        java.time.LocalDateTime windowStart = java.time.LocalDateTime.now().minusDays(1);
+        Date windowStartDate = Date.from(windowStart.atZone(ZoneId.systemDefault()).toInstant());
+
+        List<HzBill> candidates = billMapper.selectList(
+                new LambdaQueryWrapper<HzBill>()
+                        .eq(HzBill::getBillStatus, "0")
+                        .eq(HzBill::getDelFlag, "0")
+                        .isNotNull(HzBill::getLastOutTradeNo)
+                        .ne(HzBill::getLastOutTradeNo, "")
+                        .ge(HzBill::getUpdateTime, windowStartDate));
+
+        if (candidates == null || candidates.isEmpty()) {
+            return 0;
+        }
+        log.info("[RecoverLostWechatNotify] 开始扫描可能丢失回调的账单，候选数={}", candidates.size());
+
+        int recovered = 0;
+        for (HzBill bill : candidates) {
+            if (bill.getLastOutTradeNo() == null || bill.getLastOutTradeNo().isEmpty()) {
+                continue;
+            }
+            try {
+                Map<String, Object> wxResult = wechatPayService.queryByOutTradeNo(bill.getLastOutTradeNo());
+                String tradeState = (String) wxResult.get("trade_state");
+                String transactionId = (String) wxResult.get("transaction_id");
+                if (!"SUCCESS".equals(tradeState)) {
+                    continue;
+                }
+
+                // 微信确认已支付，但本地仍为未支付 → 补回
+                bill.setBillStatus("1");
+                bill.setPaidAmount(bill.getBillAmount());
+                bill.setUnpaidAmount(java.math.BigDecimal.ZERO);
+                bill.setPayTime(DateUtils.getTime());
+                bill.setPayMethod("wechat");
+                bill.setTransactionNo(transactionId);
+                billMapper.updateById(bill);
+                recovered++;
+                log.info("[RecoverLostWechatNotify] 补回成功 billId={}, billNo={}, lastOutTradeNo={}, transactionId={}",
+                        bill.getBillId(), bill.getBillNo(), bill.getLastOutTradeNo(), transactionId);
+
+                // 押金账单补回 → 推进订单状态
+                if ("1".equals(bill.getBillType()) && bill.getOrderNo() != null && !bill.getOrderNo().isEmpty()) {
+                    try {
+                        houseOrderService.onDepositPaid(bill.getOrderNo());
+                    } catch (Exception e) {
+                        log.warn("[RecoverLostWechatNotify] onDepositPaid 异常 billId={}: {}", bill.getBillId(), e.getMessage());
+                    }
+                }
+                // 押金/首期租金 → 推进合同到履行中
+                if ("1".equals(bill.getBillType()) || "2".equals(bill.getBillType())) {
+                    try {
+                        houseOrderService.tryAdvanceContractToFulfilling(bill.getContractId());
+                    } catch (Exception e) {
+                        log.warn("[RecoverLostWechatNotify] tryAdvanceContractToFulfilling 异常 billId={}: {}",
+                                bill.getBillId(), e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                // 单个账单查单失败不阻断整体扫描
+                log.warn("[RecoverLostWechatNotify] 查单失败 billId={}, lastOutTradeNo={}: {}",
+                        bill.getBillId(), bill.getLastOutTradeNo(), e.getMessage());
+            }
+        }
+        log.info("[RecoverLostWechatNotify] 扫描完成，补回账单数={}", recovered);
+        return recovered;
     }
 
     /**

@@ -129,6 +129,15 @@ public class HzBill extends BaseEntity {
     @TableField("transaction_no")
     private String transactionNo;
 
+    /**
+     * 最近一次下单到微信的实际 outTradeNo（含 -R-xxxxxx 重试后缀）。
+     * 用于回调丢失时主动查单兜底——优先使用此字段查询微信，
+     * 因为带 -R- 后缀的单号才是用户实际付款成功的那一笔；
+     * 原始 billNo 在重试时已被 closeOrder 关闭，查不到 SUCCESS。
+     */
+    @TableField("last_out_trade_no")
+    private String lastOutTradeNo;
+
     /** 删除标志(0:存在 2:删除) */
     @TableField("del_flag")
     private String delFlag;
@@ -146,6 +155,14 @@ public class HzBill extends BaseEntity {
     /** 结转来源（原合同编号） */
     @TableField("carry_over_source")
     private String carryOverSource;
+
+    public String getLastOutTradeNo() {
+        return lastOutTradeNo;
+    }
+
+    public void setLastOutTradeNo(String lastOutTradeNo) {
+        this.lastOutTradeNo = lastOutTradeNo;
+    }
 
     public void setBillId(Long billId) {
         this.billId = billId;

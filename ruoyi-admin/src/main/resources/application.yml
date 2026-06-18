@@ -193,7 +193,7 @@ wechat:
     # 微信支付公钥（新商户用公钥模式替代平台证书）
     public-key-id: "PUB_KEY_ID_0111064042342026021200192262000001"
     public-key-path: "classpath:certs/pub_key.pem"
-    notify-domain: "https://app.caigon.cn"
+    notify-domain: "https://api.caigon.cn"
     h5-notify-url: "${wechat.pay.notify-domain}/h5/pay/wechat/notify"
 
 # e签宝配置
@@ -205,7 +205,7 @@ esign:
   # 生产环境（上线时切换）
   host: "https://openapi.esign.cn"
   # 签署完成后回调地址（公网可访问）
-  notify-url: "https://app.caigon.cn/h5/esign/notify"
+  notify-url: "https://api.caigon.cn/h5/esign/notify"
   # 签署后跳回的页面（后端中间页，自动跳转到前端H5）
   redirect-url: "https://app.caigon.cn/h5/esign/sign-done"
   # 平台企业（甲方）在 e签宝 的 orgId

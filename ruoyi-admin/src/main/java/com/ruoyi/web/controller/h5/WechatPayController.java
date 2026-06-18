@@ -160,11 +160,17 @@ public class WechatPayController extends BaseController {
      * JSAPI 预支付，带"请求重入参数不一致"自动恢复。
      * 微信会缓存首次预下单的参数，若账单金额/描述发生过变化（如迁移数据修正、代码迭代），
      * 同一 out_trade_no 重提交将被拒绝。此时自动关闭旧订单，并使用临时后缀重试。
+     *
+     * 注意：成功下单后会把实际下到微信的 outTradeNo 写回 hz_bill.last_out_trade_no，
+     * 用于回调丢失时主动查单兜底——带 -R- 后缀的单号才是用户实际付款成功的那一笔。
      */
     private Map<String, String> prepayJsapiWithRetry(String billNo, int totalFen, String desc,
                                                      String openid, String notifyUrl) {
         try {
-            return wechatPayService.prepayJsapi(billNo, totalFen, desc, openid, notifyUrl);
+            Map<String, String> ret = wechatPayService.prepayJsapi(billNo, totalFen, desc, openid, notifyUrl);
+            // 首次下单成功，把 outTradeNo（即 billNo）写回 last_out_trade_no
+            persistLastOutTradeNo(billNo, billNo);
+            return ret;
         } catch (Exception e) {
             String msg = e.getMessage() == null ? "" : e.getMessage();
             boolean isReentryConflict = msg.contains("INVALID_REQUEST")
@@ -183,8 +189,30 @@ public class WechatPayController extends BaseController {
             String retryOutTradeNo = billNo + "-R-" + (System.currentTimeMillis() % 1000000);
             Map<String, String> ret = wechatPayService.prepayJsapi(
                     retryOutTradeNo, totalFen, desc, openid, notifyUrl);
+            // 关键：把重试单号持久化到 hz_bill.last_out_trade_no
+            // 否则一旦微信回调丢失，syncPayResult / ContractExpireTask 用原始 billNo 查微信
+            // 永远拿不到 SUCCESS（原始单号已被关闭），账单状态会一直滞留未支付。
+            persistLastOutTradeNo(billNo, retryOutTradeNo);
             logger.info("微信预支付重试成功，原billNo={}, retryOutTradeNo={}", billNo, retryOutTradeNo);
             return ret;
+        }
+    }
+
+    /**
+     * 把实际下单到微信的 outTradeNo 持久化到 hz_bill.last_out_trade_no。
+     * 失败仅记录警告，不阻断主支付流程（兜底字段，不强一致）。
+     */
+    private void persistLastOutTradeNo(String billNo, String outTradeNo) {
+        try {
+            int rows = billMapper.update(null, new LambdaUpdateWrapper<HzBill>()
+                    .eq(HzBill::getBillNo, billNo)
+                    .eq(HzBill::getDelFlag, "0")
+                    .set(HzBill::getLastOutTradeNo, outTradeNo));
+            if (rows == 0) {
+                logger.warn("持久化 last_out_trade_no 未命中行，billNo={}, outTradeNo={}", billNo, outTradeNo);
+            }
+        } catch (Exception e) {
+            logger.warn("持久化 last_out_trade_no 失败，billNo={}, outTradeNo={}: {}", billNo, outTradeNo, e.getMessage());
         }
     }
 
@@ -423,13 +451,24 @@ public class WechatPayController extends BaseController {
 
         // 2. 向微信主动查单
         try {
-            Map<String, Object> wxResult = wechatPayService.queryByOutTradeNo(
-                    bill.getBillNo() != null ? bill.getBillNo() : String.valueOf(bill.getBillId()));
+            // 关键：优先使用 last_out_trade_no（实际下到微信、可能带 -R- 后缀）查微信，
+            // 原始 billNo 在重试场景下已被 closeOrder 关闭，查不到 SUCCESS。
+            // 同时保留对老账单（重试机制上线前）的兼容：老账单 last_out_trade_no 为空，降级用 billNo。
+            String lookupOutTradeNo;
+            if (bill.getLastOutTradeNo() != null && !bill.getLastOutTradeNo().isEmpty()) {
+                lookupOutTradeNo = bill.getLastOutTradeNo();
+            } else if (bill.getBillNo() != null) {
+                lookupOutTradeNo = bill.getBillNo();
+            } else {
+                lookupOutTradeNo = String.valueOf(bill.getBillId());
+            }
+            Map<String, Object> wxResult = wechatPayService.queryByOutTradeNo(lookupOutTradeNo);
             String tradeState = (String) wxResult.get("trade_state");
             String transactionId = (String) wxResult.get("transaction_id");
 
             Map<String, Object> data = new HashMap<>();
             data.put("tradeState", tradeState);
+            data.put("queriedOutTradeNo", lookupOutTradeNo);
 
             if ("SUCCESS".equals(tradeState)) {
                 // 3. 微信已支付，更新本地账单
