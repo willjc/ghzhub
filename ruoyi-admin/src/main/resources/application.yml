@@ -217,7 +217,7 @@ esign:
   # 前端H5地址（签署完成跳转用）
   frontend-url: "https://app.caigon.cn/#/pages/affairs/contract?esign_done=1"
 
-# 政务数据接口代理服务配置
+# 政务数据接口代理服务
 gov:
   proxy:
     # 代理服务地址（L1 公网入口，港好住后端 36.133.39.148 / 36.133.39.49 已加入白名单）
