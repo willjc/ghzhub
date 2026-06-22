@@ -242,6 +242,7 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
 
     /**
      * 修改房源
+     * <p>物业角色修改房源状态(0空置/1已预订/2已出租)时，不直接生效，走审批流程。</p>
      *
      * @param house 房源
      * @return 结果
@@ -249,6 +250,26 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
     @Override
     public int updateHouse(HzHouse house)
     {
+        // 物业角色修改房源状态时，目标为0/1/2需走审批流程
+        if (house.getHouseId() != null && house.getHouseStatus() != null && SecurityUtils.isPropertyRole())
+        {
+            HzHouse existingHouse = this.getById(house.getHouseId());
+            if (existingHouse != null && !house.getHouseStatus().equals(existingHouse.getHouseStatus()))
+            {
+                // 目标状态0(空置)/1(已预订)/2(已出租)需要管理员审批
+                Set<String> auditRequired = new HashSet<>(Arrays.asList("0", "1", "2"));
+                if (auditRequired.contains(house.getHouseStatus()))
+                {
+                    // 提交状态变更审批
+                    houseStatusAuditService.submitStatusChange(house.getHouseId(), house.getHouseStatus());
+                    // 将houseStatus置空，避免直接更新状态字段（其他字段正常更新）
+                    house.setHouseStatus(null);
+                    // 更新其他非状态字段
+                    this.updateById(house);
+                    return 1;
+                }
+            }
+        }
         return this.updateById(house) ? 1 : 0;
     }
 

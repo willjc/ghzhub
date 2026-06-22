@@ -1476,7 +1476,8 @@ export default {
               if (this.form.vrList) {
                 this.saveVrs(this.form.houseId);
               }
-              this.$modal.msgSuccess("修改成功");
+              // 显示后端返回的消息（物业角色改状态会返回审批提示）
+              this.$modal.msgSuccess(response.msg || "修改成功");
               this.open = false;
               this.getList();
             });

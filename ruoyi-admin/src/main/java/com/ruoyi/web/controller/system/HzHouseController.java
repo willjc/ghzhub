@@ -108,6 +108,20 @@ public class HzHouseController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody HzHouse house)
     {
+        // 物业角色修改状态到0/1/2时，走审批流程
+        if (house.getHouseId() != null && house.getHouseStatus() != null && SecurityUtils.isPropertyRole())
+        {
+            com.ruoyi.system.domain.HzHouse existingHouse = houseService.selectHouseById(house.getHouseId());
+            if (existingHouse != null && !house.getHouseStatus().equals(existingHouse.getHouseStatus()))
+            {
+                java.util.Set<String> auditRequired = new java.util.HashSet<>(java.util.Arrays.asList("0", "1", "2"));
+                if (auditRequired.contains(house.getHouseStatus()))
+                {
+                    houseService.updateHouse(house);
+                    return AjaxResult.success("房源状态变更已提交审批，请等待管理员审批");
+                }
+            }
+        }
         return toAjax(houseService.updateHouse(house));
     }
 
