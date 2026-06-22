@@ -5,6 +5,7 @@ import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.system.domain.HzHouse;
@@ -201,7 +202,7 @@ public class HzHouseController extends BaseController
     }
 
     /**
-     * 按项目批量修改房源状态（受控过渡：0/3/4 可互转，跳过 1/2）
+     * 按项目批量修改房源状态（仅管理方可用，物业角色禁止）
      */
     @PreAuthorize("@ss.hasPermi('gangzhu:house:edit')")
     @Log(title = "房源管理-批量改状态", businessType = BusinessType.UPDATE)
@@ -209,18 +210,26 @@ public class HzHouseController extends BaseController
     public AjaxResult batchUpdateStatusByProject(@PathVariable("projectId") Long projectId,
                                                   @RequestBody Map<String, String> body)
     {
+        if (SecurityUtils.isPropertyRole())
+        {
+            return error("物业角色不支持批量操作，请逐个提交状态变更申请");
+        }
         String targetStatus = body == null ? null : body.get("targetStatus");
         return success(houseService.batchUpdateHouseStatusByProject(projectId, targetStatus));
     }
 
     /**
-     * 按房源ID列表批量修改房源状态（受控过渡：0/3/4 可互转，跳过 1/2）
+     * 按房源ID列表批量修改房源状态（仅管理方可用，物业角色禁止）
      */
     @PreAuthorize("@ss.hasPermi('gangzhu:house:edit')")
     @Log(title = "房源管理-批量改状态(按ID)", businessType = BusinessType.UPDATE)
     @PostMapping("/batchUpdateStatusByIds")
     public AjaxResult batchUpdateStatusByIds(@RequestBody Map<String, Object> body)
     {
+        if (SecurityUtils.isPropertyRole())
+        {
+            return error("物业角色不支持批量操作，请逐个提交状态变更申请");
+        }
         if (body == null)
         {
             return error("参数不能为空");

@@ -108,6 +108,7 @@
 
 <script>
 	import { getCheckInDetail } from '@/api/checkin.js'
+	import { getContractDetail } from '@/api/contract.js'
 
 	export default {
 		data() {
@@ -163,11 +164,27 @@
 			if (options.recordId) {
 				this.recordId = options.recordId
 			}
+			if (options.contractId) {
+				this.contractId = options.contractId
+			}
+			// 保存 URL 参数（迁移合同兜底展示用）
+			this._urlParams = options
 			this.initDatePicker()
-			this.loadCheckInDetail()
+			this.loadDetail()
 		},
 		methods: {
-			// 加载入住记录详情
+			// 加载详情：有 recordId 走入住记录，否则走合同详情
+			async loadDetail() {
+				if (this.recordId) {
+					await this.loadCheckInDetail()
+				} else if (this.contractId) {
+					await this.loadContractDetail()
+				} else {
+					uni.showToast({ title: '参数错误', icon: 'none' })
+				}
+			},
+
+			// 加载入住记录详情（正常流程）
 			async loadCheckInDetail() {
 				try {
 					uni.showLoading({
@@ -200,6 +217,46 @@
 				} catch (error) {
 					uni.hideLoading()
 					console.error('加载入住记录详情失败:', error)
+					uni.showToast({
+						title: '加载失败，请重试',
+						icon: 'none'
+					})
+				}
+			},
+
+			// 加载合同详情（迁移合同兜底，无入住记录）
+			async loadContractDetail() {
+				try {
+					uni.showLoading({
+						title: '加载中...'
+					})
+
+					const response = await getContractDetail(this.contractId)
+					uni.hideLoading()
+
+					if (response.code === 200 && response.data) {
+						const data = response.data
+
+						// 保存ID用于提交
+						this.contractId = data.contractId
+						this.houseId = data.houseId
+
+						// 优先使用 URL 传入的展示信息（来自退租列表，已格式化好）
+						const p = this._urlParams || {}
+						this.formData.community = p.community ? decodeURIComponent(p.community) : (data.houseAddress || '未知小区')
+						this.formData.room = p.room ? decodeURIComponent(p.room) : ''
+						this.formData.rentPeriod = p.rentPeriod ? decodeURIComponent(p.rentPeriod) : (data.startDate && data.endDate ? `${data.startDate} ~ ${data.endDate}` : '-')
+						this.formData.rent = p.rent ? decodeURIComponent(p.rent) : (data.rentPrice ? `¥${data.rentPrice}` : '-')
+						this.formData.deposit = p.deposit ? decodeURIComponent(p.deposit) : (data.deposit ? `¥${data.deposit}` : '-')
+					} else {
+						uni.showToast({
+							title: '加载失败',
+							icon: 'none'
+						})
+					}
+				} catch (error) {
+					uni.hideLoading()
+					console.error('加载合同详情失败:', error)
 					uni.showToast({
 						title: '加载失败，请重试',
 						icon: 'none'

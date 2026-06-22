@@ -153,6 +153,7 @@
             icon="el-icon-refresh"
             @click="handleBatchUpdateStatus(scope.row)"
             v-hasPermi="['gangzhu:house:edit']"
+            v-if="!isPropertyRole"
           >批量改房源状态</el-button>
         </template>
       </el-table-column>
@@ -1101,6 +1102,9 @@ export default {
     facilitiesArray() {
       if (!this.detailData.facilities) return [];
       return this.detailData.facilities.split(',').filter(item => item.trim());
+    },
+    isPropertyRole() {
+      return (this.$store.getters.roles || []).some(r => r.roleKey === 'property')
     }
   }
 };

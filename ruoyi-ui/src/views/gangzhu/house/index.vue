@@ -138,6 +138,7 @@
           :disabled="multiple"
           @click="handleBatchUpdateStatus"
           v-hasPermi="['gangzhu:house:edit']"
+          v-if="!isPropertyRole"
         >批量改房源状态</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -1089,6 +1090,11 @@ export default {
         ]
       }
     };
+  },
+  computed: {
+    isPropertyRole() {
+      return (this.$store.getters.roles || []).some(r => r.roleKey === 'property')
+    }
   },
   created() {
     this.getList();
