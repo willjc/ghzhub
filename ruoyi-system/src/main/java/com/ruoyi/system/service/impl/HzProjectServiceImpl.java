@@ -7,7 +7,9 @@ import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.service.IHzProjectService;
 import com.ruoyi.system.service.IHzRoleProjectService;
+import com.ruoyi.common.core.domain.model.LoginUser;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -108,11 +110,17 @@ public class HzProjectServiceImpl extends ServiceImpl<HzProjectMapper, HzProject
 
     /**
      * 注入项目权限过滤：
+     * - 匿名用户（H5公开接口）：跳过过滤，查询全部项目
      * - 管理方/超管：不限制（projectIds=null）
      * - 物业角色：只查其绑定的项目
      */
     private void injectProjectFilter(HzProject project)
     {
+        // 匿名用户（H5公开接口）跳过权限过滤，避免 getLoginUser() 抛异常
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (!(principal instanceof LoginUser)) {
+            return;
+        }
         List<Long> projectIds = roleProjectService.getCurrentUserProjectIds();
         if (projectIds != null) {
             if (project.getParams() == null) {
