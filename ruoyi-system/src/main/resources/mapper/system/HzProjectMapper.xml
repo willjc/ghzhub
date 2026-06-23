@@ -78,6 +78,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="status != null and status != ''">
                 AND p.status = #{status}
             </if>
+            <if test="params != null and params.projectIds != null and params.projectIds.size() > 0">
+                AND p.project_id IN
+                <foreach collection="params.projectIds" item="pid" open="(" separator="," close=")">
+                    #{pid}
+                </foreach>
+            </if>
+            <if test="params != null and params.projectIds != null and params.projectIds.size() == 0">
+                AND 1 = 0
+            </if>
         </where>
         ORDER BY p.sort_order ASC, p.create_time DESC
     </select>
@@ -95,6 +104,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </if>
             <if test="project.status != null and project.status != ''">
                 AND p.status = #{project.status}
+            </if>
+            <if test="project.params != null and project.params.projectIds != null and project.params.projectIds.size() > 0">
+                AND p.project_id IN
+                <foreach collection="project.params.projectIds" item="pid" open="(" separator="," close=")">
+                    #{pid}
+                </foreach>
+            </if>
+            <if test="project.params != null and project.params.projectIds != null and project.params.projectIds.size() == 0">
+                AND 1 = 0
             </if>
         </where>
         ORDER BY p.sort_order ASC, p.create_time DESC

@@ -6,8 +6,11 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.service.IHzProjectService;
+import com.ruoyi.system.service.IHzRoleProjectService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -19,6 +22,9 @@ import java.util.List;
 @Service
 public class HzProjectServiceImpl extends ServiceImpl<HzProjectMapper, HzProject> implements IHzProjectService
 {
+    @Autowired
+    private IHzRoleProjectService roleProjectService;
+
     /**
      * 查询项目列表
      *
@@ -28,6 +34,8 @@ public class HzProjectServiceImpl extends ServiceImpl<HzProjectMapper, HzProject
     @Override
     public List<HzProject> selectProjectList(HzProject project)
     {
+        // 注入项目权限过滤
+        injectProjectFilter(project);
         // 使用自定义SQL查询,包含统计总房源数和可用房源数
         return this.baseMapper.selectProjectAllocationList(project);
     }
@@ -43,6 +51,8 @@ public class HzProjectServiceImpl extends ServiceImpl<HzProjectMapper, HzProject
     @Override
     public IPage<HzProject> selectProjectPage(HzProject project, int pageNum, int pageSize)
     {
+        // 注入项目权限过滤
+        injectProjectFilter(project);
         Page<HzProject> page = new Page<>(pageNum, pageSize);
         return this.baseMapper.selectProjectAllocationPage(page, project);
     }
@@ -94,5 +104,21 @@ public class HzProjectServiceImpl extends ServiceImpl<HzProjectMapper, HzProject
     public int deleteProjectById(Long projectId)
     {
         return this.removeById(projectId) ? 1 : 0;
+    }
+
+    /**
+     * 注入项目权限过滤：
+     * - 管理方/超管：不限制（projectIds=null）
+     * - 物业角色：只查其绑定的项目
+     */
+    private void injectProjectFilter(HzProject project)
+    {
+        List<Long> projectIds = roleProjectService.getCurrentUserProjectIds();
+        if (projectIds != null) {
+            if (project.getParams() == null) {
+                project.setParams(new HashMap<>());
+            }
+            project.getParams().put("projectIds", projectIds);
+        }
     }
 }
