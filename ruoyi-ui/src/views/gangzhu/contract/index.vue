@@ -389,7 +389,7 @@
         <el-table :data="contractBills" border size="mini" style="width:100%">
           <el-table-column label="账单类型"   prop="billTypeText"   width="80" align="center" />
           <el-table-column label="账单号"     prop="billNo"         min-width="160" show-overflow-tooltip />
-          <el-table-column label="账期" width="160" align="center">
+          <el-table-column label="账期" width="240" align="center">
             <template slot-scope="{ row }">
               <span v-if="row.billSeq">第{{ row.billSeq }}期
                 <span style="color:#999;font-size:12px;">({{ formatShortDate(row.periodStartDate) }}~{{ formatShortDate(row.periodEndDate) }})</span>
@@ -550,12 +550,11 @@ export default {
     this.getProjectList();
   },
   methods: {
-    /** 格式化日期为 MM-DD */
+    /** 格式化日期为 YYYY-MM-DD */
     formatShortDate(dateStr) {
       if (!dateStr) return '';
-      const parts = dateStr.split('-');
-      if (parts.length >= 3) return parts[1] + '-' + parts[2];
-      return dateStr;
+      // 返回完整日期 YYYY-MM-DD
+      return dateStr.substring(0, 10);
     },
     /** 查看合同 PDF（调接口获取实时链接，新标签打开） */
     handleViewPdf(row) {
