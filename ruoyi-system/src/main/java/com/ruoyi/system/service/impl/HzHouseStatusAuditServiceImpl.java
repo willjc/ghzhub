@@ -103,12 +103,12 @@ public class HzHouseStatusAuditServiceImpl extends ServiceImpl<HzHouseStatusAudi
         audit.setApproveOpinion(opinion);
         this.updateById(audit);
 
-        // 审批通过：执行实际状态变更
+        // 审批通过：直接更新房源状态（绕过updateHouse的审批判断，避免死循环）
         if ("1".equals(approveStatus)) {
             HzHouse updateHouse = new HzHouse();
             updateHouse.setHouseId(audit.getHouseId());
             updateHouse.setHouseStatus(audit.getTargetStatus());
-            houseService.updateHouse(updateHouse);
+            houseService.updateById(updateHouse);
             logger.info("房源状态审批通过，houseId={}, {}→{}", audit.getHouseId(), audit.getCurrentStatus(), audit.getTargetStatus());
         }
 

@@ -242,7 +242,9 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
 
     /**
      * 修改房源
-     * <p>物业角色修改房源状态(0空置/1已预订/2已出租)时，不直接生效，走审批流程。</p>
+     * <p>物业角色修改房源状态时，默认走审批流程。
+     * 免审批白名单：空置(0)→维修中(3)、空置(0)→下架(4)。
+     * 其他所有状态变更均需管理员审批。</p>
      *
      * @param house 房源
      * @return 结果
@@ -250,15 +252,17 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
     @Override
     public int updateHouse(HzHouse house)
     {
-        // 物业角色修改房源状态时，目标为0/1/2需走审批流程
+        // 物业角色修改房源状态时，判断是否需要审批
         if (house.getHouseId() != null && house.getHouseStatus() != null && SecurityUtils.isPropertyRole())
         {
             HzHouse existingHouse = this.getById(house.getHouseId());
             if (existingHouse != null && !house.getHouseStatus().equals(existingHouse.getHouseStatus()))
             {
-                // 目标状态0(空置)/1(已预订)/2(已出租)需要管理员审批
-                Set<String> auditRequired = new HashSet<>(Arrays.asList("0", "1", "2"));
-                if (auditRequired.contains(house.getHouseStatus()))
+                String currentStatus = existingHouse.getHouseStatus();
+                String targetStatus = house.getHouseStatus();
+                // 免审批：空置(0)→维修中(3) 或 空置(0)→下架(4)
+                boolean skipAudit = "0".equals(currentStatus) && ("3".equals(targetStatus) || "4".equals(targetStatus));
+                if (!skipAudit)
                 {
                     // 提交状态变更审批
                     houseStatusAuditService.submitStatusChange(house.getHouseId(), house.getHouseStatus());
