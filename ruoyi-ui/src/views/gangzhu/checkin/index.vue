@@ -17,13 +17,15 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="项目名称" prop="projectName">
-        <el-input
-          v-model="queryParams.projectName"
-          placeholder="请输入项目名称"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
+      <el-form-item label="所属项目" prop="projectId">
+        <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable filterable style="width: 200px">
+          <el-option
+            v-for="project in projectList"
+            :key="project.projectId"
+            :label="project.projectName"
+            :value="project.projectId"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="联系电话" prop="phone">
         <el-input
@@ -296,6 +298,7 @@
 import { listCheckIn, getCheckIn, addCheckIn, updateCheckIn, delCheckIn, auditCheckIn } from "@/api/gangzhu/checkin";
 import { listHouseFacility } from "@/api/gangzhu/houseFacility";
 import { getContractPdfUrl } from "@/api/gangzhu/contract";
+import { listProject } from "@/api/gangzhu/project";
 
 export default {
   name: "CheckIn",
@@ -320,12 +323,13 @@ export default {
       facilityLoading: false,
       facilityGroups: [],
       confirmedFacilityGroups: [],  // 用户确认时的设施快照（从remark解析）
+      projectList: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         checkinNo: null,
         realName: null,
-        projectName: null,
+        projectId: null,
         phone: null,
         status: null,
       }
@@ -338,6 +342,7 @@ export default {
   },
   created() {
     this.getList();
+    this.getProjectList();
   },
   methods: {
     getList() {
@@ -346,6 +351,12 @@ export default {
         this.checkInList = response.rows;
         this.total = response.total;
         this.loading = false;
+      });
+    },
+    /** 查询项目列表（筛选下拉） */
+    getProjectList() {
+      listProject({ pageNum: 1, pageSize: 1000, status: "0" }).then(response => {
+        this.projectList = response.rows || response.data || [];
       });
     },
     handleQuery() {
@@ -359,7 +370,7 @@ export default {
         pageSize: 10,
         checkinNo: null,
         realName: null,
-        projectName: null,
+        projectId: null,
         phone: null,
         status: null,
       };

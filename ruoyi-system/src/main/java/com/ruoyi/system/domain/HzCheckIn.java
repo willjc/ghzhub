@@ -167,6 +167,10 @@ public class HzCheckIn extends BaseEntity {
     @TableField(exist = false)
     private String phone;
 
+    /** 项目ID hz_project.project_id */
+    @TableField(exist = false)
+    private Long projectId;
+
     /** 项目名 hz_project.project_name */
     @TableField(exist = false)
     private String projectName;
@@ -503,7 +507,15 @@ public class HzCheckIn extends BaseEntity {
         this.phone = phone;
     }
 
-    public String getProjectName() {
+    public Long getProjectId() {
+        return projectId;
+    }
+
+public void setProjectId(Long projectId) {
+        this.projectId = projectId;
+    }
+
+public String getProjectName() {
         return projectName;
     }
 

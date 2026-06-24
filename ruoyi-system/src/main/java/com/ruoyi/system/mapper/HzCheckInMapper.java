@@ -62,6 +62,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "<if test='checkIn.checkinNo != null and checkIn.checkinNo != \"\"'> AND c.checkin_no LIKE CONCAT('%', #{checkIn.checkinNo}, '%') </if>" +
             "<if test='checkIn.realName != null and checkIn.realName != \"\"'> AND u.real_name LIKE CONCAT('%', #{checkIn.realName}, '%') </if>" +
             "<if test='checkIn.projectName != null and checkIn.projectName != \"\"'> AND p.project_name LIKE CONCAT('%', #{checkIn.projectName}, '%') </if>" +
+            "<if test='checkIn.projectId != null'> AND p.project_id = #{checkIn.projectId} </if>" +
             "<if test='checkIn.phone != null and checkIn.phone != \"\"'> AND u.phone LIKE CONCAT('%', #{checkIn.phone}, '%') </if>" +
             "ORDER BY c.create_time DESC" +
             "</script>")
@@ -142,6 +143,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "<if test='checkinNo != null and checkinNo != \"\"'> AND c.checkin_no LIKE CONCAT('%', #{checkinNo}, '%') </if>" +
             "<if test='realName != null and realName != \"\"'> AND u.real_name LIKE CONCAT('%', #{realName}, '%') </if>" +
             "<if test='projectName != null and projectName != \"\"'> AND p.project_name LIKE CONCAT('%', #{projectName}, '%') </if>" +
+            "<if test='projectId != null'> AND p.project_id = #{projectId} </if>" +
             "<if test='phone != null and phone != \"\"'> AND u.phone LIKE CONCAT('%', #{phone}, '%') </if>" +
             "ORDER BY c.create_time DESC" +
             "</script>")
