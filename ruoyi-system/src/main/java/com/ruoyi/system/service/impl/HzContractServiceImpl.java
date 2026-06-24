@@ -11,6 +11,7 @@ import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.domain.HzCheckoutApply;
 import com.ruoyi.system.domain.HzCheckoutRecord;
 import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzHouseOrder;
 import com.ruoyi.system.domain.HzProject;
@@ -18,6 +19,7 @@ import com.ruoyi.system.mapper.HzCheckInMapper;
 import com.ruoyi.system.mapper.HzCheckoutApplyMapper;
 import com.ruoyi.system.mapper.HzCheckoutRecordMapper;
 import com.ruoyi.system.mapper.HzContractMapper;
+import com.ruoyi.system.mapper.HzBillMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzHouseOrderMapper;
 import com.ruoyi.system.mapper.HzProjectMapper;
@@ -65,6 +67,9 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
 
     @Autowired
     private IHzUserMessageService messageService;
+
+    @Autowired
+    private HzBillMapper billMapper;
 
     @Autowired
     private IHzRoleProjectService roleProjectService;
@@ -403,7 +408,14 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
                     .eq(HzHouse::getHouseStatus, "1")
                     .set(HzHouse::getHouseStatus, targetStatus));
         }
-        // 4. 级联更新关联订单状态为已过期，避免阻塞重新选房
+        // 4. 级联软删除关联账单，避免失效合同遗留孤儿账单
+        billMapper.update(null, new LambdaUpdateWrapper<HzBill>()
+                .eq(HzBill::getContractId, contractId)
+                .eq(HzBill::getDelFlag, "0")
+                .set(HzBill::getDelFlag, "2")
+                .set(HzBill::getUpdateTime, new Date()));
+
+        // 5. 级联更新关联订单状态为已过期，避免阻塞重新选房
         houseOrderMapper.update(null, new LambdaUpdateWrapper<HzHouseOrder>()
                 .eq(HzHouseOrder::getContractId, contractId)
                 .in(HzHouseOrder::getOrderStatus, "0", "1", "2")
