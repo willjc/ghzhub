@@ -160,7 +160,13 @@ public class HzCheckOutAppController extends BaseController {
             return error("获取用户信息失败，请重新登录");
         }
 
-        // 先��询是否存在已取消的退租申请（相同合同+租户）
+        // 校验是否已存在活跃的退租申请（审批中/已通过/待确认），防止重复提交
+        HzCheckoutApply activeApply = checkoutService.selectActiveApply(contractId, tenantId);
+        if (activeApply != null) {
+            return error("该合同已提交过退租申请，请勿重复提交");
+        }
+
+        // 先查询是否存在已取消的退租申请（相同合同+租户）
         HzCheckoutApply existingApply = checkoutService.selectCancelledApply(contractId, tenantId);
 
         HzCheckoutApply apply;

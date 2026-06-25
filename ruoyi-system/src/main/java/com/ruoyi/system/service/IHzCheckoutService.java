@@ -166,6 +166,16 @@ public interface IHzCheckoutService {
     public HzCheckoutApply selectCancelledApply(Long contractId, Long tenantId);
 
     /**
+     * 查询活跃的退租申请（审批中/已通过/待确认）
+     * 用于提交前重复校验，防止同一合同产生多条待处理申请
+     *
+     * @param contractId 合同ID
+     * @param tenantId 租户ID
+     * @return 活跃的退租申请，无则返回null
+     */
+    public HzCheckoutApply selectActiveApply(Long contractId, Long tenantId);
+
+    /**
      * 获取退租确认信息（供用户确认页面使用）
      *
      * @param applyId 退租申请ID

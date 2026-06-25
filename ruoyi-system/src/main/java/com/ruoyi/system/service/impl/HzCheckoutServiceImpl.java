@@ -740,6 +740,20 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
     }
 
     @Override
+    public HzCheckoutApply selectActiveApply(Long contractId, Long tenantId) {
+        // 查询活跃的退租申请（审批中/已通过/待确认），排除驳回和已取消
+        LambdaQueryWrapper<HzCheckoutApply> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(HzCheckoutApply::getContractId, contractId)
+               .eq(HzCheckoutApply::getTenantId, tenantId)
+               .notIn(HzCheckoutApply::getApplyStatus, "2", "3")  // 排除驳回(2)和已取消(3)
+               .eq(HzCheckoutApply::getDelFlag, "0")
+               .orderByDesc(HzCheckoutApply::getApplyTime)
+               .last("LIMIT 1");
+
+        return checkoutApplyMapper.selectOne(wrapper);
+    }
+
+    @Override
     public Map<String, Object> getCheckoutConfirmInfo(Long applyId) {
         Map<String, Object> result = new HashMap<>();
 
