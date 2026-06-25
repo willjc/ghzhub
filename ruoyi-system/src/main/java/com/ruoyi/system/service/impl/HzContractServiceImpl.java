@@ -9,7 +9,8 @@ import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.domain.HzCheckoutApply;
-import com.ruoyi.system.domain.HzCheckoutRecord;
+import com.ruoyi.system.domain.HzBuilding;
+import com.ruoyi.system.mapper.HzBuildingMapper;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzHouse;
@@ -64,6 +65,9 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
 
     @Autowired
     private HzCheckoutRecordMapper checkoutRecordMapper;
+
+    @Autowired
+    private HzBuildingMapper buildingMapper;
 
     @Autowired
     private IHzUserMessageService messageService;
@@ -194,26 +198,26 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
         }
         System.out.println("===== selectContractList 调试结束 =====");
 
-        // 回填导出/列表所需的虚拟字段：projectName + allocationType
+        // 回填导出/列表所需的虚拟字段：projectName + allocationType + buildingName + houseNo
         if (!result.isEmpty()) {
-            // 批量查询项目名称
-            Set<Long> projectIds = result.stream()
-                .map(HzContract::getProjectId)
-                .filter(java.util.Objects::nonNull)
-                .collect(Collectors.toSet());
-            Map<Long, String> projectNameMap = new HashMap<>();
-            if (!projectIds.isEmpty()) {
-                List<HzProject> projects = projectMapper.selectList(
-                    new LambdaQueryWrapper<HzProject>()
-                        .in(HzProject::getProjectId, projectIds)
-                        .eq(HzProject::getDelFlag, "0")
-                );
-                for (HzProject p : projects) {
-                    projectNameMap.put(p.getProjectId(), p.getProjectName());
+            backfillHouseLocationInfo(result);
+            // fallback: 对于 backfill 没覆盖到的合同，用合同表自身 projectId 查项目名
+            Set<Long> needProjectIds = result.stream()
+                    .filter(c -> StringUtils.isEmpty(c.getProjectName()))
+                    .map(HzContract::getProjectId).filter(java.util.Objects::nonNull)
+                    .collect(Collectors.toSet());
+            if (!needProjectIds.isEmpty()) {
+                List<HzProject> projs = projectMapper.selectList(
+                        new LambdaQueryWrapper<HzProject>().in(HzProject::getProjectId, needProjectIds));
+                Map<Long, String> pmap = projs.stream()
+                        .collect(Collectors.toMap(HzProject::getProjectId, HzProject::getProjectName, (a, b) -> a));
+                for (HzContract c : result) {
+                    if (StringUtils.isEmpty(c.getProjectName())) {
+                        c.setProjectName(pmap.getOrDefault(c.getProjectId(), ""));
+                    }
                 }
             }
             for (HzContract c : result) {
-                c.setProjectName(projectNameMap.getOrDefault(c.getProjectId(), ""));
                 c.setAllocationType(computeAllocationType(c.getBatchId(), c.getRemark()));
             }
         }
@@ -296,13 +300,71 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
         }
 
         IPage<HzContract> result = this.page(page, wrapper);
-        // 回填 allocationType 虚拟字段
-        if (result.getRecords() != null) {
+        // 回填 allocationType 及房源位置信息
+        if (result.getRecords() != null && !result.getRecords().isEmpty()) {
+            backfillHouseLocationInfo(result.getRecords());
             for (HzContract c : result.getRecords()) {
                 c.setAllocationType(computeAllocationType(c.getBatchId(), c.getRemark()));
             }
         }
         return result;
+    }
+
+    /**
+     * 批量回填房源位置信息：projectName、buildingName、houseNo
+     */
+    private void backfillHouseLocationInfo(List<HzContract> contracts) {
+        // 收集所有 houseId
+        Set<Long> houseIds = contracts.stream()
+                .map(HzContract::getHouseId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (houseIds.isEmpty()) return;
+
+        // 批量查房源信息
+        List<HzHouse> houses = houseMapper.selectList(
+                new LambdaQueryWrapper<HzHouse>().in(HzHouse::getHouseId, houseIds));
+        Map<Long, HzHouse> houseMap = houses.stream()
+                .collect(Collectors.toMap(HzHouse::getHouseId, h -> h, (a, b) -> a));
+
+        // 收集所有 buildingId 和 projectId
+        Set<Long> buildingIds = houses.stream()
+                .map(HzHouse::getBuildingId).filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+        Set<Long> projectIds = houses.stream()
+                .map(HzHouse::getProjectId).filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        // 批量查楼栋名称
+        Map<Long, String> buildingNameMap = new HashMap<>();
+        if (!buildingIds.isEmpty()) {
+            List<HzBuilding> buildings = buildingMapper.selectList(
+                    new LambdaQueryWrapper<HzBuilding>().in(HzBuilding::getBuildingId, buildingIds));
+            for (HzBuilding b : buildings) {
+                buildingNameMap.put(b.getBuildingId(), b.getBuildingName());
+            }
+        }
+
+        // 批量查项目名称
+        Map<Long, String> projectNameMap = new HashMap<>();
+        if (!projectIds.isEmpty()) {
+            List<HzProject> projects = projectMapper.selectList(
+                    new LambdaQueryWrapper<HzProject>().in(HzProject::getProjectId, projectIds));
+            for (HzProject p : projects) {
+                projectNameMap.put(p.getProjectId(), p.getProjectName());
+            }
+        }
+
+        // 回填到每个合同对象
+        for (HzContract c : contracts) {
+            HzHouse h = houseMap.get(c.getHouseId());
+            if (h != null) {
+                c.setHouseNo(h.getHouseNo());
+                c.setProjectName(projectNameMap.getOrDefault(h.getProjectId(),
+                        c.getProjectName() != null ? c.getProjectName() : ""));
+                c.setBuildingName(buildingNameMap.getOrDefault(h.getBuildingId(), ""));
+            }
+        }
     }
 
     /** 根据 batch_id 和 remark 首段推断配租方式 */

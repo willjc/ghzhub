@@ -71,6 +71,10 @@ public class HzHouseStatusAudit extends BaseEntity {
     @TableField(exist = false)
     private String projectName;
 
+    /** 非数据库字段：楼栋名称（前端展示用） */
+    @TableField(exist = false)
+    private String buildingName;
+
     /** 非数据库字段：房间号（前端展示用） */
     @TableField(exist = false)
     private String houseNo;
@@ -103,6 +107,8 @@ public class HzHouseStatusAudit extends BaseEntity {
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
     public String getProjectName() { return projectName; }
     public void setProjectName(String projectName) { this.projectName = projectName; }
+    public String getBuildingName() { return buildingName; }
+    public void setBuildingName(String buildingName) { this.buildingName = buildingName; }
     public String getHouseNo() { return houseNo; }
     public void setHouseNo(String houseNo) { this.houseNo = houseNo; }
 }

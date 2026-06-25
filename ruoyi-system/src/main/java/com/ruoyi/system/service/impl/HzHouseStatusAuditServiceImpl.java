@@ -8,9 +8,14 @@ import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.system.domain.HzBuilding;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzHouseStatusAudit;
+import com.ruoyi.system.domain.HzProject;
+import com.ruoyi.system.mapper.HzBuildingMapper;
+import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzHouseStatusAuditMapper;
+import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.service.IHzHouseService;
 import com.ruoyi.system.service.IHzHouseStatusAuditService;
 import com.ruoyi.system.service.IHzRoleProjectService;
@@ -21,7 +26,11 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 房源状态变更审批Service业务层处理
@@ -40,6 +49,15 @@ public class HzHouseStatusAuditServiceImpl extends ServiceImpl<HzHouseStatusAudi
 
     @Autowired
     private IHzRoleProjectService roleProjectService;
+
+    @Autowired
+    private HzHouseMapper houseMapper;
+
+    @Autowired
+    private HzBuildingMapper buildingMapper;
+
+    @Autowired
+    private HzProjectMapper projectMapper;
 
     @Override
     public int submitStatusChange(Long houseId, String targetStatus) {
@@ -133,11 +151,66 @@ public class HzHouseStatusAuditServiceImpl extends ServiceImpl<HzHouseStatusAudi
             return new Page<>();
         }
 
-        return this.page(page, wrapper);
+        IPage<HzHouseStatusAudit> pageResult = this.page(page, wrapper);
+        // 回填房源位置信息
+        if (pageResult.getRecords() != null && !pageResult.getRecords().isEmpty()) {
+            backfillLocationInfo(pageResult.getRecords());
+        }
+        return pageResult;
     }
 
     @Override
     public HzHouseStatusAudit selectAuditById(Long auditId) {
         return this.getById(auditId);
+    }
+
+    /**
+     * 批量回填房源位置信息：projectName、buildingName、houseNo
+     */
+    private void backfillLocationInfo(List<HzHouseStatusAudit> audits) {
+        Set<Long> houseIds = audits.stream()
+                .map(HzHouseStatusAudit::getHouseId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (houseIds.isEmpty()) return;
+
+        List<HzHouse> houses = houseMapper.selectList(
+                new LambdaQueryWrapper<HzHouse>().in(HzHouse::getHouseId, houseIds));
+        Map<Long, HzHouse> houseMap = houses.stream()
+                .collect(Collectors.toMap(HzHouse::getHouseId, h -> h, (a, b) -> a));
+
+        Set<Long> buildingIds = houses.stream()
+                .map(HzHouse::getBuildingId).filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+        Set<Long> projectIds = houses.stream()
+                .map(HzHouse::getProjectId).filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<Long, String> buildingNameMap = new HashMap<>();
+        if (!buildingIds.isEmpty()) {
+            List<HzBuilding> buildings = buildingMapper.selectList(
+                    new LambdaQueryWrapper<HzBuilding>().in(HzBuilding::getBuildingId, buildingIds));
+            for (HzBuilding b : buildings) {
+                buildingNameMap.put(b.getBuildingId(), b.getBuildingName());
+            }
+        }
+
+        Map<Long, String> projectNameMap = new HashMap<>();
+        if (!projectIds.isEmpty()) {
+            List<HzProject> projects = projectMapper.selectList(
+                    new LambdaQueryWrapper<HzProject>().in(HzProject::getProjectId, projectIds));
+            for (HzProject p : projects) {
+                projectNameMap.put(p.getProjectId(), p.getProjectName());
+            }
+        }
+
+        for (HzHouseStatusAudit a : audits) {
+            HzHouse h = houseMap.get(a.getHouseId());
+            if (h != null) {
+                a.setHouseNo(h.getHouseNo());
+                a.setProjectName(projectNameMap.getOrDefault(h.getProjectId(), ""));
+                a.setBuildingName(buildingNameMap.getOrDefault(h.getBuildingId(), ""));
+            }
+        }
     }
 }

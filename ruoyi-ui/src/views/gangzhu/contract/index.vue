@@ -86,6 +86,12 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="租户姓名" align="center" prop="tenantName" width="100" show-overflow-tooltip />
       <el-table-column label="合同编号" align="center" prop="contractNo" width="180" show-overflow-tooltip />
+      <el-table-column label="房源位置" align="center" min-width="180" show-overflow-tooltip>
+              <template slot-scope="scope">
+                <span v-if="scope.row.projectName">{{ scope.row.projectName }}-{{ scope.row.buildingName || '' }}{{ scope.row.houseNo ? scope.row.houseNo + '号' : '' }}</span>
+                <span v-else style="color: #C0C4CC;">-</span>
+              </template>
+      </el-table-column>
       <el-table-column label="合同类型" align="center" prop="contractType" width="100">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.contractType === '1'" type="success">首次签约</el-tag>

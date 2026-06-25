@@ -272,7 +272,6 @@ export default {
     };
   },
   created() {
-    this.getList();
     this.getProjectList();
   },
   methods: {
@@ -310,6 +309,11 @@ export default {
     getProjectList() {
       listProject({ pageNum: 1, pageSize: 1000, status: "0" }).then(response => {
         this.projectList = response.rows || response.data || [];
+        // 物业角色只有一个项目时，默认选中该项目
+        if (this.projectList.length === 1) {
+          this.queryParams.projectId = this.projectList[0].projectId;
+        }
+        this.getList();
       });
     },
     handleQuery() {

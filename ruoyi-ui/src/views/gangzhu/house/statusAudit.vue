@@ -21,6 +21,12 @@
 
     <el-table v-loading="loading" :data="auditList" border stripe style="width: 100%">
       <el-table-column label="房源编号" prop="houseCode" min-width="140" />
+      <el-table-column label="房源位置" min-width="180" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span v-if="scope.row.projectName">{{ scope.row.projectName }}-{{ scope.row.buildingName || '' }}{{ scope.row.houseNo ? scope.row.houseNo + '号' : '' }}</span>
+          <span v-else style="color: #C0C4CC;">-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="当前状态" prop="currentStatus" width="100" align="center">
         <template slot-scope="scope">
           <el-tag :type="statusTagType(scope.row.currentStatus)" size="small">
