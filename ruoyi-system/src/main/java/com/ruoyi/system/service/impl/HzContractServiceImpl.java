@@ -11,6 +11,7 @@ import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.domain.HzCheckoutApply;
 import com.ruoyi.system.domain.HzBuilding;
 import com.ruoyi.system.mapper.HzBuildingMapper;
+import com.ruoyi.system.domain.HzCheckoutRecord;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzHouse;
