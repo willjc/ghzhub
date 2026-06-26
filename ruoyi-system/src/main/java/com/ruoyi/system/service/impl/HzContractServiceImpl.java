@@ -280,7 +280,6 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
             List<Long> matchedHouseIds = houseMapper.selectList(
                     new LambdaQueryWrapper<HzHouse>()
                             .like(HzHouse::getHouseNo, contract.getHouseNo())
-                            .eq(HzHouse::getDelFlag, "0")
                             .select(HzHouse::getHouseId)
             ).stream().map(HzHouse::getHouseId).collect(Collectors.toList());
             if (matchedHouseIds.isEmpty()) {
