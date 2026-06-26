@@ -841,6 +841,16 @@ public class HzContractAppController extends BaseController {
             }
             // ========== 续租到期校验结束 ==========
 
+            // ========== 入住状态校验 ==========
+            // 校验原合同的入住记录是否已完成确认（status IN 2/3/4）
+            List<HzCheckIn> oldCheckIns = checkInService.selectConfirmedCheckInListByTenantId(oldContract.getTenantId());
+            boolean hasConfirmedCheckIn = oldCheckIns.stream()
+                    .anyMatch(ci -> oldContractId.equals(ci.getContractId()));
+            if (!hasConfirmedCheckIn) {
+                return error("原合同尚未完成入住确认，无法办理续租。请先完成入住手续后再续租。");
+            }
+            // ========== 入住状态校验结束 ==========
+
             // 优先从请求参数获取 userId，兼容前端直接传参
             Long userId = null;
             Object userIdParam = params.get("userId");
