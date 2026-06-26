@@ -17,6 +17,14 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="房间号" prop="houseNo">
+        <el-input
+          v-model="queryParams.houseNo"
+          placeholder="请输入房间号"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="所属项目" prop="projectId">
         <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable filterable style="width: 200px">
           <el-option
@@ -540,6 +548,7 @@ export default {
         pageSize: 10,
         tenantName: null,
         contractNo: null,
+        houseNo: null,
         contractType: null,
         contractStatus: null,
         projectId: null,

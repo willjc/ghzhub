@@ -275,6 +275,20 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
                .eq(HzContract::getDelFlag, "0")
                .orderByDesc(HzContract::getContractId);
 
+        // 房间号模糊搜索（跨表：hz_house.house_no）
+        if (StringUtils.isNotEmpty(contract.getHouseNo())) {
+            List<Long> matchedHouseIds = houseMapper.selectList(
+                    new LambdaQueryWrapper<HzHouse>()
+                            .like(HzHouse::getHouseNo, contract.getHouseNo())
+                            .eq(HzHouse::getDelFlag, "0")
+                            .select(HzHouse::getHouseId)
+            ).stream().map(HzHouse::getHouseId).collect(Collectors.toList());
+            if (matchedHouseIds.isEmpty()) {
+                return new Page<>(pageNum, pageSize);
+            }
+            wrapper.in(HzContract::getHouseId, matchedHouseIds);
+        }
+
         // 签约时间范围（前端 params.beginSignTime / endSignTime）
         if (contract.getParams() != null) {
             Object begin = contract.getParams().get("beginSignTime");
