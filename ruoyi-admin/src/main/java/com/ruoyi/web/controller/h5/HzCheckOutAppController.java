@@ -150,6 +150,9 @@ public class HzCheckOutAppController extends BaseController {
         if (contract == null) {
             return error("合同不存在");
         }
+        if ("4".equals(contract.getContractStatus())) {
+            return error("合同已到期，无法发起退租，请联系管理员");
+        }
         if ("1".equals(contract.getIsRenewed())) {
             return error("该合同已续租，押金已转移至续租合同，无法办理退租。请从最新的续租合同办理退租。");
         }

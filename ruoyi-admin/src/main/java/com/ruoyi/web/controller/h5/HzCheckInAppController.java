@@ -196,7 +196,7 @@ public class HzCheckInAppController extends BaseController {
      * 兼容老数据迁移场景：无入住记录时从合同表兜底查询
      *
      * @param tenantId 租户ID
-     * @param type     页面类型：renew=续租(仅履行中), checkout=退租(已签署/履行中/已到期)
+     * @param type     页面类型：renew=续租(仅履行中), checkout=退租(已签署/履行中，已到期不允许退租)
      * @return 已入住确认的入住单/合同列表
      */
     @GetMapping("/confirmed/{tenantId}")
@@ -247,8 +247,8 @@ public class HzCheckInAppController extends BaseController {
                         // 续租：只保留履行中的合同
                         return "3".equals(status);
                     }
-                    // 退租/默认：保留已签署、履行中、已到期，排除已解约
-                    return "2".equals(status) || "3".equals(status) || "4".equals(status);
+                    // 退租/默认：保留已签署、履行中，排除已到期(4)、已解约(5)、超时失效(6)
+                    return "2".equals(status) || "3".equals(status);
                 })
                 .toList();
 

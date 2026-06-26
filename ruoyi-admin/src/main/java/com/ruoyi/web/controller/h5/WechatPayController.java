@@ -112,6 +112,14 @@ public class WechatPayController extends BaseController {
             }
         }
 
+        // 合同已到期(4)时拒绝支付任何账单
+        if (bill.getContractId() != null) {
+            HzContract contract = contractMapper.selectById(bill.getContractId());
+            if (contract != null && "4".equals(contract.getContractStatus())) {
+                return error("合同已到期，无法支付，请联系管理员");
+            }
+        }
+
         int totalFen = bill.getUnpaidAmount()
                            .multiply(new BigDecimal("100"))
                            .intValue();

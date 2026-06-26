@@ -1016,7 +1016,7 @@ public class EsignServiceImpl implements EsignService {
             houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
                     .eq(HzHouse::getHouseId, exchange.getOldHouseId())
                     .in(HzHouse::getHouseStatus, "1", "2")
-                    .set(HzHouse::getHouseStatus, "0")); // 旧房源→空置
+                    .set(HzHouse::getHouseStatus, "3")); // 旧房源→修缮中
         }
         houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
                 .eq(HzHouse::getHouseId, newContract.getHouseId())

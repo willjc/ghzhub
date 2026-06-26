@@ -7,6 +7,7 @@ import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzBillVO;
 import com.ruoyi.system.mapper.HzBillMapper;
+import com.ruoyi.system.mapper.HzContractMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +25,9 @@ public class HzBillAppController extends BaseController {
 
     @Autowired
     private HzBillMapper billMapper;
+
+    @Autowired
+    private HzContractMapper contractMapper;
 
     /**
      * 根据合同ID获取押金账单
@@ -79,6 +83,14 @@ public class HzBillAppController extends BaseController {
             // 检查账单状态
             if ("1".equals(bill.getBillStatus())) {
                 return error("账单已支付");
+            }
+
+            // 合同已到期(4)时拒绝支付
+            if (bill.getContractId() != null) {
+                com.ruoyi.system.domain.HzContract contract = contractMapper.selectById(bill.getContractId());
+                if (contract != null && "4".equals(contract.getContractStatus())) {
+                    return error("合同已到期，无法支付，请联系管理员");
+                }
             }
 
             // 检查支付金额

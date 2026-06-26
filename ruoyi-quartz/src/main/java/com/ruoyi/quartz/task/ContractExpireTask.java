@@ -94,13 +94,15 @@ public class ContractExpireTask {
     private HzBatchTenantMapper batchTenantMapper;
 
     /**
-     * 合同到期自动释放房源（每天凌晨1点执行）
+     * 合同到期自动标记已到期（每天凌昨1点执行）
      *
-     * <p>查询到期日 < 当天 且 合同状态为"履行中(3)" 且未续租的合同，
-     * 将合同状态更新为"已到期(4)"，房源状态改为"空置(0)"，并发送消息提醒。
+     * <p>查询到期日 < 当天 且 合同状态为“履行中(3)” 且未续租的合同，
+     * 将合同状态更新为“已到期(4)”，发送消息提醒。
+     * <b>不自动释放房源、不自动解约</b>，房源维持已出租状态，
+     * 租户无法查看未付账单、无法缴费、无法发起退租。
      */
     public void execute() {
-        log.info("开始执行合同到期释放房源定时任务...");
+        log.info("开始执行合同到期标记定时任务...");
         try {
             String todayStr = java.time.LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
@@ -122,27 +124,19 @@ public class ContractExpireTask {
             int processedCount = 0;
             for (HzContract contract : expiredContracts) {
                 try {
-                    // 1. 更新合同状态为"已到期(4)"
+                    // 1. 更新合同状态为“已到期(4)”
                     contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
                             .eq(HzContract::getContractId, contract.getContractId())
                             .set(HzContract::getContractStatus, "4"));
-
-                    // 2. 将对应房源状态改为"空置(0)"
-                    if (contract.getHouseId() != null) {
-                        houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
-                                .eq(HzHouse::getHouseId, contract.getHouseId())
-                                .eq(HzHouse::getHouseStatus, "2")  // 仅已出租状态才释放
-                                .set(HzHouse::getHouseStatus, "0"));
-                    }
-
-                    // 2.1 联动：把该合同未办理/未审核的入住单软删，避免到期合同还能办理入住
-                    softDeleteOrphanCheckInsByContract(contract.getContractId(), "合同到期自动软删");
-
+                    
+                    // 2. 不释放房源、不软删入住单——维持原状，由管理员手动处理
+                    //    租户侧已通过合同状态=4拦截账单显示、缴费、退租操作
+                    
                     // 3. 发送消息提醒
                     if (contract.getTenantId() != null) {
                         String title = "合同到期通知";
                         String content = "您的合同" + (contract.getContractNo() != null ? contract.getContractNo() : "")
-                                + "已到期，房源已释放。如需继续租住，请联系管理员。";
+                                + "已到期，如需继续租住或办理退租，请联系管理员。";
                         messageService.sendMessage(contract.getTenantId(), "contract", title, content);
                     }
 
@@ -153,9 +147,9 @@ public class ContractExpireTask {
                 }
             }
 
-            log.info("合同到期释放房源任务完成：共处理{}条", processedCount);
+            log.info("合同到期标记任务完成：共处理{}条", processedCount);
         } catch (Exception e) {
-            log.error("合同到期释放房源定时任务执行失败", e);
+            log.error("合同到期标记定时任务执行失败", e);
         }
     }
 

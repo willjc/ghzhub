@@ -461,15 +461,12 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
         baseMapper.update(null, new LambdaUpdateWrapper<HzContract>()
                 .eq(HzContract::getContractId, contractId)
                 .set(HzContract::getContractStatus, "6"));
-        // 3. 释放关联房源
+        // 3. 释放关联房源：统一回退到'3'(修缮中)，由管理员检查后再上架
         if (houseId != null) {
-            // 批次配租合同：房源回退到'3'(修缮中)，保留在配租池中
-            // 普通合同：房源释放为'0'(空置)
-            String targetStatus = (contract != null && contract.getBatchId() != null) ? "3" : "0";
             houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
                     .eq(HzHouse::getHouseId, houseId)
                     .eq(HzHouse::getHouseStatus, "1")
-                    .set(HzHouse::getHouseStatus, targetStatus));
+                    .set(HzHouse::getHouseStatus, "3"));
         }
         // 4. 级联软删除关联账单，避免失效合同遗留孤儿账单
         billMapper.update(null, new LambdaUpdateWrapper<HzBill>()
@@ -564,12 +561,12 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
                 .eq(HzContract::getContractId, contractId)
                 .set(HzContract::getContractStatus, "5"));
 
-        // 4. 释放房源
+        // 4. 释放房源：→ 修缮中(3)
         if (contract.getHouseId() != null) {
             houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
                     .eq(HzHouse::getHouseId, contract.getHouseId())
                     .eq(HzHouse::getHouseStatus, "1")
-                    .set(HzHouse::getHouseStatus, "0"));
+                    .set(HzHouse::getHouseStatus, "3"));
         }
 
         // 5. 软删该合同下的入住单（理论上 status>=1 已豁免，所以这里通常 0 行）
