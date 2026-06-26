@@ -29,6 +29,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -701,6 +702,20 @@ public class HzContractAppController extends BaseController {
                 contract.setFreeRentPeriods(0);
             }
 
+            // 5.2 市场化配租：不享受人才公寓30%补贴，合同金额按原价（rentPrice / 0.7）
+            if (contract.getBatchId() != null) {
+                try {
+                    BatchPreferenceVo __bp = batchHouseMapper.selectBatchPreferenceByHouseId(houseId);
+                    if (__bp != null && "2".equals(__bp.getPreferentialType())) {
+                        BigDecimal originalPrice = house.getRentPrice().divide(new BigDecimal("0.7"), 2, RoundingMode.HALF_UP);
+                        contract.setRentPrice(originalPrice);
+                        logger.info("市场化配租：houseId={}, 7折价={}, 原价={}", houseId, house.getRentPrice(), originalPrice);
+                    }
+                } catch (Exception ex) {
+                    logger.warn("检查市场化配租失败: {}", ex.getMessage());
+                }
+            }
+
             // 获取合同模板，押金优先使用房源自身配置，若未配置则回退到模板默认值
             HzContractTemplate template = templateMapper.selectById(templateId);
             if (template == null) {
@@ -964,6 +979,18 @@ public class HzContractAppController extends BaseController {
                         houseId, house.getArea(), hzUser.getEducation(),
                         __renewRentResult.getOriginalRent(), __renewRentResult.getActualMonthlyRent(),
                         __renewRentResult.getRemark());
+            }
+            // 市场化配租续租：不享受30%补贴，按原价
+            try {
+                BatchPreferenceVo __renewBp = batchHouseMapper.selectBatchPreferenceByHouseId(houseId);
+                if (__renewBp != null && "2".equals(__renewBp.getPreferentialType())) {
+                    BigDecimal renewOriginalPrice = house.getRentPrice().divide(new BigDecimal("0.7"), 2, RoundingMode.HALF_UP);
+                    contract.setRentPrice(renewOriginalPrice);
+                    contract.setBatchId(__renewBp.getBatchId());
+                    logger.info("市场化配租续租：houseId={}, 7折价={}, 原价={}", houseId, house.getRentPrice(), renewOriginalPrice);
+                }
+            } catch (Exception ex) {
+                logger.warn("检查市场化配租续租失败: {}", ex.getMessage());
             }
 
             // 获取合同模板，押金优先使用房源自身配置，若未配置则回退到模板默认值

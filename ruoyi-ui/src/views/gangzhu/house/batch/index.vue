@@ -105,6 +105,7 @@
         <template slot-scope="scope">
           <span v-if="!scope.row.preferentialType || scope.row.preferentialType === '0'" style="color: #909399;">无优惠</span>
           <span v-else-if="scope.row.preferentialType === '1'" style="color: #F56C6C;">免租{{ scope.row.freeRentPeriods || 0 }}期</span>
+          <span v-else-if="scope.row.preferentialType === '2'" style="color: #E6A23C;">市场化配租（原价）</span>
         </template>
       </el-table-column>
       <el-table-column label="审批状态" align="center" prop="approveStatus" width="100">
@@ -230,6 +231,7 @@
               <el-radio-group v-model="form.preferentialType" @change="handlePreferentialTypeChange" :disabled="form.approveStatus === '1'">
                 <el-radio label="0">无优惠</el-radio>
                 <el-radio label="1">免租期数</el-radio>
+                <el-radio label="2">市场化配租</el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>
@@ -401,6 +403,7 @@
           <span v-else-if="viewData.preferentialType === '1'">
             免租 <span style="color: #F56C6C; font-weight: bold;">{{ viewData.freeRentPeriods || 0 }}</span> 期
           </span>
+          <span v-else-if="viewData.preferentialType === '2'" style="color: #E6A23C; font-weight: bold;">市场化配租（原价，不享受30%补贴）</span>
         </el-descriptions-item>
       </el-descriptions>
 
@@ -485,6 +488,7 @@
         <el-form-item label="免租政策">
           <el-tag v-if="!approveRow.preferentialType || approveRow.preferentialType === '0'" type="info" size="small">无优惠（不免租）</el-tag>
           <el-tag v-else-if="approveRow.preferentialType === '1'" type="danger" size="small">免租 {{ approveRow.freeRentPeriods || 0 }} 期</el-tag>
+          <el-tag v-else-if="approveRow.preferentialType === '2'" type="warning" size="small">市场化配租（原价，不享受30%补贴）</el-tag>
         </el-form-item>
         <el-form-item label="房源数量">
           <span>{{ approveRow.houseCount }}套</span>
