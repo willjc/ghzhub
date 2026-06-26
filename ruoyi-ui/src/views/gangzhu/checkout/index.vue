@@ -20,6 +20,7 @@
       <el-form-item label="申请状态" prop="applyStatus">
         <el-select v-model="queryParams.applyStatus" placeholder="请选择申请状态" clearable>
           <el-option label="审批中" value="0" />
+          <el-option label="待管理员审批" value="6" />
           <el-option label="待确认" value="4" />
           <el-option label="审批驳回" value="2" />
           <el-option label="已取消" value="3" />
@@ -67,6 +68,7 @@
       <el-table-column label="申请状态" align="center" prop="applyStatus" width="90">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.applyStatus === '0'" type="warning">审批中</el-tag>
+          <el-tag v-else-if="scope.row.applyStatus === '6'" type="primary">待管理员审批</el-tag>
           <el-tag v-else-if="scope.row.applyStatus === '4'" type="primary">待确认</el-tag>
           <el-tag v-else-if="scope.row.applyStatus === '2'" type="danger">审批驳回</el-tag>
           <el-tag v-else-if="scope.row.applyStatus === '3'" type="info">已取消</el-tag>
@@ -76,7 +78,7 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240">
         <template slot-scope="scope">
-          <!-- 审批中状态：显示审批按钮 -->
+          <!-- 审批中状态：物业审批按钮 -->
           <el-button
             v-if="scope.row.applyStatus === '0'"
             size="mini"
@@ -84,7 +86,17 @@
             icon="el-icon-s-check"
             @click="handleApprove(scope.row)"
             v-hasPermi="['gangzhu:checkout:approve']"
-          >审批</el-button>
+          >物业审批</el-button>
+
+          <!-- 待管理员审批状态：管理员审批按钮（物业不可见） -->
+          <el-button
+            v-if="scope.row.applyStatus === '6' && !isPropertyUser"
+            size="mini"
+            type="text"
+            icon="el-icon-s-check"
+            @click="handleApprove(scope.row)"
+            v-hasPermi="['gangzhu:checkout:approve']"
+          >管理审批</el-button>
 
           <!-- 所有状态都可以查看详情 -->
           <el-button
@@ -503,6 +515,7 @@
         <el-descriptions-item label="申请时间">{{ detailForm.applyTime }}</el-descriptions-item>
         <el-descriptions-item label="申请状态">
           <el-tag v-if="detailForm.applyStatus === '0'" type="warning">审批中</el-tag>
+          <el-tag v-else-if="detailForm.applyStatus === '6'" type="primary">待管理员审批</el-tag>
           <el-tag v-else-if="detailForm.applyStatus === '4'" type="primary">待确认</el-tag>
           <el-tag v-else-if="detailForm.applyStatus === '2'" type="danger">审批驳回</el-tag>
           <el-tag v-else-if="detailForm.applyStatus === '3'" type="info">已取消</el-tag>
@@ -755,7 +768,12 @@ export default {
     this.getList();
   },
   computed: {
-    // 是否"未办理入住"：checkinStatus 为 null/空 或 '0'(未提交) 视为未入住
+    // 当前用户是否为物业角色
+    isPropertyUser() {
+      const roles = this.$store.getters.roles || [];
+      return roles.includes('property') && !roles.includes('admin');
+    },
+    // 是否“未办理入住”：checkinStatus 为 null/空 或 '0'(未提交) 视为未入住
     isNotCheckedIn() {
       const s = this.currentForm.checkinStatus;
       return s === null || s === undefined || s === '' || s === '0';

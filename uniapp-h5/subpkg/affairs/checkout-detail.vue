@@ -200,7 +200,8 @@
 							'2': { status: 'rejected', text: '审批驳回' },
 							'3': { status: 'cancelled', text: '已取消' },
 							'4': { status: 'pending', text: '待确认' },
-							'5': { status: 'approved', text: '已确认' }
+							'5': { status: 'approved', text: '已确认' },
+							'6': { status: 'pending', text: '审批中' }
 						}
 						const statusInfo = statusMap[detailData.applyStatus] || { status: '', text: '未知状态' }
 

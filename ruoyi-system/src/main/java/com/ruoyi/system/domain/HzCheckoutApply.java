@@ -72,7 +72,7 @@ public class HzCheckoutApply extends BaseEntity {
     @TableField("rent_refund")
     private BigDecimal rentRefund;
 
-    @Excel(name = "申请状态", readConverterExp = "0=审批中,1=审批通过,2=审批驳回,3=已取消,4=待确认")
+    @Excel(name = "申请状态", readConverterExp = "0=审批中,2=审批驳回,3=已取消,4=待确认,5=已确认,6=待管理员审批")
     @TableField("apply_status")
     private String applyStatus;
 

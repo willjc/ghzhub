@@ -230,12 +230,13 @@
 				// 后端现在返回的是包含完整信息的Map，直接使用即可
 				// 状态映射
 				const statusMap = {
-					'0': 'pending',        // 审批中
+					'0': 'pending',        // 审批中（物业待审批）
 					'1': 'approved',       // 审批通过（待用户确认）
 					'2': 'rejected',       // 审批驳回
 					'3': 'cancelled',      // 已取消
 					'4': 'wait_confirm',   // 待确认
-					'5': 'confirmed_done'  // 已确认
+					'5': 'confirmed_done', // 已确认
+					'6': 'pending'         // 待管理员审批（用户侧仍显示审批中）
 				}
 
 				return {

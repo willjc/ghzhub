@@ -137,7 +137,7 @@
 				years: [],
 				months: [],
 				days: [],
-				minDateObj: null // 最早可选日期 = 今天+1
+				minDateObj: null // 最早可选日期 = 今天
 			}
 		},
 		onLoad(options) {
@@ -276,10 +276,9 @@
 				return ''
 			},
 
-			// 初始化日期选择器（最早可选 = 今天+1天）
+			// 初始化日期选择器（最早可选 = 今天）
 			initDatePicker() {
 				const minDate = new Date()
-				minDate.setDate(minDate.getDate() + 1) // 明天
 				this.minDateObj = {
 					year: minDate.getFullYear(),
 					month: minDate.getMonth() + 1,
@@ -291,7 +290,7 @@
 					this.years.push(i)
 				}
 				this.months = Array.from({ length: 12 }, (_, i) => i + 1)
-				// 默认定位到明天
+				// 默认定位到今天
 				this.datePickerValue = [
 					0,
 					this.minDateObj.month - 1,

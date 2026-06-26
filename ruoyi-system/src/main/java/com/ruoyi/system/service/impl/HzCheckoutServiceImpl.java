@@ -482,6 +482,8 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                 return "待确认";
             case "5":
                 return "已确认";
+            case "6":
+                return "审批中"; // 待管理员审批，对租户仍显示“审批中”
             default:
                 return "未知";
         }
@@ -524,6 +526,47 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
     @Override
     @Transactional
     public int approveCheckoutApply(Long applyId, String applyStatus, String approveOpinion, String approveBy) {
+        // 查询当前退租申请
+        HzCheckoutApply apply = checkoutApplyMapper.selectById(applyId);
+        if (apply == null) {
+            throw new com.ruoyi.common.exception.ServiceException("退租申请不存在");
+        }
+
+        boolean isProperty = SecurityUtils.isPropertyRole();
+        String currentStatus = apply.getApplyStatus();
+
+        // 物业角色：只能审批 status=0（审批中）的申请，通过后进入 status=6（待管理员审批）
+        if (isProperty) {
+            if (!"0".equals(currentStatus)) {
+                throw new com.ruoyi.common.exception.ServiceException("当前状态不允许物业审批");
+            }
+            // 项目归属校验
+            validateProjectOwnership(apply.getHouseId());
+
+            if ("1".equals(applyStatus)) {
+                // 物业审批通过 → 进入待管理员审批
+                applyStatus = "6";
+            } else if ("2".equals(applyStatus)) {
+                // 物业驳回
+                applyStatus = "2";
+            } else {
+                throw new com.ruoyi.common.exception.ServiceException("非法的审批状态");
+            }
+        } else {
+            // 管理员/超管：只能审批 status=6（待管理员审批）的申请
+            if (!"6".equals(currentStatus)) {
+                throw new com.ruoyi.common.exception.ServiceException("当前状态不允许管理员审批");
+            }
+            // applyStatus 保持传入值（1=通过 → 进入待确认4, 2=驳回）
+            if ("1".equals(applyStatus)) {
+                applyStatus = "4"; // 管理员通过后进入待确认
+            } else if ("2".equals(applyStatus)) {
+                applyStatus = "2"; // 管理员驳回
+            } else {
+                throw new com.ruoyi.common.exception.ServiceException("非法的审批状态");
+            }
+        }
+
         LambdaUpdateWrapper<HzCheckoutApply> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(HzCheckoutApply::getApplyId, applyId)
                .set(HzCheckoutApply::getApplyStatus, applyStatus)
@@ -531,6 +574,26 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                .set(HzCheckoutApply::getApproveTime, new Date())
                .set(HzCheckoutApply::getApproveOpinion, approveOpinion);
         return this.update(wrapper) ? 1 : 0;
+    }
+
+    /**
+     * 校验当前物业用户是否有权操作该房源所属项目
+     */
+    private void validateProjectOwnership(Long houseId) {
+        List<Long> projectIds = roleProjectService.getCurrentUserProjectIds();
+        if (projectIds == null) {
+            return; // 管理员不限制
+        }
+        if (houseId == null) {
+            throw new com.ruoyi.common.exception.ServiceException("退租申请缺少房源信息");
+        }
+        HzHouse house = houseMapper.selectById(houseId);
+        if (house == null || house.getProjectId() == null) {
+            throw new com.ruoyi.common.exception.ServiceException("房源信息不存在");
+        }
+        if (!projectIds.contains(house.getProjectId())) {
+            throw new com.ruoyi.common.exception.ServiceException("无权操作非归属项目的退租申请");
+        }
     }
 
     @Override
@@ -547,6 +610,17 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
         String approveBy = hzCheckoutApply.getApproveBy();
         if (StringUtils.isEmpty(approveBy)) {
             approveBy = SecurityUtils.getUsername();
+        }
+
+        // 两级审批状态判断：物业→status=6(待管理员审批)，管理员→status=4(待确认)
+        boolean isProperty = SecurityUtils.isPropertyRole();
+        String targetStatus;
+        if (isProperty) {
+            targetStatus = "6"; // 物业审批通过，等待管理员审批
+            // 项目归属校验
+            validateProjectOwnership(hzCheckoutApply.getHouseId());
+        } else {
+            targetStatus = "4"; // 管理员审批通过，等待用户确认
         }
 
         // 保存管理员计算的费用信息和审批信息
@@ -569,7 +643,7 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                .set(HzCheckoutApply::getApproveOpinion, hzCheckoutApply.getApproveOpinion())
                .set(HzCheckoutApply::getApproveBy, approveBy)
                .set(HzCheckoutApply::getApproveTime, new java.util.Date())
-               .set(HzCheckoutApply::getApplyStatus, "4"); // 4=待确认
+               .set(HzCheckoutApply::getApplyStatus, targetStatus);
         return this.update(wrapper) ? 1 : 0;
     }
 
