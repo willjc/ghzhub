@@ -155,6 +155,10 @@ public class HzCheckIn extends BaseEntity {
     @TableField(exist = false)
     private String houseName;
 
+    /** 房间号（仅查询参数透传） */
+    @TableField(exist = false)
+    private String houseNo;
+
     /** 真实姓名 hz_user.real_name */
     @TableField(exist = false)
     private String realName;
@@ -481,6 +485,14 @@ public class HzCheckIn extends BaseEntity {
 
     public String getHouseName() {
         return houseName;
+    }
+
+    public void setHouseNo(String houseNo) {
+        this.houseNo = houseNo;
+    }
+
+    public String getHouseNo() {
+        return houseNo;
     }
 
     public String getRealName() {

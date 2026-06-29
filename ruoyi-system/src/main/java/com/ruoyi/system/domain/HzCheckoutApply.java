@@ -167,8 +167,22 @@ public class HzCheckoutApply extends BaseEntity {
     @TableField(exist = false)
     private String tenantName;
 
+    /** 所属项目ID（仅查询参数透传） */
+    @TableField(exist = false)
+    private Long projectId;
+
+    /** 房间号（仅查询参数透传） */
+    @TableField(exist = false)
+    private String houseNo;
+
     public void setTenantName(String tenantName) { this.tenantName = tenantName; }
     public String getTenantName() { return tenantName; }
+
+    public void setProjectId(Long projectId) { this.projectId = projectId; }
+    public Long getProjectId() { return projectId; }
+
+    public void setHouseNo(String houseNo) { this.houseNo = houseNo; }
+    public String getHouseNo() { return houseNo; }
 
     public void setApplyId(Long applyId) { this.applyId = applyId; }
     public Long getApplyId() { return applyId; }

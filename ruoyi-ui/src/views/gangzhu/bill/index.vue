@@ -63,6 +63,14 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="房间号" prop="houseNo">
+        <el-input
+          v-model="queryParams.houseNo"
+          placeholder="请输入房间号"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="配租方式" prop="allocationType">
         <el-select v-model="queryParams.allocationType" placeholder="请选择配租方式" clearable style="width: 160px">
           <el-option label="常规分配" value="常规分配" />
@@ -113,6 +121,7 @@
       <el-table-column label="账单编号" align="center" prop="billNo" min-width="180" show-overflow-tooltip />
       <el-table-column label="租户姓名" align="center" prop="tenantName" width="120" show-overflow-tooltip />
       <el-table-column label="所属项目" align="center" prop="projectName" width="140" show-overflow-tooltip />
+      <el-table-column label="房间号" align="center" prop="houseNo" width="100" />
       <el-table-column label="所属合同" align="center" prop="contractNo" width="160" show-overflow-tooltip />
       <el-table-column label="配租方式" align="center" prop="allocationType" width="100">
         <template slot-scope="scope">
@@ -265,6 +274,7 @@ export default {
         billStatus: null,
         contractNo: null,
         houseCode: null,
+        houseNo: null,
         projectId: null,
         allocationType: null,
       },
@@ -292,6 +302,9 @@ export default {
       }
       if (this.queryParams.houseCode) {
         this.queryParams.params["houseCode"] = this.queryParams.houseCode;
+      }
+      if (this.queryParams.houseNo) {
+        this.queryParams.params["houseNo"] = this.queryParams.houseNo;
       }
       if (this.queryParams.projectId) {
         this.queryParams.params["projectId"] = this.queryParams.projectId;

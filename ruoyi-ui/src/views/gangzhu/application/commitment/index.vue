@@ -9,13 +9,15 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="项目名称" prop="projectId">
-        <el-input
-          v-model="queryParams.projectName"
-          placeholder="请输入项目名称"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
+      <el-form-item label="所属项目" prop="projectId">
+        <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable filterable style="width: 200px">
+          <el-option
+            v-for="project in projectList"
+            :key="project.projectId"
+            :label="project.projectName"
+            :value="project.projectId"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="承诺书类型" prop="commitmentType">
         <el-select v-model="queryParams.commitmentType" placeholder="请选择承诺书类型" clearable>
@@ -153,6 +155,7 @@
 
 <script>
 import { listCommitment, getCommitment, delCommitment } from "@/api/gangzhu/commitment";
+import { listProject } from "@/api/gangzhu/project";
 
 export default {
   name: "Commitment",
@@ -172,6 +175,8 @@ export default {
       total: 0,
       // 承诺书记录表格数据
       commitmentList: [],
+      // 项目列表
+      projectList: [],
       // 弹出层标题
       title: "",
       // 是否显示详情弹出层
@@ -188,15 +193,21 @@ export default {
         projectId: null,
         commitmentType: null,
         status: null,
-        userNickname: null,
-        projectName: null
+        userNickname: null
       }
     };
   },
   created() {
     this.getList();
+    this.getProjectList();
   },
   methods: {
+    /** 查询项目列表 */
+    getProjectList() {
+      listProject({ pageNum: 1, pageSize: 1000, status: "0" }).then(response => {
+        this.projectList = response.rows || response.data || [];
+      });
+    },
     /** 查询承诺书记录列表 */
     getList() {
       this.loading = true;

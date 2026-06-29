@@ -27,6 +27,14 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item label="房间号" prop="houseNo">
+        <el-input
+          v-model="queryParams.houseNo"
+          placeholder="请输入房间号"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="联系电话" prop="phone">
         <el-input
           v-model="queryParams.phone"
@@ -72,6 +80,7 @@
       <el-table-column label="真实姓名" align="center" prop="realName" width="100" show-overflow-tooltip />
       <el-table-column label="联系电话" align="center" prop="phone" width="120" show-overflow-tooltip />
       <el-table-column label="项目名称" align="center" prop="projectName" width="140" show-overflow-tooltip />
+      <el-table-column label="房间号" align="center" prop="houseName" width="100" />
       <el-table-column label="房源位置" align="center" width="160" show-overflow-tooltip>
         <template slot-scope="scope">
           {{ formatLocation(scope.row) }}
@@ -330,6 +339,7 @@ export default {
         checkinNo: null,
         realName: null,
         projectId: null,
+        houseNo: null,
         phone: null,
         status: null,
       }
@@ -371,6 +381,7 @@ export default {
         checkinNo: null,
         realName: null,
         projectId: null,
+        houseNo: null,
         phone: null,
         status: null,
       };

@@ -27,6 +27,24 @@
           <el-option label="已确认" value="5" />
         </el-select>
       </el-form-item>
+      <el-form-item label="所属项目" prop="projectId">
+        <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable filterable style="width: 200px">
+          <el-option
+            v-for="project in projectList"
+            :key="project.projectId"
+            :label="project.projectName"
+            :value="project.projectId"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="房间号" prop="houseNo">
+        <el-input
+          v-model="queryParams.houseNo"
+          placeholder="请输入房间号"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -41,6 +59,8 @@
       <el-table-column label="申请ID" align="center" prop="applyId" width="80" />
       <el-table-column label="姓名" align="center" prop="tenantName" width="100" show-overflow-tooltip />
       <el-table-column label="合同编号" align="center" prop="contractNo" width="150" show-overflow-tooltip />
+      <el-table-column label="项目名称" align="center" prop="projectName" width="140" show-overflow-tooltip />
+      <el-table-column label="房间号" align="center" prop="houseNo" width="100" />
       <el-table-column label="房源" align="center" min-width="220" show-overflow-tooltip>
         <template slot-scope="scope">
           {{ formatHouseInfo(scope.row) }}
@@ -694,6 +714,7 @@
 
 <script>
 import { listCheckout, getCheckout, delCheckout, approveCheckout, calculateCheckout, getCheckoutRecordByApplyId, getContractBills, calculateRentRefund } from "@/api/gangzhu/checkout";
+import { listProject } from "@/api/gangzhu/project";
 
 export default {
   name: "CheckOut",
@@ -703,6 +724,7 @@ export default {
       showSearch: true,
       total: 0,
       checkOutList: [],
+      projectList: [],
 
       // 查询参数
       queryParams: {
@@ -711,6 +733,8 @@ export default {
         applyId: null,
         applyStatus: null,
         tenantName: null,
+        projectId: null,
+        houseNo: null,
       },
 
       // 当前选中行
@@ -766,6 +790,7 @@ export default {
   },
   created() {
     this.getList();
+    this.getProjectList();
   },
   computed: {
     // 当前用户是否为物业角色
@@ -927,6 +952,12 @@ export default {
         this.checkOutList = response.rows;
         this.total = response.total;
         this.loading = false;
+      });
+    },
+    /** 查询项目列表 */
+    getProjectList() {
+      listProject({ pageNum: 1, pageSize: 1000, status: "0" }).then(response => {
+        this.projectList = response.rows || response.data || [];
       });
     },
 

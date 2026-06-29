@@ -153,6 +153,30 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
             wrapper.in(HzCheckoutApply::getContractId, nameContractIds);
         }
 
+        // 所属项目过滤：通过houseId关联house表的project_id
+        if (hzCheckoutApply.getProjectId() != null) {
+            wrapper.inSql(HzCheckoutApply::getHouseId,
+                    "SELECT house_id FROM hz_house WHERE project_id = " + hzCheckoutApply.getProjectId());
+        }
+
+        // 房间号过滤：先查匹配的house_id，再过滤退租申请
+        if (StringUtils.isNotEmpty(hzCheckoutApply.getHouseNo())) {
+            LambdaQueryWrapper<HzHouse> houseWrapper = new LambdaQueryWrapper<>();
+            houseWrapper.like(HzHouse::getHouseNo, hzCheckoutApply.getHouseNo())
+                       .select(HzHouse::getHouseId);
+            List<Long> matchedHouseIds = houseMapper.selectList(houseWrapper)
+                    .stream().map(HzHouse::getHouseId).collect(java.util.stream.Collectors.toList());
+            if (matchedHouseIds.isEmpty()) {
+                TableDataInfo empty = new TableDataInfo();
+                empty.setRows(new ArrayList<>());
+                empty.setTotal(0);
+                empty.setCode(200);
+                empty.setMsg("查询成功");
+                return empty;
+            }
+            wrapper.in(HzCheckoutApply::getHouseId, matchedHouseIds);
+        }
+
         IPage<HzCheckoutApply> pageResult = this.page(page, wrapper);
         List<HzCheckoutApply> applyList = pageResult.getRecords();
 
