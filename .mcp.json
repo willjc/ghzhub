@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "mcp_server_mysql": {
+      "command": "npx",
+      "args": ["-y", "@benborla29/mcp-server-mysql"],
+      "env": {
+        "MYSQL_HOST": "36.133.39.148",
+        "MYSQL_PORT": "33061",
+        "MYSQL_USER": "ghzuser",
+        "MYSQL_PASS": "!aNJ-7vTE+Tsddce",
+        "MYSQL_DB": "ghz"
+      }
+    }
+  }
+}

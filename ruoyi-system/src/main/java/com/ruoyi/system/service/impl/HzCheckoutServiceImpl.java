@@ -1146,16 +1146,25 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
         long periodDays = ChronoUnit.DAYS.between(ps, pe) + 1;     // 当期天数（含两端）
         long stayDays = ChronoUnit.DAYS.between(ps, planDate) + 1;   // 入住天数（含两端）
 
-        // 关键：先保留 2 位小数（HALF_UP）再乘入住天数
-        BigDecimal dailyRent = monthlyRent.divide(BigDecimal.valueOf(periodDays), 2, RoundingMode.HALF_UP);
-        BigDecimal currentPeriodPay = dailyRent.multiply(BigDecimal.valueOf(stayDays))
-                                                .setScale(2, RoundingMode.HALF_UP);
-
-        detail.append(String.format("退租日所在期：第%d期(%s～%s)，共%d天\n",
-                currentBill.getBillSeq() != null ? currentBill.getBillSeq() : 0, ps, pe, periodDays));
-        detail.append(String.format("日租金 = ¥%s / %d = ¥%s\n", monthlyRent.toPlainString(), periodDays, dailyRent.toPlainString()));
-        detail.append(String.format("入住天数 = %d 天，当期应付 = ¥%s × %d = ¥%s\n",
-                stayDays, dailyRent.toPlainString(), stayDays, currentPeriodPay.toPlainString()));
+        BigDecimal currentPeriodPay;
+        if (stayDays >= periodDays) {
+            // 住满整期：直接使用月租金，避免日租金四舍五入导致误差
+            currentPeriodPay = monthlyRent.setScale(2, RoundingMode.HALF_UP);
+            detail.append(String.format("退租日所在期：第%d期(%s～%s)，共%d天\n",
+                    currentBill.getBillSeq() != null ? currentBill.getBillSeq() : 0, ps, pe, periodDays));
+            detail.append(String.format("入住天数 = %d 天（住满整期），当期应付 = ¥%s\n",
+                    stayDays, currentPeriodPay.toPlainString()));
+        } else {
+            // 未满一期：按日精算
+            BigDecimal dailyRent = monthlyRent.divide(BigDecimal.valueOf(periodDays), 2, RoundingMode.HALF_UP);
+            currentPeriodPay = dailyRent.multiply(BigDecimal.valueOf(stayDays))
+                                            .setScale(2, RoundingMode.HALF_UP);
+            detail.append(String.format("退租日所在期：第%d期(%s～%s)，共%d天\n",
+                    currentBill.getBillSeq() != null ? currentBill.getBillSeq() : 0, ps, pe, periodDays));
+            detail.append(String.format("日租金 = ¥%s / %d = ¥%s\n", monthlyRent.toPlainString(), periodDays, dailyRent.toPlainString()));
+            detail.append(String.format("入住天数 = %d 天，当期应付 = ¥%s × %d = ¥%s\n",
+                    stayDays, dailyRent.toPlainString(), stayDays, currentPeriodPay.toPlainString()));
+        }
 
         boolean currentPaid = "1".equals(currentBill.getBillStatus());
         if (currentPaid) {

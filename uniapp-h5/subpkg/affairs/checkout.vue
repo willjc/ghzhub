@@ -276,19 +276,12 @@
 					uni.navigateTo({
 						url: `/subpkg/affairs/checkout-process?type=${this.housingType}&recordId=${item.recordId}`
 					})
-				} else if (item.contractId) {
-					// 迁移合同兜底：无入住记录，传 contractId + 展示信息
-					const params = [
-						`type=${this.housingType}`,
-						`contractId=${item.contractId}`,
-						`community=${encodeURIComponent(item.community || '')}`,
-						`room=${encodeURIComponent(item.room || '')}`,
-						`rentPeriod=${encodeURIComponent(item.rentPeriod || '-')}`,
-						`rent=${encodeURIComponent(item.rent || '-')}`,
-						`deposit=${encodeURIComponent(item.deposit || '-')}`
-					].join('&')
-					uni.navigateTo({
-						url: `/subpkg/affairs/checkout-process?${params}`
+				} else {
+					// 无入住记录，无法办理退租
+					uni.showModal({
+						title: '提示',
+						content: '该合同尚未办理入住，无法申请退租，请先办理入住手续',
+						showCancel: false
 					})
 				}
 			},
