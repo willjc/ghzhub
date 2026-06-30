@@ -6,6 +6,7 @@ import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzCheckoutApply;
 import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.service.IHzCheckInService;
 import com.ruoyi.system.service.IHzCheckoutService;
 import com.ruoyi.system.service.IHzContractService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ public class HzCheckOutAppController extends BaseController {
 
     @Autowired
     private IHzContractService contractService;
+
+    @Autowired
+    private IHzCheckInService checkInService;
 
     /**
      * 获取用户的退租申请列表
@@ -155,6 +159,11 @@ public class HzCheckOutAppController extends BaseController {
         }
         if ("1".equals(contract.getIsRenewed())) {
             return error("该合同已续租，押金已转移至续租合同，无法办理退租。请从最新的续租合同办理退租。");
+        }
+
+        // 校验该合同是否已办理入住（无入住记录不允许退租）
+        if (checkInService.selectCheckInByContractId(contractId) == null) {
+            return error("该合同尚未办理入住，无法申请退租，请先办理入住手续");
         }
 
         // 从token中获取租户ID
