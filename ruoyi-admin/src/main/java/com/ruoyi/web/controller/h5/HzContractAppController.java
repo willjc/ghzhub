@@ -408,18 +408,8 @@ public class HzContractAppController extends BaseController {
             return error("项目不存在");
         }
 
-        // 3. 获取楼栋和单元信息，拼接完整地址
-        HzBuilding building = buildingMapper.selectById(house.getBuildingId());
-        HzUnit unit = unitMapper.selectById(house.getUnitId());
-
-        String houseAddress = project.getAddress();
-        if (building != null) {
-            houseAddress += building.getBuildingName();
-        }
-        if (unit != null) {
-            houseAddress += unit.getUnitName();
-        }
-        houseAddress += house.getHouseNo();
+        // 3. 拼接完整地址（自动去重楼栋名）
+        String houseAddress = buildHouseAddress(project, house);
 
         // 4. 判断合同类型（根据项目类型）
         String contractType = project.getProjectType(); // 1=人才公寓, 2=保租房, 3=市场租赁
@@ -614,18 +604,8 @@ public class HzContractAppController extends BaseController {
 
             HzProject project = projectMapper.selectById(projectId);
 
-            // 拼接完整地址
-            HzBuilding building = buildingMapper.selectById(house.getBuildingId());
-            HzUnit unit = unitMapper.selectById(house.getUnitId());
-
-            String houseAddress = project.getAddress();
-            if (building != null) {
-                houseAddress += building.getBuildingName();
-            }
-            if (unit != null) {
-                houseAddress += unit.getUnitName();
-            }
-            houseAddress += house.getHouseNo();
+            // 拼接完整地址（自动去重楼栋名）
+            String houseAddress = buildHouseAddress(project, house);
 
             // userId 已在方法开头从请求参数或token中获取
 
@@ -917,18 +897,8 @@ public class HzContractAppController extends BaseController {
             HzHouse house = houseMapper.selectById(houseId);
             HzProject project = projectMapper.selectById(projectId);
 
-            // 拼接完整地址
-            HzBuilding building = buildingMapper.selectById(house.getBuildingId());
-            HzUnit unit = unitMapper.selectById(house.getUnitId());
-
-            String houseAddress = project.getAddress();
-            if (building != null) {
-                houseAddress += building.getBuildingName();
-            }
-            if (unit != null) {
-                houseAddress += unit.getUnitName();
-            }
-            houseAddress += house.getHouseNo();
+            // 拼接完整地址（自动去重楼栋名）
+            String houseAddress = buildHouseAddress(project, house);
 
             // userId 已在方法开头从请求参数或token中获取
 
@@ -1313,18 +1283,8 @@ public class HzContractAppController extends BaseController {
      * 生成入驻记录
      */
     private void generateCheckInRecord(HzContract contract, HzHouse house, HzProject project, HzTenant tenant) {
-        // 拼接完整地址
-        HzBuilding building = buildingMapper.selectById(house.getBuildingId());
-        HzUnit unit = unitMapper.selectById(house.getUnitId());
-
-        String fullAddress = project.getAddress();
-        if (building != null) {
-            fullAddress += building.getBuildingName();
-        }
-        if (unit != null) {
-            fullAddress += unit.getUnitName();
-        }
-        fullAddress += house.getHouseNo();
+        // 拼接完整地址（自动去重楼栋名）
+        String fullAddress = buildHouseAddress(project, house);
 
         // 创建入驻记录
         HzCheckIn checkIn = new HzCheckIn();
@@ -1477,5 +1437,24 @@ public class HzContractAppController extends BaseController {
                 conn.disconnect();
             }
         }
+    }
+
+    /**
+     * 拼接房源完整地址：项目地址 + 楼栋 + 单元 + 房间号
+     * 自动去重：若项目地址已包含楼栋名（如台科公寓地址已含"19号楼"），则跳过楼栋拼接
+     */
+    private String buildHouseAddress(HzProject project, HzHouse house) {
+        String addr = project.getAddress() != null ? project.getAddress() : "";
+        HzBuilding building = buildingMapper.selectById(house.getBuildingId());
+        HzUnit unit = unitMapper.selectById(house.getUnitId());
+        if (building != null && building.getBuildingName() != null
+                && !addr.endsWith(building.getBuildingName())) {
+            addr += building.getBuildingName();
+        }
+        if (unit != null && unit.getUnitName() != null) {
+            addr += unit.getUnitName();
+        }
+        addr += house.getHouseNo();
+        return addr;
     }
 }

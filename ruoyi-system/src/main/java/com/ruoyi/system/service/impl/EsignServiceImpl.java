@@ -225,12 +225,33 @@ public class EsignServiceImpl implements EsignService {
 
     @Override
     public String initSign(Long contractId, String psnId, String redirectUrl) throws Exception {
+        HzContract contract = contractMapper.selectById(contractId);
+        if (contract == null) throw new RuntimeException("合同不存在: " + contractId);
+
+        // 如果已有签署流，直接复用获取签署链接（避免重复创建文件/流导致e签宝报错）
+        String existingFlowId = contract.getEsignFlowId();
+        if (existingFlowId != null && !existingFlowId.isEmpty()) {
+            try {
+                HzUser signUser = userMapper.selectById(contract.getTenantId());
+                String mobile = signUser != null ? signUser.getPhone() : "";
+                String signUrl = getSignUrl(existingFlowId, mobile, redirectUrl);
+                log.info("复用已有签署流 contractId={}, flowId={}", contractId, existingFlowId);
+                return signUrl;
+            } catch (Exception e) {
+                log.warn("已有签署流获取URL失败，将重新创建 contractId={}, flowId={}, error={}",
+                        contractId, existingFlowId, e.getMessage());
+                // 清除旧flow，后续重新创建
+                contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                        .eq(HzContract::getContractId, contractId)
+                        .set(HzContract::getEsignFlowId, null));
+            }
+        }
+
         // 1. 模板填充生成文件
         String fileId = createFileByTemplate(contractId);
 
         // 2. 创建签署流
-        HzContract contract = contractMapper.selectById(contractId);
-        if (contract == null) throw new RuntimeException("合同不存在: " + contractId);
+        // contract 已在方法开头查询
 
         String jsonParm = "{\"docs\":[{\"fileId\":\"" + fileId + "\",\"fileName\":\"港好住租赁合同.pdf\"}],"
                 + "\"signFlowConfig\":{\"signFlowTitle\":\"港好住租赁合同-" + contractId + "\",\"autoFinish\":true,"
@@ -844,6 +865,11 @@ public class EsignServiceImpl implements EsignService {
         log.info("e签宝回调验签通过");
         JsonObject nb = gson.fromJson(body, JsonObject.class);
         String action = nb.get("action").getAsString();
+        // 非签署回调（如 AUTH_PASS 实名认证回调）无 signFlowId，直接跳过
+        if (!nb.has("signFlowId") && !nb.has("flowId")) {
+            log.info("e签宝回调非签署类型，跳过 action={}", action);
+            return;
+        }
         // e签宝V3回调使用signFlowId字段
         String flowId = nb.has("signFlowId") ? nb.get("signFlowId").getAsString() : nb.get("flowId").getAsString();
         int signResult = nb.has("signResult") ? nb.get("signResult").getAsInt() : -1;
