@@ -93,6 +93,24 @@ public class HzBillAppController extends BaseController {
                 }
             }
 
+            // 租金账单（bill_type='2'）按期数顺序校验：不允许跳缴
+            if ("2".equals(bill.getBillType()) && bill.getContractId() != null) {
+                Integer currentSeq = bill.getBillSeq();
+                if (currentSeq != null && currentSeq > 1) {
+                    LambdaQueryWrapper<HzBill> seqWrapper = new LambdaQueryWrapper<>();
+                    seqWrapper.eq(HzBill::getContractId, bill.getContractId())
+                              .eq(HzBill::getBillType, "2")
+                              .ne(HzBill::getBillStatus, "1")
+                              .eq(HzBill::getDelFlag, "0")
+                              .lt(HzBill::getBillSeq, currentSeq)
+                              .last("LIMIT 1");
+                    HzBill earlierUnpaid = billMapper.selectOne(seqWrapper);
+                    if (earlierUnpaid != null) {
+                        return error("请先缴纳第" + earlierUnpaid.getBillSeq() + "期房租后再支付本期");
+                    }
+                }
+            }
+
             // 检查支付金额
             if (payAmount.compareTo(bill.getUnpaidAmount()) != 0) {
                 return error("支付金额不正确");

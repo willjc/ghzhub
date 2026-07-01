@@ -27,7 +27,7 @@
 						<view class="bill-header">
 							<text class="bill-title">账单期数：{{ bill.period }}</text>
 							<view class="bill-status" :class="bill.locked ? 'status-locked' : (statusClassMap[bill.status] || '')">
-								<text class="status-text" :class="bill.locked ? 'status-locked' : (statusClassMap[bill.status] || '')">{{ bill.locked ? (!depositPaid ? '需先缴押金' : '需先上传资料') : bill.statusText }}</text>
+								<text class="status-text" :class="bill.locked ? 'status-locked' : (statusClassMap[bill.status] || '')">{{ bill.locked ? (bill.lockMessage || (!depositPaid ? '需先缴押金' : '需先上传资料')) : bill.statusText }}</text>
 							</view>
 						</view>
 						<view class="bill-info">
@@ -64,7 +64,7 @@
 						</view>
 						<!-- 遮罩：押金未缴或资料未提交时覆盖整张账单卡片 -->
 						<view class="bill-lock-mask" v-if="bill.locked" @click.stop="onLockedBillTap(bill)">
-							<text class="bill-lock-tip">{{ !depositPaid ? '请先缴纳押金' : '请先上传入住资料' }}</text>
+							<text class="bill-lock-tip">{{ bill.lockMessage || (!depositPaid ? '请先缴纳押金' : '请先上传入住资料') }}</text>
 						</view>
 					</view>
 				</view>
@@ -260,6 +260,18 @@
 							mappedBills = mappedBills.filter(b => b.billType === this.filterBillType)
 						}
 
+						// 租金账单按期数顺序锁定：只有最小未付期数可选，后续期数锁定
+						const unpaidRentBills = mappedBills.filter(b => b.billType === '2' && b.status === 'unpaid' && !b.locked)
+						if (unpaidRentBills.length > 1) {
+							const minSeq = Math.min(...unpaidRentBills.map(b => b.billSeq || 0))
+							unpaidRentBills.forEach(b => {
+								if ((b.billSeq || 0) > minSeq) {
+									b.locked = true
+									b.lockMessage = '请先缴纳第' + minSeq + '期房租'
+								}
+							})
+						}
+
 						this.billList = mappedBills.filter(bill => bill.status === 'unpaid')
 						this.historyBillList = mappedBills.filter(bill => bill.status === 'paid')
 					} else {
@@ -369,11 +381,13 @@
 					id: bill.billId,
 					billNo: bill.billNo,        // 微信支付按 billNo 查账单
 					billType: bill.billType,
+					billSeq: bill.billSeq || 0,  // 期数（用于顺序锁定）
 					period: period,
 					status: status,
 					statusText: statusText,
 					// 押金未缴或资料未提交时，租金账单锁定（不可选）
 					locked: bill.billType === '2' && (!this.depositPaid || !this.materialSubmitted),
+					lockMessage: '',  // 锁定原因文案（后处理填充）
 					community: bill.projectName || '港好住',
 					contractNo: bill.contractNo || '',
 					room: fullRoomNo || '-',
