@@ -402,6 +402,7 @@ public class ContractExpireTask {
         // 扫描所有未支付、已下单到微信、且距下单超过 5 分钟的账单
         // 不限 bill_type：押金（原 tryRecoverPaymentFromWechat 仅在失效扫描时才被动调用）、租金、水电燃、物业费全部覆盖
         // 限制 update_time 在 24 小时内，避免重复扫描老账单造成微信查单压力
+        // 同时包含 update_time 为 NULL 的账单（创建后从未被更新过，回调可能丢失）
         java.time.LocalDateTime windowStart = java.time.LocalDateTime.now().minusDays(1);
         Date windowStartDate = Date.from(windowStart.atZone(ZoneId.systemDefault()).toInstant());
 
@@ -411,7 +412,9 @@ public class ContractExpireTask {
                         .eq(HzBill::getDelFlag, "0")
                         .isNotNull(HzBill::getLastOutTradeNo)
                         .ne(HzBill::getLastOutTradeNo, "")
-                        .ge(HzBill::getUpdateTime, windowStartDate));
+                        .and(w -> w.ge(HzBill::getUpdateTime, windowStartDate)
+                                   .or()
+                                   .isNull(HzBill::getUpdateTime)));
 
         if (candidates == null || candidates.isEmpty()) {
             return 0;

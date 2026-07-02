@@ -260,14 +260,26 @@
 							mappedBills = mappedBills.filter(b => b.billType === this.filterBillType)
 						}
 
-						// 租金账单按期数顺序锁定：只有最小未付期数可选，后续期数锁定
+						// 租金账单按期数顺序锁定：按合同分组，每组只有最小未付期数可选，后续期数锁定
 						const unpaidRentBills = mappedBills.filter(b => b.billType === '2' && b.status === 'unpaid' && !b.locked)
 						if (unpaidRentBills.length > 1) {
-							const minSeq = Math.min(...unpaidRentBills.map(b => b.billSeq || 0))
+							// 按合同ID分组
+							const contractGroups = {}
 							unpaidRentBills.forEach(b => {
-								if ((b.billSeq || 0) > minSeq) {
-									b.locked = true
-									b.lockMessage = '请先缴纳第' + minSeq + '期房租'
+								const cid = b.contractId || 0
+								if (!contractGroups[cid]) contractGroups[cid] = []
+								contractGroups[cid].push(b)
+							})
+							// 每个合同组内独立计算最小未付期数并锁定
+							Object.values(contractGroups).forEach(group => {
+								if (group.length > 1) {
+									const minSeq = Math.min(...group.map(b => b.billSeq || 0))
+									group.forEach(b => {
+										if ((b.billSeq || 0) > minSeq) {
+											b.locked = true
+											b.lockMessage = '请先缴纳第' + minSeq + '期房租'
+										}
+									})
 								}
 							})
 						}
@@ -382,6 +394,7 @@
 					billNo: bill.billNo,        // 微信支付按 billNo 查账单
 					billType: bill.billType,
 					billSeq: bill.billSeq || 0,  // 期数（用于顺序锁定）
+					contractId: bill.contractId,  // 合同ID（用于按合同分组锁定）
 					period: period,
 					status: status,
 					statusText: statusText,
