@@ -148,11 +148,13 @@ public class WechatPayServiceImpl implements WechatPayService {
     @Override
     public Map<String, Object> parseNotify(byte[] requestBody, Map<String, String> headers) throws Exception {
         // 构建 RequestParam，SDK 要求原始报文体 + 四个关键 Header
+        // 注意：HTTP头名不区分大小写，但HashMap.get()是大小写敏感的
+        // 微信可能发送 Wechatpay-Serial 或 wechatpay-serial，统一用不区分大小写的方式获取
         RequestParam requestParam = new RequestParam.Builder()
-                .serialNumber(headers.get("Wechatpay-Serial"))
-                .nonce(headers.get("Wechatpay-Nonce"))
-                .signature(headers.get("Wechatpay-Signature"))
-                .timestamp(headers.get("Wechatpay-Timestamp"))
+                .serialNumber(getHeaderIgnoreCase(headers, "Wechatpay-Serial"))
+                .nonce(getHeaderIgnoreCase(headers, "Wechatpay-Nonce"))
+                .signature(getHeaderIgnoreCase(headers, "Wechatpay-Signature"))
+                .timestamp(getHeaderIgnoreCase(headers, "Wechatpay-Timestamp"))
                 .body(new String(requestBody, "UTF-8"))
                 .build();
 
@@ -218,5 +220,22 @@ public class WechatPayServiceImpl implements WechatPayService {
         result.put("out_refund_no", refund.getOutRefundNo());
         result.put("status", refund.getStatus() != null ? refund.getStatus().name() : null);
         return result;
+    }
+
+    /**
+     * 不区分大小写获取HTTP头值
+     * 微信支付回调可能发送 Wechatpay-Serial 或 wechatpay-serial，HashMap.get()是大小写敏感的
+     */
+    private String getHeaderIgnoreCase(Map<String, String> headers, String name) {
+        // 先精确匹配
+        String value = headers.get(name);
+        if (value != null) return value;
+        // 再不区分大小写匹配
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            if (entry.getKey() != null && entry.getKey().equalsIgnoreCase(name)) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 }
