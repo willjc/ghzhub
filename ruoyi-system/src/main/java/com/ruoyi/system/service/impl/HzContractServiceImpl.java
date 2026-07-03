@@ -394,6 +394,23 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
 
     @Override
     public int insertContract(HzContract contract) {
+        // 一人一户校验：租户已有活跃合同（已签署/履行中）且非同一房源续租，则拦截
+        if (contract.getTenantId() != null) {
+            List<HzContract> activeContracts = baseMapper.selectList(
+                    new LambdaQueryWrapper<HzContract>()
+                            .eq(HzContract::getTenantId, contract.getTenantId())
+                            .in(HzContract::getContractStatus, "0", "1", "2", "3")
+                            .eq(HzContract::getDelFlag, "0"));
+            if (activeContracts != null && !activeContracts.isEmpty()) {
+                // 同房源续租放行（旧合同尚未标记已续租），不同房源的活跃合同一律拦截
+                boolean hasBlockingContract = activeContracts.stream()
+                        .anyMatch(ac -> !ac.getHouseId().equals(contract.getHouseId())
+                                || "1".equals(ac.getIsRenewed()));
+                if (hasBlockingContract) {
+                    throw new RuntimeException("该租户已有活跃合同，不可同时签约新房源");
+                }
+            }
+        }
         contract.setDelFlag("0");
         contract.setContractStatus("0"); // 默认草稿状态
         if (StringUtils.isEmpty(contract.getContractNo())) {
