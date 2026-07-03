@@ -244,8 +244,15 @@ public class HzRefundController extends BaseController {
                       .append(" 单号:").append(outRefundDeposit).append("; ");
                 logger.info("退款管理-押金退款成功 refundId={} resp={}", refundId, r1);
             } catch (Exception e) {
-                remark.append("押金退款失败:").append(e.getMessage()).append("; ");
-                logger.error("退款管理-押金微信退款失败 refundId={}", refundId, e);
+                if (e.getMessage() != null && e.getMessage().contains("订单已全额退款")) {
+                    // 微信侧已全额退款，视为幂等成功
+                    depositOk = true;
+                    remark.append("押金已退款(微信侧已全额退款，幂等放行) ¥").append(depositRefund).append("; ");
+                    logger.warn("退款管理-押金退款幂等成功(订单已全额退款) refundId={}", refundId);
+                } else {
+                    remark.append("押金退款失败:").append(e.getMessage()).append("; ");
+                    logger.error("退款管理-押金微信退款失败 refundId={}", refundId, e);
+                }
             }
         }
 
@@ -262,8 +269,15 @@ public class HzRefundController extends BaseController {
                       .append(" 单号:").append(outRefundRent).append("; ");
                 logger.info("退款管理-租金退款成功 refundId={} resp={}", refundId, r2);
             } catch (Exception e) {
-                remark.append("租金退款失败:").append(e.getMessage()).append("; ");
-                logger.error("退款管理-租金微信退款失败 refundId={}", refundId, e);
+                if (e.getMessage() != null && e.getMessage().contains("订单已全额退款")) {
+                    // 微信侧已全额退款，视为幂等成功
+                    rentOk = true;
+                    remark.append("已付租金已退款(微信侧已全额退款，幂等放行) ¥").append(rentRefund).append("; ");
+                    logger.warn("退款管理-租金退款幂等成功(订单已全额退款) refundId={}", refundId);
+                } else {
+                    remark.append("租金退款失败:").append(e.getMessage()).append("; ");
+                    logger.error("退款管理-租金微信退款失败 refundId={}", refundId, e);
+                }
             }
         }
 

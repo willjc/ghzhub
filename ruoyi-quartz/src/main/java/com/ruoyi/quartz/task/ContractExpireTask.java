@@ -736,8 +736,14 @@ public class ContractExpireTask {
             remark.append("押金已申请退款 单号:").append(outRefundDeposit);
             log.info("[CheckinTimeout] 押金退款已申请 contractId={}, refund={}", contract.getContractId(), r1);
         } catch (Exception e) {
-            remark.append("押金退款失败:").append(e.getMessage()).append(" ");
-            log.error("[CheckinTimeout] 押金微信退款失败 contractId={}", contract.getContractId(), e);
+            if (e.getMessage() != null && e.getMessage().contains("订单已全额退款")) {
+                depositOk = true;
+                remark.append("押金已退款(幂等) ");
+                log.warn("[CheckinTimeout] 押金退款幂等成功(订单已全额退款) contractId={}", contract.getContractId());
+            } else {
+                remark.append("押金退款失败:").append(e.getMessage()).append(" ");
+                log.error("[CheckinTimeout] 押金微信退款失败 contractId={}", contract.getContractId(), e);
+            }
         }
 
         try {
@@ -750,8 +756,14 @@ public class ContractExpireTask {
             remark.append(" 首期租金已申请退款 单号:").append(outRefundRent);
             log.info("[CheckinTimeout] 首期租金退款已申请 contractId={}, refund={}", contract.getContractId(), r2);
         } catch (Exception e) {
-            remark.append(" 首期租金退款失败:").append(e.getMessage());
-            log.error("[CheckinTimeout] 首期租金微信退款失败 contractId={}", contract.getContractId(), e);
+            if (e.getMessage() != null && e.getMessage().contains("订单已全额退款")) {
+                rentOk = true;
+                remark.append(" 首期租金已退款(幂等)");
+                log.warn("[CheckinTimeout] 首期租金退款幂等成功(订单已全额退款) contractId={}", contract.getContractId());
+            } else {
+                remark.append(" 首期租金退款失败:").append(e.getMessage());
+                log.error("[CheckinTimeout] 首期租金微信退款失败 contractId={}", contract.getContractId(), e);
+            }
         }
 
         // 3. 短事务：更新 record 状态
