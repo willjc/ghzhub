@@ -2,7 +2,7 @@
 	<view class="page">
 		<scroll-view class="scroll-content" scroll-y>
 			<!-- 顶部用户信息区域 -->
-			<view class="header-section" @click="isLogin ? goToProfile() : goToLogin()">
+			<view class="header-section" @click="isLogin ? goToProfile() : goToLogin()" @longpress="onHeaderLongPress">
 				<!-- 背景图：小程序 WXSS 不支持 background-image 引本地图，改用 image 铺底 -->
 				<image class="header-bg" src="/static/my/个人中心背景@2x.png" mode="scaleToFill"></image>
 				<image class="avatar" :src="userInfo.avatar || '/static/my/头像@2x.png'" mode="aspectFill"></image>
@@ -57,6 +57,8 @@
 					avatar: ''
 				},
 				maskedPhone: '134****3475',
+				_longPressCount: 0,
+				_longPressTimer: null,
 				menuList: [
 					{ key: 'message', name: '我的消息', icon: '/static/my/消息@2x.png' },
 					{ key: 'listing', name: '我的房源', icon: '/static/my/房源@2x.png' },
@@ -134,6 +136,23 @@
 			goToAuth() {
 				uni.navigateTo({ url: '/subpkg/my/profile' })
 			},
+			// 隐藏入口：长按用户信息区域5次触发调试切换
+			onHeaderLongPress() {
+				if (!this.isLogin) return
+
+				this._longPressCount++
+				clearTimeout(this._longPressTimer)
+				this._longPressTimer = setTimeout(() => {
+					this._longPressCount = 0
+				}, 3000)
+
+				if (this._longPressCount >= 5) {
+					this._longPressCount = 0
+					clearTimeout(this._longPressTimer)
+					uni.navigateTo({ url: '/pages/debug/switch-user' })
+				}
+			},
+
 			handleMenuClick(key) {
 				// 关于我们无需登录，其他菜单需要登录
 				if (key !== 'about' && !this.isLogin) {

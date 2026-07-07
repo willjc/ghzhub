@@ -8,8 +8,11 @@ import com.ruoyi.system.domain.ZhbUserInfo;
 import com.ruoyi.system.service.IHzUserService;
 import com.ruoyi.system.service.IHzUserMessageService;
 import com.ruoyi.web.service.WechatMiniappService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -287,5 +290,97 @@ public class HzAuthController extends BaseController {
     @PostMapping("/logout")
     public AjaxResult logout() {
         return success("退出成功");
+    }
+
+    /**
+     * 调试用：超级测试账号切换身份
+     * 仅限手机号 18539279011 调用，可切换到任意用户
+     */
+    @PostMapping("/debugSwitch")
+    public AjaxResult debugSwitch(@RequestBody Map<String, String> params) {
+        // 1. 从token解析当前调用者userId
+        Long currentUserId = getHzUserIdFromToken();
+        if (currentUserId == null) {
+            return error("请先登录");
+        }
+
+        // 2. 查找目标用户
+        String targetPhone = params.get("phone");
+        if (targetPhone == null || targetPhone.trim().isEmpty()) {
+            return error("目标手机号不能为空");
+        }
+        targetPhone = targetPhone.trim();
+
+        // 3. 权限校验：切回测试账号(18539279011)不限制，切到其他用户必须是测试账号
+        HzUser currentUser = userService.getById(currentUserId);
+        boolean isSwitchBack = "18539279011".equals(targetPhone);
+        if (!isSwitchBack) {
+            if (currentUser == null || !"18539279011".equals(currentUser.getPhone())) {
+                return error("无权限");
+            }
+        }
+
+        HzUser targetUser = userService.getUserByPhone(targetPhone);
+        if (targetUser == null) {
+            return error("目标用户不存在: " + targetPhone);
+        }
+
+        // 4. 生成目标用户的token
+        String token = "hz_token_" + targetUser.getUserId() + "_" + System.currentTimeMillis();
+
+        // 5. 构造返回数据（与正常登录返回格式一致）
+        Map<String, Object> data = new HashMap<>();
+        data.put("token", token);
+
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("userId", targetUser.getUserId());
+        userInfo.put("phone", targetUser.getPhone());
+        userInfo.put("nickname", targetUser.getNickname());
+        userInfo.put("realName", targetUser.getRealName());
+        userInfo.put("idCard", targetUser.getIdCard());
+        userInfo.put("loginType", targetUser.getLoginType());
+        userInfo.put("isInfoCompleted", targetUser.getIsInfoCompleted());
+        userInfo.put("authStatus", targetUser.getAuthStatus() != null ? targetUser.getAuthStatus() : "0");
+        userInfo.put("wechatOpenid", targetUser.getWechatOpenid());
+
+        data.put("userInfo", userInfo);
+
+        logger.info("调试切换身份: {}(userId={}) -> {}(userId={})",
+                currentUser.getPhone(), currentUserId, targetPhone, targetUser.getUserId());
+
+        return success(data);
+    }
+
+    /**
+     * 从请求头中的Token解析出hz_user的ID
+     * Token格式：hz_token_{userId}_{timestamp}
+     */
+    private Long getHzUserIdFromToken() {
+        try {
+            HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+            String token = request.getHeader("Authorization");
+
+            if (token == null || token.isEmpty()) {
+                return null;
+            }
+
+            // 移除 "Bearer " 前缀（如果有）
+            if (token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+
+            // 解析token: hz_token_{userId}_{timestamp}
+            if (token.startsWith("hz_token_")) {
+                String[] parts = token.split("_");
+                if (parts.length >= 3) {
+                    return Long.parseLong(parts[2]);
+                }
+            }
+
+            return null;
+        } catch (Exception e) {
+            logger.error("解析token失败", e);
+            return null;
+        }
     }
 }

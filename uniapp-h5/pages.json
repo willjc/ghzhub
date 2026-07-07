@@ -42,6 +42,12 @@
 			"style": {
 				"navigationBarTitleText": "我的"
 			}
+		},
+		{
+			"path": "pages/debug/switch-user",
+			"style": {
+				"navigationBarTitleText": "调试工具"
+			}
 		}
 	],
 	"subPackages": [
