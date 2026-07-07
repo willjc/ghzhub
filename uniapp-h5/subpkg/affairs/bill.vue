@@ -15,7 +15,7 @@
 		<!-- 账单列表 -->
 		<scroll-view class="scroll-content" scroll-y>
 			<view class="bill-list">
-				<view class="bill-item" v-for="(bill, index) in currentBillList" :key="bill.id"
+				<view class="bill-item" v-for="(bill, index) in currentBillList" :key="bill.billNo"
 					@click="!bill.locked && toggleBill(index)">
 					<image
 						class="bill-checkbox"

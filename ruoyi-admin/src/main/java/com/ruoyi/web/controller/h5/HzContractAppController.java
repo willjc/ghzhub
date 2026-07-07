@@ -33,7 +33,10 @@ import java.math.RoundingMode;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -310,6 +313,21 @@ public class HzContractAppController extends BaseController {
     }
 
     /**
+     * 解析可能含 UTC 时区的 ISO 时间字符串为北京时间 LocalDate。
+     * 例如 "2026-07-29T16:00:00.000Z" → 北京时间 2026-07-30
+     * 兼容纯日期格式 "2026-07-30" → 2026-07-30
+     */
+    private LocalDate parseUtcToLocalDate(String dateStr) {
+        if (dateStr == null || dateStr.isEmpty()) return LocalDate.now();
+        if (dateStr.contains("T") || dateStr.contains("Z")) {
+            Instant instant = Instant.parse(dateStr);
+            ZonedDateTime zdt = instant.atZone(ZoneId.of("Asia/Shanghai"));
+            return zdt.toLocalDate();
+        }
+        return LocalDate.parse(dateStr.substring(0, 10));
+    }
+
+    /**
      * 从请求头中的Token解析出hz_user的ID
      * Token格式：hz_token_{userId}_{timestamp}
      */
@@ -384,12 +402,12 @@ public class HzContractAppController extends BaseController {
             // 批次配租模式：使用批次入驻日期
             startDate = LocalDate.parse(batchStartDate);
         } else if (oldContractId != null) {
-            // 续租模式：从原合同到期日开始
+            // 续租模式：从原合同到期日次日开始
             HzContract oldContract = contractService.selectContractById(oldContractId);
             if (oldContract == null) {
                 return error("原合同不存在");
             }
-            startDate = LocalDate.parse(oldContract.getEndDate().substring(0, 10));
+            startDate = parseUtcToLocalDate(oldContract.getEndDate()).plusDays(1);
         } else {
             // 新签模式：当前日期+3天
             startDate = LocalDate.now().plusDays(3);
@@ -828,7 +846,7 @@ public class HzContractAppController extends BaseController {
                 return error("已存在续租合同，请勿重复提交");
             }
             if (oldContract.getEndDate() != null && !oldContract.getEndDate().isEmpty()) {
-                LocalDate contractEndDate = LocalDate.parse(oldContract.getEndDate().substring(0, 10));
+                LocalDate contractEndDate = parseUtcToLocalDate(oldContract.getEndDate());
                 LocalDate today = LocalDate.now();
                 if (today.isAfter(contractEndDate)) {
                     return error("合同已到期，无法续租");
@@ -859,9 +877,9 @@ public class HzContractAppController extends BaseController {
                 return error("获取用户信息失败，请重新登录");
             }
 
-            // 续租合同生效日期 = 原合同到期日
+            // 续租合同生效日期 = 原合同到期日次日
             String oldEndDate = oldContract.getEndDate();
-            LocalDate startDateLocal = LocalDate.parse(oldEndDate.substring(0, 10));
+            LocalDate startDateLocal = parseUtcToLocalDate(oldEndDate).plusDays(1);
             String startDate = startDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
             // 结束日期 = 起始日 + 租月 - 1天
             LocalDate endDateLocal = startDateLocal.plusMonths(rentMonths).minusDays(1);

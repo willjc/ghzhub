@@ -2,7 +2,7 @@
 	<view class="page">
 		<!-- 账单列表 -->
 		<view class="bill-list">
-			<view class="bill-item" v-for="(bill, index) in billList" :key="bill.id" @click="toggleBill(index)">
+			<view class="bill-item" v-for="(bill, index) in billList" :key="bill.billNo" @click="toggleBill(index)">
 				<image 
 					class="bill-checkbox" 
 					:src="bill.selected ? '/static/fangyaun/选中@2x.png' : '/static/fangyaun/未选中@2x.png'" 

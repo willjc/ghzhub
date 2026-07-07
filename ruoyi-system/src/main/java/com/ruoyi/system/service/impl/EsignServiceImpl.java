@@ -453,8 +453,8 @@ public class EsignServiceImpl implements EsignService {
         StringBuilder sb = new StringBuilder();
         sb.append("[\n");
         Long ctxContractId = contract.getContractId();
-        // 单行文本3: 地址+房间号（保守上限 50 字）
-        sb.append("  {\"componentId\": \"ebfedbda264e446390801f1ba6ee96eb\", \"componentValue\": \"").append(escapeJson(truncateForEsign(addressWithRoom, 50, "单行文本3-地址房号", ctxContractId))).append("\"},\n");
+        // 单行文本3: 地址+房间号（e签宝实际上限 38 个汉字）
+        sb.append("  {\"componentId\": \"ebfedbda264e446390801f1ba6ee96eb\", \"componentValue\": \"").append(escapeJson(truncateForEsign(addressWithRoom, 38, "单行文本3-地址房号", ctxContractId))).append("\"},\n");
         // 单行文本4: 租金大写（中文大写金额，保守上限 50 字）
         sb.append("  {\"componentId\": \"37fdb4123afb45139912f5dc938d5e3c\", \"componentValue\": \"").append(escapeJson(truncateForEsign(rentPriceChinese, 50, "单行文本4-租金大写", ctxContractId))).append("\"},\n");
         // 数字1: 房租单价（元/平方米/月）
