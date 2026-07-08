@@ -395,7 +395,8 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
     @Override
     public int insertContract(HzContract contract) {
         // 一人一户校验：租户已有活跃合同（已签署/履行中）且非同一房源续租，则拦截
-        if (contract.getTenantId() != null) {
+        // 换房合同（contractType='3'）跳过校验，因为换房流程会在签署回调中终止老合同
+        if (contract.getTenantId() != null && !"3".equals(contract.getContractType())) {
             List<HzContract> activeContracts = baseMapper.selectList(
                     new LambdaQueryWrapper<HzContract>()
                             .eq(HzContract::getTenantId, contract.getTenantId())
