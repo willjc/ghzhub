@@ -205,4 +205,53 @@ public class HzBillController extends BaseController
             return error("查微信失败：" + e.getMessage());
         }
     }
+
+    /**
+     * 手动标记账单为已支付
+     * <p>使用场景：老系统已收款（现金/转账）但新系统无支付记录，需手动补齐账单状态。</p>
+     * <p>不查微信，直接将账单标记为已支付，payMethod=offline。</p>
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:bill:edit')")
+    @Log(title = "账单管理-手动标记已支付", businessType = BusinessType.UPDATE)
+    @PostMapping("/markAsPaid/{billId}")
+    public AjaxResult markAsPaid(@PathVariable("billId") Long billId)
+    {
+        HzBill bill = billMapper.selectById(billId);
+        if (bill == null || "2".equals(bill.getDelFlag())) {
+            return error("账单不存在");
+        }
+        if ("1".equals(bill.getBillStatus())) {
+            return error("账单已为已支付状态，无需重复操作");
+        }
+
+        // 标记为已支付
+        bill.setBillStatus("1");
+        bill.setPaidAmount(bill.getBillAmount());
+        bill.setUnpaidAmount(BigDecimal.ZERO);
+        bill.setPayTime(DateUtils.getTime());
+        bill.setPayMethod("offline");
+        bill.setTransactionNo("MANUAL_" + System.currentTimeMillis());
+        billMapper.updateById(bill);
+
+        // 押金账单 → 推进订单状态
+        if ("1".equals(bill.getBillType()) && bill.getOrderNo() != null && !bill.getOrderNo().isEmpty()) {
+            try {
+                houseOrderService.onDepositPaid(bill.getOrderNo());
+            } catch (Exception e) {
+                logger.warn("手动标记已支付-onDepositPaid 异常，不影响主流程 billId={}: {}", billId, e.getMessage());
+            }
+        }
+        // 押金/首期租金 → 推进合同到履行中
+        if ("1".equals(bill.getBillType()) || "2".equals(bill.getBillType())) {
+            try {
+                houseOrderService.tryAdvanceContractToFulfilling(bill.getContractId());
+            } catch (Exception e) {
+                logger.warn("手动标记已支付-tryAdvanceContractToFulfilling 异常，不影响主流程 billId={}: {}", billId, e.getMessage());
+            }
+        }
+
+        logger.info("[markAsPaid] 手动标记已支付成功 billId={}, billNo={}, billType={}, amount={}",
+                bill.getBillId(), bill.getBillNo(), bill.getBillType(), bill.getBillAmount());
+        return success("标记已支付成功");
+    }
 }

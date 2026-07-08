@@ -173,7 +173,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160" fixed="right">
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -182,6 +182,15 @@
             @click="handleDetail(scope.row)"
             v-hasPermi="['gangzhu:bill:query']"
           >详情</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-success"
+            style="color: #67c23a;"
+            @click="handleMarkAsPaid(scope.row)"
+            v-if="scope.row.billStatus === '0'"
+            v-hasPermi="['gangzhu:bill:edit']"
+          >标记已支付</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -250,7 +259,7 @@
 </template>
 
 <script>
-import { listBill, getBill } from "@/api/gangzhu/bill";
+import { listBill, getBill, markAsPaid } from "@/api/gangzhu/bill";
 import { listProject } from "@/api/gangzhu/project";
 
 export default {
@@ -350,6 +359,26 @@ export default {
       this.download('system/bill/export', {
         ...this.queryParams
       }, `bill_${new Date().getTime()}.xlsx`)
+    },
+    /** 手动标记已支付 */
+    handleMarkAsPaid(row) {
+      const billId = row.billId;
+      const billNo = row.billNo;
+      const amount = row.billAmount;
+      this.$confirm(`确认将账单「${billNo}」（金额：${amount}元）标记为已支付？\n此操作适用于老系统已收款但新系统无记录的情况。`, "确认标记已支付", {
+        confirmButtonText: "确认",
+        cancelButtonText: "取消",
+        type: "warning"
+      }).then(() => {
+        markAsPaid(billId).then(response => {
+          if (response.code === 200) {
+            this.$message.success(response.msg || "标记已支付成功");
+            this.getList();
+          } else {
+            this.$message.error(response.msg || "操作失败");
+          }
+        });
+      }).catch(() => {});
     },
     /** 日期格式化：yyyy-MM-dd → MM.DD */
     formatShortDate(dateStr) {

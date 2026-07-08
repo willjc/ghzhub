@@ -42,3 +42,11 @@ export function delBill(billId) {
     method: 'delete'
   })
 }
+
+// 手动标记账单为已支付（老系统已收款但新系统无记录）
+export function markAsPaid(billId) {
+  return request({
+    url: '/system/bill/markAsPaid/' + billId,
+    method: 'post'
+  })
+}
