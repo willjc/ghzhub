@@ -168,7 +168,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "FROM hz_contract ct " +
             "LEFT JOIN hz_house h ON ct.house_id = h.house_id " +
             "LEFT JOIN hz_project p ON h.project_id = p.project_id " +
-            "LEFT JOIN hz_checkout_record chr ON ct.contract_id = chr.contract_id " +
+            "LEFT JOIN hz_checkout_record chr ON ct.contract_id = chr.contract_id AND chr.del_flag = '0' " +
             "WHERE ct.tenant_id = #{tenantId} " +
             "  AND ct.del_flag = '0' " +
             "  AND ct.contract_status IN ('2','3','4','5') " +
