@@ -264,7 +264,14 @@ public class HzAuthController extends BaseController {
             // 只更新前端传入的业务字段，不触碰Date字段
             if (params.containsKey("identityType"))  existUser.setIdentityType((String) params.get("identityType"));
             if (params.containsKey("realName"))       existUser.setRealName((String) params.get("realName"));
-            if (params.containsKey("idCard"))         existUser.setIdCard((String) params.get("idCard"));
+            if (params.containsKey("idCard")) {
+                String idCard = (String) params.get("idCard");
+                existUser.setIdCard(idCard);
+                // 身份证账号自动合并：如果该身份证已存在于其他旧账号（迁移数据），自动迁移业务数据
+                if (idCard != null && !idCard.isBlank()) {
+                    userService.mergeUserByIdCard(userId, idCard);
+                }
+            }
             if (params.containsKey("contactPhone"))   existUser.setContactPhone((String) params.get("contactPhone"));
             if (params.containsKey("workUnit"))       existUser.setWorkUnit((String) params.get("workUnit"));
             if (params.containsKey("unitContact"))    existUser.setUnitContact((String) params.get("unitContact"));

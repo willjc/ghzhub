@@ -881,16 +881,10 @@ public class HzContractAppController extends BaseController {
                 return error("获取用户信息失败，请重新登录");
             }
 
-            // 续租合同生效日期：
-            // - 未到期合同：原合同到期日次日
-            // - 已到期合同（含老系统迁移数据）：从今天开始
+            // 续租合同生效日期：始终为原合同到期日次日
+            // 无论原合同是否已到期，续租合同都应衔接原合同，避免出现保障空档期
             String oldEndDate = oldContract.getEndDate();
-            LocalDate startDateLocal;
-            if (isExpired) {
-                startDateLocal = LocalDate.now();
-            } else {
-                startDateLocal = parseUtcToLocalDate(oldEndDate).plusDays(1);
-            }
+            LocalDate startDateLocal = parseUtcToLocalDate(oldEndDate).plusDays(1);
             String startDate = startDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
             // 结束日期 = 起始日 + 租月 - 1天
             LocalDate endDateLocal = startDateLocal.plusMonths(rentMonths).minusDays(1);
