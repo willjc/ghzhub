@@ -2,7 +2,7 @@
 	<view class="page">
 		<scroll-view class="scroll-content" scroll-y>
 			<!-- 顶部用户信息区域 -->
-			<view class="header-section" @click="isLogin ? goToProfile() : goToLogin()" @longpress="onHeaderLongPress">
+			<view class="header-section" @click="isLogin ? goToProfile() : goToLogin()">
 				<!-- 背景图：小程序 WXSS 不支持 background-image 引本地图，改用 image 铺底 -->
 				<image class="header-bg" src="/static/my/个人中心背景@2x.png" mode="scaleToFill"></image>
 				<image class="avatar" :src="userInfo.avatar || '/static/my/头像@2x.png'" mode="aspectFill"></image>
@@ -38,6 +38,9 @@
 					<image class="menu-arrow" src="/static/my/youjiantou@2x.png"></image>
 				</view>
 			</view>
+
+			<!-- 底部空白区域：点击5次进入调试切换 -->
+			<view class="footer-tap-area" @click="onFooterTap"></view>
 		</scroll-view>
 	</view>
 </template>
@@ -57,8 +60,8 @@
 					avatar: ''
 				},
 				maskedPhone: '134****3475',
-				_longPressCount: 0,
-				_longPressTimer: null,
+				_tapCount: 0,
+				_tapTimer: null,
 				menuList: [
 					{ key: 'message', name: '我的消息', icon: '/static/my/消息@2x.png' },
 					{ key: 'listing', name: '我的房源', icon: '/static/my/房源@2x.png' },
@@ -136,19 +139,19 @@
 			goToAuth() {
 				uni.navigateTo({ url: '/subpkg/my/profile' })
 			},
-			// 隐藏入口：长按用户信息区域5次触发调试切换
-			onHeaderLongPress() {
+			// 隐藏入口：底部空白区域点击5次触发调试切换
+			onFooterTap() {
 				if (!this.isLogin) return
 
-				this._longPressCount++
-				clearTimeout(this._longPressTimer)
-				this._longPressTimer = setTimeout(() => {
-					this._longPressCount = 0
+				this._tapCount++
+				clearTimeout(this._tapTimer)
+				this._tapTimer = setTimeout(() => {
+					this._tapCount = 0
 				}, 3000)
 
-				if (this._longPressCount >= 5) {
-					this._longPressCount = 0
-					clearTimeout(this._longPressTimer)
+				if (this._tapCount >= 5) {
+					this._tapCount = 0
+					clearTimeout(this._tapTimer)
 					uni.navigateTo({ url: '/pages/debug/switch-user' })
 				}
 			},
@@ -355,5 +358,10 @@
 			font-size: 22rpx;
 			color: #4A90E2;
 			margin-left: 12rpx;
+		}
+
+		.footer-tap-area {
+			height: 120rpx;
+			width: 100%;
 		}
 </style>

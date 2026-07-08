@@ -45,6 +45,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="houseNo" column="house_no"/>
         <!-- 扩展字段：配租方式（常规分配/集中分配） -->
         <result property="allocationType" column="allocation_type"/>
+        <!-- 扩展字段：合同类型（1=新签, 2=续租） -->
+        <result property="contractType" column="contract_type"/>
     </resultMap>
 
     <!-- 查询账单列表SQL -->
@@ -74,7 +76,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             END AS overdue_days,
             b.create_by, b.create_time, b.update_by, b.update_time, b.remark,
             c.contract_no,
-            <!-- 配租方式：合同表 batch_id 非空 或 remark 首段为"集中分配" 视为集中分配，否则常规分配 -->
+            c.contract_type,
             CASE
                 WHEN c.batch_id IS NOT NULL THEN '集中分配'
                 WHEN c.remark LIKE '集中分配%' THEN '集中分配'

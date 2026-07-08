@@ -135,6 +135,21 @@
 							<text class="btn-text-white">去签署</text>
 						</view>
 					</view>
+					<!-- 已到期（含老系统迁移数据）：可续租 -->
+					<view class="button-group" v-else-if="item.status === 'expired'">
+						<view class="btn btn-renew" @click="handleRenew(item)" v-if="item.isRenewed !== '1'">
+							<text class="btn-text-blue">续租</text>
+						</view>
+						<view class="btn btn-disabled-state" v-else>
+							<text class="btn-text-gray">已续租</text>
+						</view>
+					</view>
+					<!-- 已解约：不可续租 -->
+					<view class="button-group" v-else-if="item.status === 'terminated'">
+						<view class="btn btn-disabled-state">
+							<text class="btn-text-gray">已解约</text>
+						</view>
+					</view>
 					<!-- 履行中 -->
 					<view class="button-group" v-else-if="item.status === 'active'">
 						<view class="btn btn-renew" @click="handleRenew(item)" v-if="item.isRenewed !== '1'">
@@ -209,6 +224,7 @@
 					'signed': 'status-signed',
 					'active': 'status-active',
 					'expired': 'status-expired',
+					'terminated': 'status-expired',
 					'voided': 'status-voided'
 				}
 			}
@@ -508,7 +524,7 @@
 					case '2': return { code: 'signed', text: '已签署' }       // 已签署(办理中)
 					case '3': return { code: 'active', text: '履行中' }       // 履行中
 					case '4': return { code: 'expired', text: '已到期' }      // 已到期
-					case '5': return { code: 'expired', text: '已解约' }      // 已解约
+					case '5': return { code: 'terminated', text: '已解约' }    // 已解约
 					case '6': return { code: 'voided', text: '已失效' }       // 超时失效
 					default: return { code: 'expired', text: '未知' }
 				}

@@ -825,8 +825,7 @@ public class HzContractAppController extends BaseController {
             Integer rentMonths = params.get("rentMonths") != null
                 ? Integer.parseInt(params.get("rentMonths").toString()) : 12;
 
-            // ========== 续租到期校验 ==========
-            // 1. 校验原合同是否已到期
+            // ========== 续租校验 ==========
             HzContract oldContract = contractService.selectContractById(oldContractId);
             if (oldContract == null) {
                 return error("原合同不存在");
@@ -845,22 +844,27 @@ public class HzContractAppController extends BaseController {
             if (existingRenewals != null && !existingRenewals.isEmpty()) {
                 return error("已存在续租合同，请勿重复提交");
             }
+            // 判断原合同是否已到期
+            boolean isExpired = false;
             if (oldContract.getEndDate() != null && !oldContract.getEndDate().isEmpty()) {
                 LocalDate contractEndDate = parseUtcToLocalDate(oldContract.getEndDate());
                 LocalDate today = LocalDate.now();
                 if (today.isAfter(contractEndDate)) {
-                    return error("合同已到期，无法续租");
+                    isExpired = true;
                 }
             }
-            // ========== 续租到期校验结束 ==========
+            // ========== 续租校验结束 ==========
 
             // ========== 入住状态校验 ==========
             // 校验原合同的入住记录是否已完成确认（status IN 2/3/4）
-            List<HzCheckIn> oldCheckIns = checkInService.selectConfirmedCheckInListByTenantId(oldContract.getTenantId());
-            boolean hasConfirmedCheckIn = oldCheckIns.stream()
-                    .anyMatch(ci -> oldContractId.equals(ci.getContractId()));
-            if (!hasConfirmedCheckIn) {
-                return error("原合同尚未完成入住确认，无法办理续租。请先完成入住手续后再续租。");
+            // 已到期合同（含老系统迁移数据）跳过此校验，这些用户已实际入住
+            if (!isExpired) {
+                List<HzCheckIn> oldCheckIns = checkInService.selectConfirmedCheckInListByTenantId(oldContract.getTenantId());
+                boolean hasConfirmedCheckIn = oldCheckIns.stream()
+                        .anyMatch(ci -> oldContractId.equals(ci.getContractId()));
+                if (!hasConfirmedCheckIn) {
+                    return error("原合同尚未完成入住确认，无法办理续租。请先完成入住手续后再续租。");
+                }
             }
             // ========== 入住状态校验结束 ==========
 
@@ -877,9 +881,16 @@ public class HzContractAppController extends BaseController {
                 return error("获取用户信息失败，请重新登录");
             }
 
-            // 续租合同生效日期 = 原合同到期日次日
+            // 续租合同生效日期：
+            // - 未到期合同：原合同到期日次日
+            // - 已到期合同（含老系统迁移数据）：从今天开始
             String oldEndDate = oldContract.getEndDate();
-            LocalDate startDateLocal = parseUtcToLocalDate(oldEndDate).plusDays(1);
+            LocalDate startDateLocal;
+            if (isExpired) {
+                startDateLocal = LocalDate.now();
+            } else {
+                startDateLocal = parseUtcToLocalDate(oldEndDate).plusDays(1);
+            }
             String startDate = startDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
             // 结束日期 = 起始日 + 租月 - 1天
             LocalDate endDateLocal = startDateLocal.plusMonths(rentMonths).minusDays(1);
@@ -1002,7 +1013,7 @@ public class HzContractAppController extends BaseController {
             contract.setContractContent(finalContract);
             contract.setTenantSignature(signatureUrl);
             contract.setSignTime(DateUtils.getTime());
-            contract.setContractStatus("0"); // 草稿(待审核)
+            contract.setContractStatus("0"); // 草稿(待e签宝签署)
             contract.setDelFlag("0");
 
             // 续租不享受免租优惠
@@ -1020,19 +1031,7 @@ public class HzContractAppController extends BaseController {
                     contractService.updateContract(oldContract);
                 }
 
-                // 8. 只生成租金账单,不生成押金账单
-                try {
-                    generateRentBillsOnly(contract);
-                } catch (Exception billEx) {
-                    logger.error("生成租金账单失败", billEx);
-                }
-
-                // 9. 生成入驻记录
-                try {
-                    generateCheckInRecord(contract, house, project, tenant);
-                } catch (Exception checkInEx) {
-                    logger.error("生成入驻记录失败", checkInEx);
-                }
+                // 8. 账单和入驻记录由e签宝回调统一生成（EsignServiceImpl），此处不重复调用
 
                 Map<String, Object> data = new HashMap<>();
                 data.put("contractId", contract.getContractId());
@@ -1244,6 +1243,14 @@ public class HzContractAppController extends BaseController {
      * 注意：续租不享受免租优惠
      */
     private void generateRentBillsOnly(HzContract contract) {
+        // 0. 检查是否已生成过账单（防止重复调用）
+        Long existCount = billMapper.selectCount(new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, contract.getContractId()));
+        if (existCount > 0) {
+            logger.info("合同{}的账单已存在（{}条），跳过重复生成", contract.getContractId(), existCount);
+            return;
+        }
+
         // 生成租金账单
         int paymentCycle = Integer.parseInt(contract.getPaymentCycle());  // 支付周期（月数）
         int rentMonths = contract.getRentMonths();  // 总租期（月）

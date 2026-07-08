@@ -34,6 +34,10 @@ public class HzBillVO extends HzBill {
     @TableField(exist = false)
     private String allocationType;
 
+    /** 合同类型（1=新签, 2=续租） */
+    @TableField(exist = false)
+    private String contractType;
+
     public String getContractNo() {
         return contractNo;
     }
@@ -80,5 +84,13 @@ public class HzBillVO extends HzBill {
 
     public void setAllocationType(String allocationType) {
         this.allocationType = allocationType;
+    }
+
+    public String getContractType() {
+        return contractType;
+    }
+
+    public void setContractType(String contractType) {
+        this.contractType = contractType;
     }
 }

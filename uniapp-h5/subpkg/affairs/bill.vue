@@ -77,7 +77,7 @@
 		</scroll-view>
 		
 		<!-- 底部结算栏 -->
-		<view class="footer-bar" v-if="currentTab === 'current'">
+		<view class="footer-bar" v-if="currentTab === 'current'" style="z-index: 999;">
 			<view class="footer-left">
 				<view class="select-all" @click="toggleSelectAll">
 					<image 
@@ -101,7 +101,7 @@
 					<image class="detail-arrow" :class="{ expanded: !showDetail }" src="/static/fangyaun/明细@2x.png" mode="aspectFit"></image>
 				</view>
 			</view>
-			<view class="checkout-btn" @click="checkout">
+			<view class="checkout-btn" @click="checkout" style="background: linear-gradient(270deg, #4fc7ff 0%, #0f73ff 100%) !important;">
 				<text class="checkout-text">去结算</text>
 			</view>
 		</view>
@@ -243,13 +243,15 @@
 						const bills = billRes.data
 
 						// 从账单数据自动检测押金是否已缴：
-						// 存在 billType=1 且 billStatus=1（已支付）则视为已缴押金
+						// 1. 存在 billType=1 且 billStatus=1（已支付）则视为已缴押金
+						// 2. 无押金账单时：续租合同(contractType='2')押金已交，视为已缴；其他情况默认未缴
 						const depositBill = bills.find(b => b.billType === '1')
 						if (depositBill) {
 							this.depositPaid = depositBill.billStatus === '1'
 						} else {
-							// 无押金账单（e签宝回调未触发等），URL 参数优先，否则默认未缴
-							this.depositPaid = false
+							// 无押金账单：续租合同无需押金，视为已缴；新签合同默认未缴
+							const hasRenewalBill = bills.some(b => b.contractType === '2')
+							this.depositPaid = hasRenewalBill
 						}
 
 						// 映射并过滤
