@@ -143,7 +143,15 @@ public class HzHouseOrderServiceImpl
             if (!verifyBatchHouseAssignment(tenantId, houseId)) {
                 return AjaxResult.error("该房源未分配给您，无法选定");
             }
-            // 房源已在批次审批通过时设为'1'（已预订），无需再次lockHouse
+            // 确保房源状态为'1'（已预订）。正常批次审批后已是1，
+            // 但若经历过订单超时等异常流程，房源可能被误设为'3'(修缮中)，此处兜底修正。
+            int restored = houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                    .eq(HzHouse::getHouseId, houseId)
+                    .in(HzHouse::getHouseStatus, "0", "3")
+                    .set(HzHouse::getHouseStatus, "1"));
+            if (restored == 0 && !"1".equals(houseMapper.selectById(houseId).getHouseStatus())) {
+                return AjaxResult.error("该房源当前状态异常，无法选定，请联系管理员");
+            }
         } else {
             // 普通用户：原子锁定房源（house_status: 空置→已预订）
             int locked = orderMapper.lockHouse(houseId);
@@ -391,7 +399,16 @@ public class HzHouseOrderServiceImpl
             order.setOrderStatus("4"); // 已过期
             order.setUpdateTime(new Date());
             updateById(order);
-            orderMapper.releaseHouse(order.getHouseId());
+
+            // 批次配租订单：房源回退到'3'(修缮中)；普通订单：房源释放为'0'(空置)
+            if ("1".equals(order.getIsBatchAlloc())) {
+                houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                        .eq(HzHouse::getHouseId, order.getHouseId())
+                        .eq(HzHouse::getHouseStatus, "1")
+                        .set(HzHouse::getHouseStatus, "3"));
+            } else {
+                orderMapper.releaseHouse(order.getHouseId());
+            }
 
             // 同步推关联合同到「6 超时失效」（仅从 0草稿/1待签署 推进，避免误改已签署/履行中等状态）
             if (order.getContractId() != null && order.getContractId() > 0) {
