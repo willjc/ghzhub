@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "mcp_server_mysql": {
-      "command": "npx",
-      "args": ["-y", "@benborla29/mcp-server-mysql"],
+      "command": "node",
+      "args": ["/usr/local/lib/node_modules/@benborla29/mcp-server-mysql/dist/index.js"],
       "env": {
         "MYSQL_HOST": "36.133.39.148",
         "MYSQL_PORT": "33061",

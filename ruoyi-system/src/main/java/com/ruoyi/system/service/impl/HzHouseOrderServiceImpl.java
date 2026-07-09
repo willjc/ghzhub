@@ -78,13 +78,60 @@ public class HzHouseOrderServiceImpl
     @Transactional(rollbackFor = Exception.class)
     public AjaxResult createOrder(Long tenantId, Long houseId) {
         // 1. 检查是否有进行中的活跃订单
-        long existCount = count(new LambdaQueryWrapper<HzHouseOrder>()
+        List<HzHouseOrder> activeOrders = list(new LambdaQueryWrapper<HzHouseOrder>()
                 .eq(HzHouseOrder::getTenantId, tenantId)
                 .eq(HzHouseOrder::getHouseId, houseId)
                 .in(HzHouseOrder::getOrderStatus, "0", "1", "2")
                 .eq(HzHouseOrder::getDelFlag, "0"));
-        if (existCount > 0) {
-            return AjaxResult.error("您已预订过该房源，请勿重复操作");
+        if (!activeOrders.isEmpty()) {
+            // 1.1 尝试清理已过期的卡死订单（e签宝超时/失败导致预订单停留且锁已过期）
+            Date now = new Date();
+            boolean hasUnexpired = false;
+            for (HzHouseOrder existOrder : activeOrders) {
+                boolean expired = existOrder.getLockExpireTime() != null
+                        && existOrder.getLockExpireTime().before(now);
+                if (!expired) {
+                    hasUnexpired = true;
+                    break;
+                }
+                // 检查关联合同是否已完成签署（status >= 2），已签署的不能作废
+                if (existOrder.getContractId() != null) {
+                    HzContract contract = contractMapper.selectById(existOrder.getContractId());
+                    if (contract != null) {
+                        String cs = contract.getContractStatus();
+                        if (cs != null && Integer.parseInt(cs) >= 2 && "0".equals(contract.getDelFlag())) {
+                            hasUnexpired = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (hasUnexpired) {
+                return AjaxResult.error("您已预订过该房源，请勿重复操作");
+            }
+            // 清理所有过期订单及其草稿合同
+            for (HzHouseOrder existOrder : activeOrders) {
+                // 作废草稿合同
+                if (existOrder.getContractId() != null) {
+                    HzContract contract = contractMapper.selectById(existOrder.getContractId());
+                    if (contract != null && "0".equals(contract.getDelFlag())) {
+                        contract.setDelFlag("2");
+                        contract.setUpdateTime(now);
+                        contractMapper.updateById(contract);
+                    }
+                }
+                // 取消预订单
+                existOrder.setOrderStatus("5");
+                existOrder.setUpdateTime(now);
+                updateById(existOrder);
+                // 普通订单（非批次配租）：释放房源为空置
+                if (!"1".equals(existOrder.getIsBatchAlloc())) {
+                    houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                            .eq(HzHouse::getHouseId, houseId)
+                            .eq(HzHouse::getHouseStatus, "1")
+                            .set(HzHouse::getHouseStatus, "0"));
+                }
+            }
         }
 
         // 2. 提前判断是否为批次配租用户
