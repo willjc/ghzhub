@@ -487,21 +487,189 @@
       </div>
     </el-dialog>
 
-    <!-- 管理员直接退租对话框 -->
-    <el-dialog title="管理员直接退租" :visible.sync="forceCheckoutOpen" width="500px" append-to-body>
+    <!-- 管理员直接退租对话框（丰富展现，支持导出PDF） -->
+    <el-dialog title="管理员直接退租" :visible.sync="forceCheckoutOpen" width="900px" append-to-body>
       <el-form ref="forceCheckoutForm" :model="forceCheckoutForm" :rules="forceCheckoutRules" label-width="100px">
-        <el-form-item label="租户姓名">
-          <span>{{ forceCheckoutForm.tenantName }}</span>
-        </el-form-item>
-        <el-form-item label="合同编号">
-          <span>{{ forceCheckoutForm.contractNo }}</span>
-        </el-form-item>
+
+        <!-- 合同信息 -->
+        <el-divider content-position="left">合同信息</el-divider>
+        <el-row>
+          <el-col :span="8">
+            <el-form-item label="租户姓名">
+              <span>{{ forceCheckoutForm.tenantName }}</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="合同编号">
+              <span>{{ forceCheckoutForm.contractNo }}</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="房源">
+              <span>{{ forceCheckoutDetail.projectName || '-' }} {{ forceCheckoutDetail.houseNo || '' }}</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="8">
+            <el-form-item label="合同期限">
+              <span v-if="forceCheckoutDetail.startDate">{{ forceCheckoutDetail.startDate }} 至 {{ forceCheckoutDetail.endDate }}</span>
+              <span v-else>-</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="租期">
+              <span>{{ forceCheckoutDetail.rentMonths || '-' }} 个月</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="月租金">
+              <span style="color: #f56c6c; font-weight: bold;">¥{{ fmt(forceCheckoutDetail.rentPrice) }}</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="8">
+            <el-form-item label="押金">
+              <span style="color: #f56c6c; font-weight: bold;">¥{{ fmt(forceCheckoutDetail.deposit) }}</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="缴费周期">
+              <span>{{ formatPaymentCycle(forceCheckoutDetail.paymentCycle) }}</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <!-- 缴费记录 -->
+        <el-divider content-position="left">缴费记录</el-divider>
+        <el-table :data="forceCheckoutBills" size="small" border>
+          <el-table-column label="账单编号" align="center" prop="billNo" width="150" show-overflow-tooltip />
+          <el-table-column label="账单类型" align="center" prop="billTypeText" width="80" />
+          <el-table-column label="账单期" align="center" prop="billPeriod" width="100" />
+          <el-table-column label="账单金额" align="right" prop="billAmount" width="100">
+            <template slot-scope="scope">¥{{ fmt(scope.row.billAmount) }}</template>
+          </el-table-column>
+          <el-table-column label="已付金额" align="right" prop="paidAmount" width="100">
+            <template slot-scope="scope">¥{{ fmt(scope.row.paidAmount) }}</template>
+          </el-table-column>
+          <el-table-column label="未付金额" align="right" prop="unpaidAmount" width="100">
+            <template slot-scope="scope">
+              <span :style="{ color: scope.row.unpaidAmount > 0 ? '#f56c6c' : '#67c23a' }">¥{{ fmt(scope.row.unpaidAmount) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="支付状态" align="center" prop="billStatusText" width="80">
+            <template slot-scope="scope">
+              <el-tag :type="scope.row.billStatus === '1' ? 'success' : 'warning'" size="small">{{ scope.row.billStatusText }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="支付时间" align="center" prop="payTime" width="160" />
+        </el-table>
+        <el-row v-if="forceCheckoutBills.length > 0" style="margin-top: 10px;">
+          <el-col :span="24">
+            <div style="text-align: right; padding-right: 20px;">
+              <span style="margin-right: 20px;">总账单金额: <strong style="color: #409EFF;">¥{{ fmt(totalBillAmount) }}</strong></span>
+              <span style="margin-right: 20px;">已付金额: <strong style="color: #67C23A;">¥{{ fmt(totalPaidAmount) }}</strong></span>
+              <span>未付金额: <strong style="color: #F56C6C;">¥{{ fmt(totalUnpaidAmount) }}</strong></span>
+            </div>
+          </el-col>
+        </el-row>
+
+        <!-- 费用计算（仅展示/PDF，不提交后端） -->
+        <el-divider content-position="left">费用计算（仅展示，不处理账务）</el-divider>
+        <el-row>
+          <el-col :span="8">
+            <el-form-item label="水表读数">
+              <el-input-number v-model="feeCalcForm.meterReadingWater" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="电表读数">
+              <el-input-number v-model="feeCalcForm.meterReadingElectric" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="燃气表读数">
+              <el-input-number v-model="feeCalcForm.meterReadingGas" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="8">
+            <el-form-item label="水费(元)">
+              <el-input-number v-model="feeCalcForm.waterFee" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="电费(元)">
+              <el-input-number v-model="feeCalcForm.electricFee" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="燃气费(元)">
+              <el-input-number v-model="feeCalcForm.gasFee" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="8">
+            <el-form-item label="暖气费(元)">
+              <el-input-number v-model="feeCalcForm.heatingFee" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="物业费(元)">
+              <el-input-number v-model="feeCalcForm.propertyFee" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="损坏扣款(元)">
+              <el-input-number v-model="feeCalcForm.damageDeduction" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="8">
+            <el-form-item label="违约金(元)">
+              <el-input-number v-model="feeCalcForm.penaltyAmount" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="钥匙归还">
+              <el-input-number v-model="feeCalcForm.keyReturned" :min="0" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="应退押金(元)">
+              <el-input-number v-model="feeCalcForm.depositRefund" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="24">
+            <el-form-item label="物品损坏情况">
+              <el-input v-model="feeCalcForm.damageDescription" type="textarea" placeholder="请输入物品损坏情况" :rows="2" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="24">
+            <el-form-item label="应退总额(元)">
+              <el-input-number v-model="feeCalcForm.refundAmount" :min="0" :precision="2" controls-position="right" style="width: 200px;" />
+              <span style="margin-left: 10px; color: #909399; font-size: 12px;">建议: ¥{{ fmt(calculatedRefund) }}</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <!-- 退租原因 -->
+        <el-divider content-position="left">退租操作</el-divider>
         <el-form-item label="退租原因" prop="checkoutReason">
           <el-input v-model="forceCheckoutForm.checkoutReason" type="textarea" placeholder="请输入退租原因" :rows="3" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="forceCheckoutOpen = false">取 消</el-button>
+        <el-button type="warning" plain icon="el-icon-download" @click="exportForceCheckoutPDF">导出PDF</el-button>
         <el-button type="danger" @click="submitForceCheckout">确认退租</el-button>
       </div>
     </el-dialog>
@@ -513,7 +681,7 @@
 import { listContract, getContract,
          getContractBills, getContractDocuments, auditDocument, getContractPdfUrl } from "@/api/gangzhu/contract";
 import { listProject } from "@/api/gangzhu/project";
-import { adminForceCheckout } from "@/api/gangzhu/checkout";
+import { adminForceCheckout, getContractBills as getCheckoutBills } from "@/api/gangzhu/checkout";
 
 export default {
   name: "Contract",
@@ -543,6 +711,24 @@ export default {
       forceCheckoutRules: {
         checkoutReason: [{ required: true, message: '请输入退租原因', trigger: 'blur' }]
       },
+      forceCheckoutDetail: {},   // 合同详情（退租弹窗用）
+      forceCheckoutBills: [],    // 账单列表（退租弹窗用）
+      feeCalcForm: {             // 费用计算（仅展示/PDF，不提交后端）
+        meterReadingWater: null,
+        meterReadingElectric: null,
+        meterReadingGas: null,
+        waterFee: 0,
+        electricFee: 0,
+        gasFee: 0,
+        heatingFee: 0,
+        propertyFee: 0,
+        damageDeduction: 0,
+        penaltyAmount: 0,
+        keyReturned: 0,
+        damageDescription: '',
+        depositRefund: 0,
+        refundAmount: 0
+      },
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -563,6 +749,36 @@ export default {
   created() {
     this.getList();
     this.getProjectList();
+  },
+  computed: {
+    // 账单总金额
+    totalBillAmount() {
+      const sum = this.forceCheckoutBills.reduce((s, b) => s + Number(b.billAmount || 0), 0);
+      return sum.toFixed(2);
+    },
+    // 已付金额
+    totalPaidAmount() {
+      const sum = this.forceCheckoutBills.reduce((s, b) => s + Number(b.paidAmount || 0), 0);
+      return sum.toFixed(2);
+    },
+    // 未付金额
+    totalUnpaidAmount() {
+      const sum = this.forceCheckoutBills.reduce((s, b) => s + Number(b.unpaidAmount || 0), 0);
+      return sum.toFixed(2);
+    },
+    // 建议应退总额（押金 - 各项扣费）
+    calculatedRefund() {
+      const deposit = Number(this.feeCalcForm.depositRefund) || 0;
+      const penalty = Number(this.feeCalcForm.penaltyAmount || 0);
+      const damage = Number(this.feeCalcForm.damageDeduction || 0);
+      const water = Number(this.feeCalcForm.waterFee || 0);
+      const electric = Number(this.feeCalcForm.electricFee || 0);
+      const gas = Number(this.feeCalcForm.gasFee || 0);
+      const heating = Number(this.feeCalcForm.heatingFee || 0);
+      const property = Number(this.feeCalcForm.propertyFee || 0);
+      const result = deposit - penalty - damage - water - electric - gas - heating - property;
+      return Math.max(0, Number(result.toFixed(2)));
+    }
   },
   methods: {
     /** 格式化日期为 YYYY-MM-DD */
@@ -717,6 +933,18 @@ export default {
       }
       this.download('system/contract/export', exportParams, `contract_${new Date().getTime()}.xlsx`)
     },
+    /** 格式化金额：保留两位小数 */
+    fmt(v) {
+      if (v === null || v === undefined || v === '') return '0.00';
+      const n = Number(v);
+      if (isNaN(n)) return '0.00';
+      return n.toFixed(2);
+    },
+    /** 格式化缴费周期 */
+    formatPaymentCycle(cycle) {
+      const map = { '1': '押一付一', '2': '押一付二', '3': '押一付三', '6': '半年付', '12': '年付' };
+      return map[cycle] || '-';
+    },
     /** 管理员直接退租 */
     handleForceCheckout(row) {
       this.forceCheckoutForm = {
@@ -725,6 +953,34 @@ export default {
         contractNo: row.contractNo,
         checkoutReason: ''
       };
+      this.forceCheckoutDetail = {};
+      this.forceCheckoutBills = [];
+      this.feeCalcForm = {
+        meterReadingWater: null,
+        meterReadingElectric: null,
+        meterReadingGas: null,
+        waterFee: 0,
+        electricFee: 0,
+        gasFee: 0,
+        heatingFee: 0,
+        propertyFee: 0,
+        damageDeduction: 0,
+        penaltyAmount: 0,
+        keyReturned: 0,
+        damageDescription: '',
+        depositRefund: 0,
+        refundAmount: 0
+      };
+      // 加载合同详情
+      getContract(row.contractId).then(res => {
+        this.forceCheckoutDetail = res.data || {};
+        // 默认应退押金 = 合同押金
+        this.feeCalcForm.depositRefund = Number(this.forceCheckoutDetail.deposit) || 0;
+      });
+      // 加载账单列表（使用 checkout API，返回格式化字段）
+      getCheckoutBills(row.contractId).then(res => {
+        this.forceCheckoutBills = res.data || [];
+      }).catch(() => { this.forceCheckoutBills = []; });
       this.forceCheckoutOpen = true;
     },
     submitForceCheckout() {
@@ -741,6 +997,120 @@ export default {
           });
         }).catch(() => {});
       });
+    },
+    /** 导出退租信息为PDF（通过浏览器打印另存为PDF） */
+    exportForceCheckoutPDF() {
+      const f = this.forceCheckoutForm;
+      const d = this.forceCheckoutDetail;
+      const af = this.feeCalcForm;
+      const fmt = this.fmt;
+      const stamp = (s) => s || '-';
+
+      // 构建缴费记录表格行
+      let billRows = '';
+      if (this.forceCheckoutBills && this.forceCheckoutBills.length > 0) {
+        this.forceCheckoutBills.forEach(bill => {
+          billRows += `<tr>
+            <td style="text-align:center">${stamp(bill.billNo)}</td>
+            <td style="text-align:center">${stamp(bill.billTypeText)}</td>
+            <td style="text-align:center">${stamp(bill.billPeriod)}</td>
+            <td style="text-align:right">¥${fmt(bill.billAmount)}</td>
+            <td style="text-align:right">¥${fmt(bill.paidAmount)}</td>
+            <td style="text-align:right;color:${bill.unpaidAmount > 0 ? '#e5252b' : '#12a566'}">¥${fmt(bill.unpaidAmount)}</td>
+            <td style="text-align:center">${stamp(bill.billStatusText)}</td>
+            <td style="text-align:center">${stamp(bill.payTime)}</td>
+          </tr>`;
+        });
+      } else {
+        billRows = '<tr><td colspan="8" style="text-align:center;color:#999;padding:20px 0">暂无账单记录</td></tr>';
+      }
+
+      // 组装完整 HTML
+      const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>退租信息-${stamp(f.contractNo)}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; margin: 20px; color: #333; font-size: 13px; line-height: 1.6; }
+  h1 { text-align: center; font-size: 20px; margin-bottom: 5px; }
+  .sub-title { text-align: center; color: #999; font-size: 12px; margin-bottom: 20px; }
+  h2 { font-size: 15px; border-left: 4px solid #409EFF; padding-left: 8px; margin: 18px 0 10px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  td, th { border: 1px solid #ddd; padding: 6px 8px; font-size: 12px; }
+  th { background: #f5f7fa; font-weight: 600; }
+  .info-table td:first-child { width: 120px; background: #f5f7fa; font-weight: 600; }
+  .amount { color: #e5252b; font-weight: bold; }
+  .total-row { background: #f5f7fa; font-weight: bold; }
+  .fee-table td:first-child { width: 120px; background: #f5f7fa; font-weight: 600; }
+  @media print { body { margin: 0; } .no-print { display: none; } }
+</style>
+</head>
+<body>
+
+<h1>退租信息汇总</h1>
+<p class="sub-title">导出时间：${new Date().toLocaleString('zh-CN')}</p>
+
+<h2>一、合同信息</h2>
+<table class="info-table">
+  <tr><td>租户姓名</td><td>${stamp(f.tenantName)}</td><td>合同编号</td><td>${stamp(f.contractNo)}</td></tr>
+  <tr><td>项目名称</td><td>${stamp(d.projectName)}</td><td>房间号</td><td>${stamp(d.houseNo)}</td></tr>
+  <tr><td>合同期限</td><td>${stamp(d.startDate)} 至 ${stamp(d.endDate)}</td><td>租期</td><td>${stamp(d.rentMonths)} 个月</td></tr>
+  <tr><td>缴费周期</td><td>${this.formatPaymentCycle(d.paymentCycle)}</td><td>月租金</td><td class="amount">¥${fmt(d.rentPrice)}</td></tr>
+  <tr><td>押金</td><td class="amount">¥${fmt(d.deposit)}</td><td>退租原因</td><td>${stamp(f.checkoutReason) || '(未填写)'}</td></tr>
+</table>
+
+<h2>二、缴费记录</h2>
+<table>
+  <thead>
+    <tr>
+      <th>账单编号</th><th>类型</th><th>账单期</th><th>账单金额</th><th>已付金额</th><th>未付金额</th><th>状态</th><th>支付时间</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${billRows}
+    <tr class="total-row">
+      <td colspan="3" style="text-align:right">合计</td>
+      <td style="text-align:right">¥${this.totalBillAmount}</td>
+      <td style="text-align:right">¥${this.totalPaidAmount}</td>
+      <td style="text-align:right">¥${this.totalUnpaidAmount}</td>
+      <td colspan="2"></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>三、费用计算</h2>
+<table class="fee-table">
+  <tr><td>水表读数</td><td>${stamp(af.meterReadingWater)}</td><td>电表读数</td><td>${stamp(af.meterReadingElectric)}</td><td>燃气表读数</td><td>${stamp(af.meterReadingGas)}</td></tr>
+  <tr><td>水费</td><td>¥${fmt(af.waterFee)}</td><td>电费</td><td>¥${fmt(af.electricFee)}</td><td>燃气费</td><td>¥${fmt(af.gasFee)}</td></tr>
+  <tr><td>暖气费</td><td>¥${fmt(af.heatingFee)}</td><td>物业费</td><td>¥${fmt(af.propertyFee)}</td><td>损坏扣款</td><td>¥${fmt(af.damageDeduction)}</td></tr>
+  <tr><td>违约金</td><td>¥${fmt(af.penaltyAmount)}</td><td>钥匙归还</td><td>${stamp(af.keyReturned)} 把</td><td>物品损坏情况</td><td>${stamp(af.damageDescription)}</td></tr>
+</table>
+<table class="info-table">
+  <tr><td>押金</td><td class="amount">¥${fmt(d.deposit)}</td><td>应退押金</td><td style="color:#12a566;font-weight:bold">¥${fmt(af.depositRefund)}</td><td>应退总额</td><td style="font-size:16px;color:#e5252b;font-weight:bold">¥${fmt(af.refundAmount)}</td></tr>
+</table>
+
+<div class="no-print" style="margin-top:30px;text-align:center">
+  <button onclick="window.print()" style="padding:8px 24px;font-size:14px;cursor:pointer">打印 / 另存为PDF</button>
+</div>
+
+</body>
+</html>`;
+
+      const printWin = window.open('', '_blank');
+      if (!printWin) {
+        this.$modal.msgWarning('浏览器拦截了弹出窗口，请允许弹出窗口后重试');
+        return;
+      }
+      printWin.document.write(html);
+      printWin.document.close();
+      printWin.onload = () => {
+        setTimeout(() => {
+          printWin.focus();
+          printWin.print();
+        }, 300);
+      };
     }
   }
 };
