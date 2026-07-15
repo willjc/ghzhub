@@ -1,5 +1,13 @@
 package com.ruoyi.system.service.impl;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -17,13 +25,6 @@ import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzRefundApplyMapper;
 import com.ruoyi.system.service.IHzRefundService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 退款申请Service业务层处理
@@ -210,7 +211,8 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
         }
 
         LambdaQueryWrapper<HzCheckoutRecord> recordWrapper = new LambdaQueryWrapper<>();
-        recordWrapper.eq(HzCheckoutRecord::getApplyId, checkout.getApplyId());
+        recordWrapper.eq(HzCheckoutRecord::getApplyId, checkout.getApplyId())
+                     .last("LIMIT 1");
         HzCheckoutRecord record = checkoutRecordMapper.selectOne(recordWrapper);
 
         String refundStatusVal = "0";

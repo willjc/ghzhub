@@ -20,8 +20,11 @@
 
     <properties>
         <java.version>1.8</java.version>
-        <!-- 覆盖 Spring Boot 2.5.14 自带的 Spring Framework 5.3.20，升级到 5.3.31 以修复 CVE-2023-20860 -->
-        <spring-framework.version>5.3.31</spring-framework.version>
+        <!-- 覆盖 Spring Boot 2.5.14 自带的 Spring Framework 5.3.20，升级到 5.3.39 以修复以下 CVE：
+             CVE-2023-20860 (5.3.26+) / CVE-2024-22243, CVE-2024-22259 (5.3.35+) /
+             CVE-2024-38809, CVE-2024-38816 (5.3.39+)
+             注：CVE-2024-38819 需 5.3.41(企业付费版)，本项目无静态文件服务，实际不受影响 -->
+        <spring-framework.version>5.3.39</spring-framework.version>
     </properties>
 
     <dependencies>
