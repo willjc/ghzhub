@@ -486,27 +486,107 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
     @Override
     @Transactional
     public void expireContractAndReleaseHouse(Long contractId, Long houseId) {
-        // 1. 查询合同信息（判断是否为批次配租合同）
+        // 1. 查询合同信息
         HzContract contract = baseMapper.selectById(contractId);
-        // 2. 合同状态更新为超时失效
+
+        // 2. 在软删除账单前，先检查是否有已付押金（billType='1', billStatus='1'），
+        //    如果有则创建退款申请（checkout_apply + checkout_record），让管理员能在退款管理页面操作原路退款
+        HzBill paidDepositBill = billMapper.selectOne(
+                new LambdaQueryWrapper<HzBill>()
+                        .eq(HzBill::getContractId, contractId)
+                        .eq(HzBill::getBillType, "1")
+                        .eq(HzBill::getBillStatus, "1")
+                        .eq(HzBill::getDelFlag, "0")
+                        .last("LIMIT 1"));
+
+        if (paidDepositBill != null && paidDepositBill.getPaidAmount() != null
+                && paidDepositBill.getPaidAmount().compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal depositRefund = paidDepositBill.getPaidAmount();
+            Date now = new Date();
+
+            // 2a. 创建退租申请（applyStatus='5' 已确认，退款管理页面可见）
+            HzCheckoutApply apply = new HzCheckoutApply();
+            apply.setContractId(contractId);
+            apply.setTenantId(contract.getTenantId());
+            apply.setHouseId(contract.getHouseId());
+            apply.setApplyTime(now);
+            apply.setPlanCheckoutDate(now);
+            apply.setCheckoutReason("合同超时失效-押金待退");
+            apply.setIsEarlyTermination("1");
+            apply.setApplyStatus("5");
+            apply.setApproveTime(now);
+            apply.setApproveBy("系统");
+            apply.setApproveOpinion("合同因超时失效，租客已付押金，待管理员发起原路退款");
+            apply.setDepositRefund(depositRefund);
+            apply.setRefundAmount(depositRefund);
+            apply.setPenaltyAmount(BigDecimal.ZERO);
+            apply.setUnpaidBills(BigDecimal.ZERO);
+            apply.setDamageDeduction(BigDecimal.ZERO);
+            apply.setWaterFee(BigDecimal.ZERO);
+            apply.setElectricFee(BigDecimal.ZERO);
+            apply.setGasFee(BigDecimal.ZERO);
+            apply.setHeatingFee(BigDecimal.ZERO);
+            apply.setPropertyFee(BigDecimal.ZERO);
+            apply.setDelFlag("0");
+            apply.setCreateBy("system-expire-refund");
+            apply.setCreateTime(now);
+            checkoutApplyMapper.insert(apply);
+            Long applyId = apply.getApplyId();
+
+            // 2b. 创建退租记录（refundStatus='0' 待退款）
+            HzCheckoutRecord record = new HzCheckoutRecord();
+            record.setApplyId(applyId);
+            record.setContractId(contractId);
+            record.setTenantId(contract.getTenantId());
+            record.setHouseId(contract.getHouseId());
+            record.setCheckoutDate(now);
+            record.setCheckoutTime(now);
+            record.setDepositRefund(depositRefund);
+            record.setUnpaidRent(BigDecimal.ZERO);
+            record.setPenaltyAmount(BigDecimal.ZERO);
+            record.setDamageDeduction(BigDecimal.ZERO);
+            record.setUtilityBill(BigDecimal.ZERO);
+            record.setRefundStatus("0");
+            record.setPaymentMethod("3"); // 3=微信
+            record.setPaymentRemark("合同超时失效，等待管理员发起微信退款");
+            record.setManagerName("系统");
+            record.setDelFlag("0");
+            record.setCreateBy("system-expire-refund");
+            record.setCreateTime(now);
+            checkoutRecordMapper.insert(record);
+
+            // 2c. 站内消息通知租客
+            try {
+                String contractNo = contract.getContractNo() != null ? contract.getContractNo() : ("ID:" + contractId);
+                String title = "合同失效-押金待退还";
+                String content = "您的合同" + contractNo + "因超时失效，已付押金"
+                        + depositRefund.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString()
+                        + "元待退还，管理员将在退款管理页面发起原路退款，预计1-3个工作日到账。";
+                messageService.sendMessage(contract.getTenantId(), "contract", title, content);
+            } catch (Exception ignore) {
+                // 消息发送失败不影响主流程
+            }
+        }
+
+        // 3. 合同状态更新为超时失效
         baseMapper.update(null, new LambdaUpdateWrapper<HzContract>()
                 .eq(HzContract::getContractId, contractId)
                 .set(HzContract::getContractStatus, "6"));
-        // 3. 释放关联房源：统一回退到'3'(修缮中)，由管理员检查后再上架
+        // 4. 释放关联房源：统一回退到'3'(修缮中)，由管理员检查后再上架
         if (houseId != null) {
             houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
                     .eq(HzHouse::getHouseId, houseId)
                     .eq(HzHouse::getHouseStatus, "1")
                     .set(HzHouse::getHouseStatus, "3"));
         }
-        // 4. 级联软删除关联账单，避免失效合同遗留孤儿账单
+        // 5. 级联软删除关联账单，避免失效合同遗留孤儿账单
         billMapper.update(null, new LambdaUpdateWrapper<HzBill>()
                 .eq(HzBill::getContractId, contractId)
                 .eq(HzBill::getDelFlag, "0")
                 .set(HzBill::getDelFlag, "2")
                 .set(HzBill::getUpdateTime, new Date()));
 
-        // 5. 级联更新关联订单状态为已过期，避免阻塞重新选房
+        // 6. 级联更新关联订单状态为已过期，避免阻塞重新选房
         houseOrderMapper.update(null, new LambdaUpdateWrapper<HzHouseOrder>()
                 .eq(HzHouseOrder::getContractId, contractId)
                 .in(HzHouseOrder::getOrderStatus, "0", "1", "2")
