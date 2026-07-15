@@ -1,6 +1,26 @@
 package com.ruoyi.system.gov.service;
 
-import com.alibaba.fastjson2.JSONArray;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ruoyi.system.domain.HzContract;
@@ -14,17 +34,6 @@ import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.service.IHzQualificationService;
 import com.ruoyi.system.service.IHzUserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * 政务资格校验编排服务
@@ -337,28 +346,43 @@ public class QualificationCheckService {
             return new CheckItem("social", "社保缴纳", "failed", "近 3 个月缴费单位不在港区");
         }
 
-        // 单位一致性校验：取 AAE041 最大月份对应的 AAB004，与申请人填写的工作单位严格比对（trim 后字符串完全相等）
+        // 单位一致性校验：取 AAE041 最大月份对应的所有 AAB004，与申请人填写的工作单位比对
+        // 同一个月可能有多条社保记录（不同险种/不同单位编号），只要任意一条匹配即通过
         if (userWorkUnit == null || userWorkUnit.trim().isEmpty()) {
             return new CheckItem("social", "社保缴纳", "failed", "请先在「完善信息」中填写工作单位");
         }
-        String latestCompany = null;
         String latestYm = null;
         for (Object rec : records) {
             if (!(rec instanceof Map)) continue;
             Map<?, ?> r = (Map<?, ?>) rec;
             Object ym = r.get("AAE041");
-            Object company = r.get("AAB004");
             if (ym == null) continue;
             String ymStr = String.valueOf(ym).trim();
             if (ymStr.length() > 6) ymStr = ymStr.substring(0, 6);
             if (latestYm == null || ymStr.compareTo(latestYm) > 0) {
                 latestYm = ymStr;
-                latestCompany = company == null ? null : String.valueOf(company).trim();
             }
         }
         String inputCompany = userWorkUnit.trim();
-        log.info("[checkSocial] 单位一致性 latestYm={}, latestCompany={}, inputCompany={}", latestYm, latestCompany, inputCompany);
-        if (latestCompany == null || latestCompany.isEmpty() || !latestCompany.equals(inputCompany)) {
+        // 收集最大月份对应的所有单位名称
+        java.util.Set<String> latestCompanies = new java.util.HashSet<>();
+        if (latestYm != null) {
+            for (Object rec : records) {
+                if (!(rec instanceof Map)) continue;
+                Map<?, ?> r = (Map<?, ?>) rec;
+                Object ym = r.get("AAE041");
+                Object company = r.get("AAB004");
+                if (ym == null) continue;
+                String ymStr = String.valueOf(ym).trim();
+                if (ymStr.length() > 6) ymStr = ymStr.substring(0, 6);
+                if (ymStr.equals(latestYm) && company != null) {
+                    latestCompanies.add(String.valueOf(company).trim());
+                }
+            }
+        }
+        log.info("[checkSocial] 单位一致性 latestYm={}, latestCompanies={}, inputCompany={}", latestYm, latestCompanies, inputCompany);
+        boolean companyMatched = latestCompanies.stream().anyMatch(c -> c.equals(inputCompany));
+        if (latestCompanies.isEmpty() || !companyMatched) {
             return new CheckItem("social", "社保缴纳", "failed", "社保缴费单位与您填写的单位不一致");
         }
 
