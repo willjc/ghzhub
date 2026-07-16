@@ -1,29 +1,57 @@
 package com.ruoyi.system.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.ruoyi.common.utils.DateUtils;
-import com.ruoyi.system.domain.*;
-import com.ruoyi.system.esign.*;
-import com.ruoyi.system.mapper.*;
-import com.ruoyi.system.service.EsignService;
-import com.ruoyi.system.domain.HzCheckIn;
-import com.ruoyi.system.util.TalentApartmentRentCalculator;
-import com.ruoyi.system.service.IHzCheckInService;
-import com.ruoyi.system.service.IHzUserMessageService;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.system.domain.HzBill;
+import com.ruoyi.system.domain.HzBuilding;
+import com.ruoyi.system.domain.HzCheckIn;
+import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzHouse;
+import com.ruoyi.system.domain.HzHouseExchange;
+import com.ruoyi.system.domain.HzHouseFacility;
+import com.ruoyi.system.domain.HzHouseOrder;
+import com.ruoyi.system.domain.HzHouseTypeFacility;
+import com.ruoyi.system.domain.HzProject;
+import com.ruoyi.system.domain.HzUnit;
+import com.ruoyi.system.domain.HzUser;
+import com.ruoyi.system.esign.EsignDemoException;
+import com.ruoyi.system.esign.EsignEncryption;
+import com.ruoyi.system.esign.EsignFileBean;
+import com.ruoyi.system.esign.EsignHttpHelper;
+import com.ruoyi.system.esign.EsignHttpResponse;
+import com.ruoyi.system.esign.EsignRequestType;
+import com.ruoyi.system.mapper.HzBillMapper;
+import com.ruoyi.system.mapper.HzBuildingMapper;
+import com.ruoyi.system.mapper.HzContractMapper;
+import com.ruoyi.system.mapper.HzHouseExchangeMapper;
+import com.ruoyi.system.mapper.HzHouseFacilityMapper;
+import com.ruoyi.system.mapper.HzHouseMapper;
+import com.ruoyi.system.mapper.HzHouseOrderMapper;
+import com.ruoyi.system.mapper.HzHouseTypeFacilityMapper;
+import com.ruoyi.system.mapper.HzProjectMapper;
+import com.ruoyi.system.mapper.HzUnitMapper;
+import com.ruoyi.system.mapper.HzUserMapper;
+import com.ruoyi.system.service.EsignService;
+import com.ruoyi.system.service.IHzCheckInService;
+import com.ruoyi.system.service.IHzUserMessageService;
+import com.ruoyi.system.util.TalentApartmentRentCalculator;
 
 @Service
 public class EsignServiceImpl implements EsignService {
@@ -154,11 +182,16 @@ public class EsignServiceImpl implements EsignService {
                 log.warn("e签宝查询psnId为空, mobile={}, realnameStatus={}", mobile, data.get("realnameStatus"));
                 return null;
             }
+            // 从e签宝返回数据中提取已认证的真实姓名和身份证号，覆盖数据库中用户输入的值
+            String esignName = (data.has("psnName") && !data.get("psnName").isJsonNull()) ? data.get("psnName").getAsString() : null;
+            String esignIdCard = (data.has("psnIDCardNum") && !data.get("psnIDCardNum").isJsonNull()) ? data.get("psnIDCardNum").getAsString() : null;
             userMapper.update(null, new LambdaUpdateWrapper<HzUser>().eq(HzUser::getUserId, userId)
                     .set(HzUser::getEsignPsnId, psnId)
                     .set(HzUser::getAuthStatus, "2")
-                    .set(HzUser::getAuthTime, new java.util.Date()));
-            log.info("e签宝个人认证完成，userId={}, psnId={}", userId, psnId);
+                    .set(HzUser::getAuthTime, new java.util.Date())
+                    .set(esignName != null, HzUser::getRealName, esignName)
+                    .set(esignIdCard != null, HzUser::getIdCard, esignIdCard));
+            log.info("e签宝个人认证完成，userId={}, psnId={}, esignName={}, esignIdCard={}", userId, psnId, esignName, esignIdCard);
             return psnId;
         } catch (Exception e) {
             log.error("查询e签宝认证状态失败, userId={}, error={}", userId, e.getMessage(), e);
