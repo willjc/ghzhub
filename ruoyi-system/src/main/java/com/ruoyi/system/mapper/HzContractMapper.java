@@ -21,9 +21,11 @@ public interface HzContractMapper extends BaseMapper<HzContract> {
      * 根据用户ID查询合同列表（关联项目、楼栋、单元信息）
      *
      * @param userId 用户ID
+     * @param projectType 项目类型（可选，1:人才公寓 2:保租房 3:市场租赁），为空则不过滤
      * @return 合同列表
      */
-    List<Map<String, Object>> selectContractVOByUserId(@Param("userId") Long userId);
+    List<Map<String, Object>> selectContractVOByUserId(@Param("userId") Long userId,
+                                                        @Param("projectType") String projectType);
 
     /**
      * 根据合同ID查询合同详情（关联项目、楼栋、单元��房源信息）

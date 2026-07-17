@@ -6,9 +6,10 @@ import { get, post, put } from '@/utils/request'
 /**
  * 获取用户的入住单列表
  * @param {Number} tenantId 租户ID
+ * @param {String} [projectType] 项目类型（1:人才公寓 2:保租房 3:市场租赁），为空则不过滤
  */
-export function getCheckInList(tenantId) {
-  return get(`/h5/app/checkin/list/${tenantId}`)
+export function getCheckInList(tenantId, projectType) {
+  return get(`/h5/app/checkin/list/${tenantId}`, projectType ? { projectType } : {})
 }
 
 /**

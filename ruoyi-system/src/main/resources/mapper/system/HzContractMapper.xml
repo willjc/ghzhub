@@ -34,6 +34,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         LEFT JOIN hz_unit u ON h.unit_id = u.unit_id
         WHERE c.tenant_id = #{userId}
           AND c.del_flag = '0'
+          <if test="projectType != null and projectType != ''">
+              AND p.project_type = #{projectType}
+          </if>
         ORDER BY c.create_time DESC
     </select>
 

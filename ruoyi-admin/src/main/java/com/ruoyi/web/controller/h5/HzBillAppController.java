@@ -174,13 +174,15 @@ public class HzBillAppController extends BaseController {
      * @param userId 用户ID（tenant_id字段存储的就是user_id）
      * @param billType 账单类型（可选）：1=押金, 2=租金, 3=水费, 4=电费, 5=燃气费, 6=物业费, 7=其他
      * @param billStatus 账单状态（可选）：0=待支付, 1=已支付, 2=部分支付, 3=已逾期, 4=已关闭
+     * @param projectType 项目类型（可选）：1=人才公寓, 2=保租房, 3=市场租赁，为空则不过滤
      */
     @GetMapping("/user/{userId}")
     public AjaxResult getBillListByUserId(@PathVariable Long userId,
                                           @RequestParam(required = false) String billType,
-                                          @RequestParam(required = false) String billStatus) {
+                                          @RequestParam(required = false) String billStatus,
+                                          @RequestParam(required = false) String projectType) {
         // 使用关联查询，获取完整的账单信息（包含项目名称、楼栋、单元等）
-        List<HzBillVO> bills = billMapper.selectBillVOByUserId(userId, billType, billStatus);
+        List<HzBillVO> bills = billMapper.selectBillVOByUserId(userId, billType, billStatus, projectType);
 
         return success(bills);
     }

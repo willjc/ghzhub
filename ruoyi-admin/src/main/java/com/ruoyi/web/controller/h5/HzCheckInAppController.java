@@ -182,11 +182,13 @@ public class HzCheckInAppController extends BaseController {
      * 获取用户的入住单列表
      *
      * @param tenantId 租户ID
+     * @param projectType 项目类型（可选，1:人才公寓 2:保租房 3:市场租赁），为空则不过滤
      * @return 入住单列表
      */
     @GetMapping("/list/{tenantId}")
-    public AjaxResult getCheckInList(@PathVariable Long tenantId) {
-        List<HzCheckIn> list = checkInService.selectCheckInListByTenantId(tenantId);
+    public AjaxResult getCheckInList(@PathVariable Long tenantId,
+                                     @RequestParam(required = false) String projectType) {
+        List<HzCheckIn> list = checkInService.selectCheckInListByTenantId(tenantId, projectType);
 
         return success(list);
     }

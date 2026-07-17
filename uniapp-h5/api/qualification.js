@@ -13,16 +13,16 @@ import { get, post } from '@/utils/request'
  * @param {Number} userId 当前登录用户 ID
  * @returns {Promise<{code, data: { checked, passed, items, failReasons, lastCheckTime, qualificationId }}>}
  */
-export function getQualificationStatus(userId) {
-  return get('/h5/qualification/status', { userId })
+export function getQualificationStatus(userId, applyType = '1') {
+  return get('/h5/qualification/status', { userId, applyType })
 }
 
 /**
  * 触发一次资格校验（同步，服务端会并发调政务接口）
  * @param {Number} userId 当前登录用户 ID
  */
-export function runQualificationCheck(userId) {
-  return post(`/h5/qualification/check?userId=${encodeURIComponent(userId)}`, {})
+export function runQualificationCheck(userId, applyType = '1') {
+  return post(`/h5/qualification/check?userId=${encodeURIComponent(userId)}&applyType=${encodeURIComponent(applyType)}`, {})
 }
 
 /**
@@ -42,6 +42,14 @@ export function getIsBatchTenant(userId) {
 export function getCurrentUserId() {
   const userInfo = uni.getStorageSync('userInfo') || {}
   return userInfo.userId || userInfo.id || null
+}
+
+/**
+ * 读取当前办理类型（1:人才公寓 2:保租房 3:市场租赁）
+ * - 由项目详情页“选择房源”入口写入 storage，贯穿资格守卫链路
+ */
+export function getCurrentApplyType() {
+  return uni.getStorageSync('currentApplyType') || '1'
 }
 
 /**
@@ -68,6 +76,15 @@ export function ensureQualified(onPass, options = {}) {
   }
 
   uni.showLoading({ title: '校验中...', mask: true })
+  const applyType = options.applyType || getCurrentApplyType()
+
+  // 市场租赁：跳过政务资格审查，直接放行（防御，正常已在入口页短路）
+  if (applyType === '3') {
+    uni.hideLoading()
+    if (typeof onPass === 'function') onPass()
+    return
+  }
+
   // 先判断批量配租豁免，命中则直接放行（不再调资格校验）
   getIsBatchTenant(userId)
     .then((res) => {
@@ -78,7 +95,7 @@ export function ensureQualified(onPass, options = {}) {
         return
       }
       // 未命中批量配租 → 走原资格校验流程
-      return getQualificationStatus(userId).then((res2) => {
+      return getQualificationStatus(userId, applyType).then((res2) => {
         uni.hideLoading()
         const data = (res2 && res2.data) || {}
         if (data.checked && data.passed) {
@@ -131,12 +148,15 @@ function goFailPage(data) {
 export function guardOrRedirect() {
   const userId = getCurrentUserId()
   if (!userId) return
+  const applyType = getCurrentApplyType()
+  // 市场租赁无需政务资格审查，直接放行
+  if (applyType === '3') return
   // 先判断批量配租豁免
   getIsBatchTenant(userId)
     .then((res) => {
       const isBatch = !!(res && res.data && res.data.isBatchTenant)
       if (isBatch) return
-      return getQualificationStatus(userId).then((res2) => {
+      return getQualificationStatus(userId, applyType).then((res2) => {
         const data = (res2 && res2.data) || {}
         if (data.checked && !data.passed) {
           const reasons = encodeURIComponent(JSON.stringify(data.failReasons || []))
@@ -155,6 +175,7 @@ export default {
   runQualificationCheck,
   getIsBatchTenant,
   getCurrentUserId,
+  getCurrentApplyType,
   ensureQualified,
   guardOrRedirect
 }

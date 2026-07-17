@@ -38,7 +38,7 @@
 </template>
 
 <script>
-import { runQualificationCheck, getCurrentUserId } from '@/api/qualification'
+import { runQualificationCheck, getCurrentUserId, getCurrentApplyType } from '@/api/qualification'
 
 const INIT_ITEMS = [
   { code: 'marriage',     label: '婚姻信息核验',   status: 'pending', message: '' },
@@ -53,6 +53,7 @@ const INIT_ITEMS = [
 export default {
   data() {
     return {
+      applyType: '1',
       items: JSON.parse(JSON.stringify(INIT_ITEMS)),
       progressPercent: 0,
       progressTimer: null,
@@ -73,6 +74,11 @@ export default {
       } catch (e) {
         this.redirectParams = null
       }
+    }
+    // 当前办理类型：保租房(2)不展示学历校验行
+    this.applyType = getCurrentApplyType()
+    if (this.applyType === '2') {
+      this.items = this.items.filter(it => it.code !== 'education')
     }
     this.startCheck()
   },
@@ -95,7 +101,7 @@ export default {
         return
       }
       this.startVirtualProgress()
-      runQualificationCheck(userId)
+      runQualificationCheck(userId, this.applyType)
         .then((res) => {
           const data = (res && res.data) || {}
           this.applyServerResult(data)

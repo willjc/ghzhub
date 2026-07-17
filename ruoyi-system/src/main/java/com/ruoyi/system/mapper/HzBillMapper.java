@@ -50,9 +50,11 @@ public interface HzBillMapper extends BaseMapper<HzBill> {
      * @param userId 用户ID
      * @param billType 账单类型（可选）
      * @param billStatus 账单状态（可选）
+     * @param projectType 项目类型（可选，1:人才公寓 2:保租房 3:市场租赁），为空则不过滤
      * @return 账单VO列表
      */
     List<HzBillVO> selectBillVOByUserId(@Param("userId") Long userId,
                                         @Param("billType") String billType,
-                                        @Param("billStatus") String billStatus);
+                                        @Param("billStatus") String billStatus,
+                                        @Param("projectType") String projectType);
 }

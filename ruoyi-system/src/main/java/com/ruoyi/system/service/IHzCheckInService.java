@@ -29,6 +29,15 @@ public interface IHzCheckInService {
     public List<HzCheckIn> selectCheckInListByTenantId(Long tenantId);
 
     /**
+     * 根据租户ID查询入住申请列表（按项目类型过滤）
+     *
+     * @param tenantId 租户ID
+     * @param projectType 项目类型（1:人才公寓 2:保租房 3:市场租赁），为空则不过滤
+     * @return 入住申请列表
+     */
+    public List<HzCheckIn> selectCheckInListByTenantId(Long tenantId, String projectType);
+
+    /**
      * 根据租户ID查询已入住确认的入住申请列表 (用于续租页面)
      *
      * @param tenantId 租户ID

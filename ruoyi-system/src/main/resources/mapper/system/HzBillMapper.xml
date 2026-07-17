@@ -275,6 +275,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billStatus != null and billStatus != ''">
                 AND b.bill_status = #{billStatus}
             </if>
+            <if test="projectType != null and projectType != ''">
+                AND EXISTS (
+                    SELECT 1 FROM hz_contract ct
+                    JOIN hz_project pj ON ct.project_id = pj.project_id
+                    WHERE ct.contract_id = b.contract_id
+                      AND pj.project_type = #{projectType}
+                )
+            </if>
         </where>
         ORDER BY b.bill_date ASC
     </select>

@@ -147,6 +147,9 @@
 	import { get } from '@/utils/request'
 	import authCheck from '@/mixins/authCheck'
 
+	// 办事页业务类型 → 项目类型编码（1:人才公寓 2:保租房 3:市场租赁）
+	const HOUSING_TYPE_TO_PROJECT_TYPE = { talent: '1', guaranteed: '2', market: '3' }
+
 	export default {
 		data() {
 			return {
@@ -224,9 +227,11 @@
 					this.loading = true
 					uni.showLoading({ title: '加载中...' })
 
+					// 按业务类型过滤（人才公寓/保租房/市场租赁）
+					const projectType = HOUSING_TYPE_TO_PROJECT_TYPE[this.housingType] || ''
 					// 并发拉取账单 + 资料提交状态
 					const [billRes, docRes] = await Promise.all([
-						getBillListByUserId(this.userId),
+						getBillListByUserId(this.userId, projectType ? { projectType } : {}),
 						get(`/h5/document/status/${this.userId}`).catch(() => null)
 					])
 

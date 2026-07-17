@@ -125,6 +125,9 @@
 	import { checkinCheck } from '@/api/order'
 	import authCheck from '@/mixins/authCheck'
 
+	// 办事页业务类型 → 项目类型编码（1:人才公寓 2:保租房 3:市场租赁）
+	const HOUSING_TYPE_TO_PROJECT_TYPE = { talent: '1', guaranteed: '2', market: '3' }
+
 	export default {
 		data() {
 			return {
@@ -199,7 +202,9 @@
 					this.loading = true
 					console.log('加载入住申请，租户ID:', this.tenantId)
 
-					const response = await getCheckInList(this.tenantId)
+					// 按业务类型过滤（人才公寓/保租房/市场租赁）
+					const projectType = HOUSING_TYPE_TO_PROJECT_TYPE[this.housingType] || ''
+					const response = await getCheckInList(this.tenantId, projectType)
 
 					if (response.code === 200 && response.data) {
 						// 转换后端数据格式为前端需要的格式

@@ -6,10 +6,11 @@ import request from '@/utils/request'
 /**
  * 根据用户ID获取我的合同列表
  * @param {Number} userId 用户ID
+ * @param {String} [projectType] 项目类型（1:人才公寓 2:保租房 3:市场租赁），为空则不过滤
  * @returns {Promise}
  */
-export function getMyContracts(userId) {
-  return request.get(`/h5/app/contract/user/${userId}`)
+export function getMyContracts(userId, projectType) {
+  return request.get(`/h5/app/contract/user/${userId}`, projectType ? { projectType } : {})
 }
 
 /**

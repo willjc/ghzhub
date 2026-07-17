@@ -12,6 +12,7 @@ import com.ruoyi.system.mapper.HzCheckInMapper;
 import com.ruoyi.system.service.IHzCheckInService;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,10 +30,23 @@ public class HzCheckInServiceImpl extends ServiceImpl<HzCheckInMapper, HzCheckIn
 
     @Override
     public List<HzCheckIn> selectCheckInListByTenantId(Long tenantId) {
+        return selectCheckInListByTenantId(tenantId, null);
+    }
+
+    @Override
+    public List<HzCheckIn> selectCheckInListByTenantId(Long tenantId, String projectType) {
         LambdaQueryWrapper<HzCheckIn> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzCheckIn::getTenantId, tenantId)
-               .eq(HzCheckIn::getDelFlag, "0")
-               .orderByDesc(HzCheckIn::getCreateTime);
+               .eq(HzCheckIn::getDelFlag, "0");
+        // 按项目类型过滤：先取该租户在该业务类型下的入住记录ID集合，再按ID集合过滤
+        if (StringUtils.isNotBlank(projectType)) {
+            List<Long> recordIds = baseMapper.selectRecordIdsByTenantIdAndProjectType(tenantId, projectType);
+            if (recordIds == null || recordIds.isEmpty()) {
+                return new ArrayList<>();
+            }
+            wrapper.in(HzCheckIn::getRecordId, recordIds);
+        }
+        wrapper.orderByDesc(HzCheckIn::getCreateTime);
         return this.list(wrapper);
     }
 

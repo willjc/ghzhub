@@ -101,9 +101,10 @@ public class HzContractAppController extends BaseController {
      * @param userId 用户ID
      */
     @GetMapping("/user/{userId}")
-    public AjaxResult getContractsByUserId(@PathVariable Long userId) {
-        // 查询该用户的所有合同（关联项目、楼栋、单元信息）
-        List<Map<String, Object>> contracts = contractMapper.selectContractVOByUserId(userId);
+    public AjaxResult getContractsByUserId(@PathVariable Long userId,
+                                           @RequestParam(required = false) String projectType) {
+        // 查询该用户的所有合同（关联项目、楼栋、单元信息）；projectType 不为空时按业务类型过滤
+        List<Map<String, Object>> contracts = contractMapper.selectContractVOByUserId(userId, projectType);
 
         // 补充押金支付状态和资料提交状态
         for (Map<String, Object> contract : contracts) {

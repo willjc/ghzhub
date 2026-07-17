@@ -114,6 +114,7 @@ export default {
 	data() {
 		return {
 			projectId: '',
+			projectType: '',
 			projectInfo: {
 				projectName: '',
 				address: '',
@@ -148,6 +149,9 @@ export default {
 
 				if (response.code === 200 && response.data) {
 					const project = response.data
+
+					// 记录项目类型（1:人才公寓 2:保租房 3:市场租赁）
+					this.projectType = project.projectType || '1'
 
 					// 映射后端数据到前端字段
 					this.projectInfo = {
@@ -240,7 +244,18 @@ export default {
 			// #endif
 		},
 		selectRoom() {
-			// 资格前置守卫：通过后才跳承诺书签署页；未校验→进度页；未通过→失败页
+			// 记录当前办理类型，贯穿资格守卫链路（1:人才公寓 2:保租房 3:市场租赁）
+			uni.setStorageSync('currentApplyType', this.projectType || '1')
+
+			// 市场租赁：跳过政务资格审查，直接进入承诺书签署（实名在合同签署环节仍强制）
+			if (this.projectType === '3') {
+				uni.navigateTo({
+					url: `/pages/commitment/sign?projectId=${this.projectId}`
+				})
+				return
+			}
+
+			// 人才公寓/保租房：资格前置守卫；通过后才跳承诺书签署页；未校验→进度页；未通过→失败页
 			ensureQualified(
 				() => {
 					uni.navigateTo({

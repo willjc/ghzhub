@@ -174,4 +174,20 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  AND ct.contract_status IN ('2','3','4','5') " +
             "ORDER BY ct.create_time DESC")
     List<Map<String, Object>> selectMyListingsByTenantId(@Param("tenantId") Long tenantId);
+
+    /**
+     * 根据租户ID和项目类型查询入住记录ID集合（用于按业务类型过滤入住列表）
+     * 通过 合同→项目 关联取得 project_type（合同关联可靠，避免历史迁移数据 house_id 断链导致丢失）
+     *
+     * @param tenantId 租户ID
+     * @param projectType 项目类型（1:人才公寓 2:保租房 3:市场租赁）
+     * @return 入住记录ID列表
+     */
+    @Select("SELECT c.record_id FROM hz_checkin_record c " +
+            "JOIN hz_contract ct ON c.contract_id = ct.contract_id " +
+            "JOIN hz_project p ON ct.project_id = p.project_id " +
+            "WHERE c.tenant_id = #{tenantId} AND c.del_flag = '0' " +
+            "  AND p.project_type = #{projectType}")
+    List<Long> selectRecordIdsByTenantIdAndProjectType(@Param("tenantId") Long tenantId,
+                                                       @Param("projectType") String projectType);
 }

@@ -119,11 +119,12 @@ public class HzQualificationController extends BaseController {
      * - 已校验：返回最近一次快照（passed / items / failReasons / lastCheckTime）
      */
     @GetMapping("/status")
-    public AjaxResult status(@RequestParam Long userId) {
+    public AjaxResult status(@RequestParam Long userId,
+                             @RequestParam(defaultValue = "1") String applyType) {
         if (userId == null) {
             return error("用户未登录");
         }
-        QualificationCheckResult result = qualificationCheckService.getStatus(userId);
+        QualificationCheckResult result = qualificationCheckService.getStatus(userId, applyType);
         return success(result);
     }
 
@@ -131,12 +132,13 @@ public class HzQualificationController extends BaseController {
      * 触发一次资格校验（同步），失败时返回模糊的失败原因
      */
     @PostMapping("/check")
-    public AjaxResult check(@RequestParam Long userId) {
+    public AjaxResult check(@RequestParam Long userId,
+                            @RequestParam(defaultValue = "1") String applyType) {
         if (userId == null) {
             return error("用户未登录");
         }
         try {
-            QualificationCheckResult result = qualificationCheckService.check(userId);
+            QualificationCheckResult result = qualificationCheckService.check(userId, applyType);
             return success(result);
         } catch (IllegalStateException e) {
             return error(e.getMessage());

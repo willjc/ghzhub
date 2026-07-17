@@ -108,8 +108,18 @@ public class QualificationCheckService {
     // ==================== 查询最新资格态 ====================
 
     public QualificationCheckResult getStatus(Long userId) {
+        return getStatus(userId, "1");
+    }
+
+    public QualificationCheckResult getStatus(Long userId, String applyType) {
         QualificationCheckResult ret = new QualificationCheckResult();
-        HzQualification q = qualificationService.selectQualificationByTenantIdAndType(userId, "1");
+        // 市场租赁：无需政务资格审查，直接视为通过（防御，正常前端已短路）
+        if ("3".equals(applyType)) {
+            ret.setChecked(true);
+            ret.setPassed(true);
+            return ret;
+        }
+        HzQualification q = qualificationService.selectQualificationByTenantIdAndType(userId, applyType);
         if (q == null) {
             ret.setChecked(false);
             return ret;
@@ -127,7 +137,7 @@ public class QualificationCheckService {
         ret.setQualificationId(q.getQualificationId());
         ret.setLastCheckTime(q.getLastCheckTime());
         // 简略回放 items，使失败页可以直接用
-        ret.getItems().addAll(buildItemsFromEntity(q, appealEduPassed, appealSocPassed));
+        ret.getItems().addAll(buildItemsFromEntity(q, appealEduPassed, appealSocPassed, applyType));
 
         // 总判定：缓存的 final_result 不一定反映最新申诉态（如校验后才被审核通过），
         // 这里基于回放 items 重新计算一次。
@@ -161,6 +171,10 @@ public class QualificationCheckService {
     // ==================== 执行一次完整校验 ====================
 
     public QualificationCheckResult check(Long userId) {
+        return check(userId, "1");
+    }
+
+    public QualificationCheckResult check(Long userId, String applyType) {
         HzUser user = userService.selectHzUserById(userId);
         if (user == null || isBlank(user.getIdCard()) || isBlank(user.getRealName())) {
             QualificationCheckResult r = new QualificationCheckResult();
@@ -173,14 +187,28 @@ public class QualificationCheckService {
         String idCard = user.getIdCard().trim();
         String name = user.getRealName().trim();
 
-        // 人才公寓一人一户：若用户当前有在住的人才公寓合同，直接拦截
-        if (hasTalentApartmentActiveContract(userId)) {
+        // 市场租赁：跳过全部政务资格审查，实名通过即放行（防御，正常前端已短路）
+        if ("3".equals(applyType)) {
+            QualificationCheckResult r = new QualificationCheckResult();
+            r.setChecked(true);
+            r.setPassed(true);
+            return r;
+        }
+
+        // 一人一户/在住拦截：若用户当前有在住的同类型合同，直接拦截
+        if (hasActiveContractOfType(userId, applyType)) {
             QualificationCheckResult r = new QualificationCheckResult();
             r.setChecked(true);
             r.setPassed(false);
-            r.getItems().add(new CheckItem("talentApartment", "人才公寓在住校验", "failed",
-                    "您当前正在住人才公寓，不可重复申请"));
-            r.getFailReasons().add("您当前正在住人才公寓，不可重复申请");
+            if ("2".equals(applyType)) {
+                r.getItems().add(new CheckItem("activeContract", "保租房在住校验", "failed",
+                        "您当前正在租住保租房，不可重复申请"));
+                r.getFailReasons().add("您当前正在租住保租房，不可重复申请");
+            } else {
+                r.getItems().add(new CheckItem("talentApartment", "人才公寓在住校验", "failed",
+                        "您当前正在住人才公寓，不可重复申请"));
+                r.getFailReasons().add("您当前正在住人才公寓，不可重复申请");
+            }
             return r;
         }
 
@@ -234,9 +262,11 @@ public class QualificationCheckService {
         }
         result.getItems().add(socialItem);
 
-        // 学历（无政务接口，默认 failed；学历申诉通过则 passed）
+        // 学历（人才公寓需核验，无政务接口默认 failed，学历申诉通过则 passed；保租房无需学历核验）
         CheckItem educationItem;
-        if (appealEduPassed) {
+        if ("2".equals(applyType)) {
+            educationItem = new CheckItem("education", "学历核验", "skipped", "保租房无需学历核验");
+        } else if (appealEduPassed) {
             educationItem = new CheckItem("education", "学历核验", "passed", "已通过人工审核");
         } else {
             educationItem = new CheckItem("education", "学历核验", "failed", "学历待人工审核，请提交申诉");
@@ -264,10 +294,10 @@ public class QualificationCheckService {
         result.getItems().add(spouseEstateItem);
         result.getItems().add(spouseHousingItem);
 
-        // 通过条件：5 项判定项都是 passed 或 skipped + 学历 passed
+        // 通过条件：5 项判定项都是 passed 或 skipped + 学历 passed/skipped
         boolean passed =
                   "passed".equals(socialItem.getStatus())
-                && "passed".equals(educationItem.getStatus())
+                && ("passed".equals(educationItem.getStatus()) || "skipped".equals(educationItem.getStatus()))
                 && ("passed".equals(selfEstateItem.getStatus()))
                 && ("passed".equals(selfHousingItem.getStatus()))
                 && ("passed".equals(spouseEstateItem.getStatus()) || "skipped".equals(spouseEstateItem.getStatus()))
@@ -281,8 +311,8 @@ public class QualificationCheckService {
         HzQualification entity = buildEntity(userId, user, spouseIdCard, spouseName,
                 socialItem, selfEstateItem, selfHousingItem,
                 spouseEstateItem, spouseHousingItem,
-                passed, joinReasons(result.getFailReasons()), now);
-        upsert(entity);
+                passed, joinReasons(result.getFailReasons()), now, applyType);
+        upsert(entity, applyType);
         result.setQualificationId(entity.getQualificationId());
         return result;
     }
@@ -574,10 +604,10 @@ public class QualificationCheckService {
                                         CheckItem social,
                                         CheckItem selfEstate, CheckItem selfHousing,
                                         CheckItem spouseEstate, CheckItem spouseHousing,
-                                        boolean passed, String reason, String now) {
+                                        boolean passed, String reason, String now, String applyType) {
         HzQualification e = new HzQualification();
         e.setTenantId(userId);
-        e.setApplyType("1");
+        e.setApplyType(applyType);
         e.setIdCard(user.getIdCard());
         e.setName(user.getRealName());
         e.setPhone(user.getPhone());
@@ -596,8 +626,8 @@ public class QualificationCheckService {
         return e;
     }
 
-    private void upsert(HzQualification entity) {
-        HzQualification exist = qualificationService.selectQualificationByTenantIdAndType(entity.getTenantId(), "1");
+    private void upsert(HzQualification entity, String applyType) {
+        HzQualification exist = qualificationService.selectQualificationByTenantIdAndType(entity.getTenantId(), applyType);
         if (exist == null) {
             qualificationService.insertQualification(entity);
         } else {
@@ -607,7 +637,7 @@ public class QualificationCheckService {
     }
 
     /** 从已存实体反向构造 items（用于 status 接口回放） */
-    private List<CheckItem> buildItemsFromEntity(HzQualification q, boolean appealEduPassed, boolean appealSocPassed) {
+    private List<CheckItem> buildItemsFromEntity(HzQualification q, boolean appealEduPassed, boolean appealSocPassed, String applyType) {
         List<CheckItem> list = new ArrayList<>();
         // 婚姻
         boolean hasSpouse = q.getSpouseIdCard() != null && !q.getSpouseIdCard().isEmpty();
@@ -620,8 +650,10 @@ public class QualificationCheckService {
                 socialOk
                         ? (appealSocPassed && !"1".equals(q.getSocialValid()) ? "已通过人工审核" : "近 3 个月港区单位连续缴纳")
                         : "近 3 个月社保缴纳不满足"));
-        // 学历（无政务接口，依赖学历申诉豁免）
-        if (appealEduPassed) {
+        // 学历（无政务接口，依赖学历申诉豁免；保租房无需学历核验）
+        if ("2".equals(applyType)) {
+            list.add(new CheckItem("education", "学历核验", "skipped", "保租房无需学历核验"));
+        } else if (appealEduPassed) {
             list.add(new CheckItem("education", "学历核验", "passed", "已通过人工审核"));
         } else {
             list.add(new CheckItem("education", "学历核验", "failed", "学历待人工审核，请提交申诉"));
@@ -650,9 +682,9 @@ public class QualificationCheckService {
     }
 
     /**
-     * 判断用户是否当前有在住的人才公寓合同（contract_status IN 2,3 且 project_type=1）
+     * 判断用户是否当前有在住的同类型合同（contract_status IN 2,3 且 project_type=applyType）
      */
-    private boolean hasTalentApartmentActiveContract(Long userId) {
+    private boolean hasActiveContractOfType(Long userId, String applyType) {
         // 查询用户所有活跃合同（已签署或履行中）
         List<HzContract> activeContracts = contractMapper.selectList(
                 new LambdaQueryWrapper<HzContract>()
@@ -662,13 +694,13 @@ public class QualificationCheckService {
         if (activeContracts == null || activeContracts.isEmpty()) {
             return false;
         }
-        // 逐个检查合同关联的项目是否为人才公寓
+        // 逐个检查合同关联的项目是否为目标类型
         for (HzContract c : activeContracts) {
             if (c.getProjectId() == null) continue;
             HzProject project = projectMapper.selectById(c.getProjectId());
-            if (project != null && "1".equals(project.getProjectType())) {
-                log.info("[资格校验] 人才公寓在住拦截命中：userId={}, contractId={}, projectId={}",
-                        userId, c.getContractId(), c.getProjectId());
+            if (project != null && applyType != null && applyType.equals(project.getProjectType())) {
+                log.info("[资格校验] 在住拦截命中：applyType={}, userId={}, contractId={}, projectId={}",
+                        applyType, userId, c.getContractId(), c.getProjectId());
                 return true;
             }
         }
