@@ -303,10 +303,15 @@
 					try {
 						const res = await queryPayResult(billNo)
 						if (res.code === 200 && res.data.paid) {
-							uni.showToast({ title: '支付成功', icon: 'success' })
-							setTimeout(() => {
-								uni.navigateTo({ url: '/pages/upload/index' })
-							}, 1500)
+							uni.showModal({
+								title: '押金缴纳成功',
+								content: '请于3日内上传工作证明，并在办事栏目中发起“入住办理”申请后，于线下办理入住',
+								showCancel: false,
+								confirmText: '我知道了',
+								success: () => {
+									uni.navigateTo({ url: '/pages/upload/index' })
+								}
+							})
 							return
 						}
 					} catch (e) {

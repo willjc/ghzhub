@@ -109,8 +109,8 @@
 			"root": "subpkg/affairs",
 			"name": "pkg-affairs",
 			"pages": [
-				{ "path": "appeal", "style": { "navigationBarTitleText": "资格申诉" } },
-				{ "path": "appeal-submit", "style": { "navigationBarTitleText": "资格申诉" } },
+				{ "path": "appeal", "style": { "navigationBarTitleText": "资格申请" } },
+				{ "path": "appeal-submit", "style": { "navigationBarTitleText": "资格申请" } },
 				{ "path": "appeal-record", "style": { "navigationBarTitleText": "申诉详情" } },
 				{ "path": "checkin", "style": { "navigationBarTitleText": "入住办理" } },
 				{ "path": "checkin-process", "style": { "navigationBarTitleText": "办理入住" } },

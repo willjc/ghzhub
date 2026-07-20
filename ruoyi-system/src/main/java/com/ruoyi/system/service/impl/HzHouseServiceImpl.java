@@ -237,6 +237,16 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
     @Override
     public int insertHouse(HzHouse house)
     {
+        // 房源编码唯一性校验：避免直接撞数据库唯一键 uk_house_code，给出友好提示
+        if (StringUtils.isNotBlank(house.getHouseCode()))
+        {
+            long dup = this.count(new LambdaQueryWrapper<HzHouse>()
+                    .eq(HzHouse::getHouseCode, house.getHouseCode()));
+            if (dup > 0)
+            {
+                throw new ServiceException("房源编码「" + house.getHouseCode() + "」已存在，请更换后重试");
+            }
+        }
         return this.save(house) ? 1 : 0;
     }
 
@@ -252,6 +262,17 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
     @Override
     public int updateHouse(HzHouse house)
     {
+        // 房源编码唯一性校验（排除自身）：避免直接撞数据库唯一键 uk_house_code，给出友好提示
+        if (StringUtils.isNotBlank(house.getHouseCode()))
+        {
+            long dup = this.count(new LambdaQueryWrapper<HzHouse>()
+                    .eq(HzHouse::getHouseCode, house.getHouseCode())
+                    .ne(house.getHouseId() != null, HzHouse::getHouseId, house.getHouseId()));
+            if (dup > 0)
+            {
+                throw new ServiceException("房源编码「" + house.getHouseCode() + "」已存在，请更换后重试");
+            }
+        }
         // 物业角色修改房源状态时，判断是否需要审批
         if (house.getHouseId() != null && house.getHouseStatus() != null && SecurityUtils.isPropertyRole())
         {

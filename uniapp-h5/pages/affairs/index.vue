@@ -75,7 +75,7 @@
 			return {
 				featureFlags,
 				functionList: [
-					{ key: 'appeal', name: '资格申诉' },
+					{ key: 'appeal', name: '资格申请' },
 					{ key: 'select', name: '选房' },
 					{ key: 'checkin', name: '入住办理' },
 					{ key: 'checkout', name: '退租办理' },
