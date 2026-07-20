@@ -27,6 +27,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
@@ -49,6 +51,8 @@ import java.util.Map;
 public class HzHouseOrderServiceImpl
         extends ServiceImpl<HzHouseOrderMapper, HzHouseOrder>
         implements IHzHouseOrderService {
+
+    private static final Logger log = LoggerFactory.getLogger(HzHouseOrderServiceImpl.class);
 
     @Autowired
     private HzHouseOrderMapper orderMapper;
@@ -344,10 +348,59 @@ public class HzHouseOrderServiceImpl
         HzHouseOrder order = getOne(new LambdaQueryWrapper<HzHouseOrder>()
                 .eq(HzHouseOrder::getOrderNo, orderNo)
                 .eq(HzHouseOrder::getDelFlag, "0"));
-        if (order == null || !"1".equals(order.getOrderStatus())) {
+        if (order == null) {
             return;
         }
 
+        String st = order.getOrderStatus();
+        // 已流转到「待上传资料(2)」或「完成(3)」：幂等处理，仅补齐房源为「已出租」后返回
+        if ("2".equals(st) || "3".equals(st)) {
+            promoteHouseToRented(order.getHouseId());
+            return;
+        }
+
+        // 「已过期(4)」：押金晚于押金支付截止才到账的竞态（订单已被超时任务回退）。
+        // 仅当房源仍「空置(0)」可重新占用时才补偿恢复；若房源已被他人预订/出租或维修/下架，
+        // 则不可自动恢复（避免抢占他人房源），记录告警交人工处理/退款。
+        if ("4".equals(st)) {
+            int claimed = 0;
+            if (order.getHouseId() != null) {
+                claimed = houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                        .eq(HzHouse::getHouseId, order.getHouseId())
+                        .eq(HzHouse::getHouseStatus, "0")
+                        .set(HzHouse::getHouseStatus, "2"));
+            }
+            if (claimed <= 0) {
+                log.error("【押金到账-竞态】订单已超时且房源不可占用，需人工处理/退款：orderNo={}, houseId={}",
+                        orderNo, order.getHouseId());
+                return;
+            }
+            advanceOrderAfterDeposit(order);
+            // 恢复被超时任务回退的合同：仅从「超时失效(6)」恢复到「已签署(2)」
+            if (order.getContractId() != null && order.getContractId() > 0) {
+                contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                        .eq(HzContract::getContractId, order.getContractId())
+                        .eq(HzContract::getContractStatus, "6")
+                        .set(HzContract::getContractStatus, "2")
+                        .set(HzContract::getUpdateTime, new Date()));
+            }
+            log.warn("【押金到账-竞态】订单超时后押金才到账，已自动恢复订单/房源/合同：orderNo={}", orderNo);
+            return;
+        }
+
+        // 「待付押金(1)」：正常流转。其余状态（如 0 待签约）不处理。
+        if ("1".equals(st)) {
+            advanceOrderAfterDeposit(order);
+            // 押金缴清后，房源更新为「已出租(2)」。允许从「已预订(1)」或「空置(0)」推进——
+            // 竞态下选房锁可能已超时把房源释放回空置，付款到账后需要重新占用。
+            promoteHouseToRented(order.getHouseId());
+        }
+    }
+
+    /**
+     * 押金缴清后推进订单状态：配租用户→完成(3)；自选用户→待上传资料(2) 并开启 72 小时倒计时。
+     */
+    private void advanceOrderAfterDeposit(HzHouseOrder order) {
         if ("1".equals(order.getIsBatchAlloc())) {
             // 配租用户：押金缴清后直接完成
             order.setOrderStatus("3");
@@ -360,14 +413,20 @@ public class HzHouseOrderServiceImpl
         }
         order.setUpdateTime(new Date());
         updateById(order);
+    }
 
-        // 押金缴清后，房源状态从「已预订(1)」更新为「已出租(2)」
-        if (order.getHouseId() != null) {
-            houseMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<HzHouse>()
-                    .eq(HzHouse::getHouseId, order.getHouseId())
-                    .eq(HzHouse::getHouseStatus, "1")  // 只在「已预订」状态下才更新，防止误改
-                    .set(HzHouse::getHouseStatus, "2")); // 2=已出租
+    /**
+     * 将房源推进为「已出租(2)」。仅当房源当前为「空置(0)」或「已预订(1)」时生效，
+     * 避免覆盖「维修中(3)/下架(4)」等其它状态。返回受影响行数。
+     */
+    private int promoteHouseToRented(Long houseId) {
+        if (houseId == null) {
+            return 0;
         }
+        return houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
+                .eq(HzHouse::getHouseId, houseId)
+                .in(HzHouse::getHouseStatus, "0", "1")
+                .set(HzHouse::getHouseStatus, "2"));
     }
 
     @Override
@@ -396,6 +455,21 @@ public class HzHouseOrderServiceImpl
     public void processExpiredOrders() {
         List<HzHouseOrder> expired = orderMapper.selectExpiredOrders();
         for (HzHouseOrder order : expired) {
+            Long contractId = order.getContractId();
+
+            // 情形一：押金实际已缴清（付款已到账，但订单仍卡在待付押金/待签约）。
+            // 不能释放房源——改为补齐为「已出租」并推进订单（onDepositPaid 幂等安全）。
+            if (isDepositPaid(contractId)) {
+                onDepositPaid(order.getOrderNo());
+                continue;
+            }
+
+            // 情形二：合同已进入「履行中(3)」——已是在住租户，任何情况都不释放。
+            if ("3".equals(getContractStatus(contractId))) {
+                continue;
+            }
+
+            // 情形三：到期仍未缴押金 → 订单过期、释放房源、回退合同。
             order.setOrderStatus("4"); // 已过期
             order.setUpdateTime(new Date());
             updateById(order);
@@ -410,15 +484,43 @@ public class HzHouseOrderServiceImpl
                 orderMapper.releaseHouse(order.getHouseId());
             }
 
-            // 同步推关联合同到「6 超时失效」（仅从 0草稿/1待签署 推进，避免误改已签署/履行中等状态）
-            if (order.getContractId() != null && order.getContractId() > 0) {
+            // 同步回退关联合同到「6 超时失效」：
+            // 0草稿/1待签署 → 6（原逻辑）；已签署(2)但押金逾期未缴 → 6（堵住"签了不付、长期占房"，
+            // 使房源释放与合同失效保持一致）。履行中(3)/已到期(4)/已解约(5) 不动。
+            if (contractId != null && contractId > 0) {
                 contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
-                        .eq(HzContract::getContractId, order.getContractId())
-                        .in(HzContract::getContractStatus, "0", "1")
+                        .eq(HzContract::getContractId, contractId)
+                        .in(HzContract::getContractStatus, "0", "1", "2")
                         .set(HzContract::getContractStatus, "6")
                         .set(HzContract::getUpdateTime, new Date()));
             }
         }
+    }
+
+    /**
+     * 该合同的押金账单是否已缴清。
+     */
+    private boolean isDepositPaid(Long contractId) {
+        if (contractId == null || contractId <= 0) {
+            return false;
+        }
+        Long paid = billMapper.selectCount(new LambdaQueryWrapper<HzBill>()
+                .eq(HzBill::getContractId, contractId)
+                .eq(HzBill::getBillType, "1")
+                .eq(HzBill::getBillStatus, "1")
+                .eq(HzBill::getDelFlag, "0"));
+        return paid != null && paid > 0;
+    }
+
+    /**
+     * 获取合同当前状态；合同不存在返回 null。
+     */
+    private String getContractStatus(Long contractId) {
+        if (contractId == null || contractId <= 0) {
+            return null;
+        }
+        HzContract contract = contractMapper.selectById(contractId);
+        return contract == null ? null : contract.getContractStatus();
     }
 
     @Override

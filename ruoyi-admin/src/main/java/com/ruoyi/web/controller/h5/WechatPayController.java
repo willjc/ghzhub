@@ -409,7 +409,7 @@ public class WechatPayController extends BaseController {
                         if (contract != null && contract.getHouseId() != null) {
                             houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
                                 .eq(HzHouse::getHouseId, contract.getHouseId())
-                                .eq(HzHouse::getHouseStatus, "1")
+                                .in(HzHouse::getHouseStatus, "0", "1")
                                 .set(HzHouse::getHouseStatus, "2"));
                             logger.info("【微信回调】无预订单模式押金支付成功，房源状态→已出租, contractId={}", contract.getContractId());
                         }
@@ -531,7 +531,7 @@ public class WechatPayController extends BaseController {
                         if (contract != null && contract.getHouseId() != null) {
                             houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
                                 .eq(HzHouse::getHouseId, contract.getHouseId())
-                                .eq(HzHouse::getHouseStatus, "1")
+                                .in(HzHouse::getHouseStatus, "0", "1")
                                 .set(HzHouse::getHouseStatus, "2"));
                             logger.info("主动查单同步-无预订单模式押金支付成功，房源状态→已出租, contractId={}", contract.getContractId());
                         }
