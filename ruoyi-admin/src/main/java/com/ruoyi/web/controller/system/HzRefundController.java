@@ -153,7 +153,7 @@ public class HzRefundController extends BaseController {
                       .eq(HzBill::getBillType, "1")
                       .eq(HzBill::getPayMethod, "wechat")
                       .eq(HzBill::getBillStatus, "1")
-                      .eq(HzBill::getDelFlag, "0")
+                      .in(HzBill::getDelFlag, "0", "2") // 退款针对已失效/退租合同的历史账单，兼容软删(del_flag=2)
                       .last("LIMIT 1");
             HzBill guessBill = billMapper.selectOne(guessQuery);
             if (guessBill != null) {
@@ -182,7 +182,7 @@ public class HzRefundController extends BaseController {
                         .eq(HzBill::getBillType, "1")
                         .eq(HzBill::getPayMethod, "wechat")
                         .eq(HzBill::getBillStatus, "1")
-                        .eq(HzBill::getDelFlag, "0")
+                        .in(HzBill::getDelFlag, "0", "2") // 退款针对已失效/退租合同的历史账单，兼容软删(del_flag=2)
                         .last("LIMIT 1");
             depositBill = billMapper.selectOne(depositQuery);
             if (depositBill == null) {
@@ -206,7 +206,7 @@ public class HzRefundController extends BaseController {
                      .eq(HzBill::getBillType, "2")
                      .eq(HzBill::getPayMethod, "wechat")
                      .eq(HzBill::getBillStatus, "1")
-                     .eq(HzBill::getDelFlag, "0")
+                     .in(HzBill::getDelFlag, "0", "2") // 退款针对已失效/退租合同的历史账单，兼容软删(del_flag=2)
                      .isNotNull(HzBill::getTransactionNo)
                      .orderByAsc(HzBill::getPayTime);
             List<HzBill> rentBills = billMapper.selectList(rentQuery);
