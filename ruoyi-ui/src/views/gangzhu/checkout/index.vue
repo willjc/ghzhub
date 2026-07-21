@@ -709,6 +709,10 @@
           <span v-else>-</span>
         </el-descriptions-item>
       </el-descriptions>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="detailOpen = false">关 闭</el-button>
+        <el-button type="warning" plain icon="el-icon-download" @click="exportDetailPDF">导出PDF</el-button>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -1498,6 +1502,173 @@ export default {
       printWin.document.write(html);
       printWin.document.close();
       // 等图片加载完成后再打印
+      printWin.onload = () => {
+        setTimeout(() => {
+          printWin.focus();
+          printWin.print();
+        }, 300);
+      };
+    },
+
+    /** 导出退租详情信息为 PDF（详情页专用，数据源为 detailForm/recordForm，与审批页 exportPDF 互不影响） */
+    exportDetailPDF() {
+      const f = this.detailForm;
+      const fmt = this.fmt;
+      const stamp = (s) => (s || s === 0) ? s : '-';
+
+      // 缴费记录表格行
+      let billRows = '';
+      if (this.billList && this.billList.length > 0) {
+        this.billList.forEach(bill => {
+          billRows += `<tr>
+            <td style="text-align:center">${stamp(bill.billNo)}</td>
+            <td style="text-align:center">${stamp(bill.billTypeText)}</td>
+            <td style="text-align:center">${stamp(bill.billPeriod)}</td>
+            <td style="text-align:right">¥${fmt(bill.billAmount)}</td>
+            <td style="text-align:right">¥${fmt(bill.paidAmount)}</td>
+            <td style="text-align:right;color:${bill.unpaidAmount > 0 ? '#e5252b' : '#12a566'}">¥${fmt(bill.unpaidAmount)}</td>
+            <td style="text-align:center">${stamp(bill.billStatusText)}</td>
+            <td style="text-align:center">${stamp(bill.payTime)}</td>
+          </tr>`;
+        });
+      } else {
+        billRows = '<tr><td colspan="8" style="text-align:center;color:#999;padding:20px 0">暂无账单记录</td></tr>';
+      }
+
+      // 房间设施状态（审批时录入的完好/损坏，存于 damageDescription）
+      const facArr = this.parseFacilitiesStatus(f.damageDescription);
+      let facilitiesStatusHtml = '';
+      if (facArr && facArr.length > 0) {
+        facilitiesStatusHtml = facArr.map(fa =>
+          `<span style="display:inline-block;margin:0 8px 8px 0;padding:2px 8px;border-radius:3px;color:#fff;background:${fa.status === '完好' ? '#12a566' : '#e5252b'}">${fa.name} - ${stamp(fa.status)}</span>`
+        ).join('');
+      }
+
+      // 房间设施（基础清单）
+      const facilitiesHtml = (f.facilities && f.facilities !== '')
+        ? (f.facilities || '').split(',').map(x => `<span style="display:inline-block;margin:0 6px 6px 0;padding:2px 8px;border-radius:3px;background:#eef;">${x}</span>`).join('')
+        : '无';
+
+      // 损坏说明（排除设施状态 JSON 部分）
+      const damageText = this.getDamageDescription(f.damageDescription);
+
+      // 签名图片：优先退租记录的签字，其次申请单签字
+      const sigUrl = this.getImageUrl(this.recordForm.tenantSignature) || this.getImageUrl(f.tenantSignature);
+      const sigHtml = sigUrl
+        ? `<img src="${sigUrl}" style="max-width:300px;max-height:120px;border:1px solid #ddd;border-radius:4px" />`
+        : '无';
+
+      // 设施状态区块（有数据才输出）
+      const facilitiesStatusBlock = facilitiesStatusHtml
+        ? `<h2>六、房间设施状态</h2>\n<table class="info-table">\n  <tr><td>设施清单</td><td colspan="3">${facilitiesStatusHtml}</td></tr>\n</table>`
+        : '';
+      // 损坏说明区块（有数据才输出）
+      const damageBlock = damageText
+        ? `<h2>七、物品损坏情况</h2>\n<table class="info-table">\n  <tr><td>损坏说明</td><td colspan="3">${stamp(damageText)}</td></tr>\n</table>`
+        : '';
+      // 签字信息区块（有退租记录才输出）
+      const signBlock = this.recordForm.recordId
+        ? `<h2>八、签字信息</h2>\n<table class="info-table">\n  <tr><td>退租时间</td><td>${stamp(this.recordForm.checkoutDate)}</td><td>钥匙归还</td><td>${stamp(this.recordForm.keyReturned)} 把</td></tr>\n  <tr><td>退款状态</td><td>${this.recordForm.refundStatus === '1' ? '已退还' : '待退还'}</td><td>退款时间</td><td>${stamp(this.recordForm.refundTime)}</td></tr>\n  <tr><td>租户签字</td><td colspan="3">${sigHtml}</td></tr>\n</table>`
+        : `<h2>八、签字信息</h2>\n<table class="info-table">\n  <tr><td>租户签字</td><td colspan="3">${sigHtml}</td></tr>\n</table>`;
+
+      // 组装完整 HTML
+      const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>退租信息汇总-${stamp(f.applyId)}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; margin: 20px; color: #333; font-size: 13px; line-height: 1.6; }
+  h1 { text-align: center; font-size: 20px; margin-bottom: 5px; }
+  .sub-title { text-align: center; color: #999; font-size: 12px; margin-bottom: 20px; }
+  h2 { font-size: 15px; border-left: 4px solid #409EFF; padding-left: 8px; margin: 18px 0 10px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  td, th { border: 1px solid #ddd; padding: 6px 8px; font-size: 12px; }
+  th { background: #f5f7fa; font-weight: 600; }
+  .info-table td:nth-child(odd) { width: 120px; background: #f5f7fa; font-weight: 600; }
+  .amount { color: #e5252b; font-weight: bold; }
+  .total-row { background: #f5f7fa; font-weight: bold; }
+  @media print { body { margin: 0; } .no-print { display: none; } }
+</style>
+</head>
+<body>
+
+<h1>退租信息汇总</h1>
+<p class="sub-title">导出时间：${new Date().toLocaleString('zh-CN')}</p>
+
+<h2>一、申请信息</h2>
+<table class="info-table">
+  <tr><td>申请ID</td><td>${stamp(f.applyId)}</td><td>合同编号</td><td>${stamp(f.contractNo)}</td></tr>
+  <tr><td>租户姓名</td><td>${stamp(f.tenantName)}</td><td>房源</td><td>${this.formatHouseInfo(f)}</td></tr>
+  <tr><td>退租原因</td><td colspan="3">${stamp(f.checkoutReason)}</td></tr>
+  <tr><td>计划退租日期</td><td>${stamp(f.planCheckoutDate)}</td><td>申请时间</td><td>${stamp(f.applyTime)}</td></tr>
+  <tr><td>申请状态</td><td>${this.formatApplyStatus(f.applyStatus)}</td><td>审批人</td><td>${stamp(f.approveBy)}</td></tr>
+  <tr><td>审批时间</td><td>${stamp(f.approveTime)}</td><td>审批意见</td><td>${stamp(f.approveOpinion)}</td></tr>
+</table>
+
+<h2>二、合同信息</h2>
+<table class="info-table">
+  <tr><td>合同期限</td><td>${stamp(f.startDate)} 至 ${stamp(f.endDate)}</td><td>租期</td><td>${stamp(f.rentMonths)} 个月</td></tr>
+  <tr><td>缴费周期</td><td>${stamp(f.paymentCycleText)}</td><td>月租金</td><td class="amount">¥${fmt(f.rentPrice)}</td></tr>
+  <tr><td>押金</td><td class="amount">¥${fmt(f.deposit)}</td><td></td><td></td></tr>
+</table>
+
+<h2>三、缴费记录</h2>
+<table>
+  <thead>
+    <tr>
+      <th>账单编号</th><th>类型</th><th>账单期</th><th>账单金额</th><th>已付金额</th><th>未付金额</th><th>状态</th><th>支付时间</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${billRows}
+    <tr class="total-row">
+      <td colspan="3" style="text-align:right">合计</td>
+      <td style="text-align:right">¥${this.totalBillAmount}</td>
+      <td style="text-align:right">¥${this.totalPaidAmount}</td>
+      <td style="text-align:right">¥${this.totalUnpaidAmount}</td>
+      <td colspan="2"></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>四、房源信息</h2>
+<table class="info-table">
+  <tr><td>房源编号</td><td>${stamp(f.houseCode)}</td><td>房间号</td><td>${stamp(f.houseNo)}</td></tr>
+  <tr><td>楼层</td><td>${stamp(f.floor)}</td><td>面积</td><td>${stamp(f.area)} ㎡</td></tr>
+  <tr><td>朝向</td><td>${stamp(f.orientation)}</td><td>装修情况</td><td>${stamp(f.decoration)}</td></tr>
+  <tr><td>表读数</td><td colspan="3">水表 ${stamp(f.meterReadingWater)}　电表 ${stamp(f.meterReadingElectric)}　燃气表 ${stamp(f.meterReadingGas)}　钥匙归还 ${stamp(f.keyReturned)} 把</td></tr>
+  <tr><td>房间设施</td><td colspan="3">${facilitiesHtml}</td></tr>
+</table>
+
+<h2>五、费用明细</h2>
+<table class="info-table">
+  <tr><td>水费</td><td>¥${fmt(f.waterFee)}</td><td>电费</td><td>¥${fmt(f.electricFee)}</td><td>燃气费</td><td>¥${fmt(f.gasFee)}</td></tr>
+  <tr><td>暖气费</td><td>¥${fmt(f.heatingFee)}</td><td>物业费</td><td>¥${fmt(f.propertyFee)}</td><td>损坏扣款</td><td>¥${fmt(f.damageDeduction)}</td></tr>
+  <tr><td>违约金</td><td>¥${fmt(f.penaltyAmount)}</td><td>应退押金</td><td style="color:#12a566;font-weight:bold">¥${fmt(f.depositRefund)}</td><td>应退租金</td><td style="color:#12a566;font-weight:bold">¥${fmt(f.rentRefund)}</td></tr>
+  <tr><td>应退总额</td><td colspan="5" style="font-size:16px;color:#e5252b;font-weight:bold">¥${fmt(f.refundAmount)}</td></tr>
+</table>
+
+${facilitiesStatusBlock}
+${damageBlock}
+${signBlock}
+
+<div class="no-print" style="margin-top:30px;text-align:center">
+  <button onclick="window.print()" style="padding:8px 24px;font-size:14px;cursor:pointer">打印 / 另存为PDF</button>
+</div>
+
+</body>
+</html>`;
+
+      // 在新窗口中打开并自动触发打印
+      const printWin = window.open('', '_blank');
+      if (!printWin) {
+        this.$modal.msgWarning('浏览器拦截了弹出窗口，请允许弹出窗口后重试');
+        return;
+      }
+      printWin.document.write(html);
+      printWin.document.close();
       printWin.onload = () => {
         setTimeout(() => {
           printWin.focus();

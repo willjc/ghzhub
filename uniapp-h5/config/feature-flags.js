@@ -5,8 +5,8 @@
  */
 export default {
 	// 保租房：false=隐藏入口（首页分类Tab/九宫格图标、办事页保租房区块），true=正常显示
-	guaranteed: true,
+	guaranteed: false,
 
 	// 市场租赁：false=隐藏入口（首页分类Tab/九宫格图标、办事页市场租赁区块），true=正常显示
-	market: true
+	market: false
 }
