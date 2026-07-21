@@ -706,7 +706,7 @@
                     style="width: 200px; height: 100px;"
                     :src="getImageUrl(recordForm.tenantSignature)"
                     :preview-src-list="[getImageUrl(recordForm.tenantSignature)]" />
-          <span v-else>-</span>
+          <span v-else>老系统退租数据</span>
         </el-descriptions-item>
       </el-descriptions>
       <div slot="footer" class="dialog-footer">
@@ -1556,7 +1556,7 @@ export default {
       const sigUrl = this.getImageUrl(this.recordForm.tenantSignature) || this.getImageUrl(f.tenantSignature);
       const sigHtml = sigUrl
         ? `<img src="${sigUrl}" style="max-width:300px;max-height:120px;border:1px solid #ddd;border-radius:4px" />`
-        : '无';
+        : '老系统退租数据';
 
       // 设施状态区块（有数据才输出）
       const facilitiesStatusBlock = facilitiesStatusHtml
