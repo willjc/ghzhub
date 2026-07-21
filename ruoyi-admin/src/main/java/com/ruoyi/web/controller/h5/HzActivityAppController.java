@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 用户端 - 人才家园活动Controller
@@ -104,5 +105,15 @@ public class HzActivityAppController extends BaseController {
     public AjaxResult myRegistrations(@RequestParam("userId") Long userId) {
         List<HzActivityRegistration> list = registrationService.getMyRegistrations(userId);
         return success(list);
+    }
+
+    /**
+     * 获取用户关联的项目ID列表（通过有效合同），供活动报名范围预校验使用
+     * 与后端 register() 的校验口径完全一致
+     */
+    @GetMapping("/user-projects")
+    public AjaxResult userProjects(@RequestParam("userId") Long userId) {
+        Set<String> projectIds = registrationService.getUserProjectIds(userId);
+        return success(projectIds);
     }
 }

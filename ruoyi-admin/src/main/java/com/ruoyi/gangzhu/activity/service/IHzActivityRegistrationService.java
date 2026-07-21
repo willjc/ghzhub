@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.ruoyi.gangzhu.activity.domain.HzActivityRegistration;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * 活动报名记录Service接口
@@ -47,4 +48,12 @@ public interface IHzActivityRegistrationService extends IService<HzActivityRegis
      * @return 报名记录列表
      */
     List<HzActivityRegistration> getMyRegistrations(Long userId);
+
+    /**
+     * 查询用户关联的项目ID集合（通过有效合同），供活动报名范围预校验使用
+     *
+     * @param userId 用户ID
+     * @return 项目ID字符串集合
+     */
+    Set<String> getUserProjectIds(Long userId);
 }

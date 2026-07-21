@@ -220,23 +220,20 @@
 				try {
 					const token = uni.getStorageSync('token')
 					if (!token) return
-					// 查询用户有效合同关联的项目
+					// 查询用户有效合同关联的项目（口径与后端报名校验一致）
 					const res = await new Promise((resolve, reject) => {
 						uni.request({
-							url: config.baseUrl + '/h5/contract/list',
+							url: config.baseUrl + '/h5/activity/user-projects',
 							method: 'GET',
-							data: { userId: userId, pageNum: 1, pageSize: 200 },
+							data: { userId: userId },
 							header: { Authorization: 'Bearer ' + token },
 							success: (r) => resolve(r.data),
 							fail: reject
 						})
 					})
-					if (res.code === 200 && res.rows) {
-						const ids = res.rows
-							.filter(c => c.projectId)
-							.map(c => c.projectId)
-						// 去重
-						this.userProjectIds = [...new Set(ids)]
+					if (res.code === 200 && res.data) {
+						// 后端返回项目ID字符串集合，统一转成字符串并去重
+						this.userProjectIds = [...new Set(res.data.map(id => String(id)))]
 					}
 				} catch (e) {
 					console.log('加载用户项目ID失败', e)

@@ -134,7 +134,8 @@ public class HzActivityRegistrationServiceImpl extends ServiceImpl<HzActivityReg
     /**
      * 查询用户关联的项目ID集合（通过有效合同）
      */
-    private Set<String> getUserProjectIds(Long userId) {
+    @Override
+    public Set<String> getUserProjectIds(Long userId) {
         LambdaQueryWrapper<HzContract> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzContract::getTenantId, userId)
                 .in(HzContract::getContractStatus, "2", "3", "4") // 已签署、履行中、已到期
