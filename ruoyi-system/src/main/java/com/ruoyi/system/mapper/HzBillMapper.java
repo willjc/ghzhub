@@ -2,6 +2,7 @@ package com.ruoyi.system.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -57,4 +58,28 @@ public interface HzBillMapper extends BaseMapper<HzBill> {
                                         @Param("billType") String billType,
                                         @Param("billStatus") String billStatus,
                                         @Param("projectType") String projectType);
+
+    /**
+     * 查询押金账单（微信已支付），绕过全局逻辑删除。
+     * 用于合同失效/退租后原路退款场景——此时账单已被软删除(del_flag=2)，
+     * 走 BaseMapper 会被全局逻辑删除过滤掉，故用原生 SQL 忽略 del_flag。
+     *
+     * @param contractId 合同ID
+     * @return 押金账单（不存在返回 null）
+     */
+    @Select("SELECT * FROM hz_bill WHERE contract_id = #{contractId} AND bill_type = '1' " +
+            "AND pay_method = 'wechat' AND bill_status = '1' ORDER BY pay_time DESC LIMIT 1")
+    HzBill selectWechatDepositBillForRefund(@Param("contractId") Long contractId);
+
+    /**
+     * 查询已付租金账单（微信已支付、有交易号），按支付时间升序，绕过全局逻辑删除。
+     * 用于合同失效/退租后原路退款场景。
+     *
+     * @param contractId 合同ID
+     * @return 租金账单列表
+     */
+    @Select("SELECT * FROM hz_bill WHERE contract_id = #{contractId} AND bill_type = '2' " +
+            "AND pay_method = 'wechat' AND bill_status = '1' AND transaction_no IS NOT NULL " +
+            "ORDER BY pay_time ASC")
+    List<HzBill> selectWechatRentBillsForRefund(@Param("contractId") Long contractId);
 }

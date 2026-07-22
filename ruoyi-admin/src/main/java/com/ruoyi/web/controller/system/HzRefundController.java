@@ -148,14 +148,8 @@ public class HzRefundController extends BaseController {
         if (apply.getDepositRefund() == null
                 || apply.getDepositRefund().compareTo(BigDecimal.ZERO) <= 0) {
             BigDecimal depositPaidGuess = BigDecimal.ZERO;
-            LambdaQueryWrapper<HzBill> guessQuery = new LambdaQueryWrapper<>();
-            guessQuery.eq(HzBill::getContractId, apply.getContractId())
-                      .eq(HzBill::getBillType, "1")
-                      .eq(HzBill::getPayMethod, "wechat")
-                      .eq(HzBill::getBillStatus, "1")
-                      .in(HzBill::getDelFlag, "0", "2") // 退款针对已失效/退租合同的历史账单，兼容软删(del_flag=2)
-                      .last("LIMIT 1");
-            HzBill guessBill = billMapper.selectOne(guessQuery);
+            // 用原生 SQL 绕过全局逻辑删除：失效/退租合同的账单已被软删(del_flag=2)
+            HzBill guessBill = billMapper.selectWechatDepositBillForRefund(apply.getContractId());
             if (guessBill != null) {
                 depositPaidGuess = guessBill.getPaidAmount() != null ? guessBill.getPaidAmount()
                         : (guessBill.getBillAmount() != null ? guessBill.getBillAmount() : BigDecimal.ZERO);
@@ -177,14 +171,8 @@ public class HzRefundController extends BaseController {
         // 4. 查押金账单（bill_type='1' 押金，wechat 已支付）
         HzBill depositBill = null;
         if (depositRefund.compareTo(BigDecimal.ZERO) > 0) {
-            LambdaQueryWrapper<HzBill> depositQuery = new LambdaQueryWrapper<>();
-            depositQuery.eq(HzBill::getContractId, apply.getContractId())
-                        .eq(HzBill::getBillType, "1")
-                        .eq(HzBill::getPayMethod, "wechat")
-                        .eq(HzBill::getBillStatus, "1")
-                        .in(HzBill::getDelFlag, "0", "2") // 退款针对已失效/退租合同的历史账单，兼容软删(del_flag=2)
-                        .last("LIMIT 1");
-            depositBill = billMapper.selectOne(depositQuery);
+            // 用原生 SQL 绕过全局逻辑删除：失效/退租合同的账单已被软删(del_flag=2)
+            depositBill = billMapper.selectWechatDepositBillForRefund(apply.getContractId());
             if (depositBill == null) {
                 return error("未找到微信支付的押金账单，该押金可能未通过微信支付，无法原路退款");
             }
@@ -201,15 +189,8 @@ public class HzRefundController extends BaseController {
         // 5. 查已付租金账单（bill_type='2' 租金，wechat 已支付）—— 取第一笔有 transaction_no 的
         HzBill rentBill = null;
         if (rentRefund.compareTo(BigDecimal.ZERO) > 0) {
-            LambdaQueryWrapper<HzBill> rentQuery = new LambdaQueryWrapper<>();
-            rentQuery.eq(HzBill::getContractId, apply.getContractId())
-                     .eq(HzBill::getBillType, "2")
-                     .eq(HzBill::getPayMethod, "wechat")
-                     .eq(HzBill::getBillStatus, "1")
-                     .in(HzBill::getDelFlag, "0", "2") // 退款针对已失效/退租合同的历史账单，兼容软删(del_flag=2)
-                     .isNotNull(HzBill::getTransactionNo)
-                     .orderByAsc(HzBill::getPayTime);
-            List<HzBill> rentBills = billMapper.selectList(rentQuery);
+            // 用原生 SQL 绕过全局逻辑删除：失效/退租合同的账单已被软删(del_flag=2)
+            List<HzBill> rentBills = billMapper.selectWechatRentBillsForRefund(apply.getContractId());
             // 选一个已付金额 >= rentRefund 的账单作为退款载体
             for (HzBill b : rentBills) {
                 if (b.getTransactionNo() == null || b.getTransactionNo().isEmpty()) continue;
