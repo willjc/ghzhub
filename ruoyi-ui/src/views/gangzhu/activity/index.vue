@@ -434,12 +434,29 @@
 
     <!-- 活动数据 - 报名人列表对话框 -->
     <el-dialog :title="'活动数据 - ' + currentActivityTitle" :visible.sync="registrationDialogVisible" width="800px" append-to-body>
+      <!-- 各项目报名人数汇总 -->
+      <div class="registration-summary" v-if="registrationList.length > 0">
+        <span class="summary-total">共 {{ registrationList.length }} 人报名</span>
+        <el-tag
+          v-for="item in projectSummary"
+          :key="item.name"
+          size="small"
+          type="info"
+          effect="plain"
+          style="margin-left: 8px;"
+        >{{ item.name }} {{ item.count }}人</el-tag>
+      </div>
       <el-table :data="registrationList" v-loading="registrationLoading" empty-text="暂无报名数据">
         <el-table-column label="序号" type="index" width="55" align="center" />
-        <el-table-column label="姓名" prop="realName" width="120" />
-        <el-table-column label="联系方式" prop="phone" width="150" />
-        <el-table-column label="报名时间" prop="createTime" width="180" />
-        <el-table-column label="状态" prop="registrationStatus" width="100" align="center">
+        <el-table-column label="姓名" prop="realName" width="110" />
+        <el-table-column label="联系方式" prop="phone" width="140" />
+        <el-table-column label="所属项目" prop="projectName" min-width="140" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.projectName || '-' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="报名时间" prop="createTime" width="170" />
+        <el-table-column label="状态" prop="registrationStatus" width="90" align="center">
           <template slot-scope="scope">
             <el-tag :type="scope.row.registrationStatus === '0' ? 'success' : 'info'" size="small">
               {{ scope.row.registrationStatus === '0' ? '已报名' : '已取消' }}
@@ -449,6 +466,13 @@
         <el-table-column label="备注" prop="remark" show-overflow-tooltip />
       </el-table>
       <div slot="footer" class="dialog-footer">
+        <el-button
+          type="warning"
+          plain
+          icon="el-icon-download"
+          :disabled="registrationList.length === 0"
+          @click="handleExportRegistrations"
+        >导出Excel</el-button>
         <el-button @click="registrationDialogVisible = false">关 闭</el-button>
       </div>
     </el-dialog>
@@ -497,6 +521,7 @@ export default {
       registrationList: [],
       registrationLoading: false,
       currentActivityTitle: '',
+      currentActivityId: null,
       // 项目/小区选项
       projectOptions: [],
       // 日期范围
@@ -554,6 +579,19 @@ export default {
   created() {
     this.getList();
     this.loadProjectOptions();
+  },
+  computed: {
+    /** 各项目报名人数汇总（按报名记录聚合，无有效项目归入"未匹配项目"） */
+    projectSummary() {
+      const map = {};
+      this.registrationList.forEach(item => {
+        const name = item.projectName || '未匹配项目';
+        map[name] = (map[name] || 0) + 1;
+      });
+      return Object.keys(map)
+        .map(name => ({ name, count: map[name] }))
+        .sort((a, b) => b.count - a.count);
+    }
   },
   methods: {
     /** 查询活动列表 */
@@ -693,6 +731,7 @@ export default {
     /** 查看活动报名数据 */
     handleViewRegistrations(row) {
       this.currentActivityTitle = row.activityTitle;
+      this.currentActivityId = row.activityId;
       this.registrationDialogVisible = true;
       this.registrationLoading = true;
       this.registrationList = [];
@@ -702,6 +741,17 @@ export default {
       }).catch(() => {
         this.registrationLoading = false;
       });
+    },
+    /** 导出活动报名数据 */
+    handleExportRegistrations() {
+      if (!this.currentActivityId) {
+        return;
+      }
+      this.download(
+        'gangzhu/activity/registrations/export/' + this.currentActivityId,
+        {},
+        `活动报名数据_${this.currentActivityId}_${new Date().getTime()}.xlsx`
+      );
     },
     /** 加载项目/小区选项 */
     loadProjectOptions() {
@@ -766,5 +816,18 @@ export default {
 .activity-content >>> img {
   max-width: 100%;
   height: auto;
+}
+
+.registration-summary {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background-color: #f4f4f5;
+  border-radius: 4px;
+  line-height: 24px;
+}
+
+.registration-summary .summary-total {
+  font-weight: 600;
+  color: #303133;
 }
 </style>

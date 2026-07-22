@@ -119,4 +119,16 @@ public class HzActivityController extends BaseController {
         List<HzActivityRegistration> list = registrationService.getRegistrationsByActivityId(activityId);
         return success(list);
     }
+
+    /**
+     * 导出活动报名数据
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:activity:list')")
+    @Log(title = "活动报名数据", businessType = BusinessType.EXPORT)
+    @PostMapping("/registrations/export/{activityId}")
+    public void exportRegistrations(HttpServletResponse response, @PathVariable("activityId") Long activityId) {
+        List<HzActivityRegistration> list = registrationService.getRegistrationsByActivityId(activityId);
+        ExcelUtil<HzActivityRegistration> util = new ExcelUtil<HzActivityRegistration>(HzActivityRegistration.class);
+        util.exportExcel(response, list, "活动报名数据");
+    }
 }

@@ -8,14 +8,20 @@ import com.ruoyi.gangzhu.activity.mapper.HzActivityMapper;
 import com.ruoyi.gangzhu.activity.mapper.HzActivityRegistrationMapper;
 import com.ruoyi.gangzhu.activity.service.IHzActivityRegistrationService;
 import com.ruoyi.system.mapper.HzContractMapper;
+import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzProject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,6 +42,9 @@ public class HzActivityRegistrationServiceImpl extends ServiceImpl<HzActivityReg
 
     @Autowired
     private HzContractMapper contractMapper;
+
+    @Autowired
+    private HzProjectMapper projectMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -119,7 +128,9 @@ public class HzActivityRegistrationServiceImpl extends ServiceImpl<HzActivityReg
         LambdaQueryWrapper<HzActivityRegistration> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzActivityRegistration::getActivityId, activityId)
                 .orderByDesc(HzActivityRegistration::getCreateTime);
-        return registrationMapper.selectList(wrapper);
+        List<HzActivityRegistration> list = registrationMapper.selectList(wrapper);
+        fillProjectNames(list);
+        return list;
     }
 
     @Override
@@ -129,6 +140,55 @@ public class HzActivityRegistrationServiceImpl extends ServiceImpl<HzActivityReg
                 .eq(HzActivityRegistration::getRegistrationStatus, "0")
                 .orderByDesc(HzActivityRegistration::getCreateTime);
         return registrationMapper.selectList(wrapper);
+    }
+
+    /**
+     * 批量填充报名记录的所属项目名称。
+     * 通过有效合同(status∈2,3,4, del_flag=0)推导，一人只有一个有效项目。
+     * 一次性查询避免 N+1。
+     */
+    private void fillProjectNames(List<HzActivityRegistration> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        Set<Long> userIds = list.stream()
+                .map(HzActivityRegistration::getUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (userIds.isEmpty()) {
+            return;
+        }
+        // 查有效合同：user_id -> project_id
+        LambdaQueryWrapper<HzContract> cw = new LambdaQueryWrapper<>();
+        cw.in(HzContract::getTenantId, userIds)
+                .in(HzContract::getContractStatus, "2", "3", "4")
+                .eq(HzContract::getDelFlag, "0")
+                .select(HzContract::getTenantId, HzContract::getProjectId);
+        List<HzContract> contracts = contractMapper.selectList(cw);
+        Map<Long, Long> userToProject = new HashMap<>();
+        for (HzContract c : contracts) {
+            if (c.getTenantId() != null && c.getProjectId() != null) {
+                userToProject.putIfAbsent(c.getTenantId(), c.getProjectId());
+            }
+        }
+        if (userToProject.isEmpty()) {
+            return;
+        }
+        // 查项目名称：project_id -> project_name
+        Set<Long> projectIds = new HashSet<>(userToProject.values());
+        LambdaQueryWrapper<HzProject> pw = new LambdaQueryWrapper<>();
+        pw.in(HzProject::getProjectId, projectIds)
+                .select(HzProject::getProjectId, HzProject::getProjectName);
+        List<HzProject> projects = projectMapper.selectList(pw);
+        Map<Long, String> projectNames = projects.stream()
+                .collect(Collectors.toMap(HzProject::getProjectId, HzProject::getProjectName, (a, b) -> a));
+        // 回填
+        for (HzActivityRegistration r : list) {
+            Long pid = userToProject.get(r.getUserId());
+            if (pid != null) {
+                r.setProjectName(projectNames.get(pid));
+            }
+        }
     }
 
     /**
