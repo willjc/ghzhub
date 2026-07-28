@@ -177,12 +177,27 @@
           </el-col>
         </el-row>
         <el-row>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="计划退租日期">
               <span>{{ currentForm.planCheckoutDate || '未填写' }}</span>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
+            <el-form-item label="实际退租日期" required>
+              <el-date-picker
+                v-model="approveForm.actualCheckoutDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="默认取计划退租日期"
+                style="width: 100%"
+                @change="onActualCheckoutDateChange"
+              />
+              <div style="font-size:12px;color:#E6A23C;line-height:1.4;margin-top:2px;">
+                退还押金及剩余房租均以此日期按日精算，不选则默认按计划退租日期，修改后自动重算
+              </div>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
             <el-form-item label="申请时间">
               <span>{{ currentForm.applyTime }}</span>
             </el-form-item>
@@ -325,23 +340,6 @@
         <!-- 费用计算（通过时需要填写） -->
         <template v-if="approveType === 'pass'">
           <el-divider content-position="left">费用计算</el-divider>
-          <el-row>
-            <el-col :span="12">
-              <el-form-item label="实际退租日期" required>
-                <el-date-picker
-                  v-model="approveForm.actualCheckoutDate"
-                  type="date"
-                  value-format="yyyy-MM-dd"
-                  placeholder="选择实际退租日期"
-                  style="width: 100%"
-                  @change="onActualCheckoutDateChange"
-                />
-                <div style="font-size:12px;color:#E6A23C;line-height:1.4;margin-top:2px;">
-                  退还押金及剩余房租均以此日期按日精算，默认取计划退租日期（{{ currentForm.planCheckoutDate || '未填写' }}），修改后自动重算
-                </div>
-              </el-form-item>
-            </el-col>
-          </el-row>
           <el-row>
             <el-col :span="8">
               <el-form-item label="水表读数">
