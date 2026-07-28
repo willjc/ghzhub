@@ -35,6 +35,11 @@ public class HzCheckoutApplyVO {
     @Excel(name = "计划退租日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date planCheckoutDate;
 
+    /** 实际退租日期（历史数据为空时前端回退显示计划退租日期） */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "实际退租日期", width = 30, dateFormat = "yyyy-MM-dd")
+    private Date actualCheckoutDate;
+
     /** 退租原因 */
     @Excel(name = "退租原因")
     private String checkoutReason;
@@ -243,6 +248,14 @@ public class HzCheckoutApplyVO {
 
     public void setPlanCheckoutDate(Date planCheckoutDate) {
         this.planCheckoutDate = planCheckoutDate;
+    }
+
+    public Date getActualCheckoutDate() {
+        return actualCheckoutDate;
+    }
+
+    public void setActualCheckoutDate(Date actualCheckoutDate) {
+        this.actualCheckoutDate = actualCheckoutDate;
     }
 
     public String getCheckoutReason() {

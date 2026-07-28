@@ -238,7 +238,14 @@
         <el-table :data="billList" size="small" border>
           <el-table-column label="账单编号" align="center" prop="billNo" width="150" show-overflow-tooltip />
           <el-table-column label="账单类型" align="center" prop="billTypeText" width="80" />
-          <el-table-column label="账单期" align="center" prop="billPeriod" width="100" />
+          <el-table-column label="账单期" align="center" prop="billPeriod" min-width="180">
+            <template slot-scope="scope">
+              <span v-if="scope.row.periodStartDate && scope.row.periodEndDate">
+                {{ scope.row.periodStartDate }} ~ {{ scope.row.periodEndDate }}
+              </span>
+              <span v-else>{{ scope.row.billPeriod || '-' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="账单金额" align="right" prop="billAmount" width="100">
             <template slot-scope="scope">
               ¥{{ fmt(scope.row.billAmount) }}
@@ -318,6 +325,23 @@
         <!-- 费用计算（通过时需要填写） -->
         <template v-if="approveType === 'pass'">
           <el-divider content-position="left">费用计算</el-divider>
+          <el-row>
+            <el-col :span="12">
+              <el-form-item label="实际退租日期" required>
+                <el-date-picker
+                  v-model="approveForm.actualCheckoutDate"
+                  type="date"
+                  value-format="yyyy-MM-dd"
+                  placeholder="选择实际退租日期"
+                  style="width: 100%"
+                  @change="onActualCheckoutDateChange"
+                />
+                <div style="font-size:12px;color:#E6A23C;line-height:1.4;margin-top:2px;">
+                  退还押金及剩余房租均以此日期按日精算，默认取计划退租日期（{{ currentForm.planCheckoutDate || '未填写' }}），修改后自动重算
+                </div>
+              </el-form-item>
+            </el-col>
+          </el-row>
           <el-row>
             <el-col :span="8">
               <el-form-item label="水表读数">
@@ -533,6 +557,7 @@
         </el-descriptions-item>
         <el-descriptions-item label="退租原因">{{ detailForm.checkoutReason }}</el-descriptions-item>
         <el-descriptions-item label="计划退租日期">{{ detailForm.planCheckoutDate || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="实际退租日期">{{ detailForm.actualCheckoutDate || detailForm.planCheckoutDate || '-' }}</el-descriptions-item>
         <el-descriptions-item label="申请时间">{{ detailForm.applyTime }}</el-descriptions-item>
         <el-descriptions-item label="申请状态">
           <el-tag v-if="detailForm.applyStatus === '0'" type="warning">审批中</el-tag>
@@ -574,7 +599,14 @@
       <el-table :data="billList" size="small" border>
         <el-table-column label="账单编号" align="center" prop="billNo" width="150" show-overflow-tooltip />
         <el-table-column label="账单类型" align="center" prop="billTypeText" width="80" />
-        <el-table-column label="账单期" align="center" prop="billPeriod" width="100" />
+        <el-table-column label="账单期" align="center" prop="billPeriod" min-width="180">
+          <template slot-scope="scope">
+            <span v-if="scope.row.periodStartDate && scope.row.periodEndDate">
+              {{ scope.row.periodStartDate }} ~ {{ scope.row.periodEndDate }}
+            </span>
+            <span v-else>{{ scope.row.billPeriod || '-' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="账单金额" align="right" prop="billAmount" width="100">
           <template slot-scope="scope">
             ¥{{ fmt(scope.row.billAmount) }}
@@ -767,6 +799,7 @@ export default {
         keyReturned: 0,
         damageDescription: '',
         approveOpinion: '',
+        actualCheckoutDate: null, // 实际退租日期（管理员核定，退款计算基准，默认=计划退租日期）
         refundAmount: null,  // 应退总额（管理员可编辑）
         depositRefund: null  // 应退押金（管理员可编辑，默认=合同押金）
       },
@@ -1016,6 +1049,7 @@ export default {
         keyReturned: row.keyReturned || 0,
         damageDescription: row.damageDescription || '',
         approveOpinion: '',
+        actualCheckoutDate: row.actualCheckoutDate || row.planCheckoutDate || null, // 默认取历史核定值，否则回退计划退租日期
         refundAmount: null, // 先设置为null，加载账单后会自动计算
         depositRefund: (row.depositRefund !== null && row.depositRefund !== undefined && Number(row.depositRefund) > 0) ? row.depositRefund : (row.deposit || 0) // 默认=合同押金（0 也视为未填，走兜底）
       };
@@ -1023,8 +1057,8 @@ export default {
       // 重置按日精算结果
       this.refundResult = { rentRefund: 0, currentPeriodOwed: 0, detail: '' };
     
-      // 调用后端接口计算应退租金（按日精算）
-      this.fetchRentRefund(row.contractId, row.planCheckoutDate);
+      // 调用后端接口计算应退租金（按日精算，以实际退租日期为基准）
+      this.fetchRentRefund(row.contractId, this.approveForm.actualCheckoutDate);
     
       // 加载账单列表
       this.loadContractBills(row.contractId);
@@ -1052,6 +1086,12 @@ export default {
       }).catch(() => {
         this.refundResult = { rentRefund: 0, currentPeriodOwed: 0, detail: '计算接口调用失败，已退化为前端默认计算' };
       });
+    },
+
+    // 管理员修改实际退租日期 → 以新日期重新按日精算应退租金/当期扣款/建议总额
+    onActualCheckoutDateChange(val) {
+      this.approveForm.actualCheckoutDate = val;
+      this.fetchRentRefund(this.currentForm.contractId, val);
     },
 
     // 加载合同账单列表
@@ -1171,6 +1211,12 @@ export default {
         return;
       }
 
+      // 通过（含费用计算）时，实际退租日期必填——退款金额以此为基准
+      if (this.approveType === 'pass' && !this.approveForm.actualCheckoutDate) {
+        this.$modal.msgWarning("请选择实际退租日期");
+        return;
+      }
+
       // 校验：应退押金 ≤ 应退总额
       const dr = Number(this.approveForm.depositRefund || 0);
       const ra = Number(this.approveForm.refundAmount || 0);
@@ -1202,6 +1248,8 @@ export default {
           contractId: this.currentForm.contractId,
           tenantId: this.currentForm.tenantId,
           houseId: this.currentForm.houseId,
+          // 实际退租日期（退款计算基准，退租记录 checkout_date 以此为准）
+          actualCheckoutDate: this.approveForm.actualCheckoutDate,
           // 表读数
           meterReadingWater: this.approveForm.meterReadingWater,
           meterReadingElectric: this.approveForm.meterReadingElectric,

@@ -73,6 +73,7 @@ public class HzCheckOutAppController extends BaseController {
         result.put("houseId", apply.getHouseId());
         result.put("applyTime", apply.getApplyTime());
         result.put("planCheckoutDate", apply.getPlanCheckoutDate());
+        result.put("actualCheckoutDate", apply.getActualCheckoutDate());
         result.put("checkoutReason", apply.getCheckoutReason());
         result.put("applyStatus", apply.getApplyStatus());
         result.put("approveBy", apply.getApproveBy());

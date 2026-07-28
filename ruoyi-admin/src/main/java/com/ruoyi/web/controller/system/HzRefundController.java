@@ -231,7 +231,7 @@ public class HzRefundController extends BaseController {
                     remark.append("押金已退款(微信侧已全额退款，幂等放行) ¥").append(depositRefund).append("; ");
                     logger.warn("退款管理-押金退款幂等成功(订单已全额退款) refundId={}", refundId);
                 } else {
-                    remark.append("押金退款失败:").append(e.getMessage()).append("; ");
+                    remark.append("押金退款失败:").append(truncate(e.getMessage(), 150)).append("; ");
                     logger.error("退款管理-押金微信退款失败 refundId={}", refundId, e);
                 }
             }
@@ -256,7 +256,7 @@ public class HzRefundController extends BaseController {
                     remark.append("已付租金已退款(微信侧已全额退款，幂等放行) ¥").append(rentRefund).append("; ");
                     logger.warn("退款管理-租金退款幂等成功(订单已全额退款) refundId={}", refundId);
                 } else {
-                    remark.append("租金退款失败:").append(e.getMessage()).append("; ");
+                    remark.append("租金退款失败:").append(truncate(e.getMessage(), 150)).append("; ");
                     logger.error("退款管理-租金微信退款失败 refundId={}", refundId, e);
                 }
             }
@@ -269,12 +269,14 @@ public class HzRefundController extends BaseController {
         boolean anySuccess = depositOk || rentOk;
 
         if (!anySuccess) {
-            // 全部失败：保留 refund_status=0，允许重试
-            return error("微信退款失败 | " + remark);
+            // 全部失败：保留 refund_status=0，允许重试。详细原因已写日志，页面只给友好提示
+            return error("微信退款失败，请稍后重试；如多次失败请联系管理员在微信商户平台核对");
         }
 
         // 任一成功就标记已退还（防止重复退已成功的笔），失败明细写 remark 由管理员人工补救
         String finalRemark = (allSuccess ? "微信原路退款成功 | " : "微信退款部分成功，请人工核对剩余金额 | ") + remark;
+        // 兜底截断，避免超出 payment_remark(varchar 500) 长度导致写库失败
+        finalRemark = truncate(finalRemark, 480);
         LambdaUpdateWrapper<HzCheckoutRecord> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(HzCheckoutRecord::getApplyId, refundId)
                      .set(HzCheckoutRecord::getRefundStatus, "1")
@@ -286,10 +288,24 @@ public class HzRefundController extends BaseController {
         checkoutRecordMapper.update(null, updateWrapper);
 
         if (allSuccess) {
-            return AjaxResult.success("微信退款申请成功，预计2分钟内到账", finalRemark);
+            return AjaxResult.success("微信退款申请成功，预计2分钟内到账");
         } else {
-            return AjaxResult.warn("退款部分成功：" + finalRemark);
+            return AjaxResult.warn("退款部分成功，剩余款项将由管理员人工核对处理");
         }
+    }
+
+    /**
+     * 截断字符串，避免超出数据库字段长度。
+     *
+     * @param s      原始字符串
+     * @param maxLen 最大保留长度
+     * @return 截断后的字符串（null 转为空串）
+     */
+    private String truncate(String s, int maxLen) {
+        if (s == null) {
+            return "";
+        }
+        return s.length() > maxLen ? s.substring(0, maxLen) : s;
     }
 
     /**

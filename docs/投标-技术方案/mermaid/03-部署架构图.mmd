@@ -1,0 +1,40 @@
+flowchart TB
+    subgraph NET["互联网"]
+        U1["租户<br/>H5/小程序/公众号"]
+        U2["管理人员<br/>PC浏览器"]
+    end
+
+    subgraph DMZ["接入区（DMZ）"]
+        NG["Nginx 主"] 
+        NG2["Nginx 备"]
+        NG -.主备.- NG2
+    end
+
+    subgraph APPZ["应用区"]
+        AP1["应用服务器1<br/>Spring Boot"]
+        AP2["应用服务器2<br/>Spring Boot"]
+        JOB["任务调度<br/>Quartz"]
+    end
+
+    subgraph DATAZ["数据区"]
+        M["MySQL 主"]
+        S["MySQL 从"]
+        R["Redis"]
+        F["文件存储<br/>附件/VR文件"]
+        BK["备份存储<br/>每日全量+增量"]
+        M -->|主从同步| S
+        M -.每日备份.-> BK
+        F -.增量备份.-> BK
+    end
+
+    subgraph EXTZ["外部对接"]
+        E1["郑好办/政务核验<br/>（代理网关）"]
+        E2["支付渠道/电子签章"]
+        E3["人脸/地图/监控/微信平台"]
+    end
+
+    U1 & U2 -->|HTTPS 443| NG
+    NG --> AP1 & AP2
+    AP1 & AP2 --> M & R & F
+    JOB --> M
+    AP1 & AP2 --> E1 & E2 & E3

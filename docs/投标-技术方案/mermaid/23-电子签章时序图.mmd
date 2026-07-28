@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant U as 用户端
+    participant S as 房屋管理系统
+    participant F as 人脸识别服务
+    participant Q as 电子签章平台
+    U->>S: 确认合同信息发起签署
+    S->>F: 发起人脸核验(选房人=签约人)
+    F-->>U: 活体检测+人脸比对
+    F-->>S: 核验结果
+    alt 核验不通过
+        S-->>U: 提示核验失败,不可签署
+    end
+    S->>Q: 合同文件送签(模板+要素填充)
+    Q-->>U: 展示合同,用户手写签名
+    U->>Q: 提交签署
+    Q->>Q: 加盖可靠电子签名+时间戳
+    Q-->>S: 回传签署完成合同文件(验签)
+    S->>S: 合同归档(PDF存储,状态更新)
+    S-->>U: 签署完成,支持合同下载

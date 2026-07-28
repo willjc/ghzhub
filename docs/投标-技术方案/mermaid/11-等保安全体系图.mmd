@@ -1,0 +1,43 @@
+flowchart TB
+    subgraph MGT["安全管理体系"]
+        direction LR
+        M1["安全责任制度"]
+        M2["账号权限管理"]
+        M3["上线发布管理"]
+        M4["日志审计制度"]
+        M5["安全教育培训"]
+        M6["应急响应制度"]
+    end
+
+    subgraph L5["安全管理中心"]
+        C1["集中监控 · 日志集中管理 · 统一运维通道"]
+    end
+
+    subgraph L4["安全计算环境"]
+        direction LR
+        A1["身份鉴别<br/>JWT·登录防护"]
+        A2["访问控制<br/>RBAC三级权限"]
+        A3["数据安全<br/>加密存储·脱敏"]
+        A4["安全审计<br/>操作日志留痕"]
+        A5["备份恢复<br/>RPO≤4h RTO≤2h"]
+    end
+
+    subgraph L3["安全区域边界"]
+        direction LR
+        B1["边界防火墙<br/>白名单策略"]
+        B2["入侵防范<br/>异常行为告警"]
+        B3["恶意代码防范<br/>防病毒·上传管控"]
+    end
+
+    subgraph L2["安全通信网络"]
+        direction LR
+        N1["VLAN安全分区<br/>接入/应用/数据区"]
+        N2["传输加密<br/>全站HTTPS TLS1.2+"]
+        N3["架构冗余<br/>关键节点主备"]
+    end
+
+    subgraph L1["安全物理环境"]
+        P1["机房/云平台物理防护（访问控制·防火防雷·电力保障）"]
+    end
+
+    MGT --> L5 --> L4 --> L3 --> L2 --> L1

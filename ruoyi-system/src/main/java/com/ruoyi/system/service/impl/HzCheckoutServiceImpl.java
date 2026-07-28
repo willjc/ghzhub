@@ -193,6 +193,7 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
             vo.setHouseId(apply.getHouseId());
             vo.setApplyTime(apply.getApplyTime());
             vo.setPlanCheckoutDate(apply.getPlanCheckoutDate());
+            vo.setActualCheckoutDate(apply.getActualCheckoutDate());
             vo.setCheckoutReason(apply.getCheckoutReason());
             vo.setApplyStatus(apply.getApplyStatus());
             vo.setApproveBy(apply.getApproveBy());
@@ -636,6 +637,14 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
             approveBy = SecurityUtils.getUsername();
         }
 
+        // 实际退租日期为空时回退计划退租日期，保证审批落库一定有值（与前端默认逻辑一致）
+        if (hzCheckoutApply.getActualCheckoutDate() == null && hzCheckoutApply.getApplyId() != null) {
+            HzCheckoutApply existingApply = checkoutApplyMapper.selectById(hzCheckoutApply.getApplyId());
+            if (existingApply != null && existingApply.getPlanCheckoutDate() != null) {
+                hzCheckoutApply.setActualCheckoutDate(existingApply.getPlanCheckoutDate());
+            }
+        }
+
         // 两级审批状态判断：物业→status=6(待管理员审批)，管理员→status=4(待确认)
         boolean isProperty = SecurityUtils.isPropertyRole();
         String targetStatus;
@@ -650,6 +659,8 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
         // 保存管理员计算的费用信息和审批信息
         LambdaUpdateWrapper<HzCheckoutApply> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(HzCheckoutApply::getApplyId, hzCheckoutApply.getApplyId())
+               .set(hzCheckoutApply.getActualCheckoutDate() != null,
+                    HzCheckoutApply::getActualCheckoutDate, hzCheckoutApply.getActualCheckoutDate())
                .set(HzCheckoutApply::getWaterFee, hzCheckoutApply.getWaterFee())
                .set(HzCheckoutApply::getElectricFee, hzCheckoutApply.getElectricFee())
                .set(HzCheckoutApply::getGasFee, hzCheckoutApply.getGasFee())
@@ -713,7 +724,10 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
         record.setContractId(apply.getContractId());
         record.setTenantId(apply.getTenantId());
         record.setHouseId(apply.getHouseId());
-        record.setCheckoutDate(new Date());
+        // 退租日期优先取管理员核定的实际退租日期，为空时回退计划退租日期，仍为空才用当前时间
+        Date checkoutDate = apply.getActualCheckoutDate() != null ? apply.getActualCheckoutDate()
+                : (apply.getPlanCheckoutDate() != null ? apply.getPlanCheckoutDate() : new Date());
+        record.setCheckoutDate(checkoutDate);
         record.setCheckoutTime(new Date());
 
         // 费用信息
@@ -904,6 +918,7 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
         // 退租基本信息
         result.put("applicant", applicantName);
         result.put("planCheckoutDate", apply.getPlanCheckoutDate());
+        result.put("actualCheckoutDate", apply.getActualCheckoutDate());
         result.put("checkoutReason", apply.getCheckoutReason());
         result.put("community", communityName);
         result.put("room", roomAddress);
@@ -988,6 +1003,8 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
             item.put("billType", bill.getBillType());
             item.put("billTypeText", getBillTypeText(bill.getBillType()));
             item.put("billPeriod", bill.getBillPeriod());
+            item.put("periodStartDate", bill.getPeriodStartDate());
+            item.put("periodEndDate", bill.getPeriodEndDate());
             item.put("billAmount", bill.getBillAmount());
             item.put("paidAmount", bill.getPaidAmount());
             item.put("unpaidAmount", bill.getUnpaidAmount());

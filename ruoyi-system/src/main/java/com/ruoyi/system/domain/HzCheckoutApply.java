@@ -48,6 +48,12 @@ public class HzCheckoutApply extends BaseEntity {
     @TableField("plan_checkout_date")
     private Date planCheckoutDate;
 
+    /** 实际退租日期（管理员审批时手动选择，退款计算基准；历史数据为空时回退计划退租日期） */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "实际退租日期", width = 30, dateFormat = "yyyy-MM-dd")
+    @TableField("actual_checkout_date")
+    private Date actualCheckoutDate;
+
     @Excel(name = "退租原因")
     @TableField("checkout_reason")
     private String checkoutReason;
@@ -201,6 +207,9 @@ public class HzCheckoutApply extends BaseEntity {
     
     public void setPlanCheckoutDate(Date planCheckoutDate) { this.planCheckoutDate = planCheckoutDate; }
     public Date getPlanCheckoutDate() { return planCheckoutDate; }
+
+    public void setActualCheckoutDate(Date actualCheckoutDate) { this.actualCheckoutDate = actualCheckoutDate; }
+    public Date getActualCheckoutDate() { return actualCheckoutDate; }
     
     public void setCheckoutReason(String checkoutReason) { this.checkoutReason = checkoutReason; }
     public String getCheckoutReason() { return checkoutReason; }

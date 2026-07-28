@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    participant U as 用户（H5/小程序/公众号）
+    participant S as 房屋管理系统
+    participant R as Redis缓存
+    participant Z as 郑好办开放平台
+
+    U->>S: 发起登录
+    S->>Z: 跳转郑好办统一授权页
+    Z-->>U: 用户授权确认
+    Z->>S: 回调携带授权码(code)
+    S->>R: 查询平台访问令牌
+    alt 令牌缓存有效
+        R-->>S: 返回缓存令牌
+    else 令牌失效（双重检查锁）
+        S->>Z: 请求访问令牌
+        Z-->>S: 返回访问令牌
+        S->>R: 缓存令牌（设置有效期）
+    end
+    S->>Z: 凭授权码+令牌获取用户身份信息
+    Z-->>S: 返回用户身份（实名信息）
+    S->>S: 建立/关联本地用户档案
+    S-->>U: 颁发系统JWT会话，登录完成
+    Note over S,Z: 异常降级：郑好办不可用时提示稍后重试，接口调用全程日志留痕
