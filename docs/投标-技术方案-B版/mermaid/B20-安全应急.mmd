@@ -1,0 +1,7 @@
+flowchart TB
+  A["安全事件发生"]:::w --> B["监测/发现"]:::s --> C["分级研判"]:::d
+  C --> D["应急响应/止损"]:::s --> E["逐级报告(含甲方)"]:::s --> F["处置恢复"]:::s --> G["复盘整改"]:::ok
+  classDef s fill:#e8f5e9,stroke:#2e7d32;
+  classDef d fill:#fff3e0,stroke:#ef6c00;
+  classDef w fill:#ffebee,stroke:#c62828;
+  classDef ok fill:#c8e6c9,stroke:#2e7d32;

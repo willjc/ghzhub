@@ -1,0 +1,11 @@
+flowchart TB
+  A["单元测试"]:::s --> B["集成测试"]:::s --> C["系统测试"]:::s --> D["验收测试"]:::s
+  C --> E{"发现缺陷?"}:::d
+  E -->|是| F["登记/分级"]:::w --> G["定位修复"]:::s --> H["回归验证"]:::s --> I{"通过?"}:::d
+  I -->|否| G
+  I -->|是| J["关闭"]:::ok
+  E -->|否| J
+  classDef s fill:#e8f5e9,stroke:#2e7d32;
+  classDef d fill:#fff3e0,stroke:#ef6c00;
+  classDef w fill:#ffebee,stroke:#c62828;
+  classDef ok fill:#c8e6c9,stroke:#2e7d32;

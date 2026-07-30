@@ -1,0 +1,12 @@
+flowchart TB
+  DEC["决策层:发起人/分管领导"]:::d
+  PM["管理层:项目经理"]:::m
+  DEC --> PM
+  PM --> BE["后端开发"]:::e
+  PM --> FE["前端开发"]:::e
+  PM --> IT["对接工程师"]:::e
+  PM --> QA["测试工程师"]:::e
+  PM --> OPS["实施运维工程师"]:::e
+  classDef d fill:#e3f2fd,stroke:#1565c0;
+  classDef m fill:#fff3e0,stroke:#ef6c00;
+  classDef e fill:#e8f5e9,stroke:#2e7d32;

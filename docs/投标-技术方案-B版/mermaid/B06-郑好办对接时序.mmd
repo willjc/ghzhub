@@ -1,0 +1,14 @@
+sequenceDiagram
+  participant U as 群众
+  participant F as 前端(小程序/H5)
+  participant S as 房屋管理系统
+  participant Z as 郑好办
+  U->>F: 进入办事
+  F->>Z: 请求授权登录
+  Z-->>F: 返回授权码
+  F->>S: 提交授权码
+  S->>Z: 换取令牌/用户信息
+  Z-->>S: 返回用户信息
+  S->>S: 映射系统用户/首次建档
+  S-->>F: 登录成功(令牌)
+  F-->>U: 进入业务

@@ -1,0 +1,17 @@
+flowchart TB
+  ROOT["等保二级安全体系"]:::r
+  ROOT --> T["安全技术"]:::t
+  ROOT --> M["安全管理"]:::m
+  T --> T1["物理环境"]:::t
+  T --> T2["通信网络"]:::t
+  T --> T3["区域边界"]:::t
+  T --> T4["计算环境"]:::t
+  T --> T5["管理中心"]:::t
+  M --> M1["管理制度"]:::m
+  M --> M2["管理机构"]:::m
+  M --> M3["管理人员"]:::m
+  M --> M4["建设管理"]:::m
+  M --> M5["运维管理"]:::m
+  classDef r fill:#e3f2fd,stroke:#1565c0;
+  classDef t fill:#e8f5e9,stroke:#2e7d32;
+  classDef m fill:#fff3e0,stroke:#ef6c00;

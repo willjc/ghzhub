@@ -1,0 +1,13 @@
+flowchart LR
+  A["业务数据库"]:::s --> B["每日增量"]:::s
+  A --> C["每周全量"]:::s
+  D["配置/代码"]:::s --> E["版本化备份"]:::s
+  F["上传文件"]:::s --> G["定期备份"]:::s
+  B --> H["加密存储/异地保存"]:::key
+  C --> H
+  E --> H
+  G --> H
+  H --> I["定期恢复演练(RTO/RPO)"]:::ok
+  classDef s fill:#e8f5e9,stroke:#2e7d32;
+  classDef key fill:#fff3e0,stroke:#ef6c00;
+  classDef ok fill:#c8e6c9,stroke:#2e7d32;

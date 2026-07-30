@@ -1,0 +1,12 @@
+sequenceDiagram
+  participant U as 群众
+  participant S as 系统
+  participant E as 电子签章平台
+  U->>S: 发起签约
+  S->>E: 按模板创建签署任务
+  E-->>S: 返回签署链接
+  S-->>U: 跳转签署
+  U->>E: 完成签署
+  E-->>S: 签署结果回调
+  S->>S: 合同归档/更新状态
+  S-->>U: 可下载合同

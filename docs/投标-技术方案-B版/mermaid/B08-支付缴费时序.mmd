@@ -1,0 +1,17 @@
+sequenceDiagram
+  participant U as 群众
+  participant S as 系统
+  participant P as 港区支付
+  U->>S: 选择账单缴费
+  S->>S: 校验(押金优先/账期)
+  S->>P: 统一下单(业务唯一键)
+  P-->>S: 预支付信息
+  S-->>U: 拉起支付
+  U->>P: 完成支付
+  P-->>S: 异步回调(幂等处理)
+  alt 回调丢失
+    S->>P: 定时主动查单
+    P-->>S: 支付结果
+  end
+  S->>S: 更新账单/台账(幂等)
+  S-->>U: 缴费成功

@@ -1,0 +1,11 @@
+erDiagram
+  USER ||--o{ CONTRACT : 拥有
+  HOUSE ||--o{ CONTRACT : 关联
+  PROJECT ||--o{ BUILDING : 含
+  BUILDING ||--o{ UNIT : 含
+  UNIT ||--o{ HOUSE : 含
+  CONTRACT ||--o{ BILL : 生成
+  BILL ||--o{ PAYORDER : 对应
+  CONTRACT ||--o{ CHECKOUT : 退租
+  USER ||--o{ VERIFY : 核验记录
+  USER ||--o{ APPEAL : 申诉记录

@@ -1,0 +1,7 @@
+flowchart LR
+  A["需求确认/基线"]:::s --> B["迭代规划"]:::s --> C["设计"]:::s --> D["开发"]:::s --> E["自测/评审"]:::s --> F["集成/联调"]:::s --> G["演示确认"]:::s --> H{"迭代结束?"}:::d
+  H -->|否,下一迭代| B
+  H -->|是| I["系统测试/上线"]:::ok
+  classDef s fill:#e8f5e9,stroke:#2e7d32;
+  classDef d fill:#fff3e0,stroke:#ef6c00;
+  classDef ok fill:#c8e6c9,stroke:#2e7d32;

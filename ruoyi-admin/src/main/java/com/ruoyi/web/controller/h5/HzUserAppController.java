@@ -50,6 +50,11 @@ public class HzUserAppController extends BaseController {
             return error("用户不存在");
         }
 
+        // 性别编码转换：库内存储为 1=男/2=女/0=未知，
+        // 而用户端(小程序/H5)使用若依标准编码 0=男/1=女/2=未知，
+        // 返回前统一转换为用户端编码，避免前端显示错乱。
+        user.setGender(genderStoredToApp(user.getGender()));
+
         return success(user);
     }
 
@@ -124,6 +129,13 @@ public class HzUserAppController extends BaseController {
         // 确保只能修改自己的信息
         hzUser.setUserId(userId);
 
+        // 性别编码转换：用户端(小程序/H5)传入若依标准编码 0=男/1=女/2=未知，
+        // 落库前转换回库内存储编码 1=男/2=女/0=未知。
+        // 仅当本次请求携带 gender 时才转换，避免误改其它字段的部分更新。
+        if (StringUtils.isNotEmpty(hzUser.getGender())) {
+            hzUser.setGender(genderAppToStored(hzUser.getGender()));
+        }
+
         return toAjax(hzUserService.updateById(hzUser));
     }
 
@@ -176,5 +188,45 @@ public class HzUserAppController extends BaseController {
             }
         }
         return null;
+    }
+
+    /**
+     * 性别编码：库内存储 -> 用户端展示
+     * 库内：1=男 2=女 0=未知；用户端：0=男 1=女 2=未知
+     */
+    private String genderStoredToApp(String stored) {
+        if (stored == null) {
+            return null;
+        }
+        switch (stored) {
+            case "1":
+                return "0"; // 男
+            case "2":
+                return "1"; // 女
+            case "0":
+                return "2"; // 未知
+            default:
+                return stored;
+        }
+    }
+
+    /**
+     * 性别编码：用户端提交 -> 库内存储
+     * 用户端：0=男 1=女 2=未知；库内：1=男 2=女 0=未知
+     */
+    private String genderAppToStored(String app) {
+        if (app == null) {
+            return null;
+        }
+        switch (app) {
+            case "0":
+                return "1"; // 男
+            case "1":
+                return "2"; // 女
+            case "2":
+                return "0"; // 未知
+            default:
+                return app;
+        }
     }
 }

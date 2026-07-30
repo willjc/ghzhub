@@ -1,0 +1,19 @@
+flowchart TB
+  U["群众/管理员"] --> LB["反向代理 Nginx/OpenResty<br/>统一入口·SSL"]:::n
+  LB --> A1["应用实例1"]:::a
+  LB --> A2["应用实例2"]:::a
+  LB --> A3["应用实例N 可水平扩展"]:::a
+  A1 --> DB[("MySQL 主")]:::db
+  A2 --> DB
+  A3 --> DB
+  DB -.主备.-> DBS[("MySQL 备")]:::db
+  A1 --> R[("Redis")]:::r
+  A1 --> FS[("文件存储")]:::f
+  A1 --> PROXY["政务网络合规代理"]:::p --> GOV["港区政务数据接口"]:::g
+  classDef n fill:#e3f2fd,stroke:#1565c0;
+  classDef a fill:#e8f5e9,stroke:#2e7d32;
+  classDef db fill:#fff3e0,stroke:#ef6c00;
+  classDef r fill:#fce4ec,stroke:#c2185b;
+  classDef f fill:#eceff1,stroke:#455a64;
+  classDef p fill:#f3e5f5,stroke:#6a1b9a;
+  classDef g fill:#ede7f6,stroke:#4527a0;

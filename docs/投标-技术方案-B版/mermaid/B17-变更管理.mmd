@@ -1,0 +1,8 @@
+flowchart LR
+  A["变更提出"]:::s --> B["影响评估"]:::s --> C["评审审批"]:::d --> D{"通过?"}:::d
+  D -->|否| E["驳回/记录"]:::w
+  D -->|是| F["实施"]:::s --> G["验证"]:::s --> H["记录归档"]:::ok
+  classDef s fill:#e8f5e9,stroke:#2e7d32;
+  classDef d fill:#fff3e0,stroke:#ef6c00;
+  classDef w fill:#ffebee,stroke:#c62828;
+  classDef ok fill:#c8e6c9,stroke:#2e7d32;

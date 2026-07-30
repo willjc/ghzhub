@@ -1,0 +1,11 @@
+flowchart TB
+  ENG["统一流程引擎<br/>找房-核验-选房-签约-缴费-入住-退租"]:::core
+  ENG --> P1["保租房<br/>社保/住房核验·政策价·申诉闭环"]:::b1
+  ENG --> P2["人才公寓<br/>人才层次核验·一人一套·分档计租"]:::b2
+  ENG --> P3["市场租赁<br/>准入宽松·房源展示·倒计时提醒"]:::b3
+  CFG["业态规则参数化配置"]:::cfg --> ENG
+  classDef core fill:#e3f2fd,stroke:#1565c0;
+  classDef b1 fill:#e8f5e9,stroke:#2e7d32;
+  classDef b2 fill:#fff3e0,stroke:#ef6c00;
+  classDef b3 fill:#f3e5f5,stroke:#6a1b9a;
+  classDef cfg fill:#fffde7,stroke:#f9a825;

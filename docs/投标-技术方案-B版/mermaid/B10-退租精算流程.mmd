@@ -1,0 +1,14 @@
+flowchart TB
+  A["用户提交退租申请"]:::s --> B["管理端审批"]:::s
+  B --> C["核定实际退租日期"]:::key
+  C --> D["按日精算应退租金+押金"]:::s
+  D --> E["退款金额一次核定锁定"]:::key
+  E --> F["用户签字确认"]:::s
+  F --> G["执行退款(港区支付原路)"]:::s
+  G --> H["合同状态置退租"]:::s
+  H --> I["房源状态释放"]:::ok
+  D -.台账留痕.-> LOG[("退租退款台账")]:::log
+  classDef s fill:#e8f5e9,stroke:#2e7d32;
+  classDef key fill:#fff3e0,stroke:#ef6c00;
+  classDef ok fill:#c8e6c9,stroke:#2e7d32;
+  classDef log fill:#eceff1,stroke:#455a64;

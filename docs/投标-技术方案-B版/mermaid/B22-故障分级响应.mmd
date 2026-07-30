@@ -1,0 +1,13 @@
+flowchart TB
+  A["报障/告警"]:::s --> B["工单登记"]:::s --> C{"故障分级"}:::d
+  C -->|紧急| E1["10分钟内响应"]:::w
+  C -->|一般| E2["2小时内响应"]:::s
+  E1 --> F["处置/恢复"]:::s
+  E2 --> F
+  F --> G{"超时/扩大?"}:::d
+  G -->|是| H["逐级升级"]:::w --> F
+  G -->|否| I["恢复验证/台账/复盘"]:::ok
+  classDef s fill:#e8f5e9,stroke:#2e7d32;
+  classDef d fill:#fff3e0,stroke:#ef6c00;
+  classDef w fill:#ffebee,stroke:#c62828;
+  classDef ok fill:#c8e6c9,stroke:#2e7d32;

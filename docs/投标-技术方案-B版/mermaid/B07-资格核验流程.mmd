@@ -1,0 +1,17 @@
+flowchart TB
+  A["进入办事"]:::s --> B["统一核验服务调用政务数据"]:::s
+  B --> C{"接口可用?"}:::d
+  C -->|超时/失败| C1["重试N次"]:::s --> C2{"仍失败?"}:::d
+  C2 -->|是| C3["降级:转人工/稍后重试"]:::w
+  C2 -->|否| D
+  C -->|是| D{"资格是否符合?"}:::d
+  D -->|符合| E["通过,进入选房"]:::ok
+  D -->|不符| F["展示不符项"]:::w --> G["手动刷新/在线申诉"]:::s --> H["审批"]:::s --> I{"通过?"}:::d
+  I -->|是| E
+  I -->|否| J["办事终止/整改"]:::w
+  B -.全程留痕.-> LOG[("核验日志")]:::log
+  classDef s fill:#e8f5e9,stroke:#2e7d32;
+  classDef d fill:#fff3e0,stroke:#ef6c00;
+  classDef ok fill:#c8e6c9,stroke:#2e7d32;
+  classDef w fill:#ffebee,stroke:#c62828;
+  classDef log fill:#eceff1,stroke:#455a64;

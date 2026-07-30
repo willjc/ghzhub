@@ -1,0 +1,12 @@
+flowchart TB
+  M["统一监控与告警平台"]:::r
+  M --> A["应用:可用性/响应/错误率"]:::a
+  M --> H["主机:CPU/内存/磁盘/网络"]:::a
+  M --> D["数据库:连接/慢查询/主备延迟"]:::a
+  M --> C["缓存:命中率/内存"]:::a
+  M --> I["接口:成功率/耗时"]:::a
+  M --> P["支付/核验:成功率/回调延迟"]:::a
+  M --> ALERT["多渠道告警:短信/电话/邮件"]:::w
+  classDef r fill:#e3f2fd,stroke:#1565c0;
+  classDef a fill:#e8f5e9,stroke:#2e7d32;
+  classDef w fill:#ffebee,stroke:#c62828;

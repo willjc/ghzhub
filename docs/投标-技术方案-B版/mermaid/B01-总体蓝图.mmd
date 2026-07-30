@@ -1,0 +1,43 @@
+flowchart TB
+  subgraph ACCESS["接入层 · 四端"]
+    H5["移动端H5"]:::c1
+    MP["微信小程序端"]:::c1
+    OA["微信公众号端"]:::c1
+    ADMIN["后台管理端"]:::c1
+  end
+  subgraph APP["应用层 · 八大业务域"]
+    D1["房源管理"]:::c2
+    D2["合同管理"]:::c2
+    D3["交易缴费"]:::c2
+    D4["优惠券"]:::c2
+    D5["消息通知"]:::c2
+    D6["个人中心"]:::c2
+    D7["运营中心"]:::c2
+    D8["数据看板"]:::c2
+  end
+  subgraph SVC["服务层 · 能力底座"]
+    S1["认证鉴权"]:::c3
+    S2["支付服务"]:::c3
+    S3["签约服务"]:::c3
+    S4["核验服务"]:::c3
+    S5["消息/文件/调度"]:::c3
+  end
+  subgraph OUT["对接层 · 外部系统"]
+    O1["郑好办用户体系"]:::c4
+    O2["政务数据接口"]:::c4
+    O3["港区支付"]:::c4
+    O4["电子签章"]:::c4
+    O5["人脸/地图/开票"]:::c4
+  end
+  subgraph DATA["数据层"]
+    DB[("MySQL")]:::c5
+    RDS[("Redis")]:::c5
+    FS[("文件存储")]:::c5
+  end
+  ACCESS --> APP --> SVC --> OUT
+  SVC --> DATA
+  classDef c1 fill:#e3f2fd,stroke:#1565c0;
+  classDef c2 fill:#e8f5e9,stroke:#2e7d32;
+  classDef c3 fill:#fff3e0,stroke:#ef6c00;
+  classDef c4 fill:#f3e5f5,stroke:#6a1b9a;
+  classDef c5 fill:#eceff1,stroke:#455a64;
