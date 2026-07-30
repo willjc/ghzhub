@@ -759,6 +759,14 @@ export default {
       getBatch(batchId).then(response => {
         this.form = response.data;
 
+        // 日期字符串(yyyy-MM-dd)转时间戳，供 value-format="timestamp" 的日期控件正常回显
+        if (this.form.entryStartDate) {
+          this.form.entryStartDate = new Date(this.form.entryStartDate).getTime();
+        }
+        if (this.form.entryEndDate) {
+          this.form.entryEndDate = new Date(this.form.entryEndDate).getTime();
+        }
+
         // 将 projectIds 字符串转换为数组
         if (this.form.projectIds) {
           this.selectedProjectIds = this.form.projectIds.split(',').map(id => parseInt(id));
