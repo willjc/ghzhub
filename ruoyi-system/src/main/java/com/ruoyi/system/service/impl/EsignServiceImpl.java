@@ -185,12 +185,18 @@ public class EsignServiceImpl implements EsignService {
             // 从e签宝返回数据中提取已认证的真实姓名和身份证号，覆盖数据库中用户输入的值
             String esignName = (data.has("psnName") && !data.get("psnName").isJsonNull()) ? data.get("psnName").getAsString() : null;
             String esignIdCard = (data.has("psnIDCardNum") && !data.get("psnIDCardNum").isJsonNull()) ? data.get("psnIDCardNum").getAsString() : null;
+            // 根据身份证自动回填性别（未知/空且身份证合法时）；此处走 wrapper 直更，需显式补 set
+            HzUser curUser = userMapper.selectById(userId);
+            String curGender = (curUser != null) ? curUser.getGender() : null;
+            String effectiveIdCard = (esignIdCard != null) ? esignIdCard : (curUser != null ? curUser.getIdCard() : null);
+            String backfilledGender = com.ruoyi.common.utils.IdCardUtils.backfillGender(curGender, effectiveIdCard);
             userMapper.update(null, new LambdaUpdateWrapper<HzUser>().eq(HzUser::getUserId, userId)
                     .set(HzUser::getEsignPsnId, psnId)
                     .set(HzUser::getAuthStatus, "2")
                     .set(HzUser::getAuthTime, new java.util.Date())
                     .set(esignName != null, HzUser::getRealName, esignName)
-                    .set(esignIdCard != null, HzUser::getIdCard, esignIdCard));
+                    .set(esignIdCard != null, HzUser::getIdCard, esignIdCard)
+                    .set(!java.util.Objects.equals(backfilledGender, curGender), HzUser::getGender, backfilledGender));
             log.info("e签宝个人认证完成，userId={}, psnId={}, esignName={}, esignIdCard={}", userId, psnId, esignName, esignIdCard);
             return psnId;
         } catch (Exception e) {

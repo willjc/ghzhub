@@ -54,8 +54,12 @@ public class EsignController extends BaseController {
         if (idCard != null && !idCard.isBlank()) {
             // 身份证账号自动合并：如果该身份证已存在于其他旧账号，自动迁移业务数据
             userService.mergeUserByIdCard(userId, idCard);
+            // 根据身份证自动回填性别（未知/空且身份证合法时）
+            String backfilledGender = com.ruoyi.common.utils.IdCardUtils.backfillGender(user.getGender(), idCard);
             userMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<HzUser>()
-                    .eq(HzUser::getUserId, userId).set(HzUser::getIdCard, idCard));
+                    .eq(HzUser::getUserId, userId)
+                    .set(HzUser::getIdCard, idCard)
+                    .set(!java.util.Objects.equals(backfilledGender, user.getGender()), HzUser::getGender, backfilledGender));
         }
         String callbackUrl = (redirectUrl != null && !redirectUrl.isBlank()) ? redirectUrl : this.redirectUrl;
         String authUrl = esignService.getPsnAuthUrl(userId, user.getPhone(), realName, idCard, callbackUrl);

@@ -240,6 +240,8 @@ public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> impleme
             user.setNickname(displayName != null ? displayName : "郑好办用户");
             user.setRealName(realName);
             user.setIdCard(idCard);
+            // 根据身份证自动回填性别（未知/空且身份证合法时）
+            user.setGender(com.ruoyi.common.utils.IdCardUtils.backfillGender(user.getGender(), idCard));
             user.setAvatar(avatarUrl);
             user.setSourceType("2"); // 2=郑好办
             user.setLoginType("zhenghaoban");
@@ -259,6 +261,8 @@ public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> impleme
                 user.setIdCard(idCard);
                 user.setRealName(realName);
                 user.setIsInfoCompleted("1");
+                // 根据身份证自动回填性别（未知/空且身份证合法时）
+                user.setGender(com.ruoyi.common.utils.IdCardUtils.backfillGender(user.getGender(), idCard));
             }
             // 更新昵称和头像
             if (displayName != null) {
