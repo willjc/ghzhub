@@ -76,7 +76,7 @@
       <el-table-column label="真实姓名" align="center" prop="realName" width="100" />
       <el-table-column label="性别" align="center" prop="gender" width="70">
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.sys_user_sex" :value="scope.row.gender"/>
+          <dict-tag :options="dict.type.hz_user_sex" :value="scope.row.gender"/>
         </template>
       </el-table-column>
       <el-table-column label="年龄" align="center" width="70">
@@ -196,7 +196,7 @@
         <el-descriptions-item label="昵称">{{ userData.nickname }}</el-descriptions-item>
         <el-descriptions-item label="真实姓名">{{ userData.realName }}</el-descriptions-item>
         <el-descriptions-item label="性别">
-          <dict-tag :options="dict.type.sys_user_sex" :value="userData.gender"/>
+          <dict-tag :options="dict.type.hz_user_sex" :value="userData.gender"/>
         </el-descriptions-item>
         <el-descriptions-item label="身份证号">{{ userData.idCard }}</el-descriptions-item>
         <el-descriptions-item label="年龄">
@@ -349,7 +349,7 @@ import { listUser, getUser, updateUser, changeUserStatus, delUser } from "@/api/
 
 export default {
   name: "HzUser",
-  dicts: ['sys_user_sex', 'hz_user_source_type', 'hz_education_type', 'hz_identity_type', 'hz_unit_nature'],
+  dicts: ['hz_user_sex', 'hz_user_source_type', 'hz_education_type', 'hz_identity_type', 'hz_unit_nature'],
   data() {
     return {
       loading: true,
