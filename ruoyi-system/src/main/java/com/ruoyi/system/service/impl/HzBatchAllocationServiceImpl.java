@@ -415,6 +415,7 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
         }
 
         batch.setBatchName((String) batchInfo.get("batchName"));
+        batch.setEnterpriseName((String) batchInfo.get("enterpriseName"));
         batch.setTalentType((String) batchInfo.get("talentType"));
         batch.setProjectIds((String) batchInfo.get("projectIds"));
         batch.setHouseCount(houseList.size());

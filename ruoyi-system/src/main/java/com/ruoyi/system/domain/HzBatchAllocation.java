@@ -75,6 +75,10 @@ public class HzBatchAllocation extends BaseEntity {
     @TableField(exist = false)
     private String projectName;
 
+    /** 分配人员姓名(非数据库字段,仅用于列表按姓名搜索) */
+    @TableField(exist = false)
+    private String tenantName;
+
     /** 房源数量 */
     @TableField("house_count")
     private Integer houseCount;
@@ -219,6 +223,14 @@ public class HzBatchAllocation extends BaseEntity {
 
     public void setProjectName(String projectName) {
         this.projectName = projectName;
+    }
+
+    public String getTenantName() {
+        return tenantName;
+    }
+
+    public void setTenantName(String tenantName) {
+        this.tenantName = tenantName;
     }
 
     public Integer getHouseCount() {

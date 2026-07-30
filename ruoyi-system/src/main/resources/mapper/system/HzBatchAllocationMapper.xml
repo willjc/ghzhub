@@ -56,11 +56,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="batchName != null and batchName != ''">
                 AND b.batch_name LIKE CONCAT('%', #{batchName}, '%')
             </if>
+            <if test="enterpriseName != null and enterpriseName != ''">
+                AND b.enterprise_name LIKE CONCAT('%', #{enterpriseName}, '%')
+            </if>
             <if test="projectId != null">
                 AND FIND_IN_SET(#{projectId}, b.project_ids)
             </if>
             <if test="talentType != null and talentType != ''">
                 AND b.talent_type = #{talentType}
+            </if>
+            <if test="tenantName != null and tenantName != ''">
+                AND EXISTS (SELECT 1 FROM hz_batch_tenant t WHERE t.batch_id = b.batch_id AND t.del_flag = '0' AND t.tenant_name LIKE CONCAT('%', #{tenantName}, '%'))
             </if>
         </where>
         GROUP BY b.batch_id
@@ -74,11 +80,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="entity.batchName != null and entity.batchName != ''">
                 AND b.batch_name LIKE CONCAT('%', #{entity.batchName}, '%')
             </if>
+            <if test="entity.enterpriseName != null and entity.enterpriseName != ''">
+                AND b.enterprise_name LIKE CONCAT('%', #{entity.enterpriseName}, '%')
+            </if>
             <if test="entity.projectId != null">
                 AND FIND_IN_SET(#{entity.projectId}, b.project_ids)
             </if>
             <if test="entity.talentType != null and entity.talentType != ''">
                 AND b.talent_type = #{entity.talentType}
+            </if>
+            <if test="entity.tenantName != null and entity.tenantName != ''">
+                AND EXISTS (SELECT 1 FROM hz_batch_tenant t WHERE t.batch_id = b.batch_id AND t.del_flag = '0' AND t.tenant_name LIKE CONCAT('%', #{entity.tenantName}, '%'))
             </if>
         </where>
         GROUP BY b.batch_id

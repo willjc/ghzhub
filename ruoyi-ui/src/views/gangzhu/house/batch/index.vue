@@ -9,6 +9,22 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="公司名称" prop="enterpriseName">
+        <el-input
+          v-model="queryParams.enterpriseName"
+          placeholder="请输入公司名称"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="姓名" prop="tenantName">
+        <el-input
+          v-model="queryParams.tenantName"
+          placeholder="请输入分配人员姓名"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="所属项目" prop="projectId">
         <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable style="width: 180px">
           <el-option
@@ -81,6 +97,7 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="批次编号" align="center" prop="batchNo" width="150" show-overflow-tooltip />
       <el-table-column label="批次名称" align="center" prop="batchName" min-width="160" show-overflow-tooltip />
+      <el-table-column label="公司名称" align="center" prop="enterpriseName" min-width="160" show-overflow-tooltip />
       <el-table-column label="所属项目" align="center" prop="projectName" min-width="140" show-overflow-tooltip />
       <el-table-column label="人才类型" align="center" prop="talentType" width="100">
         <template slot-scope="scope">
@@ -191,6 +208,13 @@
                 <el-radio label="0">普通人才</el-radio>
                 <el-radio label="1">定向人才</el-radio>
               </el-radio-group>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="公司名称" prop="enterpriseName">
+              <el-input v-model="form.enterpriseName" placeholder="请输入公司名称" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -566,6 +590,8 @@ export default {
         pageNum: 1,
         pageSize: 10,
         batchName: null,
+        enterpriseName: null,
+        tenantName: null,
         projectId: null,
         talentType: null
       },
@@ -573,6 +599,9 @@ export default {
       rules: {
         batchName: [
           { required: true, message: "批次名称不能为空", trigger: "blur" }
+        ],
+        enterpriseName: [
+          { required: true, message: "公司名称不能为空", trigger: "blur" }
         ],
         talentType: [
           { required: true, message: "批次人才类型不能为空", trigger: "change" }
@@ -677,6 +706,7 @@ export default {
         batchId: null,
         batchNo: null,
         batchName: null,
+        enterpriseName: null,
         talentType: "0",  // 默认普通人才
         entryStartDate: null,
         entryEndDate: null,
@@ -914,6 +944,7 @@ export default {
             batchInfo: {
               batchId: this.form.batchId,
               batchName: this.form.batchName,
+              enterpriseName: this.form.enterpriseName,
               talentType: this.form.talentType,
               projectIds: this.selectedProjectIds.join(','),
               entryStartDate: this.form.entryStartDate,
