@@ -926,10 +926,10 @@ export default {
         this.queryParams.params["beginSignTime"] = this.daterangeSignTime[0];
         this.queryParams.params["endSignTime"] = this.daterangeSignTime[1];
       }
-      // 勾选导出：将选中的合同 ids 传给后端
+      // 勾选导出：将选中的合同 ids 传给后端（逗号串，适配 @RequestParam Long[] 绑定）
       const exportParams = { ...this.queryParams };
       if (this.ids && this.ids.length > 0) {
-        exportParams.contractIds = this.ids;
+        exportParams.contractIds = this.ids.join(',');
       }
       this.download('system/contract/export', exportParams, `contract_${new Date().getTime()}.xlsx`)
     },
