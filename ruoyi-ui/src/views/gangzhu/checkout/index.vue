@@ -159,13 +159,25 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
+            <el-form-item label="用户姓名">
+              <span>{{ currentForm.tenantName || '-' }}</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
             <el-form-item label="合同编号">
               <span>{{ currentForm.contractNo }}</span>
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row>
           <el-col :span="8">
-            <el-form-item label="房源">
-              <span>{{ currentForm.houseCode }} / {{ currentForm.houseNo }}</span>
+            <el-form-item label="所属项目">
+              <span>{{ currentForm.projectName || '-' }}</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="16">
+            <el-form-item label="房源信息">
+              <span>{{ formatHouseInfo(currentForm) }}</span>
             </el-form-item>
           </el-col>
         </el-row>
