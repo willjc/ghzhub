@@ -97,47 +97,24 @@
         <project-ledger :month="currentMonth" ref="projectLedger" />
       </div>
 
-      <!-- ④ 租户画像 -->
-      <el-row :gutter="16">
-        <el-col :xs="24" :lg="12">
-          <div class="ghz-panel">
-            <div class="ghz-panel-head">
-              <span class="panel-accent rose"></span>
-              <span class="panel-title">婚姻状态分布</span>
+      <!-- ④ 租户画像 - 户籍来源分布 -->
+      <div class="ghz-panel">
+        <div class="ghz-panel-head">
+          <span class="panel-accent cyan"></span>
+          <span class="panel-title">户籍来源分布</span>
+        </div>
+        <div class="profile-bars">
+          <div class="pb-row" v-for="hh in householdList" :key="hh.key">
+            <span class="pb-label">{{ hh.label }}</span>
+            <div class="pb-track">
+              <div class="pb-fill" :class="'pbf-' + hh.theme"
+                   :style="{ width: getPct(tenantData.household, hh.key) + '%' }"></div>
             </div>
-            <div class="profile-bars">
-              <div class="pb-row" v-for="m in marriageList" :key="m.key">
-                <span class="pb-label">{{ m.label }}</span>
-                <div class="pb-track">
-                  <div class="pb-fill" :class="'pbf-' + m.theme"
-                       :style="{ width: getPct(tenantData.marriageStatus, m.key) + '%' }"></div>
-                </div>
-                <span class="pb-val">{{ (tenantData.marriageStatus && tenantData.marriageStatus[m.key]) || 0 }}人</span>
-                <span class="pb-pct">{{ getPct(tenantData.marriageStatus, m.key) }}%</span>
-              </div>
-            </div>
+            <span class="pb-val">{{ (tenantData.household && tenantData.household[hh.key]) || 0 }}人</span>
+            <span class="pb-pct">{{ getPct(tenantData.household, hh.key) }}%</span>
           </div>
-        </el-col>
-        <el-col :xs="24" :lg="12">
-          <div class="ghz-panel">
-            <div class="ghz-panel-head">
-              <span class="panel-accent cyan"></span>
-              <span class="panel-title">户籍来源分布</span>
-            </div>
-            <div class="profile-bars">
-              <div class="pb-row" v-for="hh in householdList" :key="hh.key">
-                <span class="pb-label">{{ hh.label }}</span>
-                <div class="pb-track">
-                  <div class="pb-fill" :class="'pbf-' + hh.theme"
-                       :style="{ width: getPct(tenantData.household, hh.key) + '%' }"></div>
-                </div>
-                <span class="pb-val">{{ (tenantData.household && tenantData.household[hh.key]) || 0 }}人</span>
-                <span class="pb-pct">{{ getPct(tenantData.household, hh.key) }}%</span>
-              </div>
-            </div>
-          </div>
-        </el-col>
-      </el-row>
+        </div>
+      </div>
 
     </div>
   </div>
@@ -171,7 +148,6 @@ export default {
         userConversionRate: 0
       },
       tenantData: {
-        marriageStatus: {},
         household: {}
       },
       // 财务指标定义
@@ -195,13 +171,6 @@ export default {
         { key: 'cumulativeRentRate', label: '累计出租率', color: '#16a34a' },
         { key: 'userConversionRate', label: '用户转化率', color: '#7c3aed' }
       ],
-      // 婚姻状态
-      marriageList: [
-        { key: 'married',   label: '已婚', theme: 'blue'  },
-        { key: 'unmarried', label: '未婚', theme: 'teal'  },
-        { key: 'divorced',  label: '离异', theme: 'amber' },
-        { key: 'other',     label: '其他', theme: 'gray'  }
-      ],
       // 户籍
       householdList: [
         { key: 'local',    label: '本地户籍', theme: 'green' },
@@ -217,11 +186,11 @@ export default {
     async loadAll() {
       this.loading = true
       try {
-        const { mockGetDashboardStats, mockGetHouseStats, mockGetTenantProfile } = await import('@/api/mock/dashboard')
+        const { getDashboardStats, getHouseStats, getTenantProfile } = await import('@/api/gangzhu/statistics')
         const [finRes, houseRes, tenantRes] = await Promise.all([
-          mockGetDashboardStats(this.currentMonth),
-          mockGetHouseStats(),
-          mockGetTenantProfile()
+          getDashboardStats(this.currentMonth),
+          getHouseStats(),
+          getTenantProfile()
         ])
         this.financialData = finRes.data.financial
         this.houseData     = houseRes.data

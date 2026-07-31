@@ -158,8 +158,8 @@ export default {
     async loadData() {
       this.loading = true
       try {
-        const { mockGetProjectLedger } = await import('@/api/mock/dashboard')
-        const response = await mockGetProjectLedger(this.month)
+        const { getProjectLedger } = await import('@/api/gangzhu/statistics')
+        const response = await getProjectLedger(this.month)
         this.tableData = response.rows || []
         this.$nextTick(() => this.initBarChart())
       } catch (error) {
@@ -223,11 +223,9 @@ export default {
 
       this.trendChart = echarts.init(this.$refs.trendChart)
 
-      // 生成模拟的月度趋势数据
-      const months = ['7月', '8月', '9月', '10月', '11月', '12月']
-      const monthlyData = months.map((_, index) => {
-        return Math.round(this.currentProject.monthlyAmount * (0.8 + Math.random() * 0.4))
-      })
+      // 使用后端返回的近6个月真实实收趋势
+      const months = (this.currentProject && this.currentProject.trendMonths) || []
+      const monthlyData = (this.currentProject && this.currentProject.trendData) || []
 
       const option = {
         title: {
