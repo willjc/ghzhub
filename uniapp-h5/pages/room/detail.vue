@@ -344,7 +344,7 @@ import config from '@/config/index'
 					}
 				} catch (e) {
 					uni.hideLoading()
-					uni.showToast({ title: '选房失败，请重试', icon: 'none' })
+					uni.showToast({ title: (e && e.msg) ? e.msg : '选房失败，请重试', icon: 'none' })
 				}
 			},
 			async loadTalentRentPreview() {

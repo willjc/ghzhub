@@ -111,7 +111,7 @@ public class HzHouseOrderServiceImpl
                 }
             }
             if (hasUnexpired) {
-                return AjaxResult.error("您已预订过该房源，请勿重复操作");
+                return AjaxResult.error("您已选择过该房源，请前往“我的合同”完成签署");
             }
             // 清理所有过期订单及其草稿合同
             for (HzHouseOrder existOrder : activeOrders) {
