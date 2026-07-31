@@ -37,6 +37,8 @@ import java.util.Objects;
  *
  * 口径与「报表管理 - 收款台账」(HzReportController) 完全一致，保证驾驶舱与报表数字对得上。
  * 该接口为所有登录用户首页所用，故不加 @PreAuthorize（仅需登录认证）。
+ *
+ * build-marker: statistics-v2 (redeploy verify)
  */
 @RestController
 @RequestMapping("/gangzhu/statistics")
