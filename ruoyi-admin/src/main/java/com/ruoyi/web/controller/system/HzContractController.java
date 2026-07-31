@@ -13,8 +13,10 @@ import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzCheckoutApply;
 import com.ruoyi.system.domain.HzDocument;
 import com.ruoyi.system.mapper.HzBillMapper;
+import com.ruoyi.system.mapper.HzCheckoutApplyMapper;
 import com.ruoyi.system.service.EsignService;
 import com.ruoyi.system.service.IHzContractService;
 import com.ruoyi.system.service.IHzDocumentService;
@@ -23,9 +25,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletResponse;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -42,6 +47,9 @@ public class HzContractController extends BaseController
 
     @Autowired
     private HzBillMapper billMapper;
+
+    @Autowired
+    private HzCheckoutApplyMapper checkoutApplyMapper;
 
     @Autowired
     private IHzDocumentService documentService;
@@ -96,8 +104,55 @@ public class HzContractController extends BaseController
             // 全量导出：按搜索条件查
             list = contractService.selectContractList(contract);
         }
+        // 回填退租信息（仅已完成退租 apply_status=5；未退租的合同留空）
+        backfillCheckoutInfo(list);
         ExcelUtil<HzContract> util = new ExcelUtil<HzContract>(HzContract.class);
         util.exportExcel(response, list, "合同数据");
+    }
+
+    /**
+     * 为导出的合同列表回填退租日期、应退押金、应退租金、应退总额
+     * 数据来源：退租申请表 hz_checkout_apply，仅取已完成退租（apply_status=5）的记录，
+     * 同一合同存在多条时取最新一条（applyId 最大）；退租日期优先取实际退租日期，为空回退计划退租日期。
+     */
+    private void backfillCheckoutInfo(List<HzContract> list)
+    {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        List<Long> contractIds = list.stream()
+                .map(HzContract::getContractId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        if (contractIds.isEmpty()) {
+            return;
+        }
+        List<HzCheckoutApply> applies = checkoutApplyMapper.selectList(
+                new LambdaQueryWrapper<HzCheckoutApply>()
+                        .in(HzCheckoutApply::getContractId, contractIds)
+                        .eq(HzCheckoutApply::getApplyStatus, "5")
+                        .eq(HzCheckoutApply::getDelFlag, "0")
+                        .orderByAsc(HzCheckoutApply::getApplyId));
+        if (applies.isEmpty()) {
+            return;
+        }
+        // 升序遍历，覆盖式放入 map，最终保留同一合同下 applyId 最大（最新）的一条
+        Map<Long, HzCheckoutApply> applyMap = new HashMap<>();
+        for (HzCheckoutApply a : applies) {
+            applyMap.put(a.getContractId(), a);
+        }
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        for (HzContract c : list) {
+            HzCheckoutApply a = applyMap.get(c.getContractId());
+            if (a == null) {
+                continue;
+            }
+            Date checkoutDate = a.getActualCheckoutDate() != null ? a.getActualCheckoutDate() : a.getPlanCheckoutDate();
+            c.setCheckoutDate(checkoutDate != null ? sdf.format(checkoutDate) : null);
+            c.setCheckoutDepositRefund(a.getDepositRefund());
+            c.setCheckoutRentRefund(a.getRentRefund());
+            c.setCheckoutRefundAmount(a.getRefundAmount());
+        }
     }
 
     /**

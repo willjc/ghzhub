@@ -212,6 +212,27 @@ public class HzContract extends BaseEntity {
     @TableField(exist = false)
     private String allocationType;
 
+    // ========== 以下退租信息来自退租申请表 hz_checkout_apply（仅已完成退租 apply_status=5 有值），非持久化，仅导出使用 ==========
+    /** 退租日期（实际退租日期，空则计划退租日期） */
+    @Excel(name = "退租日期", width = 20)
+    @TableField(exist = false)
+    private String checkoutDate;
+
+    /** 应退押金（deposit_refund） */
+    @Excel(name = "应退押金")
+    @TableField(exist = false)
+    private java.math.BigDecimal checkoutDepositRefund;
+
+    /** 应退租金（rent_refund） */
+    @Excel(name = "应退租金")
+    @TableField(exist = false)
+    private java.math.BigDecimal checkoutRentRefund;
+
+    /** 应退总额（refund_amount） */
+    @Excel(name = "应退总额")
+    @TableField(exist = false)
+    private java.math.BigDecimal checkoutRefundAmount;
+
     public void setContractId(Long contractId) {
         this.contractId = contractId;
     }
@@ -562,6 +583,38 @@ public class HzContract extends BaseEntity {
 
     public void setAllocationType(String allocationType) {
         this.allocationType = allocationType;
+    }
+
+    public String getCheckoutDate() {
+        return checkoutDate;
+    }
+
+    public void setCheckoutDate(String checkoutDate) {
+        this.checkoutDate = checkoutDate;
+    }
+
+    public java.math.BigDecimal getCheckoutDepositRefund() {
+        return checkoutDepositRefund;
+    }
+
+    public void setCheckoutDepositRefund(java.math.BigDecimal checkoutDepositRefund) {
+        this.checkoutDepositRefund = checkoutDepositRefund;
+    }
+
+    public java.math.BigDecimal getCheckoutRentRefund() {
+        return checkoutRentRefund;
+    }
+
+    public void setCheckoutRentRefund(java.math.BigDecimal checkoutRentRefund) {
+        this.checkoutRentRefund = checkoutRentRefund;
+    }
+
+    public java.math.BigDecimal getCheckoutRefundAmount() {
+        return checkoutRefundAmount;
+    }
+
+    public void setCheckoutRefundAmount(java.math.BigDecimal checkoutRefundAmount) {
+        this.checkoutRefundAmount = checkoutRefundAmount;
     }
 
     @Override
