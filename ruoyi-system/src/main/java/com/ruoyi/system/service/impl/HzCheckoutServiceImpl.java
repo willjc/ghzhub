@@ -1,54 +1,57 @@
 package com.ruoyi.system.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.system.domain.HzCheckoutApply;
-import com.ruoyi.system.domain.HzCheckoutApplyVO;
-import com.ruoyi.system.domain.HzCheckoutRecord;
-import com.ruoyi.system.domain.HzContract;
-import com.ruoyi.system.domain.HzHouse;
-import com.ruoyi.system.domain.HzProject;
-import com.ruoyi.system.domain.HzBuilding;
-import com.ruoyi.system.domain.HzUnit;
-import com.ruoyi.system.domain.HzCheckIn;
-import com.ruoyi.system.domain.HzUser;
-import com.ruoyi.system.mapper.HzCheckoutApplyMapper;
-import com.ruoyi.system.mapper.HzCheckoutRecordMapper;
-import com.ruoyi.system.mapper.HzContractMapper;
-import com.ruoyi.system.mapper.HzHouseMapper;
-import com.ruoyi.system.mapper.HzProjectMapper;
-import com.ruoyi.system.mapper.HzCheckInMapper;
-import com.ruoyi.system.mapper.HzBillMapper;
-import com.ruoyi.system.mapper.HzUserMapper;
-import com.ruoyi.system.mapper.HzRefundApplyMapper;
-import com.ruoyi.system.mapper.HzBuildingMapper;
-import com.ruoyi.system.mapper.HzUnitMapper;
-import com.ruoyi.system.domain.HzRefundApply;
-import com.ruoyi.system.service.IHzCheckoutService;
-import com.ruoyi.system.service.IHzRoleProjectService;
-import com.ruoyi.common.core.page.TableDataInfo;
-import com.ruoyi.common.utils.SecurityUtils;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.text.SimpleDateFormat;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ArrayList;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzBill;
+import com.ruoyi.system.domain.HzBuilding;
+import com.ruoyi.system.domain.HzCheckIn;
+import com.ruoyi.system.domain.HzCheckoutApply;
+import com.ruoyi.system.domain.HzCheckoutApplyVO;
+import com.ruoyi.system.domain.HzCheckoutRecord;
+import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzHouse;
+import com.ruoyi.system.domain.HzHouseOrder;
+import com.ruoyi.system.domain.HzProject;
+import com.ruoyi.system.domain.HzRefundApply;
+import com.ruoyi.system.domain.HzUnit;
+import com.ruoyi.system.domain.HzUser;
+import com.ruoyi.system.mapper.HzBillMapper;
+import com.ruoyi.system.mapper.HzBuildingMapper;
+import com.ruoyi.system.mapper.HzCheckInMapper;
+import com.ruoyi.system.mapper.HzCheckoutApplyMapper;
+import com.ruoyi.system.mapper.HzCheckoutRecordMapper;
+import com.ruoyi.system.mapper.HzContractMapper;
+import com.ruoyi.system.mapper.HzHouseMapper;
+import com.ruoyi.system.mapper.HzHouseOrderMapper;
+import com.ruoyi.system.mapper.HzProjectMapper;
+import com.ruoyi.system.mapper.HzRefundApplyMapper;
+import com.ruoyi.system.mapper.HzUnitMapper;
+import com.ruoyi.system.mapper.HzUserMapper;
+import com.ruoyi.system.service.IHzCheckoutService;
+import com.ruoyi.system.service.IHzRoleProjectService;
 
 /**
  * 退租Service业务层处理
@@ -76,6 +79,9 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
 
     @Autowired
     private HzCheckInMapper checkInMapper;
+
+    @Autowired
+    private HzHouseOrderMapper houseOrderMapper;
 
     @Autowired
     private HzBillMapper billMapper;
@@ -808,6 +814,9 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                        .set(HzContract::getContractStatus, "5"); // 5=已解约
         contractMapper.update(null, contractWrapper);
 
+        // 5.1 关闭该合同关联的未完结选房预订单，防止定时任务把房源反复推回「已出租」
+        closeUnfinishedOrders(apply.getContractId());
+
         // 6. 释放房源：已预订(1) / 已出租(2) → 修缮中(3)
         // 退租后房源统一进入修缮状态，由管理员检查后再上架
         if (apply.getHouseId() != null) {
@@ -1287,6 +1296,9 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                 .eq(HzContract::getContractId, contractId)
                 .set(HzContract::getContractStatus, "5"));
 
+        // 4.1 关闭该合同关联的未完结选房预订单，防止定时任务把房源反复推回「已出租」
+        closeUnfinishedOrders(contractId);
+
         // 5. 释放房源：已预订(1)/已出租(2) → 修缮中(3)
         if (contract.getHouseId() != null) {
             houseMapper.update(null, new LambdaUpdateWrapper<HzHouse>()
@@ -1298,5 +1310,30 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
         logger.info("[管理员直接退租] contractId={}, tenant={}, house={}, operator={}",
                 contractId, contract.getTenantId(), contract.getHouseId(), adminUser);
         return 1;
+    }
+
+    /**
+     * 关闭合同关联的未完结选房预订单（0待签约/1待付押金/2待上传资料 → 3完成）。
+     * 退租/解约后租户已离场，若订单仍停在中间态且押金已付，
+     * 定时任务 houseOrderExpireTask 会反复把房源推回「已出租(2)」，必须在源头关闭。
+     */
+    private void closeUnfinishedOrders(Long contractId) {
+        if (contractId == null) {
+            return;
+        }
+        try {
+            int closed = houseOrderMapper.update(null, new LambdaUpdateWrapper<HzHouseOrder>()
+                    .eq(HzHouseOrder::getContractId, contractId)
+                    .in(HzHouseOrder::getOrderStatus, "0", "1", "2")
+                    .eq(HzHouseOrder::getDelFlag, "0")
+                    .set(HzHouseOrder::getOrderStatus, "3")
+                    .set(HzHouseOrder::getUpdateTime, new Date()));
+            if (closed > 0) {
+                logger.info("退租关闭未完结预订单：contractId={}, 关闭{}条", contractId, closed);
+            }
+        } catch (Exception e) {
+            // 关闭订单失败不影响退租主流程（定时任务侧已有僵尸订单防护兑底）
+            logger.error("退租关闭未完结预订单失败 contractId={}: {}", contractId, e.getMessage());
+        }
     }
 }

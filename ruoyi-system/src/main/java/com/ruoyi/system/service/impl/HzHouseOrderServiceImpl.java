@@ -1,35 +1,5 @@
 package com.ruoyi.system.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.ruoyi.common.core.domain.AjaxResult;
-import com.ruoyi.system.domain.HzBatchHouse;
-import com.ruoyi.system.domain.HzBatchTenant;
-import com.ruoyi.system.domain.vo.BatchPreferenceVo;
-import com.ruoyi.system.domain.HzBill;
-import com.ruoyi.system.domain.HzContract;
-import com.ruoyi.system.domain.HzDocument;
-import com.ruoyi.system.domain.HzHouse;
-import com.ruoyi.system.domain.HzHouseOrder;
-import com.ruoyi.system.domain.HzUser;
-import com.ruoyi.system.mapper.HzBatchHouseMapper;
-import com.ruoyi.system.mapper.HzBatchTenantMapper;
-import com.ruoyi.system.mapper.HzBillMapper;
-import com.ruoyi.system.mapper.HzContractMapper;
-import com.ruoyi.system.mapper.HzDocumentMapper;
-import com.ruoyi.system.mapper.HzHouseMapper;
-import com.ruoyi.system.mapper.HzHouseOrderMapper;
-import com.ruoyi.system.mapper.HzUserMapper;
-import com.ruoyi.system.service.IHzHouseOrderService;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import org.springframework.util.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -41,6 +11,37 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.system.domain.HzBatchHouse;
+import com.ruoyi.system.domain.HzBatchTenant;
+import com.ruoyi.system.domain.HzBill;
+import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzDocument;
+import com.ruoyi.system.domain.HzHouse;
+import com.ruoyi.system.domain.HzHouseOrder;
+import com.ruoyi.system.domain.HzUser;
+import com.ruoyi.system.domain.vo.BatchPreferenceVo;
+import com.ruoyi.system.mapper.HzBatchHouseMapper;
+import com.ruoyi.system.mapper.HzBatchTenantMapper;
+import com.ruoyi.system.mapper.HzBillMapper;
+import com.ruoyi.system.mapper.HzContractMapper;
+import com.ruoyi.system.mapper.HzDocumentMapper;
+import com.ruoyi.system.mapper.HzHouseMapper;
+import com.ruoyi.system.mapper.HzHouseOrderMapper;
+import com.ruoyi.system.mapper.HzUserMapper;
+import com.ruoyi.system.service.IHzHouseOrderService;
 
 /**
  * 选房预订单Service业务层处理
@@ -460,6 +461,17 @@ public class HzHouseOrderServiceImpl
             // 情形一：押金实际已缴清（付款已到账，但订单仍卡在待付押金/待签约）。
             // 不能释放房源——改为补齐为「已出租」并推进订单（onDepositPaid 幂等安全）。
             if (isDepositPaid(contractId)) {
+                // 僵尸订单防护：若合同已进入终态（已到期4/已退租5/已失效6），
+                // 说明租户已离场，不能再把房源推回「已出租」，直接关闭订单。
+                String cs = getContractStatus(contractId);
+                if ("4".equals(cs) || "5".equals(cs) || "6".equals(cs)) {
+                    order.setOrderStatus("3"); // 完成
+                    order.setUpdateTime(new Date());
+                    updateById(order);
+                    log.warn("僵尸订单清理：押金已付但合同已终结，关闭订单且不变更房源状态：orderNo={}, contractId={}, contractStatus={}",
+                            order.getOrderNo(), contractId, cs);
+                    continue;
+                }
                 onDepositPaid(order.getOrderNo());
                 continue;
             }
