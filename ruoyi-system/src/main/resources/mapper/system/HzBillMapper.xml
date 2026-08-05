@@ -258,6 +258,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE b.bill_id = #{billId} AND b.del_flag = '0'
     </select>
 
+    <!-- 按账单ID列表查询（勾选导出） -->
+    <select id="selectBillVOListByIds" resultMap="HzBillVOResult">
+        <include refid="selectBillVOSql"/>
+        WHERE b.del_flag = '0'
+          AND b.bill_id IN
+        <foreach collection="billIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY b.create_time DESC
+    </select>
+
     <!-- 根据用户ID查询账单列表（包含关联信息） -->
     <select id="selectBillVOByUserId" resultMap="HzBillVOResult">
         <include refid="selectBillVOSql"/>

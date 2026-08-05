@@ -1,6 +1,7 @@
 package com.ruoyi.system.domain;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.ruoyi.common.annotation.Excel;
 
 /**
  * 账单VO对象（扩展账单信息，包含关联数据）
@@ -11,10 +12,12 @@ public class HzBillVO extends HzBill {
     private static final long serialVersionUID = 1L;
 
     /** 合同编号 */
+    @Excel(name = "所属合同", sort = 7)
     @TableField(exist = false)
     private String contractNo;
 
     /** 项目名称（小区名） */
+    @Excel(name = "所属项目", sort = 4)
     @TableField(exist = false)
     private String projectName;
 
@@ -26,11 +29,13 @@ public class HzBillVO extends HzBill {
     @TableField(exist = false)
     private String unitName;
 
-    /** 房源编号 */
+    /** 房间号 */
+    @Excel(name = "房间号", sort = 5)
     @TableField(exist = false)
     private String houseNo;
 
     /** 配租方式（常规分配/集中分配，由合同表 batch_id + remark 推断） */
+    @Excel(name = "配租方式", sort = 14)
     @TableField(exist = false)
     private String allocationType;
 

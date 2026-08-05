@@ -1,17 +1,18 @@
 package com.ruoyi.system.domain;
 
+import java.math.BigDecimal;
+
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.ruoyi.common.annotation.Excel;
-import com.ruoyi.common.core.domain.BaseEntity;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
-
-import java.math.BigDecimal;
+import com.ruoyi.common.annotation.Excel;
+import com.ruoyi.common.core.domain.BaseEntity;
 
 /**
  * 账单对象 hz_bill
@@ -28,7 +29,7 @@ public class HzBill extends BaseEntity {
     private Long billId;
 
     /** 账单编号 */
-    @Excel(name = "账单编号")
+    @Excel(name = "账单编号", sort = 1)
     @TableField("bill_no")
     private String billNo;
 
@@ -45,7 +46,7 @@ public class HzBill extends BaseEntity {
     private Long tenantId;
 
     /** 租户姓名 */
-    @Excel(name = "租户姓名")
+    @Excel(name = "租户姓名", sort = 2)
     @TableField("tenant_name")
     private String tenantName;
 
@@ -54,17 +55,17 @@ public class HzBill extends BaseEntity {
     private Long houseId;
 
     /** 房源编号 */
-    @Excel(name = "房源编号")
+    @Excel(name = "房源编号", sort = 3)
     @TableField("house_code")
     private String houseCode;
 
     /** 账单类型(1:押金 2:租金 3:水费 4:电费 5:燃气费 6:物业费 7:其他) */
-    @Excel(name = "账单类型", readConverterExp = "1=押金,2=租金,3=水费,4=电费,5=燃气费,6=物业费,7=其他")
+    @Excel(name = "账单类型", sort = 6, readConverterExp = "1=押金,2=租金,3=水费,4=电费,5=燃气费,6=物业费,7=其他")
     @TableField("bill_type")
     private String billType;
 
     /** 账单周期 */
-    @Excel(name = "账单周期")
+    @Excel(name = "账单周期", sort = 8)
     @TableField("bill_period")
     private String billPeriod;
 
@@ -81,12 +82,12 @@ public class HzBill extends BaseEntity {
     private String periodEndDate;
 
     /** 账单金额 */
-    @Excel(name = "账单金额")
+    @Excel(name = "账单金额", sort = 9)
     @TableField("bill_amount")
     private BigDecimal billAmount;
 
     /** 已支付金额 */
-    @Excel(name = "已支付金额")
+    @Excel(name = "已支付金额", sort = 10)
     @TableField("paid_amount")
     private BigDecimal paidAmount;
 
@@ -95,12 +96,12 @@ public class HzBill extends BaseEntity {
     private BigDecimal unpaidAmount;
 
     /** 账单日期 */
-    @Excel(name = "账单日期")
+    @Excel(name = "账单日期", sort = 11)
     @TableField("bill_date")
     private String billDate;
 
     /** 应付日期 */
-    @Excel(name = "应付日期")
+    @Excel(name = "应付日期", sort = 12)
     @TableField("due_date")
     private String dueDate;
 
@@ -109,7 +110,7 @@ public class HzBill extends BaseEntity {
     private BigDecimal lateFee;
 
     /** 账单状态(0:待支付 1:已支付 2:部分支付 3:已逾期 4:已关闭) */
-    @Excel(name = "账单状态", readConverterExp = "0=待支付,1=已支付,2=部分支付,3=已逾期,4=已关闭")
+    @Excel(name = "账单状态", sort = 13, readConverterExp = "0=待支付,1=已支付,2=部分支付,3=已逾期,4=已关闭")
     @TableField("bill_status")
     private String billStatus;
 
@@ -118,17 +119,17 @@ public class HzBill extends BaseEntity {
     private String invoiceStatus;
 
     /** 支付时间 */
-    @Excel(name = "支付时间")
+    @Excel(name = "支付时间", sort = 15)
     @TableField("pay_time")
     private String payTime;
 
     /** 支付方式 */
-    @Excel(name = "支付方式")
+    @Excel(name = "支付方式", sort = 16)
     @TableField("pay_method")
     private String payMethod;
 
     /** 交易流水号 */
-    @Excel(name = "交易流水号")
+    @Excel(name = "交易流水号", sort = 17)
     @TableField("transaction_no")
     private String transactionNo;
 

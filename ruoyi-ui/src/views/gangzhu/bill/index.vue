@@ -117,7 +117,8 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="billList">
+    <el-table v-loading="loading" :data="billList" @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="账单编号" align="center" prop="billNo" min-width="180" show-overflow-tooltip />
       <el-table-column label="租户姓名" align="center" prop="tenantName" width="120" show-overflow-tooltip />
       <el-table-column label="所属项目" align="center" prop="projectName" width="140" show-overflow-tooltip />
@@ -267,6 +268,8 @@ export default {
   data() {
     return {
       loading: true,
+      // 选中的账单ID集合（勾选导出用）
+      ids: [],
       showSearch: true,
       total: 0,
       billList: [],
@@ -355,10 +358,42 @@ export default {
         this.detailOpen = true;
       });
     },
+    /** 多选框选中数据（勾选导出用） */
+    handleSelectionChange(selection) {
+      this.ids = selection.map(item => item.billId)
+    },
     handleExport() {
-      this.download('system/bill/export', {
-        ...this.queryParams
-      }, `bill_${new Date().getTime()}.xlsx`)
+      // 导出时与列表查询保持一致的筛选参数
+      this.queryParams.params = {};
+      if (this.billDateRange && this.billDateRange.length === 2) {
+        this.queryParams.params["beginBillDate"] = this.billDateRange[0];
+        this.queryParams.params["endBillDate"] = this.billDateRange[1];
+      }
+      if (this.dueDateRange && this.dueDateRange.length === 2) {
+        this.queryParams.params["beginDueDate"] = this.dueDateRange[0];
+        this.queryParams.params["endDueDate"] = this.dueDateRange[1];
+      }
+      if (this.queryParams.contractNo) {
+        this.queryParams.params["contractNo"] = this.queryParams.contractNo;
+      }
+      if (this.queryParams.houseCode) {
+        this.queryParams.params["houseCode"] = this.queryParams.houseCode;
+      }
+      if (this.queryParams.houseNo) {
+        this.queryParams.params["houseNo"] = this.queryParams.houseNo;
+      }
+      if (this.queryParams.projectId) {
+        this.queryParams.params["projectId"] = this.queryParams.projectId;
+      }
+      if (this.queryParams.allocationType) {
+        this.queryParams.params["allocationType"] = this.queryParams.allocationType;
+      }
+      // 勾选导出：将选中的账单 ids 传给后端（逗号串，适配 @RequestParam Long[] 绑定）
+      const exportParams = { ...this.queryParams };
+      if (this.ids && this.ids.length > 0) {
+        exportParams.billIds = this.ids.join(',');
+      }
+      this.download('system/bill/export', exportParams, `bill_${new Date().getTime()}.xlsx`)
     },
     /** 手动标记已支付 */
     handleMarkAsPaid(row) {

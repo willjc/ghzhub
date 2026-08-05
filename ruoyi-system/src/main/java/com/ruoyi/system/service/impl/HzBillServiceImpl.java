@@ -1,5 +1,16 @@
 package com.ruoyi.system.service.impl;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -12,16 +23,6 @@ import com.ruoyi.system.domain.HzBillVO;
 import com.ruoyi.system.mapper.HzBillMapper;
 import com.ruoyi.system.service.IHzBillService;
 import com.ruoyi.system.service.IHzRoleProjectService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 账单Service业务层处理
@@ -226,6 +227,14 @@ public class HzBillServiceImpl extends ServiceImpl<HzBillMapper, HzBill> impleme
     @Override
     public List<HzBillVO> selectBillVOList(HzBill bill) {
         return billMapper.selectBillVOList(bill);
+    }
+
+    @Override
+    public List<HzBillVO> selectBillVOListByIds(Long[] billIds) {
+        if (billIds == null || billIds.length == 0) {
+            return java.util.Collections.emptyList();
+        }
+        return billMapper.selectBillVOListByIds(billIds);
     }
 
     @Override

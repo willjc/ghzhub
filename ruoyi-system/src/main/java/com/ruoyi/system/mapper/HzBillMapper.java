@@ -1,5 +1,7 @@
 package com.ruoyi.system.mapper;
 
+import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -9,8 +11,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzBillVO;
-
-import java.util.List;
 
 /**
  * 账单Mapper接口
@@ -44,6 +44,14 @@ public interface HzBillMapper extends BaseMapper<HzBill> {
      * @return 账单VO
      */
     HzBillVO selectBillVOById(@Param("billId") Long billId);
+
+    /**
+     * 按账单ID列表查询账单VO（包含关联信息，用于勾选导出）
+     *
+     * @param billIds 账单ID数组
+     * @return 账单VO列表
+     */
+    List<HzBillVO> selectBillVOListByIds(@Param("billIds") Long[] billIds);
 
     /**
      * 根据用户ID查询账单列表（包含关联信息）

@@ -61,14 +61,24 @@ public class HzBillController extends BaseController
 
     /**
      * 导出账单列表
+     * <p>支持勾选导出：前端传入 billIds 时仅导出勾选的账单；否则按搜索条件全量导出。
+     * 导出内容使用 VO（含所属项目、房间号、所属合同、配租方式等关联信息）。</p>
      */
     @PreAuthorize("@ss.hasPermi('gangzhu:bill:export')")
     @Log(title = "账单管理", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
-    public void export(HttpServletResponse response, HzBill bill)
+    public void export(HttpServletResponse response, HzBill bill,
+                       @RequestParam(required = false) Long[] billIds)
     {
-        List<HzBill> list = billService.selectBillList(bill);
-        ExcelUtil<HzBill> util = new ExcelUtil<HzBill>(HzBill.class);
+        List<HzBillVO> list;
+        if (billIds != null && billIds.length > 0) {
+            // 勾选导出：仅导出指定 ids 的账单
+            list = billService.selectBillVOListByIds(billIds);
+        } else {
+            // 全量导出：按搜索条件查
+            list = billService.selectBillVOList(bill);
+        }
+        ExcelUtil<HzBillVO> util = new ExcelUtil<HzBillVO>(HzBillVO.class);
         util.exportExcel(response, list, "账单数据");
     }
 

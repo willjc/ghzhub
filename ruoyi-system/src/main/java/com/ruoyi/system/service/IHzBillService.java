@@ -1,10 +1,10 @@
 package com.ruoyi.system.service;
 
+import java.util.List;
+
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzBillVO;
-
-import java.util.List;
 
 /**
  * 账单Service接口
@@ -84,6 +84,14 @@ public interface IHzBillService {
      * @return 账单VO列表
      */
     public List<HzBillVO> selectBillVOList(HzBill bill);
+
+    /**
+     * 按账单ID列表查询账单VO（包含关联信息，用于勾选导出）
+     *
+     * @param billIds 账单ID数组
+     * @return 账单VO列表
+     */
+    public List<HzBillVO> selectBillVOListByIds(Long[] billIds);
 
     /**
      * 分页查询账单VO列表（包含关联信息）
