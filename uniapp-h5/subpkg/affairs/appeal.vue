@@ -118,7 +118,7 @@
 							phone: appeal.contactPhone || appeal.phone || '***',
 							createTime: appeal.appealTime || appeal.createTime || '',
 							status: this.getAppealStatus(appeal.handleResult),
-							appealType: '学历 + 社保证明',
+							appealType: '学历证明',
 							handleResult: appeal.handleResult
 						})).sort((a, b) => {
 							// 按提交时间倒序排列（最新的在前）

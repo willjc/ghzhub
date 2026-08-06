@@ -47,7 +47,7 @@ export default {
             this.paid = true
             uni.showModal({
               title: '押金缴纳成功',
-              content: '请于3日内上传工作证明，并在办事栏目中发起“入住办理”申请后，于线下办理入住',
+              content: '请在办事栏目中发起“入住办理”申请后，于线下办理入住',
               showCancel: false,
               confirmText: '我知道了',
               success: () => {

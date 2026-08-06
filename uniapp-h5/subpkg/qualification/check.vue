@@ -2,7 +2,7 @@
   <view class="page">
     <view class="header">
       <view class="title">正在校验申请资格</view>
-      <view class="subtitle">我们正在核对您的婚姻、社保、学历及房产信息</view>
+      <view class="subtitle">我们正在核对您的婚姻、学历及房产信息</view>
     </view>
 
     <view class="progress-bar">
@@ -75,10 +75,12 @@ export default {
         this.redirectParams = null
       }
     }
-    // 当前办理类型：保租房(2)不展示学历校验行
+    // 当前办理类型：保租房(2)不展示学历校验行；人才公寓(1)【暂时关闭】社保校验，不展示社保行
     this.applyType = getCurrentApplyType()
     if (this.applyType === '2') {
       this.items = this.items.filter(it => it.code !== 'education')
+    } else {
+      this.items = this.items.filter(it => it.code !== 'social')
     }
     this.startCheck()
   },

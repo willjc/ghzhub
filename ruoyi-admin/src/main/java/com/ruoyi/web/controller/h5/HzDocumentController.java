@@ -1,9 +1,25 @@
 package com.ruoyi.web.controller.h5;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.ruoyi.common.config.RuoYiConfig;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
-import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.common.utils.file.FileUploadUtils;
 import com.ruoyi.system.domain.HzDocument;
 import com.ruoyi.system.domain.HzTenant;
 import com.ruoyi.system.mapper.HzContractMapper;
@@ -11,16 +27,6 @@ import com.ruoyi.system.service.IHzDocumentService;
 import com.ruoyi.system.service.IHzHouseOrderService;
 import com.ruoyi.system.service.IHzTenantService;
 import com.ruoyi.system.service.IHzUserMessageService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-import com.ruoyi.common.config.RuoYiConfig;
-import com.ruoyi.common.utils.file.FileUploadUtils;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * H5端资料文档Controller
@@ -197,6 +203,15 @@ public class HzDocumentController extends BaseController {
     public AjaxResult getDocumentStatus(@PathVariable Long userId) {
         Map<String, Object> result = new HashMap<>();
 
+        // 【暂时关闭】资料上传功能暂时关闭，签约后无资料可传，
+        // 直接视为已提交，避免账单页因"资料未提交"锁定租金账单。
+        // 恢复时删除本段，改回下方原有逻辑。
+        result.put("submitted", true);
+        result.put("count", 1);
+        result.put("approved", true);
+        return success(result);
+
+        /* 原有逻辑（暂时关闭期间停用）
         // 短路判断：若该用户有处于履行中/已到期/已解约状态的合同，则资料视为已完成
         // 适用于老数据迁移用户（已实际入住，无需再补传资料）
         long activeContractCount = contractMapper.selectCount(
@@ -220,6 +235,7 @@ public class HzDocumentController extends BaseController {
         result.put("count", count);
         result.put("approved", approved);
         return success(result);
+        */
     }
 
     /**

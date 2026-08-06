@@ -80,38 +80,10 @@
 					<text class="title-text">附件信息</text>
 				</view>
 
-				<!-- 工作证明上传 -->
+				<!-- 【暂时关闭】工作证明上传功能已移除，恢复时参考 git 历史 -->
 				<view class="upload-section">
-					<view class="upload-label-row">
-						<text class="required-mark">*</text>
-						<text class="upload-label">工作证明</text>
-						<text class="upload-tip">（工作证明内容需与基本信息内容一致）</text>
-					</view>
-
-					<!-- 状态卡（双层提醒-第二层） -->
-					<view v-if="workStatusInfo" class="doc-status-card" :class="'status-' + workStatusInfo.status">
-						<view class="doc-status-header">
-							<text class="doc-status-tag" :class="'tag-' + workStatusInfo.status">{{ workStatusInfo.label }}</text>
-							<text class="doc-status-title">{{ workStatusInfo.title }}</text>
-						</view>
-						<view v-if="workStatusInfo.status === 'rejected'" class="doc-status-reason">
-							<text class="doc-status-reason-label">拒绝原因：</text>
-							<text class="doc-status-reason-text">{{ workStatusInfo.reason || '未填写原因' }}</text>
-						</view>
-					</view>
-
-					<!-- 上传区域 -->
-					<view class="upload-area" :class="{ 'upload-area-locked': workLocked }" @click="handleUpload">
-						<image v-if="workFilePreview" class="uploaded-image" :src="workFilePreview" mode="aspectFill"></image>
-						<view v-else class="upload-placeholder">
-							<image class="upload-icon" src="/static/上传@2x.png"></image>
-							<text class="upload-text">{{ workLocked ? '审核中，不可修改' : (workIsRejected ? '点击重新上传' : '点击上传') }}</text>
-						</view>
-					</view>
-
-					<!-- 文件格式提示 -->
 					<view class="format-tip">
-						<text class="format-tip-text">仅支持图片格式（JPG / PNG），单张不超过 10MB</text>
+						<text class="format-tip-text">资料上传功能暂时关闭，您无需进行任何操作，系统将自动完成后续流程。</text>
 					</view>
 				</view>
 
@@ -321,13 +293,9 @@ export default {
 				}
 			})
 		},
-		// 学历证明：选择图片后立即上传到服务器
-		// 提交材料：文件已在选择时上传，此处仅做校验和确认
+		// 【暂时关闭】工作证明上传已移除，提交不再校验工作证明
+		// 提交材料：仅做确认提示
 		async handleSubmit() {
-			if (!this.workFile) {
-				uni.showToast({ title: this.workUploading ? '工作证明正在上传中' : '请上传工作证明', icon: 'none' })
-				return
-			}
 			if (!this.contractId) {
 				uni.showToast({ title: '缺少合同信息，请返回合同页重新进入', icon: 'none' })
 				return

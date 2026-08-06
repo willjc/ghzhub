@@ -77,6 +77,17 @@ public class QualificationCheckService {
      */
     private static final int SOCIAL_MONTH_OFFSET = 2;
 
+    /**
+     * 【暂时关闭】人才公寓社保校验开关：false = 人才公寓关闭社保校验（不调政务社保接口，社保项视为 skipped 通过）。
+     * 仅影响人才公寓（applyType=1），保租房不受影响。恢复时改回 true 即可。
+     */
+    private static final boolean SOCIAL_CHECK_ENABLED = false;
+
+    /** 社保校验是否关闭（仅人才公寓受开关控制） */
+    private boolean isSocialCheckDisabled(String applyType) {
+        return !SOCIAL_CHECK_ENABLED && "1".equals(applyType);
+    }
+
     /** 政务查询专用线程池（守护线程） */
     private static final ExecutorService EXECUTOR = new ThreadPoolExecutor(
             4, 8, 60L, TimeUnit.SECONDS,
@@ -214,7 +225,10 @@ public class QualificationCheckService {
 
         // 首轮并发：婚姻 / 社保 / 本人不动产 / 本人公租房
         CompletableFuture<Map<String, Object>> fMarriage = supply(() -> govDataClient.queryMarriage(idCard, name));
-        CompletableFuture<Map<String, Object>> fSocial = supply(() -> govDataClient.querySocialInsurance(idCard, name));
+        // 【暂时关闭】人才公寓社保校验关闭时不调政务社保接口；恢复时删除本条件分支，改回直接 supply 调用
+        CompletableFuture<Map<String, Object>> fSocial = isSocialCheckDisabled(applyType)
+                ? CompletableFuture.completedFuture(null)
+                : supply(() -> govDataClient.querySocialInsurance(idCard, name));
         CompletableFuture<Map<String, Object>> fSelfEstate = supply(() -> govDataClient.queryRealEstate(idCard, name));
         CompletableFuture<Map<String, Object>> fSelfHousing = supply(() -> govDataClient.queryPublicHousing(idCard, name));
 
@@ -256,9 +270,15 @@ public class QualificationCheckService {
                 married ? "已婚，将同步核验配偶信息" : "未婚，无需核验配偶信息"));
 
         // 社保（叠加申诉豁免：仅社保侧）
-        CheckItem socialItem = checkSocial(social, user.getWorkUnit());
-        if (appealSocPassed && !"passed".equals(socialItem.getStatus())) {
-            socialItem = new CheckItem("social", "社保缴纳", "passed", "已通过人工审核");
+        CheckItem socialItem;
+        if (isSocialCheckDisabled(applyType)) {
+            // 【暂时关闭】人才公寓社保校验关闭，直接视为跳过（不判定、不展示失败）
+            socialItem = new CheckItem("social", "社保缴纳", "skipped", "社保校验暂时关闭");
+        } else {
+            socialItem = checkSocial(social, user.getWorkUnit());
+            if (appealSocPassed && !"passed".equals(socialItem.getStatus())) {
+                socialItem = new CheckItem("social", "社保缴纳", "passed", "已通过人工审核");
+            }
         }
         result.getItems().add(socialItem);
 
@@ -294,9 +314,9 @@ public class QualificationCheckService {
         result.getItems().add(spouseEstateItem);
         result.getItems().add(spouseHousingItem);
 
-        // 通过条件：5 项判定项都是 passed 或 skipped + 学历 passed/skipped
+        // 通过条件：5 项判定项都是 passed 或 skipped + 学历 passed/skipped（社保关闭期间 skipped 视同通过）
         boolean passed =
-                  "passed".equals(socialItem.getStatus())
+                  ("passed".equals(socialItem.getStatus()) || "skipped".equals(socialItem.getStatus()))
                 && ("passed".equals(educationItem.getStatus()) || "skipped".equals(educationItem.getStatus()))
                 && ("passed".equals(selfEstateItem.getStatus()))
                 && ("passed".equals(selfHousingItem.getStatus()))
@@ -644,12 +664,17 @@ public class QualificationCheckService {
         list.add(new CheckItem("marriage", "婚姻信息", "passed",
                 hasSpouse ? "已婚" : "未婚"));
         // 社保（叠加社保申诉豁免）
-        boolean socialOk = "1".equals(q.getSocialValid()) || appealSocPassed;
-        list.add(new CheckItem("social", "社保缴纳",
-                socialOk ? "passed" : "failed",
-                socialOk
-                        ? (appealSocPassed && !"1".equals(q.getSocialValid()) ? "已通过人工审核" : "近 3 个月港区单位连续缴纳")
-                        : "近 3 个月社保缴纳不满足"));
+        if (!SOCIAL_CHECK_ENABLED && "1".equals(applyType)) {
+            // 【暂时关闭】人才公寓社保校验关闭，回放时直接展示为跳过
+            list.add(new CheckItem("social", "社保缴纳", "skipped", "社保校验暂时关闭"));
+        } else {
+            boolean socialOk = "1".equals(q.getSocialValid()) || appealSocPassed;
+            list.add(new CheckItem("social", "社保缴纳",
+                    socialOk ? "passed" : "failed",
+                    socialOk
+                            ? (appealSocPassed && !"1".equals(q.getSocialValid()) ? "已通过人工审核" : "近 3 个月港区单位连续缴纳")
+                            : "近 3 个月社保缴纳不满足"));
+        }
         // 学历（无政务接口，依赖学历申诉豁免；保租房无需学历核验）
         if ("2".equals(applyType)) {
             list.add(new CheckItem("education", "学历核验", "skipped", "保租房无需学历核验"));

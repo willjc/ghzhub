@@ -5,7 +5,7 @@
 			<view class="card card-appeal-item">
 				<view class="card-indicator"></view>
 				<text class="card-label">申诉项</text>
-				<text class="card-value">学历 + 社保证明</text>
+				<text class="card-value">学历证明</text>
 			</view>
 
 			<!-- 申诉材料卡片 -->
@@ -67,44 +67,7 @@
 					/>
 				</view>
 
-				<!-- 社保证明附件上传 -->
-				<view class="form-row attachment-row" style="margin-top: 24rpx;">
-					<view class="form-label">
-						<text class="label-text">社保证明</text>
-					</view>
-				</view>
-
-				<view class="upload-area">
-					<view class="image-item" v-for="(img, index) in socialImages" :key="'soc-' + index">
-						<image class="uploaded-image" :src="img" mode="aspectFill"></image>
-						<view class="delete-btn" @click="deleteSocialImage(index)">
-							<image class="delete-icon" src="/static/icon-删除图片@2x.png"></image>
-						</view>
-					</view>
-
-					<view class="upload-btn" v-if="socialImages.length < 9" @click="chooseSocialImage">
-						<image class="upload-icon" src="/static/上传@2x.png"></image>
-						<text class="upload-text">点击上传</text>
-					</view>
-				</view>
-
-				<text class="upload-tip">若社保信息已通过可不上传；如需申诉可上传社保缴纳证明（社保 APP 截图 / 单位盖章证明等），最多9张</text>
-
-				<!-- 社保情况说明 -->
-				<view class="form-row attachment-row" style="margin-top: 24rpx;">
-					<view class="form-label">
-						<text class="label-text">社保说明</text>
-					</view>
-				</view>
-				<view class="textarea-wrapper">
-					<textarea
-						class="desc-textarea"
-						v-model="socialDesc"
-						placeholder="可补充说明社保情况（选填，最多 500 字）"
-						maxlength="500"
-						auto-height
-					/>
-				</view>
+				<!-- 【暂时关闭】社保证明上传与社保说明已移除，恢复时参考 git 历史 -->
 			</view>
 		</scroll-view>
 
@@ -167,12 +130,9 @@
 
 				// 上传的图片
 				uploadedImages: [],
-				// 社保证明上传的图片
-				socialImages: [],
 				// 学历情况说明
-				educationDesc: '',
-				// 社保情况说明
-				socialDesc: ''
+				educationDesc: ''
+				// 【暂时关闭】社保证明上传（socialImages）与社保说明（socialDesc）已移除
 			}
 		},
 		computed: {
@@ -256,26 +216,7 @@
 				this.uploadedImages.splice(index, 1)
 			},
 
-			// 选择社保证明图片
-			chooseSocialImage() {
-				const remainCount = 9 - this.socialImages.length
-				uni.chooseImage({
-					count: remainCount,
-					sizeType: ['compressed'],
-					sourceType: ['album', 'camera'],
-					success: (res) => {
-						this.socialImages = [...this.socialImages, ...res.tempFilePaths]
-						if (this.socialImages.length > 9) {
-							this.socialImages = this.socialImages.slice(0, 9)
-						}
-					}
-				})
-			},
-
-			// 删除社保证明图片
-			deleteSocialImage(index) {
-				this.socialImages.splice(index, 1)
-			},
+			// 【暂时关闭】社保证明上传（chooseSocialImage/deleteSocialImage）已移除
 
 			// 提交申诉
 			handleSubmit() {
@@ -309,7 +250,7 @@
 					title: '提交中...'
 				})
 
-				console.log('开始上传图片，学历:', this.uploadedImages.length, '张，社保:', this.socialImages.length, '张')
+				console.log('开始上传图片，学历:', this.uploadedImages.length, '张')
 				console.log('上传地址:', config.uploadUrl + '/common/upload')
 
 				const uploadOne = (tempFilePath, label, idx) => {
@@ -340,19 +281,18 @@
 				}
 
 				const eduPromises = this.uploadedImages.map((p, i) => uploadOne(p, '学历', i))
-				const socPromises = this.socialImages.map((p, i) => uploadOne(p, '社保', i))
 
-				Promise.all([Promise.all(eduPromises), Promise.all(socPromises)]).then(([eduFileNames, socFileNames]) => {
-					console.log('全部图片上传完成 学历:', eduFileNames, ' 社保:', socFileNames)
+				Promise.all(eduPromises).then((eduFileNames) => {
+					console.log('全部图片上传完成 学历:', eduFileNames)
 
-					// 提交申诉数据
+					// 提交申诉数据（【暂时关闭】社保附件与社保说明不再提交）
 					const appealData = {
 						userId: this.userId,
 						appealReason: this.education,
 						appealAttachments: eduFileNames.join(','),
-						socialAttachments: socFileNames.join(','),
+						socialAttachments: '',
 						educationDesc: this.educationDesc,
-						socialDesc: this.socialDesc
+						socialDesc: ''
 					}
 
 					console.log('提交申诉数据:', appealData)

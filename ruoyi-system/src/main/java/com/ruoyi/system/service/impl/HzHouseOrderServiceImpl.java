@@ -399,19 +399,13 @@ public class HzHouseOrderServiceImpl
     }
 
     /**
-     * 押金缴清后推进订单状态：配租用户→完成(3)；自选用户→待上传资料(2) 并开启 72 小时倒计时。
+     * 押金缴清后推进订单状态：直接完成(3)。
+     * 【暂时关闭】原逻辑：配租用户直接完成；自选用户进入待上传资料(2)并开启 72 小时倒计时，
+     * 需上传工作证明+学历证明齐套后才完成。现工作证明上传功能暂时关闭，无资料可传，
+     * 故押金缴清后直接完成订单。恢复时改回原分支逻辑（见 git 历史）。
      */
     private void advanceOrderAfterDeposit(HzHouseOrder order) {
-        if ("1".equals(order.getIsBatchAlloc())) {
-            // 配租用户：押金缴清后直接完成
-            order.setOrderStatus("3");
-        } else {
-            // 自选用户：押金缴清后进入待上传资料阶段，72小时倒计时
-            order.setOrderStatus("2");
-            Calendar cal = Calendar.getInstance();
-            cal.add(Calendar.HOUR, 72);
-            order.setDocUploadExpireTime(cal.getTime());
-        }
+        order.setOrderStatus("3");
         order.setUpdateTime(new Date());
         updateById(order);
     }

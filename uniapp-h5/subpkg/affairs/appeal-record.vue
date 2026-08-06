@@ -129,7 +129,7 @@
 						const appeal = res.data
 						// 转换为页面需要的格式
 						this.recordList = [{
-							appealType: '学历 + 社保证明',
+							appealType: '学历证明',
 							education: this.getEducationLabel(appeal.appealReason),
 							educationDesc: appeal.educationDesc || '',
 							socialDesc: appeal.socialDesc || '',

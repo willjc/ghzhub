@@ -1,31 +1,5 @@
 package com.ruoyi.web.controller.h5;
 
-import com.ruoyi.common.core.controller.BaseController;
-import com.ruoyi.common.core.domain.AjaxResult;
-import com.ruoyi.common.utils.DateUtils;
-import com.ruoyi.common.utils.file.FileUploadUtils;
-import com.ruoyi.common.config.RuoYiConfig;
-import com.ruoyi.system.domain.*;
-import com.ruoyi.system.domain.vo.BatchPreferenceVo;
-import com.ruoyi.system.mapper.*;
-import com.ruoyi.system.service.EsignService;
-import com.ruoyi.system.service.IHzCheckInService;
-import com.ruoyi.system.service.IHzContractService;
-import com.ruoyi.system.service.IHzDocumentService;
-import com.ruoyi.system.service.IHzHouseOrderService;
-import com.ruoyi.system.domain.HzHouseOrder;
-import com.ruoyi.system.util.TalentApartmentRentCalculator;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigDecimal;
@@ -38,11 +12,59 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.ruoyi.common.config.RuoYiConfig;
+import com.ruoyi.common.core.controller.BaseController;
+import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.utils.file.FileUploadUtils;
+import com.ruoyi.system.domain.HzBill;
+import com.ruoyi.system.domain.HzBuilding;
+import com.ruoyi.system.domain.HzCheckIn;
+import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzContractTemplate;
+import com.ruoyi.system.domain.HzHouse;
+import com.ruoyi.system.domain.HzHouseOrder;
+import com.ruoyi.system.domain.HzProject;
+import com.ruoyi.system.domain.HzTenant;
+import com.ruoyi.system.domain.HzUnit;
+import com.ruoyi.system.domain.HzUser;
+import com.ruoyi.system.domain.vo.BatchPreferenceVo;
+import com.ruoyi.system.mapper.HzBatchHouseMapper;
+import com.ruoyi.system.mapper.HzBillMapper;
+import com.ruoyi.system.mapper.HzBuildingMapper;
+import com.ruoyi.system.mapper.HzContractMapper;
+import com.ruoyi.system.mapper.HzContractTemplateMapper;
+import com.ruoyi.system.mapper.HzHouseMapper;
+import com.ruoyi.system.mapper.HzProjectMapper;
+import com.ruoyi.system.mapper.HzTenantMapper;
+import com.ruoyi.system.mapper.HzUnitMapper;
+import com.ruoyi.system.mapper.HzUserMapper;
+import com.ruoyi.system.service.EsignService;
+import com.ruoyi.system.service.IHzCheckInService;
+import com.ruoyi.system.service.IHzContractService;
+import com.ruoyi.system.service.IHzDocumentService;
+import com.ruoyi.system.service.IHzHouseOrderService;
+import com.ruoyi.system.util.TalentApartmentRentCalculator;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * H5用户端 - 合同API
@@ -138,6 +160,10 @@ public class HzContractAppController extends BaseController {
                 contract.put("signed_date", contract.get("update_time"));
             }
             // 动态查询资料审核状态：0=未提交, 1=审核中, 2=已通过
+            // 【暂时关闭】资料上传功能暂时关闭，签约后无资料可传，直接视为已审核通过；
+            // 恢复时改回下方原有逻辑（按合同维度查 hz_document 判定）。
+            String materialStatus = "2";
+            /* 原有逻辑（暂时关闭期间停用）
             // 按合同维度查，每个合同独立判断，不跨合同共享
             Object _contractIdObj = contract.get("contract_id");
             String contractType = contract.get("contract_type") != null ? contract.get("contract_type").toString() : "";
@@ -158,6 +184,7 @@ public class HzContractAppController extends BaseController {
                     materialStatus = allApproved ? "2" : (anyPending ? "1" : "0");
                 }
             }
+            */
             contract.put("material_status", materialStatus);
 
             // 用签署时间 + 30分钟 计算锁定过期时间（已签署待付押金倒计时）
@@ -301,6 +328,9 @@ public class HzContractAppController extends BaseController {
             }
         }
         // 动态查询资料审核状态：0=未提交, 1=审核中, 2=已通过
+        // 【暂时关闭】资料上传功能暂时关闭，直接视为已审核通过；恢复时改回下方原有逻辑。
+        data.put("materialStatus", "2");
+        /* 原有逻辑（暂时关闭期间停用）
         List<com.ruoyi.system.domain.HzDocument> docs2 = documentService.selectDocumentListByTenantId(contract.getTenantId());
         String matStatus2 = "0";
         if (docs2 != null && !docs2.isEmpty()) {
@@ -309,6 +339,7 @@ public class HzContractAppController extends BaseController {
             matStatus2 = allApproved ? "2" : (anyPending ? "1" : "0");
         }
         data.put("materialStatus", matStatus2);
+        */
 
         return success(data);
     }

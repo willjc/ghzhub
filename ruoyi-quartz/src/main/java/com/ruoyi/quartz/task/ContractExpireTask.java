@@ -1,34 +1,5 @@
 package com.ruoyi.quartz.task;
 
-import com.ruoyi.system.mapper.HzContractMapper;
-import com.ruoyi.system.mapper.HzBillMapper;
-import com.ruoyi.system.mapper.HzHouseMapper;
-import com.ruoyi.system.mapper.HzDocumentMapper;
-import com.ruoyi.system.mapper.HzCheckInMapper;
-import com.ruoyi.system.mapper.HzUserMapper;
-import com.ruoyi.system.mapper.HzBatchTenantMapper;
-import com.ruoyi.system.domain.HzContract;
-import com.ruoyi.system.domain.HzBill;
-import com.ruoyi.system.domain.HzHouse;
-import com.ruoyi.system.domain.HzDocument;
-import com.ruoyi.system.domain.HzCheckIn;
-import com.ruoyi.system.domain.HzUser;
-import com.ruoyi.system.domain.HzBatchTenant;
-import com.ruoyi.system.service.IHzContractService;
-import com.ruoyi.system.service.IHzHouseOrderService;
-import com.ruoyi.system.service.IHzUserMessageService;
-import com.ruoyi.system.service.ISysConfigService;
-import com.ruoyi.system.service.WechatPayService;
-import com.ruoyi.common.utils.DateUtils;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -38,6 +9,35 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.system.domain.HzBatchTenant;
+import com.ruoyi.system.domain.HzBill;
+import com.ruoyi.system.domain.HzCheckIn;
+import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.domain.HzDocument;
+import com.ruoyi.system.domain.HzUser;
+import com.ruoyi.system.mapper.HzBatchTenantMapper;
+import com.ruoyi.system.mapper.HzBillMapper;
+import com.ruoyi.system.mapper.HzCheckInMapper;
+import com.ruoyi.system.mapper.HzContractMapper;
+import com.ruoyi.system.mapper.HzDocumentMapper;
+import com.ruoyi.system.mapper.HzHouseMapper;
+import com.ruoyi.system.mapper.HzUserMapper;
+import com.ruoyi.system.service.IHzContractService;
+import com.ruoyi.system.service.IHzHouseOrderService;
+import com.ruoyi.system.service.IHzUserMessageService;
+import com.ruoyi.system.service.ISysConfigService;
+import com.ruoyi.system.service.WechatPayService;
 
 /**
  * 合同超时失效定时任务
@@ -56,6 +56,13 @@ public class ContractExpireTask {
     private static final Logger log = LoggerFactory.getLogger(ContractExpireTask.class);
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    /**
+     * 【暂时关闭】规则C（押金后3日未上传资料→合同失效）开关：false = 暂停执行。
+     * 工作证明上传功能暂时关闭，签约后无资料可传，为避免误失效正常合同而暂停。
+     * 恢复时改回 true 即可。
+     */
+    private static final boolean MATERIAL_UPLOAD_RULE_ENABLED = false;
 
     @Autowired
     private HzContractMapper contractMapper;
@@ -258,8 +265,15 @@ public class ContractExpireTask {
      * 规则C：押金已缴后3日未上传资料
      * 条件：contract_status='2', del_flag='0'
      * 如果押金已缴且 pay_time + 3天 < NOW() 且无已提交资料 → 失效
+     *
+     * 【暂时关闭】工作证明上传功能暂时关闭，签约后无资料可传，
+     * 为避免误将正常合同置为失效，本规则由 MATERIAL_UPLOAD_RULE_ENABLED 开关控制暂停执行。
      */
     private int processNoMaterialUpload() {
+        // 【暂时关闭】规则C暂停执行（恢复时把开关改回 true）
+        if (!MATERIAL_UPLOAD_RULE_ENABLED) {
+            return 0;
+        }
         List<HzContract> contracts = contractMapper.selectList(
                 new LambdaQueryWrapper<HzContract>()
                         .eq(HzContract::getContractStatus, "2")
