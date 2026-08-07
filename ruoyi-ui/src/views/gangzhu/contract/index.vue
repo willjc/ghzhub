@@ -144,7 +144,7 @@
         </template>
       </el-table-column>
       <el-table-column label="合同生效日期" align="center" prop="startDate" width="120" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right">
         <template slot-scope="scope">
           <el-button
             size="mini"
