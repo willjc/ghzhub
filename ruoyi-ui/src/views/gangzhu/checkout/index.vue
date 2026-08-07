@@ -551,7 +551,7 @@
       </div>
     </el-dialog>
 
-    <!-- 查看详情对话框 -->
+    <!-- 查看详情对话框  -->
     <el-dialog title="退租详情" :visible.sync="detailOpen" width="1000px" append-to-body>
       <!-- 基本信息 -->
       <el-divider content-position="left">申请信息</el-divider>
