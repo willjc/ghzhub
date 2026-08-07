@@ -97,7 +97,7 @@
           <el-tag v-else type="danger" size="small">停用</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="640">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="640" fixed="right">
         <template slot-scope="scope">
           <el-button
             size="mini"

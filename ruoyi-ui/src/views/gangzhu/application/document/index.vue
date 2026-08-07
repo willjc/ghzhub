@@ -99,7 +99,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width" fixed="right">
         <template slot-scope="scope">
           <el-button
             v-if="scope.row.auditStatus === '0'"

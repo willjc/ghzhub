@@ -96,7 +96,7 @@
           <el-tag v-else type="info">{{ scope.row.applyStatus }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right">
         <template slot-scope="scope">
           <!-- 审批中状态：物业审批按钮 -->
           <el-button
