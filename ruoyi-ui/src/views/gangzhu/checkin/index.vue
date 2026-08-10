@@ -110,7 +110,7 @@
         </template>
       </el-table-column>
       <el-table-column label="入住日期" align="center" prop="checkinDate" width="110" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" min-width="250">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="250" fixed="right">
         <template slot-scope="scope">
           <el-button size="mini" type="text" icon="el-icon-view" @click="handleDetail(scope.row)">详情</el-button>
           <el-button v-if="scope.row.status === '1'" size="mini" type="text" icon="el-icon-check" @click="handleAudit(scope.row, '2')" v-hasPermi="['gangzhu:checkin:audit']">通过</el-button>
