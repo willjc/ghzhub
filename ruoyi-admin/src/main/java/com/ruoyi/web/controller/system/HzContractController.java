@@ -78,6 +78,9 @@ public class HzContractController extends BaseController
 
         IPage<HzContract> page = contractService.selectContractPage(contract, pageNum, pageSize);
 
+        // 回填退租日期（仅已完成退租的合同有值），供列表展示
+        backfillCheckoutInfo(page.getRecords());
+
         // 手动构建分页响应
         TableDataInfo rspData = new TableDataInfo();
         rspData.setCode(HttpStatus.SUCCESS);
@@ -162,7 +165,12 @@ public class HzContractController extends BaseController
     @GetMapping(value = "/{contractId}")
     public AjaxResult getInfo(@PathVariable("contractId") Long contractId)
     {
-        return success(contractService.selectContractById(contractId));
+        HzContract contract = contractService.selectContractById(contractId);
+        // 回填退租日期，供详情弹窗展示
+        if (contract != null) {
+            backfillCheckoutInfo(java.util.Collections.singletonList(contract));
+        }
+        return success(contract);
     }
 
     /**

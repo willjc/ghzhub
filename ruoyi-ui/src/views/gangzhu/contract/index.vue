@@ -137,6 +137,12 @@
           <el-tag v-else type="info">未知</el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="退租日期" align="center" prop="checkoutDate" width="120">
+        <template slot-scope="scope">
+          <span v-if="scope.row.checkoutDate" style="color: #F56C6C;">{{ scope.row.checkoutDate }}</span>
+          <span v-else style="color: #C0C4CC;">-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="配租方式" align="center" prop="allocationType" width="100">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.allocationType === '集中分配'" type="warning">集中分配</el-tag>
@@ -224,6 +230,10 @@
           <div class="period-item">
             <span class="period-label">租期</span>
             <span class="period-value months">{{ detailForm.rentMonths }}个月</span>
+          </div>
+          <div class="period-item" v-if="detailForm.checkoutDate">
+            <span class="period-label">退租日期</span>
+            <span class="period-value" style="color: #F56C6C;">{{ detailForm.checkoutDate }}</span>
           </div>
         </div>
       </div>
