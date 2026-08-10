@@ -158,6 +158,8 @@
 				showDetail: false,
 				discountAmount: '0.00',
 				loading: false,
+				// 支付防重复提交锁：卡顿/慢网下防止重复点击导致重复下单
+				paying: false,
 
 				// 当前账单（未支付）
 				billList: [],
@@ -487,6 +489,8 @@
 			},
 
 			async checkout() {
+				// 防抖：支付流程进行中禁止重复发起
+				if (this.paying) return
 				const selectedBills = this.billList.filter(b => b.selected && !b.locked)
 				if (selectedBills.length === 0) {
 					uni.showToast({ title: '请选择要支付的账单', icon: 'none' })
@@ -505,6 +509,7 @@
 				const bill = selectedBills[0]
 
 				try {
+					this.paying = true
 					uni.showLoading({ title: '发起支付...' })
 
 					// 1. 向后端请求预支付参数
@@ -533,16 +538,22 @@
 						signType:  p.signType || 'RSA',
 						paySign:   p.paySign,
 						success: () => {
+							this.paying = false
 							// 支付授权成功，向服务端轮询确认账单状态（回调可能有延迟）
 							uni.showToast({ title: '支付处理中...', icon: 'loading', duration: 10000 })
 							this.pollSyncBill(bill.billNo || String(bill.id))
 						},
 						fail: (err) => {
+							this.paying = false
 							const msg = err.errMsg || ''
-							uni.showToast({
-								title: msg.includes('cancel') ? '已取消支付' : '支付失败，请重试',
-								icon: 'none'
-							})
+							let title = '支付失败，请重试'
+							if (msg.includes('cancel')) {
+								title = '已取消支付'
+							} else if (msg.includes('过期') || msg.includes('失效')) {
+								// 微信收银台提示订单过期（prepay_id 超 2 小时失效），重新点击即可重新下单
+								title = '订单已过期，请重新点击去结算'
+							}
+							uni.showToast({ title, icon: 'none' })
 						}
 					})
 					// #endif
@@ -551,6 +562,8 @@
 					uni.hideLoading()
 					console.error('支付失败:', e)
 					uni.showToast({ title: '支付失败，请重试', icon: 'none' })
+				} finally {
+					this.paying = false
 				}
 			}
 		}

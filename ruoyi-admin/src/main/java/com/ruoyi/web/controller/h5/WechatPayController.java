@@ -1,10 +1,27 @@
 package com.ruoyi.web.controller.h5;
 
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.DateUtils;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzEnterpriseBill;
@@ -16,18 +33,8 @@ import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.service.IHzHouseOrderService;
 import com.ruoyi.system.service.IHzUserMessageService;
 import com.ruoyi.system.service.WechatPayService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 微信支付 Controller
@@ -144,16 +151,23 @@ public class WechatPayController extends BaseController {
         // 根据账单类型动态设置描述，避免与微信首次请求参数不一致
         String desc = buildBillDesc(bill);
 
+        // 旧微信订单清理：防止重复下单拿到已过期的旧 prepay_id 导致"订单已过期失效"
+        String outTradeNo = resolveOutTradeNo(bill);
+        if (outTradeNo == null) {
+            return error("该账单可能已在微信支付，请返回账单页刷新后重试");
+        }
+
         try {
             if ("jsapi".equals(payType)) {
                 if (openid == null || openid.isEmpty()) return error("JSAPI 支付需要传入 openid");
                 Map<String, String> jsapiParams = prepayJsapiWithRetry(
-                        billNo, totalFen, desc, openid, notifyUrl);
+                        outTradeNo, billNo, totalFen, desc, openid, notifyUrl);
                 return success(jsapiParams);
 
             } else if ("h5".equals(payType)) {
                 String mwebUrl = wechatPayService.prepayH5(
-                        billNo, totalFen, desc, clientIp, notifyUrl);
+                        outTradeNo, totalFen, desc, clientIp, notifyUrl);
+                persistLastOutTradeNo(billNo, outTradeNo);
                 Map<String, String> result = new HashMap<>();
                 result.put("mwebUrl", mwebUrl);
                 return success(result);
@@ -183,19 +197,74 @@ public class WechatPayController extends BaseController {
     }
 
     /**
+     * 解析本次下单应使用的 out_trade_no。
+     * <p>
+     * 微信机制：prepay_id 有效期仅 2 小时，且同一 out_trade_no 参数重入下单时
+     * 可能返回已过期的旧 prepay_id，收银台会报"订单已过期失效，请重新下单再发起支付"，
+     * 用户重试也无法自愈。官方建议：关闭旧订单后换新商户单号下单。
+     * <p>
+     * 处理规则（仅当 last_out_trade_no 非空、即微信侧已有订单时）：
+     * 1. 微信已支付(SUCCESS)   → 返回 null，由调用方引导走查单同步，防止重复支付
+     * 2. 支付中(USERPAYING)    → 返回 null，不关单，引导用户到微信完成付款
+     * 3. 其它(未支付/已关闭/查询失败) → 关闭旧订单，返回 billNo + -R-时间戳 的新单号
+     * 首次下单（last_out_trade_no 为空）直接返回 billNo。
+     */
+    private String resolveOutTradeNo(HzBill bill) {
+        String billNo = bill.getBillNo();
+        String lastOutTradeNo = bill.getLastOutTradeNo();
+        if (lastOutTradeNo == null || lastOutTradeNo.isEmpty()) {
+            return billNo;
+        }
+
+        // 向微信查旧订单状态
+        String tradeState = null;
+        try {
+            Map<String, Object> wxResult = wechatPayService.queryByOutTradeNo(lastOutTradeNo);
+            tradeState = (String) wxResult.get("trade_state");
+        } catch (Exception e) {
+            logger.warn("查询旧微信订单状态失败，outTradeNo={}: {}", lastOutTradeNo, e.getMessage());
+        }
+
+        if ("SUCCESS".equals(tradeState)) {
+            // 微信侧已支付但本地未更新（回调丢失），不允许再次下单，引导走 sync 兜底补单
+            logger.info("微信订单已支付但本地账单未更新，拦截重复下单，billNo={}, outTradeNo={}", billNo, lastOutTradeNo);
+            return null;
+        }
+        if ("USERPAYING".equals(tradeState)) {
+            // 用户正在微信收银台付款中，不能关单
+            logger.info("微信订单支付中，拦截重复下单，billNo={}, outTradeNo={}", billNo, lastOutTradeNo);
+            return null;
+        }
+
+        // 未支付/已关闭/查询失败：关闭旧订单后换新单号下单
+        try {
+            wechatPayService.closeOrder(lastOutTradeNo);
+            logger.info("已关闭旧微信订单：outTradeNo={}", lastOutTradeNo);
+        } catch (Exception e) {
+            logger.warn("关闭旧微信订单失败（可能已关闭/不存在），继续换单下单：{}", e.getMessage());
+        }
+        String freshOutTradeNo = billNo + "-R-" + (System.currentTimeMillis() % 1000000);
+        logger.info("换新商户单号下单，billNo={}, freshOutTradeNo={}", billNo, freshOutTradeNo);
+        return freshOutTradeNo;
+    }
+
+    /**
      * JSAPI 预支付，带"请求重入参数不一致"自动恢复。
      * 微信会缓存首次预下单的参数，若账单金额/描述发生过变化（如迁移数据修正、代码迭代），
      * 同一 out_trade_no 重提交将被拒绝。此时自动关闭旧订单，并使用临时后缀重试。
      *
      * 注意：成功下单后会把实际下到微信的 outTradeNo 写回 hz_bill.last_out_trade_no，
      * 用于回调丢失时主动查单兜底——带 -R- 后缀的单号才是用户实际付款成功的那一笔。
+     *
+     * @param outTradeNo resolveOutTradeNo 解析出的本次下单单号
+     * @param billNo     原始账单号，用于写回 last_out_trade_no 与生成重试单号
      */
-    private Map<String, String> prepayJsapiWithRetry(String billNo, int totalFen, String desc,
+    private Map<String, String> prepayJsapiWithRetry(String outTradeNo, String billNo, int totalFen, String desc,
                                                      String openid, String notifyUrl) {
         try {
-            Map<String, String> ret = wechatPayService.prepayJsapi(billNo, totalFen, desc, openid, notifyUrl);
-            // 首次下单成功，把 outTradeNo（即 billNo）写回 last_out_trade_no
-            persistLastOutTradeNo(billNo, billNo);
+            Map<String, String> ret = wechatPayService.prepayJsapi(outTradeNo, totalFen, desc, openid, notifyUrl);
+            // 首次下单成功，把实际下到微信的 outTradeNo 写回 last_out_trade_no
+            persistLastOutTradeNo(billNo, outTradeNo);
             return ret;
         } catch (Exception e) {
             String msg = e.getMessage() == null ? "" : e.getMessage();
@@ -206,8 +275,8 @@ public class WechatPayController extends BaseController {
             }
             // 尝试关闭旧订单，失败不阻断后续重试
             try {
-                wechatPayService.closeOrder(billNo);
-                logger.warn("微信预支付参数冲突，已关闭旧订单：billNo={}", billNo);
+                wechatPayService.closeOrder(outTradeNo);
+                logger.warn("微信预支付参数冲突，已关闭旧订单：outTradeNo={}", outTradeNo);
             } catch (Exception closeEx) {
                 logger.warn("关闭旧微信订单失败（可能已关闭/过期），继续重试：{}", closeEx.getMessage());
             }
