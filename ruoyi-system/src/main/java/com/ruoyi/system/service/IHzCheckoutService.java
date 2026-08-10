@@ -1,12 +1,12 @@
 package com.ruoyi.system.service;
 
+import java.util.List;
+import java.util.Map;
+
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.system.domain.HzCheckoutApply;
 import com.ruoyi.system.domain.HzCheckoutRecord;
-
-import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -217,9 +217,8 @@ public interface IHzCheckoutService {
     /**
      * 管理员直接退租（无需用户确认，一步完成合同终止+房源释放）
      *
-     * @param contractId 合同ID
-     * @param checkoutReason 退租原因
+     * @param requestData 退租请求数据（contractId + checkoutReason + 费用计算字段：表读数/各项费用/应退押金/应退总额等）
      * @return 结果
      */
-    public int adminForceCheckout(Long contractId, String checkoutReason);
+    public int adminForceCheckout(HzCheckoutApply requestData);
 }

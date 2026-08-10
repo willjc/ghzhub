@@ -1249,7 +1249,8 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
 
     @Override
     @Transactional
-    public int adminForceCheckout(Long contractId, String checkoutReason) {
+    public int adminForceCheckout(HzCheckoutApply requestData) {
+        Long contractId = requestData.getContractId();
         // 1. 查询合同信息
         HzContract contract = contractMapper.selectById(contractId);
         if (contract == null) {
@@ -1270,8 +1271,23 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
         apply.setHouseId(contract.getHouseId());
         apply.setApplyTime(now);
         apply.setPlanCheckoutDate(now);
-        apply.setCheckoutReason(checkoutReason);
+        apply.setCheckoutReason(requestData.getCheckoutReason());
         apply.setApplyStatus("5"); // 直接已完成
+        // 费用计算信息（前端弹窗填写，作为退款依据）
+        apply.setMeterReadingWater(requestData.getMeterReadingWater());
+        apply.setMeterReadingElectric(requestData.getMeterReadingElectric());
+        apply.setMeterReadingGas(requestData.getMeterReadingGas());
+        apply.setWaterFee(requestData.getWaterFee());
+        apply.setElectricFee(requestData.getElectricFee());
+        apply.setGasFee(requestData.getGasFee());
+        apply.setHeatingFee(requestData.getHeatingFee());
+        apply.setPropertyFee(requestData.getPropertyFee());
+        apply.setDamageDeduction(requestData.getDamageDeduction());
+        apply.setPenaltyAmount(requestData.getPenaltyAmount());
+        apply.setKeyReturned(requestData.getKeyReturned());
+        apply.setDamageDescription(requestData.getDamageDescription());
+        apply.setDepositRefund(requestData.getDepositRefund());
+        apply.setRefundAmount(requestData.getRefundAmount());
         apply.setApproveBy(adminUser);
         apply.setApproveTime(now);
         apply.setApproveOpinion("管理员直接退租");

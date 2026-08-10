@@ -585,8 +585,8 @@
           </el-col>
         </el-row>
 
-        <!-- 费用计算（仅展示/PDF，不提交后端） -->
-        <el-divider content-position="left">费用计算（仅展示，不处理账务）</el-divider>
+        <!-- 费用计算（提交后端保存到退租申请记录，退款以此为准） -->
+        <el-divider content-position="left">费用计算（保存后作为退款依据）</el-divider>
         <el-row>
           <el-col :span="8">
             <el-form-item label="水表读数">
@@ -723,7 +723,7 @@ export default {
       },
       forceCheckoutDetail: {},   // 合同详情（退租弹窗用）
       forceCheckoutBills: [],    // 账单列表（退租弹窗用）
-      feeCalcForm: {             // 费用计算（仅展示/PDF，不提交后端）
+      feeCalcForm: {             // 费用计算（提交后端保存到退租申请记录）
         meterReadingWater: null,
         meterReadingElectric: null,
         meterReadingGas: null,
@@ -996,10 +996,32 @@ export default {
     submitForceCheckout() {
       this.$refs['forceCheckoutForm'].validate(valid => {
         if (!valid) return;
+        // 校验：应退押金 ≤ 应退总额
+        const dr = Number(this.feeCalcForm.depositRefund || 0);
+        const ra = Number(this.feeCalcForm.refundAmount || 0);
+        if (dr > ra) {
+          this.$modal.msgWarning("应退押金（¥" + dr.toFixed(2) + "）不能超过应退总额（¥" + ra.toFixed(2) + "）");
+          return;
+        }
         this.$modal.confirm('确认对该合同执行退租操作？合同将变为"已解约"，房源将释放为"空置"。').then(() => {
           adminForceCheckout({
             contractId: this.forceCheckoutForm.contractId,
-            checkoutReason: this.forceCheckoutForm.checkoutReason
+            checkoutReason: this.forceCheckoutForm.checkoutReason,
+            // 费用计算信息（保存到退租申请记录，退款管理/退租信息汇总以此为准）
+            meterReadingWater: this.feeCalcForm.meterReadingWater,
+            meterReadingElectric: this.feeCalcForm.meterReadingElectric,
+            meterReadingGas: this.feeCalcForm.meterReadingGas,
+            waterFee: this.feeCalcForm.waterFee,
+            electricFee: this.feeCalcForm.electricFee,
+            gasFee: this.feeCalcForm.gasFee,
+            heatingFee: this.feeCalcForm.heatingFee,
+            propertyFee: this.feeCalcForm.propertyFee,
+            damageDeduction: this.feeCalcForm.damageDeduction,
+            penaltyAmount: this.feeCalcForm.penaltyAmount,
+            keyReturned: this.feeCalcForm.keyReturned,
+            damageDescription: this.feeCalcForm.damageDescription,
+            depositRefund: this.feeCalcForm.depositRefund,
+            refundAmount: this.feeCalcForm.refundAmount
           }).then(() => {
             this.$modal.msgSuccess('退租成功');
             this.forceCheckoutOpen = false;
