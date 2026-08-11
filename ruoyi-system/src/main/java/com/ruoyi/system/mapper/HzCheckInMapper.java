@@ -1,16 +1,16 @@
 package com.ruoyi.system.mapper;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.HzCheckIn;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * 入住申请Mapper接口
@@ -41,6 +41,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  u.nickname AS tenantNickname, " +
             "  h.house_no AS houseName, " +
             "  u.real_name AS realName, u.id_card AS idCard, u.phone, " +
+            "  u.education AS education, u.identity_type AS identityType, u.work_unit AS workUnit, u.unit_nature AS unitNature, " +
             "  p.project_name AS projectName, b.building_name AS buildingName, " +
             "  un.unit_name AS unitName, " +
             "  h.floor, h.orientation, h.area, " +
@@ -88,6 +89,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  u.nickname AS tenantNickname, " +
             "  h.house_no AS houseName, " +
             "  u.real_name AS realName, u.id_card AS idCard, u.phone, " +
+            "  u.education AS education, u.identity_type AS identityType, u.work_unit AS workUnit, u.unit_nature AS unitNature, " +
             "  p.project_name AS projectName, b.building_name AS buildingName, " +
             "  un.unit_name AS unitName, " +
             "  h.floor, h.orientation, h.area, " +
@@ -123,6 +125,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  u.nickname AS tenantNickname, " +
             "  h.house_no AS houseName, " +
             "  u.real_name AS realName, u.id_card AS idCard, u.phone, " +
+            "  u.education AS education, u.identity_type AS identityType, u.work_unit AS workUnit, u.unit_nature AS unitNature, " +
             "  p.project_name AS projectName, b.building_name AS buildingName, " +
             "  un.unit_name AS unitName, " +
             "  h.floor, h.orientation, h.area, " +

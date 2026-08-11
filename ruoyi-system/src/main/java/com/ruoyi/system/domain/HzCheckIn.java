@@ -1,14 +1,16 @@
 package com.ruoyi.system.domain;
 
+import java.math.BigDecimal;
+
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
-
-import java.math.BigDecimal;
 
 /**
  * 入住记录对象 hz_checkin_record
@@ -24,6 +26,7 @@ public class HzCheckIn extends BaseEntity {
     private Long recordId;
 
     /** 入住单号 */
+    @Excel(name = "入住单号")
     @TableField("checkin_no")
     private String checkinNo;
 
@@ -44,10 +47,12 @@ public class HzCheckIn extends BaseEntity {
     private Long houseId;
 
     /** 入住日期 */
+    @Excel(name = "入住日期")
     @TableField("checkin_date")
     private String checkinDate;
 
     /** 实际入住日期(用户选择) */
+    @Excel(name = "实际入住日期")
     @TableField("actual_checkin_date")
     private String actualCheckinDate;
 
@@ -56,14 +61,17 @@ public class HzCheckIn extends BaseEntity {
     private String roommateInfo;
 
     /** 紧急联系人姓名 */
+    @Excel(name = "紧急联系人")
     @TableField("emergency_contact_name")
     private String emergencyContactName;
 
     /** 紧急联系人关系 */
+    @Excel(name = "紧急联系人关系")
     @TableField("emergency_contact_relation")
     private String emergencyContactRelation;
 
     /** 紧急联系人电话 */
+    @Excel(name = "紧急联系人电话")
     @TableField("emergency_contact_phone")
     private String emergencyContactPhone;
 
@@ -115,7 +123,8 @@ public class HzCheckIn extends BaseEntity {
     @TableField("manager_name")
     private String managerName;
 
-    /** 状态(0=待办理,1=待审核,2=已入住,3=已拒绝) */
+    /** 状态(0=待办理,1=待审核,2=待入住确认,3=已拒绝,4=已入住确认) */
+    @Excel(name = "入住状态", readConverterExp = "0=待办理,1=待审核,2=待入住确认,3=已拒绝,4=已入住确认")
     @TableField("status")
     private String status;
 
@@ -144,6 +153,7 @@ public class HzCheckIn extends BaseEntity {
     private String cancelTime;
 
     /** 合同编号（关联查询字段，非数据库字段） */
+    @Excel(name = "合同编号")
     @TableField(exist = false)
     private String contractNo;
 
@@ -152,6 +162,7 @@ public class HzCheckIn extends BaseEntity {
     private String tenantNickname;
 
     /** 房源名称（关联查询字段，非数据库字段） */
+    @Excel(name = "房间号")
     @TableField(exist = false)
     private String houseName;
 
@@ -160,6 +171,7 @@ public class HzCheckIn extends BaseEntity {
     private String houseNo;
 
     /** 真实姓名 hz_user.real_name */
+    @Excel(name = "真实姓名")
     @TableField(exist = false)
     private String realName;
 
@@ -168,46 +180,76 @@ public class HzCheckIn extends BaseEntity {
     private String idCard;
 
     /** 联系电话 hz_user.phone */
+    @Excel(name = "联系电话")
     @TableField(exist = false)
     private String phone;
+
+    /** 学历 hz_user.education */
+    @Excel(name = "学历", readConverterExp = "1=小学,2=初中,3=高中,4=大专,5=本科,6=硕士,7=博士")
+    @TableField(exist = false)
+    private String education;
+
+    /** 身份类型 hz_user.identity_type */
+    @Excel(name = "身份类型", readConverterExp = "1=在职人员,2=应届毕业生")
+    @TableField(exist = false)
+    private String identityType;
+
+    /** 工作单位 hz_user.work_unit */
+    @Excel(name = "工作单位")
+    @TableField(exist = false)
+    private String workUnit;
+
+    /** 单位性质 hz_user.unit_nature */
+    @Excel(name = "单位性质", readConverterExp = "1=机关事业单位,2=国有企业,3=私营企业,4=其他")
+    @TableField(exist = false)
+    private String unitNature;
 
     /** 项目ID hz_project.project_id */
     @TableField(exist = false)
     private Long projectId;
 
     /** 项目名 hz_project.project_name */
+    @Excel(name = "项目名称")
     @TableField(exist = false)
     private String projectName;
 
     /** 楼栋名 hz_building.building_name */
+    @Excel(name = "楼栋")
     @TableField(exist = false)
     private String buildingName;
 
     /** 单元名 hz_unit.unit_name */
+    @Excel(name = "单元")
     @TableField(exist = false)
     private String unitName;
 
     /** 楼层 hz_house.floor */
+    @Excel(name = "楼层")
     @TableField(exist = false)
     private String floor;
 
     /** 朝向 hz_house.orientation */
+    @Excel(name = "朝向")
     @TableField(exist = false)
     private String orientation;
 
     /** 面积 hz_house.area */
+    @Excel(name = "面积(㎡)")
     @TableField(exist = false)
     private BigDecimal area;
 
     /** 合同开始日期 hz_contract.start_date */
+    @Excel(name = "合同开始日期")
     @TableField(exist = false)
     private String startDate;
 
     /** 合同结束日期 hz_contract.end_date */
+    @Excel(name = "合同结束日期")
     @TableField(exist = false)
     private String endDate;
 
     /** 剩余天数 DATEDIFF(end_date, CURDATE()) */
+    @Excel(name = "剩余天数")
     @TableField(exist = false)
     private Integer remainingDays;
 
@@ -517,6 +559,38 @@ public class HzCheckIn extends BaseEntity {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getEducation() {
+        return education;
+    }
+
+    public void setEducation(String education) {
+        this.education = education;
+    }
+
+    public String getIdentityType() {
+        return identityType;
+    }
+
+    public void setIdentityType(String identityType) {
+        this.identityType = identityType;
+    }
+
+    public String getWorkUnit() {
+        return workUnit;
+    }
+
+    public void setWorkUnit(String workUnit) {
+        this.workUnit = workUnit;
+    }
+
+    public String getUnitNature() {
+        return unitNature;
+    }
+
+    public void setUnitNature(String unitNature) {
+        this.unitNature = unitNature;
     }
 
     public Long getProjectId() {

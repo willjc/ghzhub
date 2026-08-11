@@ -79,6 +79,30 @@
       <el-table-column label="入住单号" align="center" prop="checkinNo" width="180" show-overflow-tooltip />
       <el-table-column label="真实姓名" align="center" prop="realName" width="100" show-overflow-tooltip />
       <el-table-column label="联系电话" align="center" prop="phone" width="120" show-overflow-tooltip />
+      <el-table-column label="学历" align="center" prop="education" width="90">
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.hz_education_type" :value="scope.row.education" v-if="scope.row.education"/>
+          <span v-else style="color: #909399">-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="身份类型" align="center" prop="identityType" width="100">
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.hz_identity_type" :value="scope.row.identityType" v-if="scope.row.identityType"/>
+          <span v-else style="color: #909399">-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="工作单位" align="center" prop="workUnit" min-width="160" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span v-if="scope.row.workUnit">{{ scope.row.workUnit }}</span>
+          <span v-else style="color: #909399">-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="单位性质" align="center" prop="unitNature" width="110">
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.hz_unit_nature" :value="scope.row.unitNature" v-if="scope.row.unitNature"/>
+          <span v-else style="color: #909399">-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="项目名称" align="center" prop="projectName" width="140" show-overflow-tooltip />
       <el-table-column label="房间号" align="center" prop="houseName" width="100" />
       <el-table-column label="房源位置" align="center" width="160" show-overflow-tooltip>
@@ -137,6 +161,19 @@
           <el-descriptions-item label="真实姓名">{{ detailForm.realName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="身份证号">{{ detailForm.idCard || '-' }}</el-descriptions-item>
           <el-descriptions-item label="联系电话">{{ detailForm.phone || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="学历">
+            <dict-tag :options="dict.type.hz_education_type" :value="detailForm.education" v-if="detailForm.education"/>
+            <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="身份类型">
+            <dict-tag :options="dict.type.hz_identity_type" :value="detailForm.identityType" v-if="detailForm.identityType"/>
+            <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="工作单位">{{ detailForm.workUnit || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="单位性质">
+            <dict-tag :options="dict.type.hz_unit_nature" :value="detailForm.unitNature" v-if="detailForm.unitNature"/>
+            <span v-else>-</span>
+          </el-descriptions-item>
           <el-descriptions-item label="项目名称">{{ detailForm.projectName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="房源位置">{{ formatLocation(detailForm) }}</el-descriptions-item>
           <el-descriptions-item label="朝向">{{ detailForm.orientation || '-' }}</el-descriptions-item>
@@ -311,6 +348,7 @@ import { listProject } from "@/api/gangzhu/project";
 
 export default {
   name: "CheckIn",
+  dicts: ["hz_education_type", "hz_identity_type", "hz_unit_nature"],
   data() {
     return {
       loading: true,
