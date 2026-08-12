@@ -1,27 +1,34 @@
 package com.ruoyi.web.controller.h5;
 
-import com.ruoyi.common.core.controller.BaseController;
-import com.ruoyi.common.core.domain.AjaxResult;
-import com.ruoyi.common.utils.SecurityUtils;
-import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.system.domain.HzCheckoutApply;
-import com.ruoyi.system.domain.HzContract;
-import com.ruoyi.system.service.IHzCheckInService;
-import com.ruoyi.system.service.IHzCheckoutService;
-import com.ruoyi.system.service.IHzContractService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-
-import jakarta.servlet.http.HttpServletRequest;
-
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import com.ruoyi.common.core.controller.BaseController;
+import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.system.domain.HzCheckoutApply;
+import com.ruoyi.system.domain.HzContract;
+import com.ruoyi.system.service.IHzCheckInService;
+import com.ruoyi.system.service.IHzCheckoutService;
+import com.ruoyi.system.service.IHzContractService;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * H5用户端 - 退租办理API
@@ -141,7 +148,6 @@ public class HzCheckOutAppController extends BaseController {
     @PostMapping("/apply")
     public AjaxResult submitCheckoutApply(@RequestBody Map<String, Object> requestData) {
         Long contractId = Long.valueOf(requestData.get("contractId").toString());
-        Long houseId = Long.valueOf(requestData.get("houseId").toString());
         String planCheckoutDate = requestData.get("planCheckoutDate").toString();
         String checkoutReason = requestData.get("checkoutReason") != null ?
                                requestData.get("checkoutReason").toString() : "";
@@ -161,6 +167,9 @@ public class HzCheckOutAppController extends BaseController {
         if ("1".equals(contract.getIsRenewed())) {
             return error("该合同已续租，押金已转移至续租合同，无法办理退租。请从最新的续租合同办理退租。");
         }
+
+        // 房源ID以合同为准，不信任前端传值（避免入住单脏数据导致房源关联错误）
+        Long houseId = contract.getHouseId();
 
         // 校验该合同是否已办理入住（无入住记录不允许退租）
         if (checkInService.selectCheckInByContractId(contractId) == null) {
