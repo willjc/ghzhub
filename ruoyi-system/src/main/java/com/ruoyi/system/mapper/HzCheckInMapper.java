@@ -41,6 +41,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  u.nickname AS tenantNickname, " +
             "  h.house_no AS houseName, " +
             "  u.real_name AS realName, u.id_card AS idCard, u.phone, " +
+            "  CASE WHEN LENGTH(u.id_card) = 18 THEN TIMESTAMPDIFF(YEAR, STR_TO_DATE(SUBSTRING(u.id_card, 7, 8), '%Y%m%d'), CURDATE()) ELSE NULL END AS age, " +
             "  u.education AS education, u.identity_type AS identityType, u.work_unit AS workUnit, u.unit_nature AS unitNature, " +
             "  p.project_name AS projectName, b.building_name AS buildingName, " +
             "  un.unit_name AS unitName, " +
@@ -89,6 +90,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  u.nickname AS tenantNickname, " +
             "  h.house_no AS houseName, " +
             "  u.real_name AS realName, u.id_card AS idCard, u.phone, " +
+            "  CASE WHEN LENGTH(u.id_card) = 18 THEN TIMESTAMPDIFF(YEAR, STR_TO_DATE(SUBSTRING(u.id_card, 7, 8), '%Y%m%d'), CURDATE()) ELSE NULL END AS age, " +
             "  u.education AS education, u.identity_type AS identityType, u.work_unit AS workUnit, u.unit_nature AS unitNature, " +
             "  p.project_name AS projectName, b.building_name AS buildingName, " +
             "  un.unit_name AS unitName, " +
@@ -125,6 +127,7 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "  u.nickname AS tenantNickname, " +
             "  h.house_no AS houseName, " +
             "  u.real_name AS realName, u.id_card AS idCard, u.phone, " +
+            "  CASE WHEN LENGTH(u.id_card) = 18 THEN TIMESTAMPDIFF(YEAR, STR_TO_DATE(SUBSTRING(u.id_card, 7, 8), '%Y%m%d'), CURDATE()) ELSE NULL END AS age, " +
             "  u.education AS education, u.identity_type AS identityType, u.work_unit AS workUnit, u.unit_nature AS unitNature, " +
             "  p.project_name AS projectName, b.building_name AS buildingName, " +
             "  un.unit_name AS unitName, " +

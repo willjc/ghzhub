@@ -179,6 +179,11 @@ public class HzCheckIn extends BaseEntity {
     @TableField(exist = false)
     private String idCard;
 
+    /** 年龄（由身份证号计算，非数据库字段） */
+    @Excel(name = "年龄")
+    @TableField(exist = false)
+    private Integer age;
+
     /** 联系电话 hz_user.phone */
     @Excel(name = "联系电话")
     @TableField(exist = false)
@@ -551,6 +556,14 @@ public class HzCheckIn extends BaseEntity {
 
     public void setIdCard(String idCard) {
         this.idCard = idCard;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
     }
 
     public String getPhone() {

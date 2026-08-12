@@ -79,6 +79,12 @@
       <el-table-column label="入住单号" align="center" prop="checkinNo" width="180" show-overflow-tooltip />
       <el-table-column label="真实姓名" align="center" prop="realName" width="100" show-overflow-tooltip />
       <el-table-column label="联系电话" align="center" prop="phone" width="120" show-overflow-tooltip />
+      <el-table-column label="年龄" align="center" prop="age" width="70">
+        <template slot-scope="scope">
+          <span v-if="scope.row.age !== null && scope.row.age !== undefined">{{ scope.row.age }}</span>
+          <span v-else style="color: #909399">-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="学历" align="center" prop="education" width="90">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.hz_education_type" :value="scope.row.education" v-if="scope.row.education"/>
@@ -160,6 +166,7 @@
         <el-descriptions :column="2" border size="small">
           <el-descriptions-item label="真实姓名">{{ detailForm.realName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="身份证号">{{ detailForm.idCard || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="年龄">{{ (detailForm.age !== null && detailForm.age !== undefined) ? detailForm.age : '-' }}</el-descriptions-item>
           <el-descriptions-item label="联系电话">{{ detailForm.phone || '-' }}</el-descriptions-item>
           <el-descriptions-item label="学历">
             <dict-tag :options="dict.type.hz_education_type" :value="detailForm.education" v-if="detailForm.education"/>
