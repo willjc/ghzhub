@@ -45,6 +45,11 @@
 					<text class="info-value">{{ item.deposit }}</text>
 				</view>
 
+				<!-- 驳回原因提示 -->
+				<view class="reject-tip" v-if="item.status === 'rejected' && item.approveOpinion">
+					<text class="reject-tip-text">驳回原因：{{ item.approveOpinion }}</text>
+				</view>
+
 				<!-- 已续租合同：显示押金转移提示，不显示操作按钮 -->
 				<view class="renewed-tip" v-if="item.isRenewed === '1'">
 					<text class="renewed-tip-text">押金已转移至续租合同，请从续租合同办理退租</text>
@@ -73,10 +78,13 @@
 						</view>
 					</view>
 				
-					<!-- 按钮区域 - 审批驳回/已确认 -->
+					<!-- 按钮区域 - 审批驳回（可重新申请）/已确认 -->
 					<view class="button-group" v-if="item.status === 'rejected' || item.status === 'confirmed_done'">
 						<view class="btn btn-detail" @click="handleDetail(index)">
 							<text class="btn-text-blue">查看详情</text>
+						</view>
+						<view class="btn btn-primary" v-if="item.status === 'rejected'" @click="handleCheckout(index)">
+							<text class="btn-text-white">重新申请退租</text>
 						</view>
 					</view>
 				
@@ -244,8 +252,10 @@
 					applyId: item.applyId,
 					contractId: item.contractId,
 					contractNo: item.contractNo || '',
+					houseId: item.houseId,
 					status: statusMap[item.applyStatus] || 'pending',
 					statusText: item.statusText || '审批中',
+					approveOpinion: item.approveOpinion || '',
 					community: item.community || '未知小区',
 					room: item.room || '未知房间',
 					rentPeriod: item.rentPeriod || '-',
@@ -496,6 +506,23 @@
 	.empty-text {
 		color: #999999;
 		font-size: 28rpx;
+	}
+
+	/* 驳回原因提示 */
+	.reject-tip {
+		margin-top: 20rpx;
+		padding: 16rpx 20rpx;
+		background: #fef0f0;
+		border-radius: 8rpx;
+		display: flex;
+		align-items: center;
+	}
+
+	.reject-tip-text {
+		color: #f56c6c;
+		font-size: 24rpx;
+		font-family: "PingFang SC", "苹方-简", sans-serif;
+		line-height: 36rpx;
 	}
 
 	/* 已续租提示 */

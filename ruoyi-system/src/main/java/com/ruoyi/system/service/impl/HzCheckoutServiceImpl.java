@@ -388,6 +388,7 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
             item.put("applyTime", apply.getApplyTime());
             item.put("planCheckoutDate", apply.getPlanCheckoutDate());
             item.put("checkoutReason", apply.getCheckoutReason());
+            item.put("approveOpinion", apply.getApproveOpinion()); // 审批意见（驳回时作为驳回原因展示）
 
             // 查询合同信息，获取合同编号和合同类型
             HzContract contract = contractMapper.selectById(apply.getContractId());
