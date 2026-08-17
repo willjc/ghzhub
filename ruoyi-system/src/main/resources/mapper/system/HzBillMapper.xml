@@ -295,7 +295,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 )
             </if>
         </where>
-        ORDER BY b.bill_date ASC
+        ORDER BY b.period_start_date ASC
     </select>
 
 </mapper>
