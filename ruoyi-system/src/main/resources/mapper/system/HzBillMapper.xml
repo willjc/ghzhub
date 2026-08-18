@@ -279,7 +279,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 c.contract_status IS NULL
                 OR c.contract_status NOT IN ('4', '5', '6')
                 OR b.bill_status = '1'
-                OR (c.contract_status IN ('4', '5') AND b.unpaid_amount > 0)
             )
             <if test="billType != null and billType != ''">
                 AND b.bill_type = #{billType}

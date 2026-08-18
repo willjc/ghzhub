@@ -85,11 +85,12 @@ public class HzBillAppController extends BaseController {
                 return error("账单已支付");
             }
 
-            // 合同已到期(4)时拒绝支付
+            // 合同已到期(4)或已解约(5)时拒绝支付
             if (bill.getContractId() != null) {
                 com.ruoyi.system.domain.HzContract contract = contractMapper.selectById(bill.getContractId());
-                if (contract != null && "4".equals(contract.getContractStatus())) {
-                    return error("合同已到期，无法支付，请联系管理员");
+                if (contract != null && ("4".equals(contract.getContractStatus())
+                        || "5".equals(contract.getContractStatus()))) {
+                    return error("合同已到期或已解约，无法支付，请联系管理员");
                 }
             }
 

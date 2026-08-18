@@ -119,13 +119,12 @@ public class WechatPayController extends BaseController {
             }
         }
 
-        // 合同已到期(4)时：仅当账单已无未付金额才拒绝；仍有欠款则允许继续支付（如续租前漏缴的末期房租）
+        // 合同已到期(4)或已解约(5)时拒绝支付：合同结束后账单不再允许支付，避免租客错交
         if (bill.getContractId() != null) {
             HzContract contract = contractMapper.selectById(bill.getContractId());
-            if (contract != null && "4".equals(contract.getContractStatus())
-                    && (bill.getUnpaidAmount() == null
-                        || bill.getUnpaidAmount().compareTo(BigDecimal.ZERO) <= 0)) {
-                return error("合同已到期，无法支付，请联系管理员");
+            if (contract != null && ("4".equals(contract.getContractStatus())
+                    || "5".equals(contract.getContractStatus()))) {
+                return error("合同已到期或已解约，无法支付，请联系管理员");
             }
         }
 
