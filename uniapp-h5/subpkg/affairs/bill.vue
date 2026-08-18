@@ -250,11 +250,15 @@
 						const bills = billRes.data
 
 						// 从账单数据自动检测押金是否已缴：
-						// 1. 存在 billType=1 且 billStatus=1（已支付）则视为已缴押金
-						// 2. 无押金账单时：续租合同(contractType='2')押金已交，视为已缴；其他情况默认未缴
-						const depositBill = bills.find(b => b.billType === '1')
-						if (depositBill) {
-							this.depositPaid = depositBill.billStatus === '1'
+						// 1. 指定了 contractId 时，只判断该合同的押金账单
+						// 2. 未指定合同但有押金账单时，只要存在已支付的押金账单即视为已缴（避免旧合同未付押金干扰）
+						// 3. 无押金账单时：续租合同(contractType='2')押金已交，视为已缴；其他情况默认未缴
+						const deposits = bills.filter(b => b.billType === '1')
+						if (this.contractId) {
+							const curDeposit = deposits.find(b => b.contractId === this.contractId)
+							this.depositPaid = curDeposit ? curDeposit.billStatus === '1' : false
+						} else if (deposits.length > 0) {
+							this.depositPaid = deposits.some(b => b.billStatus === '1')
 						} else {
 							// 无押金账单：续租合同无需押金，视为已缴；新签合同默认未缴
 							const hasRenewalBill = bills.some(b => b.contractType === '2')
@@ -1075,4 +1079,3 @@
 		line-height: 46rpx;
 	}
 </style>
-
