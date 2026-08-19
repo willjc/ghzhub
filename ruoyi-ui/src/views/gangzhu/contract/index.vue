@@ -114,17 +114,8 @@
           <span style="color: #67C23A;">{{ scope.row.endDate }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="租期(月)" align="center" prop="rentMonths" width="100" />
       <el-table-column label="月租金(元)" align="center" prop="rentPrice" width="120" />
       <el-table-column label="押金(元)" align="center" prop="deposit" width="120" />
-      <el-table-column label="缴费周期" align="center" prop="paymentCycle" width="100">
-        <template slot-scope="scope">
-          <span v-if="scope.row.paymentCycle === '1'">月付</span>
-          <span v-else-if="scope.row.paymentCycle === '2'">季付</span>
-          <span v-else-if="scope.row.paymentCycle === '3'">半年付</span>
-          <span v-else-if="scope.row.paymentCycle === '4'">年付</span>
-        </template>
-      </el-table-column>
       <el-table-column label="合同状态" align="center" prop="contractStatus" width="100">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.contractStatus === '0'" type="info">草稿</el-tag>
@@ -135,6 +126,22 @@
           <el-tag v-else-if="scope.row.contractStatus === '5'" type="info">已解约</el-tag>
           <el-tag v-else-if="scope.row.contractStatus === '6'" type="info">已失效</el-tag>
           <el-tag v-else type="info">未知</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="入住状态" align="center" prop="checkinStatus" width="110">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.checkinStatus === '0'" type="info">待办理</el-tag>
+          <el-tag v-else-if="scope.row.checkinStatus === '1'" type="warning">待审核</el-tag>
+          <el-tag v-else-if="scope.row.checkinStatus === '2'" type="primary">待入住确认</el-tag>
+          <el-tag v-else-if="scope.row.checkinStatus === '3'" type="danger">已拒绝</el-tag>
+          <el-tag v-else-if="scope.row.checkinStatus === '4'" type="success">已入住确认</el-tag>
+          <span v-else style="color: #C0C4CC;">-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="入住时间" align="center" prop="checkinDate" width="110">
+        <template slot-scope="scope">
+          <span v-if="scope.row.checkinDate">{{ scope.row.checkinDate }}</span>
+          <span v-else style="color: #C0C4CC;">-</span>
         </template>
       </el-table-column>
       <el-table-column label="退租日期" align="center" prop="checkoutDate" width="120">
@@ -149,7 +156,6 @@
           <el-tag v-else type="info">常规分配</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="合同生效日期" align="center" prop="startDate" width="120" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right">
         <template slot-scope="scope">
           <el-button

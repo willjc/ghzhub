@@ -233,6 +233,15 @@ public class HzContract extends BaseEntity {
     @TableField(exist = false)
     private java.math.BigDecimal checkoutRefundAmount;
 
+    // ========== 以下入住信息来自入住记录表 hz_checkin_record（非持久化），仅列表展示使用 ==========
+    /** 入住状态(0=待办理,1=待审核,2=待入住确认,3=已拒绝,4=已入住确认) */
+    @TableField(exist = false)
+    private String checkinStatus;
+
+    /** 入住日期（与入住管理页"入住日期"同源：hz_checkin_record.checkin_date） */
+    @TableField(exist = false)
+    private String checkinDate;
+
     public void setContractId(Long contractId) {
         this.contractId = contractId;
     }
@@ -615,6 +624,22 @@ public class HzContract extends BaseEntity {
 
     public void setCheckoutRefundAmount(java.math.BigDecimal checkoutRefundAmount) {
         this.checkoutRefundAmount = checkoutRefundAmount;
+    }
+
+    public String getCheckinStatus() {
+        return checkinStatus;
+    }
+
+    public void setCheckinStatus(String checkinStatus) {
+        this.checkinStatus = checkinStatus;
+    }
+
+    public String getCheckinDate() {
+        return checkinDate;
+    }
+
+    public void setCheckinDate(String checkinDate) {
+        this.checkinDate = checkinDate;
     }
 
     @Override

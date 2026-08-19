@@ -12,10 +12,12 @@ import com.ruoyi.common.core.page.TableSupport;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.system.domain.HzBill;
+import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzCheckoutApply;
 import com.ruoyi.system.domain.HzDocument;
 import com.ruoyi.system.mapper.HzBillMapper;
+import com.ruoyi.system.mapper.HzCheckInMapper;
 import com.ruoyi.system.mapper.HzCheckoutApplyMapper;
 import com.ruoyi.system.service.EsignService;
 import com.ruoyi.system.service.IHzContractService;
@@ -52,6 +54,9 @@ public class HzContractController extends BaseController
     private HzCheckoutApplyMapper checkoutApplyMapper;
 
     @Autowired
+    private HzCheckInMapper checkInMapper;
+
+    @Autowired
     private IHzDocumentService documentService;
 
     @Autowired
@@ -80,6 +85,9 @@ public class HzContractController extends BaseController
 
         // 回填退租日期（仅已完成退租的合同有值），供列表展示
         backfillCheckoutInfo(page.getRecords());
+
+        // 回填入住状态、入住日期（来自入住记录表），供列表展示
+        backfillCheckInInfo(page.getRecords());
 
         // 手动构建分页响应
         TableDataInfo rspData = new TableDataInfo();
@@ -111,6 +119,45 @@ public class HzContractController extends BaseController
         backfillCheckoutInfo(list);
         ExcelUtil<HzContract> util = new ExcelUtil<HzContract>(HzContract.class);
         util.exportExcel(response, list, "合同数据");
+    }
+
+    /**
+     * 为合同列表回填入住状态、入住日期
+     * 数据来源：入住记录表 hz_checkin_record（del_flag='0'），同一合同存在多条时取最新一条（recordId 最大），
+     * 与入住管理页"入住日期"列同源（checkin_date 原样返回，格式 yyyy-MM-dd）。
+     */
+    private void backfillCheckInInfo(List<HzContract> list)
+    {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        List<Long> contractIds = list.stream()
+                .map(HzContract::getContractId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        if (contractIds.isEmpty()) {
+            return;
+        }
+        List<HzCheckIn> records = checkInMapper.selectList(
+                new LambdaQueryWrapper<HzCheckIn>()
+                        .in(HzCheckIn::getContractId, contractIds)
+                        .eq(HzCheckIn::getDelFlag, "0")
+                        .orderByAsc(HzCheckIn::getRecordId));
+        if (records.isEmpty()) {
+            return;
+        }
+        // 升序遍历，覆盖式放入 map，最终保留同一合同下 recordId 最大（最新）的一条
+        Map<Long, HzCheckIn> recordMap = new HashMap<>();
+        for (HzCheckIn r : records) {
+            recordMap.put(r.getContractId(), r);
+        }
+        for (HzContract c : list) {
+            HzCheckIn r = recordMap.get(c.getContractId());
+            if (r != null) {
+                c.setCheckinStatus(r.getStatus());
+                c.setCheckinDate(r.getCheckinDate());
+            }
+        }
     }
 
     /**
