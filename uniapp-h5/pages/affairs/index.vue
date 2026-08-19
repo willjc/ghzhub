@@ -175,10 +175,19 @@
 						url: `/subpkg/affairs/contract?type=${type}`
 					})
 				} else if (key === 'invoice') {
-					// 开票
-					uni.navigateTo({
-						url: `/subpkg/affairs/invoice?type=${type}`
-					})
+					// 开票 - 开关关闭时提示联系客服，功能代码保留
+					if (featureFlags.invoice) {
+						uni.navigateTo({
+							url: `/subpkg/affairs/invoice?type=${type}`
+						})
+					} else {
+						uni.showModal({
+							title: '提示',
+							content: '如需开具发票，请联系0371-63337151',
+							showCancel: false,
+							confirmText: '知道了'
+						})
+					}
 				} else if (key === 'appointment') {
 					// 我的预约
 					uni.navigateTo({
