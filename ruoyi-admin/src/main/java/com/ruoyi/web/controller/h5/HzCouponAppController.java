@@ -1,5 +1,6 @@
 package com.ruoyi.web.controller.h5;
 
+import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzCouponReceive;
@@ -26,10 +27,11 @@ public class HzCouponAppController
     private IHzCouponService couponService;
 
     /** 可领取列表 */
+    @Anonymous
     @GetMapping("/available")
     public AjaxResult available(@RequestParam(required = false) Long tenantId)
     {
-        tenantId = SecurityUtils.getHzUserId();
+        tenantId = SecurityUtils.getHzUserIdOrNull();
         List<Map<String, Object>> list = couponService.selectAvailableCoupons(tenantId);
         return AjaxResult.success(list);
     }

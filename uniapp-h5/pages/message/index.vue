@@ -62,6 +62,9 @@
 				uni.request({
 					url: config.baseUrl + '/h5/userMessage/list',
 					method: 'GET',
+					header: {
+						Authorization: 'Bearer ' + (uni.getStorageSync('token') || '')
+					},
 					data: {
 						userId: this.userId
 					},

@@ -159,10 +159,6 @@ public class HzAuthController extends BaseController {
                 existUser.setIdCard(idCard);
                 // 根据身份证自动回填性别（未知/空且身份证合法时）
                 existUser.setGender(com.ruoyi.common.utils.IdCardUtils.backfillGender(existUser.getGender(), idCard));
-                // 身份证账号自动合并：如果该身份证已存在于其他旧账号（迁移数据），自动迁移业务数据
-                if (idCard != null && !idCard.isBlank()) {
-                    userService.mergeUserByIdCard(userId, idCard);
-                }
             }
             if (params.containsKey("contactPhone"))   existUser.setContactPhone((String) params.get("contactPhone"));
             if (params.containsKey("workUnit"))       existUser.setWorkUnit((String) params.get("workUnit"));

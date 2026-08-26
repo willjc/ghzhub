@@ -54,16 +54,6 @@ public class EsignController extends BaseController {
             userMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<HzUser>()
                     .eq(HzUser::getUserId, userId).set(HzUser::getRealName, realName));
         }
-        if (idCard != null && !idCard.isBlank()) {
-            // 身份证账号自动合并：如果该身份证已存在于其他旧账号，自动迁移业务数据
-            userService.mergeUserByIdCard(userId, idCard);
-            // 根据身份证自动回填性别（未知/空且身份证合法时）
-            String backfilledGender = com.ruoyi.common.utils.IdCardUtils.backfillGender(user.getGender(), idCard);
-            userMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<HzUser>()
-                    .eq(HzUser::getUserId, userId)
-                    .set(HzUser::getIdCard, idCard)
-                    .set(!java.util.Objects.equals(backfilledGender, user.getGender()), HzUser::getGender, backfilledGender));
-        }
         String callbackUrl = (redirectUrl != null && !redirectUrl.isBlank()) ? redirectUrl : this.redirectUrl;
         String authUrl = esignService.getPsnAuthUrl(userId, user.getPhone(), realName, idCard, callbackUrl);
         Map<String, Object> r = new HashMap<>();
@@ -87,6 +77,13 @@ public class EsignController extends BaseController {
             return success(r);
         }
         String psnId = esignService.queryAndSavePsnId(user.getUserId(), user.getPhone());
+        if (psnId != null) {
+            HzUser verifiedUser = userMapper.selectById(userId);
+            if (verifiedUser != null && verifiedUser.getIdCard() != null && !verifiedUser.getIdCard().isBlank()) {
+                // 只使用 e签宝返回并落库的已认证身份证执行旧账号合并。
+                userService.mergeUserByIdCard(userId, verifiedUser.getIdCard());
+            }
+        }
         Map<String, Object> r = new HashMap<>();
         r.put("authenticated", psnId != null);
         r.put("psnId", psnId);

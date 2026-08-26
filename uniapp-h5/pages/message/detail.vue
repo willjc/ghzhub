@@ -46,6 +46,9 @@
 				uni.request({
 					url: config.baseUrl + '/h5/userMessage/' + id,
 					method: 'GET',
+					header: {
+						Authorization: 'Bearer ' + (uni.getStorageSync('token') || '')
+					},
 					success: (res) => {
 						if (res.data.code === 200) {
 							const data = res.data.data;

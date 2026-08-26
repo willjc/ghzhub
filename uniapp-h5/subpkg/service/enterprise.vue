@@ -544,6 +544,9 @@ export default {
 			const url = `${BASE_URL}/h5/app/enterpriseBill/downloadTemplate`
 			uni.downloadFile({
 				url: url,
+				header: {
+					Authorization: 'Bearer ' + (uni.getStorageSync('token') || '')
+				},
 				success: (res) => {
 					uni.hideLoading()
 					if (res.statusCode === 200) {
@@ -646,6 +649,9 @@ export default {
 					url: `${BASE_URL}/h5/app/enterpriseBill/submitCheckin`,
 					filePath: this.uploadedFiles[0].tempFilePath,
 					name: 'file',
+					header: {
+						Authorization: 'Bearer ' + (uni.getStorageSync('token') || '')
+					},
 					formData: {
 						billId: this.currentCheckinItem.billId
 					}
@@ -1367,4 +1373,3 @@ export default {
 		font-family: "PingFang SC", "苹方-简", sans-serif;
 	}
 </style>
-
