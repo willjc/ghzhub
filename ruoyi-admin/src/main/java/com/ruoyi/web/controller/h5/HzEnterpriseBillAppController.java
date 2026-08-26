@@ -1,11 +1,15 @@
 package com.ruoyi.web.controller.h5;
 
+import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.config.RuoYiConfig;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.constant.HttpStatus;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.file.FileUploadUtils;
+import com.ruoyi.framework.web.service.HzUserTokenService;
 import com.ruoyi.system.domain.HzEnterpriseBill;
 import com.ruoyi.system.domain.HzEnterpriseBatchHouse;
 import com.ruoyi.system.domain.HzEnterpriseBatch;
@@ -51,6 +55,9 @@ public class HzEnterpriseBillAppController extends BaseController {
 
     @Autowired
     private IHzUserService userService;
+
+    @Autowired
+    private HzUserTokenService hzUserTokenService;
 
     /**
      * 获取我的企业账单列表（根据登录用户手机号）
@@ -157,11 +164,19 @@ public class HzEnterpriseBillAppController extends BaseController {
     /**
      * 提交入住办理（上传人员名单）
      */
+    @Anonymous
     @PostMapping("/submitCheckin")
     public AjaxResult submitCheckin(@RequestParam("billId") Long billId,
                                      @RequestParam(value = "file", required = false) MultipartFile file) {
         try {
-            requireOwnedBill(requireBill(billId));
+            HzEnterpriseBill bill = requireBill(billId);
+            Long currentUserId = SecurityUtils.getHzUserIdOrNull();
+            if (currentUserId != null) {
+                requireOwnedBill(bill);
+            } else {
+                requireLegacyCompatibility();
+                logger.warn("旧版微信小程序无Token上传企业入住人员表，billId={}", billId);
+            }
             String personnelFile = null;
             if (file != null && !file.isEmpty()) {
                 // 上传文件
@@ -179,6 +194,7 @@ public class HzEnterpriseBillAppController extends BaseController {
     /**
      * 下载人员名单Excel模版
      */
+    @Anonymous
     @GetMapping("/downloadTemplate")
     public void downloadTemplate(HttpServletResponse response) {
         try {
@@ -334,6 +350,12 @@ public class HzEnterpriseBillAppController extends BaseController {
     private void requireOwnedBill(HzEnterpriseBill bill) {
         if (!currentPhone().equals(bill.getContactPhone())) {
             throw new com.ruoyi.common.exception.ServiceException("无权操作此账单", 403);
+        }
+    }
+
+    private void requireLegacyCompatibility() {
+        if (!hzUserTokenService.isLegacyCompatibilityActive()) {
+            throw new ServiceException("用户未登录或登录已过期", HttpStatus.UNAUTHORIZED);
         }
     }
 }

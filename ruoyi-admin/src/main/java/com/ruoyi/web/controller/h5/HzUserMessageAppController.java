@@ -1,8 +1,12 @@
 package com.ruoyi.web.controller.h5;
 
+import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.constant.HttpStatus;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.framework.web.service.HzUserTokenService;
 import com.ruoyi.system.domain.HzUserMessage;
 import com.ruoyi.system.service.IHzUserMessageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,13 +26,17 @@ public class HzUserMessageAppController extends BaseController
     @Autowired
     private IHzUserMessageService messageService;
 
+    @Autowired
+    private HzUserTokenService hzUserTokenService;
+
     /**
      * 查询当前用户的消息列表
      */
+    @Anonymous
     @GetMapping("/list")
-    public AjaxResult list()
+    public AjaxResult list(@RequestParam(required = false) Long userId)
     {
-        Long userId = getCurrentUserId();
+        userId = currentOrLegacyUserId(userId);
         List<HzUserMessage> list = messageService.selectMessageListByUserId(userId);
         return success(list);
     }
@@ -58,14 +66,20 @@ public class HzUserMessageAppController extends BaseController
     /**
      * 获取消息详情
      */
+    @Anonymous
     @GetMapping("/{messageId}")
     public AjaxResult getInfo(@PathVariable("messageId") Long messageId)
     {
         HzUserMessage message = messageService.selectMessageById(messageId);
-        Long userId = getCurrentUserId();
-        if (message != null && !userId.equals(message.getUserId()))
+        Long userId = SecurityUtils.getHzUserIdOrNull();
+        if (userId != null && message != null && !userId.equals(message.getUserId()))
         {
             return error("无权查看");
+        }
+        if (userId == null)
+        {
+            requireLegacyCompatibility();
+            logger.warn("旧版小程序无Token读取消息详情，messageId={}", messageId);
         }
 
         // 自动标记为已读
@@ -110,5 +124,29 @@ public class HzUserMessageAppController extends BaseController
     protected Long getCurrentUserId()
     {
         return SecurityUtils.getHzUserId();
+    }
+
+    private Long currentOrLegacyUserId(Long requestedUserId)
+    {
+        Long currentUserId = SecurityUtils.getHzUserIdOrNull();
+        if (currentUserId != null)
+        {
+            return currentUserId;
+        }
+        requireLegacyCompatibility();
+        if (requestedUserId == null)
+        {
+            throw new ServiceException("用户未登录", HttpStatus.UNAUTHORIZED);
+        }
+        logger.warn("旧版小程序无Token读取消息列表，userId={}", requestedUserId);
+        return requestedUserId;
+    }
+
+    private void requireLegacyCompatibility()
+    {
+        if (!hzUserTokenService.isLegacyCompatibilityActive())
+        {
+            throw new ServiceException("用户未登录或登录已过期", HttpStatus.UNAUTHORIZED);
+        }
     }
 }

@@ -235,6 +235,11 @@ gov:
 # 多个手机号用英文逗号分隔；留空则关闭此能力
 ghz:
   preview-phones: ${GHZ_PREVIEW_PHONES:}
+  # 新旧小程序并行发布的临时兼容开关。旧 hz_token_ 无签名，只允许在过渡期启用。
+  legacy-auth:
+    enabled: ${GHZ_LEGACY_AUTH_ENABLED:true}
+    # 到期后即使忘记关闭 enabled，也会自动拒绝旧Token和旧版无Token接口。
+    accept-until: "${GHZ_LEGACY_AUTH_ACCEPT_UNTIL:2026-10-31T23:59:59+08:00}"
   # 客户要求保留的测试身份切换。权限只授予该手机号通过微信登录创建的服务端会话。
   debug-switch:
     enabled: ${GHZ_DEBUG_SWITCH_ENABLED:true}
