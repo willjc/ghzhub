@@ -5,10 +5,10 @@
  */
 export default {
 	// 保租房：false=隐藏入口（首页分类Tab/九宫格图标、办事页保租房区块），true=正常显示
-	guaranteed: false,
+	guaranteed: true,
 
 	// 市场租赁：false=隐藏入口（首页分类Tab/九宫格图标、办事页市场租赁区块），true=正常显示
-	market: false,
+	market: true,
 
 	// 开票：false=点击开票图标时提示联系客服电话（功能代码保留），true=正常进入开票模块
 	invoice: false
