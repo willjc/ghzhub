@@ -1,5 +1,6 @@
 package com.ruoyi.web.controller.h5;
 
+import com.ruoyi.common.annotation.Anonymous;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.constant.HttpStatus;
@@ -21,6 +22,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/h5/policy")
+@Anonymous
 public class HzPolicyAppController extends BaseController {
 
     @Autowired

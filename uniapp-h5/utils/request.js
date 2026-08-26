@@ -32,6 +32,15 @@ export function request(options) {
         ...options.header
       },
       success: (res) => {
+        if (res.statusCode === 401) {
+          uni.removeStorageSync('token')
+          uni.removeStorageSync('userId')
+          uni.removeStorageSync('userInfo')
+          uni.showToast({ title: '登录已失效，请重新登录', icon: 'none' })
+          setTimeout(() => uni.reLaunch({ url: '/pages/login/index' }), 500)
+          reject(res)
+          return
+        }
         // 请求成功
         if (res.statusCode === 200) {
           // 若依框架标准响应格式：{ code: 200, msg: 'success', data: ... }

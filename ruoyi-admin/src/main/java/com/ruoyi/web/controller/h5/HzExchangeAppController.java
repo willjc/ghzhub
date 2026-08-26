@@ -3,6 +3,7 @@ package com.ruoyi.web.controller.h5;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzHouse;
@@ -49,6 +50,7 @@ public class HzExchangeAppController extends BaseController {
      */
     @GetMapping("/list/{tenantId}")
     public AjaxResult getExchangeList(@PathVariable Long tenantId) {
+        SecurityUtils.requireCurrentHzUser(tenantId);
         List<HzHouseExchange> list = exchangeService.selectExchangeListByTenantId(tenantId);
 
         // 转换为前端需要的格式
@@ -95,6 +97,7 @@ public class HzExchangeAppController extends BaseController {
         if (exchange == null) {
             return error("调换房申请不存在");
         }
+        SecurityUtils.requireCurrentHzUser(exchange.getTenantId());
 
         Map<String, Object> result = new HashMap<>();
         result.put("id", exchange.getExchangeId());
@@ -122,6 +125,7 @@ public class HzExchangeAppController extends BaseController {
      */
     @GetMapping("/confirmed/{tenantId}")
     public AjaxResult getConfirmedContractList(@PathVariable Long tenantId) {
+        SecurityUtils.requireCurrentHzUser(tenantId);
         // 方式1：查询该用户所有已入住确认的入住单 (status='4')
         List<HzCheckIn> checkInList = checkInService.selectConfirmedCheckInListByTenantId(tenantId);
 
@@ -265,6 +269,7 @@ public class HzExchangeAppController extends BaseController {
             if (contract == null) {
                 return error("合同不存在");
             }
+            SecurityUtils.requireCurrentHzUser(contract.getTenantId());
 
             // 创建调换房申请
             HzHouseExchange exchange = new HzHouseExchange();

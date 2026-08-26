@@ -25,14 +25,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ruoyi.common.config.RuoYiConfig;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.file.FileUploadUtils;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzBuilding;
@@ -63,7 +62,6 @@ import com.ruoyi.system.service.IHzDocumentService;
 import com.ruoyi.system.service.IHzHouseOrderService;
 import com.ruoyi.system.util.TalentApartmentRentCalculator;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
@@ -125,6 +123,7 @@ public class HzContractAppController extends BaseController {
     @GetMapping("/user/{userId}")
     public AjaxResult getContractsByUserId(@PathVariable Long userId,
                                            @RequestParam(required = false) String projectType) {
+        SecurityUtils.requireCurrentHzUser(userId);
         // 查询该用户的所有合同（关联项目、楼栋、单元信息）；projectType 不为空时按业务类型过滤
         List<Map<String, Object>> contracts = contractMapper.selectContractVOByUserId(userId, projectType);
 
@@ -295,6 +294,7 @@ public class HzContractAppController extends BaseController {
     public AjaxResult getContractDetail(@PathVariable Long contractId) {
         HzContract contract = contractMapper.selectById(contractId);
         if (contract == null) return error("合同不存在");
+        SecurityUtils.requireCurrentHzUser(contract.getTenantId());
 
         Map<String, Object> data = new HashMap<>();
         data.put("contractId", contract.getContractId());
@@ -359,47 +359,8 @@ public class HzContractAppController extends BaseController {
         return LocalDate.parse(dateStr.substring(0, 10));
     }
 
-    /**
-     * 从请求头中的Token解析出hz_user的ID
-     * Token格式：hz_token_{userId}_{timestamp}
-     */
     private Long getHzUserIdFromToken() {
-        try {
-            HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-            String token = request.getHeader("Authorization");
-
-            // 调试日志：打印原始token
-            logger.info("【调试】从请求头获取到的Authorization: {}", token);
-
-            if (token == null || token.isEmpty()) {
-                logger.warn("【调试】Authorization为空");
-                return null;
-            }
-
-            // 移除 "Bearer " 前缀（如果有）
-            if (token.startsWith("Bearer ")) {
-                token = token.substring(7);
-                logger.info("【调试】移除Bearer前缀后的token: {}", token);
-            }
-
-            // 解析token: hz_token_{userId}_{timestamp}
-            if (token.startsWith("hz_token_")) {
-                String[] parts = token.split("_");
-                logger.info("【调试】token分割结果: {}, parts.length={}", (Object) parts, parts.length);
-
-                if (parts.length >= 3) {
-                    Long userId = Long.parseLong(parts[2]);
-                    logger.info("【调试】解析成功，userId={}", userId);
-                    return userId; // parts[0]=hz, parts[1]=token, parts[2]=userId
-                }
-            }
-
-            logger.warn("【调试】token格式不匹配，不是hz_token_开头或分割后长度不足3");
-            return null;
-        } catch (Exception e) {
-            logger.error("【调试】解析token失败", e);
-            return null;
-        }
+        return SecurityUtils.getHzUserId();
     }
 
     /**
@@ -439,6 +400,7 @@ public class HzContractAppController extends BaseController {
             if (oldContract == null) {
                 return error("原合同不存在");
             }
+            SecurityUtils.requireCurrentHzUser(oldContract.getTenantId());
             startDate = parseUtcToLocalDate(oldContract.getEndDate()).plusDays(1);
         } else {
             // 新签模式：当前日期+3天
@@ -470,11 +432,15 @@ public class HzContractAppController extends BaseController {
             return error("未找到对应的合同模版");
         }
 
-        // 6. 获取租户信息 (TODO: 从登录态获取，这里暂时写死)
+        // 6. 从当前微信登录态获取承租人信息
+        HzUser currentUser = hzUserMapper.selectById(SecurityUtils.getHzUserId());
+        if (currentUser == null) {
+            return error("用户信息不存在，请重新登录");
+        }
         HzTenant tenant = new HzTenant();
-        tenant.setTenantName("张三");
-        tenant.setIdCard("410123199001011234");
-        tenant.setPhone("13800138000");
+        tenant.setTenantName(currentUser.getRealName() != null ? currentUser.getRealName() : currentUser.getNickname());
+        tenant.setIdCard(currentUser.getIdCard() != null ? currentUser.getIdCard() : "");
+        tenant.setPhone(currentUser.getPhone() != null ? currentUser.getPhone() : "");
 
         // 7. 计算结束日期
         String endDate;
@@ -537,9 +503,7 @@ public class HzContractAppController extends BaseController {
         if (houseId == null) {
             return error("houseId 不能为空");
         }
-        if (userId == null) {
-            userId = getHzUserIdFromToken();
-        }
+        userId = getHzUserIdFromToken();
         Map<String, Object> data = new HashMap<>();
         data.put("applicable", false);
 
@@ -587,18 +551,7 @@ public class HzContractAppController extends BaseController {
             Integer rentMonths = params.get("rentMonths") != null
                 ? Integer.parseInt(params.get("rentMonths").toString()) : 12;
 
-            // 优先从请求参数获取 userId（e签宝流程前端直接传参），否则从 token 解析
-            Long userId = null;
-            Object userIdParam = params.get("userId");
-            if (userIdParam != null) {
-                try { userId = Long.parseLong(userIdParam.toString()); } catch (Exception ignored) {}
-            }
-            if (userId == null) {
-                userId = getHzUserIdFromToken();
-            }
-            if (userId == null) {
-                return error("获取用户信息失败，请重新登录");
-            }
+            Long userId = getHzUserIdFromToken();
 
             // 检测房源是否属于配租批次（优先使用批次日期）
             boolean isBatchMode = false;
@@ -862,6 +815,7 @@ public class HzContractAppController extends BaseController {
             if (oldContract == null) {
                 return error("原合同不存在");
             }
+            SecurityUtils.requireCurrentHzUser(oldContract.getTenantId());
             // 防重复校验：原合同是否已续租
             if ("1".equals(oldContract.getIsRenewed())) {
                 return error("该合同已续租，不可重复续租");
@@ -900,18 +854,7 @@ public class HzContractAppController extends BaseController {
             }
             // ========== 入住状态校验结束 ==========
 
-            // 优先从请求参数获取 userId，兼容前端直接传参
-            Long userId = null;
-            Object userIdParam = params.get("userId");
-            if (userIdParam != null) {
-                try { userId = Long.parseLong(userIdParam.toString()); } catch (Exception ignored) {}
-            }
-            if (userId == null) {
-                userId = getHzUserIdFromToken();
-            }
-            if (userId == null) {
-                return error("获取用户信息失败，请重新登录");
-            }
+            Long userId = getHzUserIdFromToken();
 
             // 续租合同生效日期：始终为原合同到期日次日
             // 无论原合同是否已到期，续租合同都应衔接原合同，避免出现保障空档期
@@ -1385,6 +1328,7 @@ public class HzContractAppController extends BaseController {
     public AjaxResult getContractPdfUrl(@PathVariable Long contractId) {
         HzContract contract = contractMapper.selectById(contractId);
         if (contract == null) return error("合同不存在");
+        SecurityUtils.requireCurrentHzUser(contract.getTenantId());
 
         String flowId = contract.getEsignFlowId();
         if (flowId == null || flowId.isEmpty()) {
@@ -1416,6 +1360,7 @@ public class HzContractAppController extends BaseController {
             try { response.sendError(HttpServletResponse.SC_NOT_FOUND, "合同不存在"); } catch (Exception ignored) {}
             return;
         }
+        SecurityUtils.requireCurrentHzUser(contract.getTenantId());
 
         // 获取实时 PDF URL
         String pdfUrl = null;

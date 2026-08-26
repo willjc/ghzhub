@@ -2,6 +2,7 @@ package com.ruoyi.web.controller.h5;
 
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzPayment;
 import com.ruoyi.system.domain.HzTenant;
@@ -43,7 +44,7 @@ public class HzPaymentController extends BaseController {
     @PostMapping("/create")
     public AjaxResult createPayment(@RequestBody HzPayment payment) {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -105,6 +106,7 @@ public class HzPaymentController extends BaseController {
         if (existPayment == null) {
             return error("支付记录不存在");
         }
+        requireOwnedPayment(existPayment);
 
         existPayment.setPaymentStatus(payment.getPaymentStatus());
         existPayment.setTransactionNo(payment.getTransactionNo());
@@ -151,6 +153,7 @@ public class HzPaymentController extends BaseController {
      */
     @GetMapping("/list/{billId}")
     public AjaxResult list(@PathVariable("billId") Long billId) {
+        requireOwnedBill(billId);
         List<HzPayment> list = paymentService.selectPaymentListByBillId(billId);
         return success(list);
     }
@@ -161,6 +164,20 @@ public class HzPaymentController extends BaseController {
     @GetMapping("/{paymentId}")
     public AjaxResult getInfo(@PathVariable("paymentId") Long paymentId) {
         HzPayment payment = paymentService.selectPaymentById(paymentId);
+        if (payment == null) return error("支付记录不存在");
+        requireOwnedPayment(payment);
         return success(payment);
+    }
+
+    private void requireOwnedPayment(HzPayment payment) {
+        requireOwnedBill(payment.getBillId());
+    }
+
+    private void requireOwnedBill(Long billId) {
+        HzBill bill = billService.selectBillById(billId);
+        if (bill == null) throw new com.ruoyi.common.exception.ServiceException("账单不存在");
+        HzTenant tenant = tenantService.selectTenantById(bill.getTenantId());
+        if (tenant == null) throw new com.ruoyi.common.exception.ServiceException("租户信息不存在");
+        SecurityUtils.requireCurrentHzUser(tenant.getUserId());
     }
 }

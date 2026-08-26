@@ -1,5 +1,6 @@
 package com.ruoyi.web.controller.h5;
 
+import com.ruoyi.common.annotation.Anonymous;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Enumeration;
@@ -22,6 +23,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzEnterpriseBill;
@@ -32,6 +34,7 @@ import com.ruoyi.system.mapper.HzEnterpriseBillMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.service.IHzHouseOrderService;
 import com.ruoyi.system.service.IHzUserMessageService;
+import com.ruoyi.system.service.IHzUserService;
 import com.ruoyi.system.service.WechatPayService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -69,6 +72,9 @@ public class WechatPayController extends BaseController {
     @Autowired
     private HzEnterpriseBillMapper enterpriseBillMapper;
 
+    @Autowired
+    private IHzUserService userService;
+
     /**
      * 预支付
      * 请求体：{ billNo, payType("jsapi"|"h5"), openid?, clientIp? }
@@ -97,6 +103,7 @@ public class WechatPayController extends BaseController {
             bill = billMapper.selectById(Long.parseLong(billNo));
         }
         if (bill == null) return error("账单不存在");
+        SecurityUtils.requireCurrentHzUser(bill.getTenantId());
         if ("1".equals(bill.getBillStatus())) return error("账单已支付");
 
         // 如果是押金账单（bill_type='1'），检查合同是否还在有效期内
@@ -160,7 +167,7 @@ public class WechatPayController extends BaseController {
 
         try {
             if ("jsapi".equals(payType)) {
-                if (openid == null || openid.isEmpty()) return error("JSAPI 支付需要传入 openid");
+                openid = currentUserOpenid();
                 Map<String, String> jsapiParams = prepayJsapiWithRetry(
                         outTradeNo, billNo, totalFen, desc, openid, notifyUrl);
                 return success(jsapiParams);
@@ -342,6 +349,8 @@ public class WechatPayController extends BaseController {
 
         HzEnterpriseBill bill = enterpriseBillMapper.selectEnterpriseBillById(billId);
         if (bill == null) return error("账单不存在");
+        requireOwnedEnterpriseBill(bill);
+        openid = currentUserOpenid();
         if ("2".equals(bill.getBillStatus())) return error("账单已支付");
         if (!"1".equals(bill.getBillStatus())) return error("账单未通过审核，暂不能支付");
 
@@ -369,8 +378,9 @@ public class WechatPayController extends BaseController {
 
     /**
      * 微信支付结果回调
-     * /h5/** 已在 SecurityConfig 中 permitAll，无需额外配置
+     * 由微信服务器调用，通过 @Anonymous 单独放行并在服务层验签。
      */
+    @Anonymous
     @PostMapping("/notify")
     public ResponseEntity<Map<String, String>> notify(HttpServletRequest request) {
         Map<String, String> resp = new HashMap<>();
@@ -532,10 +542,12 @@ public class WechatPayController extends BaseController {
                      .last("LIMIT 1");
             HzEnterpriseBill enterpriseBill = enterpriseBillMapper.selectOne(ebWrapper);
             if (enterpriseBill != null) {
+                requireOwnedEnterpriseBill(enterpriseBill);
                 return syncEnterpriseBillPay(enterpriseBill);
             }
             return error("账单不存在");
         }
+        SecurityUtils.requireCurrentHzUser(bill.getTenantId());
 
         // 已支付无需同步
         if ("1".equals(bill.getBillStatus())) {
@@ -643,6 +655,7 @@ public class WechatPayController extends BaseController {
                .last("LIMIT 1");
         HzBill bill = billMapper.selectOne(wrapper);
         if (bill == null) return error("账单不存在");
+        SecurityUtils.requireCurrentHzUser(bill.getTenantId());
 
         Map<String, Object> result = new HashMap<>();
         result.put("billStatus", bill.getBillStatus());
@@ -689,6 +702,26 @@ public class WechatPayController extends BaseController {
         } catch (Exception e) {
             logger.error("企业账单主动查单失败，billNo={}", enterpriseBill.getBillNo(), e);
             return error("查单失败：" + e.getMessage());
+        }
+    }
+
+    private com.ruoyi.system.domain.HzUser currentUser() {
+        com.ruoyi.system.domain.HzUser user = userService.selectHzUserById(SecurityUtils.getHzUserId());
+        if (user == null) throw new com.ruoyi.common.exception.ServiceException("当前用户不存在");
+        return user;
+    }
+
+    private String currentUserOpenid() {
+        String openid = currentUser().getWechatOpenid();
+        if (openid == null || openid.isEmpty()) {
+            throw new com.ruoyi.common.exception.ServiceException("当前微信身份无效，请重新登录");
+        }
+        return openid;
+    }
+
+    private void requireOwnedEnterpriseBill(HzEnterpriseBill bill) {
+        if (bill.getContactPhone() == null || !bill.getContactPhone().equals(currentUser().getPhone())) {
+            throw new com.ruoyi.common.exception.ServiceException("无权操作此账单", 403);
         }
     }
 

@@ -2,6 +2,7 @@ package com.ruoyi.web.controller.h5;
 
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzDocument;
 import com.ruoyi.system.domain.HzHouseOrder;
 import com.ruoyi.system.service.IHzDocumentService;
@@ -35,9 +36,9 @@ public class HzHouseOrderController extends BaseController {
      */
     @PostMapping("/create")
     public AjaxResult createOrder(@RequestBody Map<String, Long> body) {
-        Long tenantId = body.get("tenantId");
+        Long tenantId = SecurityUtils.getHzUserId();
         Long houseId = body.get("houseId");
-        if (tenantId == null || houseId == null) {
+        if (houseId == null) {
             return error("参数不完整");
         }
         return orderService.createOrder(tenantId, houseId);
@@ -54,6 +55,7 @@ public class HzHouseOrderController extends BaseController {
         if (status == null) {
             return error("订单不存在");
         }
+        SecurityUtils.requireCurrentHzUser((Long) status.remove("tenantId"));
         return success(status);
     }
 
@@ -64,7 +66,7 @@ public class HzHouseOrderController extends BaseController {
     @PostMapping("/cancel")
     public AjaxResult cancelOrder(@RequestBody Map<String, Object> body) {
         String orderNo = (String) body.get("orderNo");
-        Long tenantId = ((Number) body.get("tenantId")).longValue();
+        Long tenantId = SecurityUtils.getHzUserId();
         orderService.cancelOrder(orderNo, tenantId);
         return success();
     }
@@ -80,6 +82,7 @@ public class HzHouseOrderController extends BaseController {
      */
     @GetMapping("/pending-upload/{tenantId}")
     public AjaxResult getPendingUploadOrders(@PathVariable Long tenantId) {
+        SecurityUtils.requireCurrentHzUser(tenantId);
         List<HzHouseOrder> orders = orderService.getPendingUploadOrders(tenantId);
         List<Map<String, Object>> result = new ArrayList<>();
         // 一次性查询该 tenant 的全部资料，按类型取最新一条
@@ -135,6 +138,7 @@ public class HzHouseOrderController extends BaseController {
      */
     @GetMapping("/checkin-check/{tenantId}")
     public AjaxResult checkinCheck(@PathVariable Long tenantId) {
+        SecurityUtils.requireCurrentHzUser(tenantId);
         return success(orderService.checkinCheck(tenantId));
     }
 }

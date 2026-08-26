@@ -2,6 +2,7 @@ package com.ruoyi.web.controller.h5;
 
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzCheckoutApply;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzTenant;
@@ -37,7 +38,7 @@ public class HzCheckOutController extends BaseController {
     @GetMapping("/list")
     public AjaxResult list() {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -53,6 +54,8 @@ public class HzCheckOutController extends BaseController {
     @GetMapping("/{applyId}")
     public AjaxResult getInfo(@PathVariable("applyId") Long applyId) {
         HzCheckoutApply checkoutApply = checkoutService.selectCheckoutApplyByApplyId(applyId);
+        if (checkoutApply == null) return error("退租申请不存在");
+        SecurityUtils.requireCurrentHzUser(requireTenant(checkoutApply.getTenantId()).getUserId());
         return success(checkoutApply);
     }
 
@@ -62,7 +65,7 @@ public class HzCheckOutController extends BaseController {
     @PostMapping("/apply")
     public AjaxResult apply(@RequestBody HzCheckoutApply checkoutApply) {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -108,7 +111,7 @@ public class HzCheckOutController extends BaseController {
     @PutMapping("/update")
     public AjaxResult update(@RequestBody HzCheckoutApply checkoutApply) {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -140,7 +143,7 @@ public class HzCheckOutController extends BaseController {
     @DeleteMapping("/{applyId}")
     public AjaxResult cancel(@PathVariable("applyId") Long applyId) {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -164,5 +167,11 @@ public class HzCheckOutController extends BaseController {
 
         int result = checkoutService.cancelCheckoutApply(applyId);
         return result > 0 ? success() : error("取消失败");
+    }
+
+    private HzTenant requireTenant(Long tenantId) {
+        HzTenant tenant = tenantService.selectTenantById(tenantId);
+        if (tenant == null) throw new com.ruoyi.common.exception.ServiceException("租户信息不存在");
+        return tenant;
     }
 }

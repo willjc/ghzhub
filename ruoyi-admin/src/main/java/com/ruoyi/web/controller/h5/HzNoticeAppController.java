@@ -1,5 +1,6 @@
 package com.ruoyi.web.controller.h5;
 
+import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.system.service.ISysNoticeService;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/h5/notice")
+@Anonymous
 public class HzNoticeAppController extends BaseController
 {
     @Autowired

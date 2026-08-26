@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzBillVO;
 import com.ruoyi.system.mapper.HzBillMapper;
@@ -34,6 +35,7 @@ public class HzBillAppController extends BaseController {
      */
     @GetMapping("/deposit/{contractId}")
     public AjaxResult getDepositBill(@PathVariable Long contractId) {
+        requireOwnedContract(contractId);
         // 查询押金账单（bill_type='1'）
         LambdaQueryWrapper<HzBill> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzBill::getContractId, contractId)
@@ -79,6 +81,7 @@ public class HzBillAppController extends BaseController {
             if (bill == null) {
                 return error("账单不存在");
             }
+            SecurityUtils.requireCurrentHzUser(bill.getTenantId());
 
             // 检查账单状态
             if ("1".equals(bill.getBillStatus())) {
@@ -158,6 +161,7 @@ public class HzBillAppController extends BaseController {
     public AjaxResult getBillList(@PathVariable Long contractId,
                                    @RequestParam(required = false) String billType,
                                    @RequestParam(required = false) String billStatus) {
+        requireOwnedContract(contractId);
         LambdaQueryWrapper<HzBill> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzBill::getContractId, contractId)
                .eq(billType != null, HzBill::getBillType, billType)
@@ -182,6 +186,7 @@ public class HzBillAppController extends BaseController {
                                           @RequestParam(required = false) String billType,
                                           @RequestParam(required = false) String billStatus,
                                           @RequestParam(required = false) String projectType) {
+        SecurityUtils.requireCurrentHzUser(userId);
         // 使用关联查询，获取完整的账单信息（包含项目名称、楼栋、单元等）
         List<HzBillVO> bills = billMapper.selectBillVOByUserId(userId, billType, billStatus, projectType);
 
@@ -217,6 +222,7 @@ public class HzBillAppController extends BaseController {
             // 验证所有账单的状态和金额
             BigDecimal totalUnpaid = BigDecimal.ZERO;
             for (HzBill bill : bills) {
+                SecurityUtils.requireCurrentHzUser(bill.getTenantId());
                 if ("1".equals(bill.getBillStatus())) {
                     return error("存在已支付的账单");
                 }
@@ -278,5 +284,13 @@ public class HzBillAppController extends BaseController {
             case "4": return "已关闭";
             default: return "未知状态";
         }
+    }
+
+    private void requireOwnedContract(Long contractId) {
+        com.ruoyi.system.domain.HzContract contract = contractMapper.selectById(contractId);
+        if (contract == null) {
+            throw new com.ruoyi.common.exception.ServiceException("合同不存在");
+        }
+        SecurityUtils.requireCurrentHzUser(contract.getTenantId());
     }
 }

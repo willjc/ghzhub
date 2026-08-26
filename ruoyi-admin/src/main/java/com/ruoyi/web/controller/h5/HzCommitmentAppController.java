@@ -1,8 +1,10 @@
 package com.ruoyi.web.controller.h5;
 
+import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.ServletUtils;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.ip.IpUtils;
 import com.ruoyi.system.domain.HzCommitment;
 import com.ruoyi.system.domain.HzCommitmentTemplate;
@@ -39,6 +41,7 @@ public class HzCommitmentAppController extends BaseController {
     /**
      * 根据项目ID获取承诺书内容
      */
+    @Anonymous
     @GetMapping("/content")
     public AjaxResult getCommitmentContent(@RequestParam("projectId") Long projectId) {
         // 1. 查询项目信息
@@ -69,6 +72,7 @@ public class HzCommitmentAppController extends BaseController {
     /**
      * 根据模板编码获取承诺书内容（适用于无项目场景，如代购补贴）
      */
+    @Anonymous
     @GetMapping("/templateByCode")
     public AjaxResult getTemplateByCode(@RequestParam("code") String code) {
         HzCommitmentTemplate template = commitmentTemplateService.selectTemplateByCode(code);
@@ -93,15 +97,12 @@ public class HzCommitmentAppController extends BaseController {
             // 1. 获取参数（projectId 在代购补贴等无项目场景下可为空）
             Long projectId = params.get("projectId") != null && !"".equals(params.get("projectId").toString())
                     ? Long.valueOf(params.get("projectId").toString()) : null;
-            Long tenantId = params.get("tenantId") != null ? Long.valueOf(params.get("tenantId").toString()) : null;
+            Long tenantId = SecurityUtils.getHzUserId();
             String commitmentType = params.get("commitmentType").toString();
             String commitmentContent = params.get("commitmentContent").toString();
             String signatureData = params.get("signatureData").toString();
 
             // 2. 参数校验
-            if (tenantId == null) {
-                return error("租户ID不能为空");
-            }
             if (commitmentContent == null || commitmentContent.isEmpty()) {
                 return error("承诺书内容不能为空");
             }
@@ -153,9 +154,10 @@ public class HzCommitmentAppController extends BaseController {
 
     /**
      * 获取小程序首次打开的友情提醒公告（模板编码固定为 gonggao）
-     * - 免登录接口（/h5/** 已整体 permitAll）
+     * - 免登录接口（通过 @Anonymous 单独放行）
      * - 未配置或已下架时返回 empty=true，前端不弹窗
      */
+    @Anonymous
     @GetMapping("/notice")
     public AjaxResult getNotice() {
         HzCommitmentTemplate template = commitmentTemplateService.selectTemplateByCode("gonggao");
@@ -179,6 +181,7 @@ public class HzCommitmentAppController extends BaseController {
     @GetMapping("/checkSigned")
     public AjaxResult checkSigned(@RequestParam("tenantId") Long tenantId,
                                    @RequestParam("commitmentType") String commitmentType) {
+        tenantId = SecurityUtils.getHzUserId();
         HzCommitment commitment = commitmentService.selectCommitmentByTenantIdAndType(tenantId, commitmentType);
 
         Map<String, Object> result = new HashMap<>();

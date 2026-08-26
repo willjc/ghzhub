@@ -1,6 +1,7 @@
 package com.ruoyi.web.controller.h5;
 
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzCouponReceive;
 import com.ruoyi.system.service.IHzCouponService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ public class HzCouponAppController
     @GetMapping("/available")
     public AjaxResult available(@RequestParam(required = false) Long tenantId)
     {
+        tenantId = SecurityUtils.getHzUserId();
         List<Map<String, Object>> list = couponService.selectAvailableCoupons(tenantId);
         return AjaxResult.success(list);
     }
@@ -37,7 +39,7 @@ public class HzCouponAppController
     public AjaxResult myList(@RequestParam Long tenantId,
                              @RequestParam(required = false) String receiveStatus)
     {
-        if (tenantId == null) return AjaxResult.error("缺少 tenantId");
+        tenantId = SecurityUtils.getHzUserId();
         return AjaxResult.success(couponService.selectMyReceivedCoupons(tenantId, receiveStatus));
     }
 
@@ -46,13 +48,12 @@ public class HzCouponAppController
     public AjaxResult receive(@RequestBody Map<String, Object> body)
     {
         Object cIdObj = body.get("couponId");
-        Object tIdObj = body.get("tenantId");
-        if (cIdObj == null || tIdObj == null)
+        if (cIdObj == null)
         {
             return AjaxResult.error("缺少参数");
         }
         Long couponId = Long.valueOf(cIdObj.toString());
-        Long tenantId = Long.valueOf(tIdObj.toString());
+        Long tenantId = SecurityUtils.getHzUserId();
         HzCouponReceive r = couponService.receiveCoupon(couponId, tenantId);
         Map<String, Object> data = new HashMap<>();
         data.put("receiveId", r.getReceiveId());

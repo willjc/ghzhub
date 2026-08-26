@@ -3,6 +3,7 @@ package com.ruoyi.web.controller.h5;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.domain.HzCoTenant;
 import com.ruoyi.system.domain.HzContract;
@@ -40,6 +41,7 @@ public class HzCohabitantAppController extends BaseController {
      */
     @GetMapping("/list/{tenantId}")
     public AjaxResult getCohabitantList(@PathVariable Long tenantId) {
+        SecurityUtils.requireCurrentHzUser(tenantId);
         List<HzCoTenant> list = coTenantService.selectCoTenantListByTenantId(tenantId);
 
         // 转换为前端需要的格式
@@ -75,6 +77,11 @@ public class HzCohabitantAppController extends BaseController {
         if (coTenant == null) {
             return error("合租户申请不存在");
         }
+        HzContract ownerContract = contractService.selectContractById(coTenant.getContractId());
+        if (ownerContract == null) {
+            return error("关联合同不存在");
+        }
+        SecurityUtils.requireCurrentHzUser(ownerContract.getTenantId());
 
         Map<String, Object> result = new HashMap<>();
         result.put("id", coTenant.getCoTenantId());
@@ -102,6 +109,7 @@ public class HzCohabitantAppController extends BaseController {
      */
     @GetMapping("/confirmed/{tenantId}")
     public AjaxResult getConfirmedContractList(@PathVariable Long tenantId) {
+        SecurityUtils.requireCurrentHzUser(tenantId);
         // 查询该用户所有已入住确认的入住单 (status='2','3','4'，兼容老数据)
         List<HzCheckIn> checkInList = checkInService.selectConfirmedCheckInListByTenantId(tenantId);
 
@@ -165,6 +173,7 @@ public class HzCohabitantAppController extends BaseController {
             if (contract == null) {
                 return error("合同不存在");
             }
+            SecurityUtils.requireCurrentHzUser(contract.getTenantId());
 
             // 创建合租户申请
             HzCoTenant coTenant = new HzCoTenant();

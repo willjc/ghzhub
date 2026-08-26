@@ -1,10 +1,12 @@
 package com.ruoyi.web.controller.h5;
 
+import com.ruoyi.common.annotation.Anonymous;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.constant.HttpStatus;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.gangzhu.activity.domain.HzActivity;
@@ -37,6 +39,7 @@ public class HzActivityAppController extends BaseController {
      * 查询人才家园活动列表（用户端）
      * 只返回状态为正常的活动
      */
+    @Anonymous
     @GetMapping("/list")
     public TableDataInfo list(HzActivity activity) {
         // 只查询状态正常的活动
@@ -54,6 +57,7 @@ public class HzActivityAppController extends BaseController {
     /**
      * 获取人才家园活动详细信息（用户端）
      */
+    @Anonymous
     @GetMapping(value = "/{activityId}")
     public AjaxResult getInfo(@PathVariable("activityId") Long activityId) {
         HzActivity activity = activityService.getById(activityId);
@@ -75,7 +79,7 @@ public class HzActivityAppController extends BaseController {
     @PostMapping("/register")
     public AjaxResult register(@RequestBody Map<String, Object> params) {
         Long activityId = Long.valueOf(params.get("activityId").toString());
-        Long userId = Long.valueOf(params.get("userId").toString());
+        Long userId = SecurityUtils.getHzUserId();
         String realName = params.get("realName") != null ? params.get("realName").toString() : null;
         String phone = params.get("phone") != null ? params.get("phone").toString() : null;
 
@@ -92,7 +96,7 @@ public class HzActivityAppController extends BaseController {
     @GetMapping("/check-registered/{activityId}")
     public AjaxResult checkRegistered(@PathVariable("activityId") Long activityId,
                                        @RequestParam("userId") Long userId) {
-        boolean registered = registrationService.isRegistered(activityId, userId);
+        boolean registered = registrationService.isRegistered(activityId, SecurityUtils.requireCurrentHzUser(userId));
         AjaxResult result = success();
         result.put("registered", registered);
         return result;
@@ -103,7 +107,7 @@ public class HzActivityAppController extends BaseController {
      */
     @GetMapping("/my-registrations")
     public AjaxResult myRegistrations(@RequestParam("userId") Long userId) {
-        List<HzActivityRegistration> list = registrationService.getMyRegistrations(userId);
+        List<HzActivityRegistration> list = registrationService.getMyRegistrations(SecurityUtils.requireCurrentHzUser(userId));
         return success(list);
     }
 
@@ -113,7 +117,7 @@ public class HzActivityAppController extends BaseController {
      */
     @GetMapping("/user-projects")
     public AjaxResult userProjects(@RequestParam("userId") Long userId) {
-        Set<String> projectIds = registrationService.getUserProjectIds(userId);
+        Set<String> projectIds = registrationService.getUserProjectIds(SecurityUtils.requireCurrentHzUser(userId));
         return success(projectIds);
     }
 }

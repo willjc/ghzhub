@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,13 +20,13 @@ import org.springframework.web.multipart.MultipartFile;
 import com.ruoyi.common.config.RuoYiConfig;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.file.FileUploadUtils;
 import com.ruoyi.system.domain.HzDocument;
-import com.ruoyi.system.domain.HzTenant;
-import com.ruoyi.system.mapper.HzContractMapper;
+import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.service.IHzDocumentService;
 import com.ruoyi.system.service.IHzHouseOrderService;
-import com.ruoyi.system.service.IHzTenantService;
+import com.ruoyi.system.service.IHzContractService;
 import com.ruoyi.system.service.IHzUserMessageService;
 
 /**
@@ -41,7 +42,7 @@ public class HzDocumentController extends BaseController {
     private IHzDocumentService documentService;
 
     @Autowired
-    private IHzTenantService tenantService;
+    private IHzContractService contractService;
 
     @Autowired
     private IHzHouseOrderService orderService;
@@ -49,22 +50,13 @@ public class HzDocumentController extends BaseController {
     @Autowired
     private IHzUserMessageService messageService;
 
-    @Autowired
-    private HzContractMapper contractMapper;
-
     /**
      * 查询当前用户的资料列表
      */
     @GetMapping("/list")
     public AjaxResult list() {
-        // TODO: 从登录态获取userId
-        Long userId = 1L;
-        HzTenant tenant = tenantService.selectTenantByUserId(userId);
-        if (tenant == null) {
-            return error("请先完善租户信息");
-        }
-
-        List<HzDocument> list = documentService.selectDocumentListByTenantId(tenant.getTenantId());
+        Long userId = SecurityUtils.getHzUserId();
+        List<HzDocument> list = documentService.selectDocumentListByTenantId(userId);
         return success(list);
     }
 
@@ -74,6 +66,10 @@ public class HzDocumentController extends BaseController {
     @GetMapping("/{documentId}")
     public AjaxResult getInfo(@PathVariable("documentId") Long documentId) {
         HzDocument document = documentService.selectDocumentById(documentId);
+        if (document == null) {
+            return error("资料不存在");
+        }
+        SecurityUtils.requireCurrentHzUser(document.getTenantId());
         return success(document);
     }
 
@@ -82,15 +78,9 @@ public class HzDocumentController extends BaseController {
      */
     @GetMapping("/type/{documentType}")
     public AjaxResult listByType(@PathVariable("documentType") String documentType) {
-        // TODO: 从登录态获取userId
-        Long userId = 1L;
-        HzTenant tenant = tenantService.selectTenantByUserId(userId);
-        if (tenant == null) {
-            return error("请先完善租户信息");
-        }
-
+        Long userId = SecurityUtils.getHzUserId();
         List<HzDocument> list = documentService.selectDocumentListByTenantIdAndType(
-                tenant.getTenantId(), documentType);
+                userId, documentType);
         return success(list);
     }
 
@@ -109,8 +99,12 @@ public class HzDocumentController extends BaseController {
         if (file == null || file.isEmpty()) {
             return error("请选择要上传的文件");
         }
-        if (tenantId == null) {
-            return error("用户未登录");
+        tenantId = SecurityUtils.getHzUserId();
+        if (contractId != null) {
+            HzContract contract = contractService.selectContractById(contractId);
+            if (contract == null || !tenantId.equals(contract.getTenantId())) {
+                return error("合同不存在或无权操作");
+            }
         }
         try {
             // 保存文件，返回相对路径 /profile/upload/...
@@ -167,12 +161,7 @@ public class HzDocumentController extends BaseController {
      */
     @DeleteMapping("/{documentId}")
     public AjaxResult delete(@PathVariable("documentId") Long documentId) {
-        // TODO: 从登录态获取userId
-        Long userId = 1L;
-        HzTenant tenant = tenantService.selectTenantByUserId(userId);
-        if (tenant == null) {
-            return error("请先完善租户信息");
-        }
+        Long userId = SecurityUtils.getHzUserId();
 
         // 校验资料是否存在
         HzDocument existDocument = documentService.selectDocumentById(documentId);
@@ -181,7 +170,7 @@ public class HzDocumentController extends BaseController {
         }
 
         // 校验是否属于当前租户
-        if (!existDocument.getTenantId().equals(tenant.getTenantId())) {
+        if (!userId.equals(existDocument.getTenantId())) {
             return error("无权操作此资料");
         }
 
@@ -201,6 +190,7 @@ public class HzDocumentController extends BaseController {
      */
     @GetMapping("/status/{userId}")
     public AjaxResult getDocumentStatus(@PathVariable Long userId) {
+        SecurityUtils.requireCurrentHzUser(userId);
         Map<String, Object> result = new HashMap<>();
 
         // 【暂时关闭】资料上传功能暂时关闭，签约后无资料可传，
@@ -244,6 +234,7 @@ public class HzDocumentController extends BaseController {
      * auditStatus: 1=通过, 2=拒绝
      */
     @PutMapping("/audit")
+    @PreAuthorize("@ss.hasPermi('gangzhu:document:audit')")
     public AjaxResult audit(@RequestBody HzDocument document) {
         if (document.getDocumentId() == null || document.getAuditStatus() == null) {
             return error("参数不完整");
@@ -298,6 +289,7 @@ public class HzDocumentController extends BaseController {
         if (exist == null) {
             return error("资料不存在");
         }
+        SecurityUtils.requireCurrentHzUser(exist.getTenantId());
         if (!"2".equals(exist.getAuditStatus())) {
             return error("仅被驳回的资料可以重新上传");
         }
@@ -341,6 +333,7 @@ public class HzDocumentController extends BaseController {
      * 请求体：{ "documentId": 1, "violationReason": "..." }
      */
     @PutMapping("/violation")
+    @PreAuthorize("@ss.hasPermi('gangzhu:document:audit')")
     public AjaxResult markViolation(@RequestBody Map<String, Object> body) {
         Object idObj = body.get("documentId");
         String reason = body.get("violationReason") == null ? "" : String.valueOf(body.get("violationReason")).trim();

@@ -4,6 +4,7 @@ import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzSubsidyApply;
 import com.ruoyi.system.service.IHzSubsidyApplyService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,7 @@ public class HzSubsidyApplyAppController extends BaseController
     public AjaxResult myList(@RequestParam("tenantId") Long tenantId,
                              @RequestParam(required = false) String approveStatus)
     {
-        if (tenantId == null) return error("租户ID不能为空");
+        tenantId = SecurityUtils.getHzUserId();
         List<HzSubsidyApply> list = applyService.selectMyApplies(tenantId, approveStatus);
         return success(list);
     }
@@ -37,6 +38,7 @@ public class HzSubsidyApplyAppController extends BaseController
     {
         HzSubsidyApply apply = applyService.selectApplyById(applyId);
         if (apply == null) return error("申请不存在");
+        SecurityUtils.requireCurrentHzUser(apply.getTenantId());
         return success(apply);
     }
 
@@ -47,6 +49,7 @@ public class HzSubsidyApplyAppController extends BaseController
     @PostMapping("/submit")
     public AjaxResult submit(@RequestBody HzSubsidyApply apply)
     {
+        apply.setTenantId(SecurityUtils.getHzUserId());
         return toAjax(applyService.submitApply(apply));
     }
 }

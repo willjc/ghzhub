@@ -12,6 +12,7 @@ import com.ruoyi.common.constant.Constants;
 import com.ruoyi.common.constant.HttpStatus;
 import com.ruoyi.common.core.domain.entity.SysRole;
 import com.ruoyi.common.core.domain.model.LoginUser;
+import com.ruoyi.common.core.domain.model.HzLoginUser;
 import com.ruoyi.common.exception.ServiceException;
 
 /**
@@ -35,6 +36,69 @@ public class SecurityUtils
         {
             throw new ServiceException("获取用户ID异常", HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    /**
+     * 获取当前微信小程序用户ID。
+     */
+    public static Long getHzUserId()
+    {
+        try
+        {
+            Object principal = getAuthentication().getPrincipal();
+            if (principal instanceof HzLoginUser)
+            {
+                return ((HzLoginUser) principal).getUserId();
+            }
+            throw new ServiceException("当前身份不是微信用户", HttpStatus.UNAUTHORIZED);
+        }
+        catch (ServiceException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new ServiceException("用户未登录或登录已过期", HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    /**
+     * 获取可选的微信小程序用户ID，供允许匿名浏览但登录后有差异化结果的接口使用。
+     */
+    public static Long getHzUserIdOrNull()
+    {
+        Authentication authentication = getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof HzLoginUser)
+        {
+            return ((HzLoginUser) authentication.getPrincipal()).getUserId();
+        }
+        return null;
+    }
+
+    /**
+     * 校验请求中的用户ID只能是当前微信用户。
+     */
+    public static Long requireCurrentHzUser(Long requestedUserId)
+    {
+        Long currentUserId = getHzUserId();
+        if (requestedUserId == null || !currentUserId.equals(requestedUserId))
+        {
+            throw new ServiceException("无权访问其他用户数据", HttpStatus.FORBIDDEN);
+        }
+        return currentUserId;
+    }
+
+    /**
+     * 获取当前微信小程序会话。
+     */
+    public static HzLoginUser getHzLoginUser()
+    {
+        Object principal = getAuthentication() == null ? null : getAuthentication().getPrincipal();
+        if (principal instanceof HzLoginUser)
+        {
+            return (HzLoginUser) principal;
+        }
+        throw new ServiceException("用户未登录或登录已过期", HttpStatus.UNAUTHORIZED);
     }
 
     /**

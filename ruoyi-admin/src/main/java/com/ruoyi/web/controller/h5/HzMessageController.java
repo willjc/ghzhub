@@ -2,6 +2,7 @@ package com.ruoyi.web.controller.h5;
 
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzMessage;
 import com.ruoyi.system.domain.HzTenant;
 import com.ruoyi.system.service.IHzMessageService;
@@ -33,7 +34,7 @@ public class HzMessageController extends BaseController
     public AjaxResult list()
     {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null)
         {
@@ -51,7 +52,7 @@ public class HzMessageController extends BaseController
     public AjaxResult unreadList()
     {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null)
         {
@@ -69,7 +70,7 @@ public class HzMessageController extends BaseController
     public AjaxResult unreadCount()
     {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null)
         {
@@ -87,8 +88,7 @@ public class HzMessageController extends BaseController
     public AjaxResult getInfo(@PathVariable("messageId") Long messageId)
     {
         HzMessage message = messageService.selectMessageById(messageId);
-
-        // TODO: 校验消息是否属于当前用户
+        requireOwnedMessage(message);
 
         // 自动标记为已读
         if (message != null && "0".equals(message.getIsRead()))
@@ -105,7 +105,7 @@ public class HzMessageController extends BaseController
     @PutMapping("/read/{messageId}")
     public AjaxResult markAsRead(@PathVariable("messageId") Long messageId)
     {
-        // TODO: 校验消息是否属于当前用户
+        requireOwnedMessage(messageService.selectMessageById(messageId));
 
         int result = messageService.markMessageAsRead(messageId);
         return result > 0 ? success() : error("操作失败");
@@ -117,7 +117,9 @@ public class HzMessageController extends BaseController
     @PutMapping("/readBatch")
     public AjaxResult markAsReadBatch(@RequestBody Long[] messageIds)
     {
-        // TODO: 校验消息是否属于当前用户
+        for (Long messageId : messageIds) {
+            requireOwnedMessage(messageService.selectMessageById(messageId));
+        }
 
         int result = messageService.markMessagesAsRead(messageIds);
         return result > 0 ? success() : error("操作失败");
@@ -130,7 +132,7 @@ public class HzMessageController extends BaseController
     public AjaxResult markAllAsRead()
     {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null)
         {
@@ -157,9 +159,16 @@ public class HzMessageController extends BaseController
     @DeleteMapping("/{messageId}")
     public AjaxResult delete(@PathVariable("messageId") Long messageId)
     {
-        // TODO: 校验消息是否属于当前用户
+        requireOwnedMessage(messageService.selectMessageById(messageId));
 
         int result = messageService.deleteMessageById(messageId);
         return result > 0 ? success() : error("删除失败");
+    }
+
+    private void requireOwnedMessage(HzMessage message) {
+        if (message == null) throw new com.ruoyi.common.exception.ServiceException("消息不存在");
+        HzTenant tenant = tenantService.selectTenantById(message.getTenantId());
+        if (tenant == null) throw new com.ruoyi.common.exception.ServiceException("租户信息不存在");
+        SecurityUtils.requireCurrentHzUser(tenant.getUserId());
     }
 }

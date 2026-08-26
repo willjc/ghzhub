@@ -173,10 +173,8 @@
 					sourceType: ['album', 'camera'],
 					success: (res) => {
 						const tempFilePath = res.tempFilePaths[0]
-						const userId = uni.getStorageSync('userId') || 1
-
-						uni.showLoading({ title: '上传中...' })
-						uploadAvatar(tempFilePath, userId).then(uploadRes => {
+							uni.showLoading({ title: '上传中...' })
+							uploadAvatar(tempFilePath).then(uploadRes => {
 							uni.hideLoading()
 							if (uploadRes.code === 200) {
 								this.userInfo.avatar = uploadRes.fileName
@@ -268,9 +266,8 @@
 
 			// 保存用户信息
 			saveUserInfo(data) {
-				const userId = uni.getStorageSync('userId') || 1
-				uni.showLoading({ title: '保存中...' })
-				updateUser({ userId, ...data }).then(res => {
+					uni.showLoading({ title: '保存中...' })
+					updateUser(data).then(res => {
 					uni.hideLoading()
 					if (res.code === 200) {
 						// 更新本地数据

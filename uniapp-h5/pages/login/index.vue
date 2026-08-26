@@ -28,20 +28,7 @@
 			<!-- #endif -->
 
 			<!-- #ifdef H5 -->
-			<!-- H5环境：手机号登录 -->
-			<view class="phone-input-wrapper">
-				<input
-					class="phone-input"
-					v-model="phone"
-					type="number"
-					maxlength="11"
-					placeholder="请输入手机号"
-					placeholder-class="phone-placeholder"
-				/>
-			</view>
-			<view class="login-btn phone-btn" :class="{ disabled: loading || !agreed }" @click="handlePhoneLogin">
-				<text class="btn-text">{{ loading ? '登录中...' : '登录' }}</text>
-			</view>
+			<view class="h5-login-tip">当前仅支持微信小程序登录，请在微信中打开港好住小程序。</view>
 			<!-- #endif -->
 
 			<!-- 隐私协议勾选 -->
@@ -65,18 +52,11 @@
 	import { wxLogin } from '@/api/auth'
 	// #endif
 
-	// #ifdef H5
-	import { login } from '@/api/auth'
-	// #endif
-
 	export default {
 		data() {
 			return {
 					loading: false,
-				agreed: false,
-				// #ifdef H5
-				phone: ''
-				// #endif
+				agreed: false
 			}
 		},
 		methods: {
@@ -171,54 +151,6 @@
 
 				} catch (error) {
 					console.error('微信登录失败:', error)
-					uni.showToast({
-						title: error.message || error.msg || '登录失败',
-						icon: 'none'
-					})
-				} finally {
-					this.loading = false
-				}
-			},
-			// #endif
-
-			// #ifdef H5
-			/**
-			 * H5环境：手机号登录
-			 */
-			async handlePhoneLogin() {
-				if (this.loading) return
-
-				// 检查是否同意协议
-				if (!this.checkAgreement()) return
-
-				const phone = this.phone.trim()
-				if (!phone || phone.length !== 11) {
-					uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
-					return
-				}
-
-				this.loading = true
-
-				try {
-					const response = await login({
-						loginType: 'wechat',
-						phone: phone,
-						openId: 'h5_' + phone,
-						nickname: 'H5用户'
-					})
-
-					uni.setStorageSync('token', response.data.token)
-					uni.setStorageSync('userId', response.data.userInfo.userId)
-					uni.setStorageSync('userInfo', response.data.userInfo)
-
-					uni.showToast({ title: '登录成功', icon: 'success' })
-
-					setTimeout(() => {
-						uni.reLaunch({ url: '/pages/index/index' })
-					}, 1000)
-
-				} catch (error) {
-					console.error('H5登录失败:', error)
 					uni.showToast({
 						title: error.message || error.msg || '登录失败',
 						icon: 'none'
@@ -323,6 +255,15 @@
 		box-shadow: 0 20rpx 60rpx rgba(0,0,0,0.2);
 		position: relative;
 		z-index: 1;
+	}
+
+	.h5-login-tip {
+		padding: 28rpx;
+		line-height: 1.7;
+		font-size: 28rpx;
+		color: #666;
+		background: #f7f8fa;
+		border-radius: 16rpx;
 	}
 
 	.card-title {

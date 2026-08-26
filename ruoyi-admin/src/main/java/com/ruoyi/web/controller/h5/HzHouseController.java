@@ -1,6 +1,7 @@
 package com.ruoyi.web.controller.h5;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.system.domain.HzHouse;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/h5/house")
+@Anonymous
 public class HzHouseController extends BaseController
 {
     @Autowired

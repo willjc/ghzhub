@@ -6,6 +6,7 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.file.FileUploadUtils;
 import com.ruoyi.system.domain.HzUser;
 import com.ruoyi.system.service.IHzUserService;
@@ -16,7 +17,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.HashMap;
 import java.util.Map;
 
-import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * 用户端 - 用户信息Controller
@@ -30,20 +30,12 @@ public class HzUserAppController extends BaseController {
     @Autowired
     private IHzUserService hzUserService;
 
-    @Autowired
-    private HttpServletRequest request;
-
     /**
      * 获取当前登录用户信息
      */
     @GetMapping("/info")
     public AjaxResult getInfo() {
-        // TODO: 从token或session中获取当前用户ID
-        // 临时方案：从请求参数获取
         Long userId = getCurrentUserId();
-        if (userId == null) {
-            return error("用户未登录");
-        }
 
         HzUser user = hzUserService.selectHzUserById(userId);
         if (user == null) {
@@ -64,9 +56,6 @@ public class HzUserAppController extends BaseController {
     @GetMapping("/auth-status")
     public AjaxResult getUserAuthStatus() {
         Long userId = getCurrentUserId();
-        if (userId == null) {
-            return error("用户未登录");
-        }
         HzUser user = hzUserService.selectHzUserById(userId);
         if (user == null) {
             return error("用户不存在");
@@ -86,11 +75,7 @@ public class HzUserAppController extends BaseController {
     @PostMapping("/uploadWorkProof")
     public AjaxResult uploadWorkProof(@RequestParam("file") MultipartFile file) {
         try {
-            // TODO: 从token或session中获取当前用户ID
             Long userId = getCurrentUserId();
-            if (userId == null) {
-                return error("用户未登录");
-            }
 
             HzUser user = hzUserService.selectHzUserById(userId);
             if (user == null) {
@@ -120,23 +105,29 @@ public class HzUserAppController extends BaseController {
     @Log(title = "更新用户信息", businessType = BusinessType.UPDATE)
     @PutMapping("/update")
     public AjaxResult update(@RequestBody HzUser hzUser) {
-        // TODO: 从token或session中获取当前用户ID
         Long userId = getCurrentUserId();
-        if (userId == null) {
-            return error("用户未登录");
+
+        HzUser existUser = hzUserService.selectHzUserById(userId);
+        if (existUser == null) {
+            return error("用户不存在");
         }
 
-        // 确保只能修改自己的信息
-        hzUser.setUserId(userId);
+        // 用户资料页只允许修改展示字段，认证状态、手机号、openid等敏感字段不能批量覆盖。
+        if (hzUser.getNickname() != null) {
+            existUser.setNickname(hzUser.getNickname());
+        }
+        if (hzUser.getRealName() != null) {
+            existUser.setRealName(hzUser.getRealName());
+        }
 
         // 性别编码转换：用户端(小程序/H5)传入若依标准编码 0=男/1=女/2=未知，
         // 落库前转换回库内存储编码 1=男/2=女/0=未知。
         // 仅当本次请求携带 gender 时才转换，避免误改其它字段的部分更新。
         if (StringUtils.isNotEmpty(hzUser.getGender())) {
-            hzUser.setGender(genderAppToStored(hzUser.getGender()));
+            existUser.setGender(genderAppToStored(hzUser.getGender()));
         }
 
-        return toAjax(hzUserService.updateById(hzUser));
+        return toAjax(hzUserService.updateById(existUser));
     }
 
     /**
@@ -147,10 +138,6 @@ public class HzUserAppController extends BaseController {
     public AjaxResult uploadAvatar(@RequestParam("file") MultipartFile file) {
         try {
             Long userId = getCurrentUserId();
-            if (userId == null) {
-                return error("用户未登录");
-            }
-
             HzUser user = hzUserService.selectHzUserById(userId);
             if (user == null) {
                 return error("用户不存在");
@@ -173,21 +160,8 @@ public class HzUserAppController extends BaseController {
         }
     }
 
-    /**
-     * 临时方法：获取当前用户ID
-     * TODO: 实现JWT认证后，从token中获取
-     */
     protected Long getCurrentUserId() {
-        // 临时方案：从请求头或参数获取
-        String userIdStr = request.getParameter("userId");
-        if (StringUtils.isNotEmpty(userIdStr)) {
-            try {
-                return Long.parseLong(userIdStr);
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
-        return null;
+        return SecurityUtils.getHzUserId();
     }
 
     /**

@@ -1,7 +1,9 @@
 package com.ruoyi.web.controller.h5;
 
+import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzAppointment;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.service.IHzAppointmentService;
@@ -32,6 +34,7 @@ public class HzAppointmentController extends BaseController {
      */
     @GetMapping("/user/{userId}")
     public AjaxResult list(@PathVariable Long userId) {
+        SecurityUtils.requireCurrentHzUser(userId);
         List<HzAppointment> list = appointmentService.selectAppointmentListByUserId(userId);
         return success(list);
     }
@@ -42,6 +45,10 @@ public class HzAppointmentController extends BaseController {
     @GetMapping("/{appointmentId}")
     public AjaxResult getInfo(@PathVariable("appointmentId") Long appointmentId) {
         HzAppointment appointment = appointmentService.selectAppointmentById(appointmentId);
+        if (appointment == null) {
+            return error("预约不存在");
+        }
+        SecurityUtils.requireCurrentHzUser(appointment.getTenantId());
         return success(appointment);
     }
 
@@ -50,6 +57,7 @@ public class HzAppointmentController extends BaseController {
      */
     @PostMapping("/apply")
     public AjaxResult apply(@RequestBody HzAppointment appointment) {
+        appointment.setTenantId(SecurityUtils.getHzUserId());
         // 校验房源是否存在
         HzHouse house = houseService.selectHouseById(appointment.getHouseId());
         if (house == null) {
@@ -86,6 +94,7 @@ public class HzAppointmentController extends BaseController {
         if (existAppointment == null) {
             return error("预约不存在");
         }
+        SecurityUtils.requireCurrentHzUser(existAppointment.getTenantId());
 
         // 只有待确认状态可以修改
         if (!"0".equals(existAppointment.getAppointmentStatus())) {
@@ -117,6 +126,7 @@ public class HzAppointmentController extends BaseController {
         if (existAppointment == null) {
             return error("预约不存在");
         }
+        SecurityUtils.requireCurrentHzUser(existAppointment.getTenantId());
 
         // 只有待确认或已确认状态可以取消
         if (!"0".equals(existAppointment.getAppointmentStatus()) &&
@@ -140,6 +150,7 @@ public class HzAppointmentController extends BaseController {
         if (existAppointment == null) {
             return error("预约不存在");
         }
+        SecurityUtils.requireCurrentHzUser(existAppointment.getTenantId());
 
         try {
             int result = appointmentService.confirmViewing(appointmentId);
@@ -153,6 +164,7 @@ public class HzAppointmentController extends BaseController {
      * 检查时间段是否可预约
      */
     @GetMapping("/checkTimeSlot")
+    @Anonymous
     public AjaxResult checkTimeSlot(
             @RequestParam Long houseId,
             @RequestParam String appointmentDate,

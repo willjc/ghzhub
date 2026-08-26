@@ -2,6 +2,7 @@ package com.ruoyi.web.controller.h5;
 
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzCheckIn;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzTenant;
@@ -37,7 +38,7 @@ public class HzCheckInController extends BaseController {
     @GetMapping("/list")
     public AjaxResult list() {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -53,6 +54,8 @@ public class HzCheckInController extends BaseController {
     @GetMapping("/{checkInId}")
     public AjaxResult getInfo(@PathVariable("checkInId") Long checkInId) {
         HzCheckIn checkIn = checkInService.selectCheckInById(checkInId);
+        if (checkIn == null) return error("入住申请不存在");
+        SecurityUtils.requireCurrentHzUser(requireTenant(checkIn.getTenantId()).getUserId());
         return success(checkIn);
     }
 
@@ -62,7 +65,7 @@ public class HzCheckInController extends BaseController {
     @PostMapping("/apply")
     public AjaxResult apply(@RequestBody HzCheckIn checkIn) {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -104,7 +107,7 @@ public class HzCheckInController extends BaseController {
     @PutMapping("/update")
     public AjaxResult update(@RequestBody HzCheckIn checkIn) {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -136,7 +139,7 @@ public class HzCheckInController extends BaseController {
     @DeleteMapping("/{checkInId}")
     public AjaxResult cancel(@PathVariable("checkInId") Long checkInId) {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -160,5 +163,11 @@ public class HzCheckInController extends BaseController {
 
         int result = checkInService.deleteCheckInById(checkInId);
         return result > 0 ? success() : error("取消失败");
+    }
+
+    private HzTenant requireTenant(Long tenantId) {
+        HzTenant tenant = tenantService.selectTenantById(tenantId);
+        if (tenant == null) throw new com.ruoyi.common.exception.ServiceException("租户信息不存在");
+        return tenant;
     }
 }

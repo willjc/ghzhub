@@ -1,5 +1,6 @@
 package com.ruoyi.web.controller.h5;
 
+import com.ruoyi.common.annotation.Anonymous;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
@@ -24,6 +25,7 @@ import com.ruoyi.system.service.IHzAppointmentService;
 import com.ruoyi.system.service.IHzHouseFacilityService;
 import com.ruoyi.system.service.IHzHouseTypeFacilityService;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
@@ -104,6 +106,7 @@ public class HzHouseAppController extends BaseController {
      * @param projectType 项目类型（1:人才公寓 2:保租房 3:市场租赁）
      * @param limit 限制返回数量，默认10条
      */
+    @Anonymous
     @GetMapping("/listByProjectType/{projectType}")
     public AjaxResult listByProjectType(
             @PathVariable String projectType,
@@ -199,6 +202,7 @@ public class HzHouseAppController extends BaseController {
      * 获取房源列表（按楼层分组）
      * 支持筛选: 楼栋、单元、户型、楼层范围、朝向
      */
+    @Anonymous
     @GetMapping("/list")
     public AjaxResult list(
             @RequestParam Long projectId,
@@ -212,7 +216,7 @@ public class HzHouseAppController extends BaseController {
         // 先获取当前登录用户"分配给我"的房源ID集合（批量配租房源），用于后续 SQL 过滤 + available 标记
         Set<Long> assignedHouseIds = new HashSet<>();
         boolean isPreview = false;   // 是否为预览账号（白名单）
-        Long userId = getHzUserIdFromToken();
+        Long userId = SecurityUtils.getHzUserIdOrNull();
         if (userId != null) {
             HzUser user = userMapper.selectById(userId);
             if (user != null) {
@@ -326,6 +330,7 @@ public class HzHouseAppController extends BaseController {
     /**
      * 获取房源详情
      */
+    @Anonymous
     @GetMapping("/{houseId}")
     public AjaxResult getDetail(@PathVariable Long houseId) {
         HzHouse house = houseMapper.selectById(houseId);
@@ -378,7 +383,7 @@ public class HzHouseAppController extends BaseController {
 
         // 判断当前用户是否为该房源的批次配租用户
         boolean isBatchAssigned = false;
-        Long userId = getHzUserIdFromToken();
+        Long userId = SecurityUtils.getHzUserIdOrNull();
         if (userId != null) {
             HzUser user = userMapper.selectById(userId);
             if (user != null) {
@@ -410,6 +415,7 @@ public class HzHouseAppController extends BaseController {
     /**
      * 获取房源图片列表（按分类）
      */
+    @Anonymous
     @GetMapping("/{houseId}/images")
     public AjaxResult getImages(@PathVariable Long houseId) {
         // 查询房源图片
@@ -459,6 +465,7 @@ public class HzHouseAppController extends BaseController {
     /**
      * 获取房源VR列表
      */
+    @Anonymous
     @GetMapping("/{houseId}/vr")
     public AjaxResult getVrList(@PathVariable Long houseId) {
         QueryWrapper<com.ruoyi.system.domain.HzHouseVr> wrapper = new QueryWrapper<>();
@@ -558,10 +565,7 @@ public class HzHouseAppController extends BaseController {
         appointment.setProjectId(house.getProjectId());
 
         // 从token中解析hz_user的ID
-        Long hzUserId = getHzUserIdFromToken();
-        if (hzUserId == null) {
-            return error("请先登录");
-        }
+        Long hzUserId = SecurityUtils.getHzUserId();
         appointment.setTenantId(hzUserId);
 
         // 设置预约来源
@@ -584,6 +588,7 @@ public class HzHouseAppController extends BaseController {
      * 查询房源设施列表（H5端）
      * 三级fallback：房源设施表 → 户型设施表 → 旧字段
      */
+    @Anonymous
     @GetMapping("/facilities/{houseId}")
     public AjaxResult getHouseFacilities(@PathVariable Long houseId) {
         // 1. 优先查询房源设施新表
@@ -624,36 +629,4 @@ public class HzHouseAppController extends BaseController {
         return success(new ArrayList<>());
     }
 
-    /**
-     * 从请求头中的Token解析出hz_user的ID
-     * Token格式：hz_token_{userId}_{timestamp}
-     */
-    private Long getHzUserIdFromToken() {
-        try {
-            HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-            String token = request.getHeader("Authorization");
-
-            if (token == null || token.isEmpty()) {
-                return null;
-            }
-
-            // 移除 "Bearer " 前缀（如果有）
-            if (token.startsWith("Bearer ")) {
-                token = token.substring(7);
-            }
-
-            // 解析token: hz_token_{userId}_{timestamp}
-            if (token.startsWith("hz_token_")) {
-                String[] parts = token.split("_");
-                if (parts.length >= 3) {
-                    return Long.parseLong(parts[2]); // parts[0]=hz, parts[1]=token, parts[2]=userId
-                }
-            }
-
-            return null;
-        } catch (Exception e) {
-            logger.error("解析token失败", e);
-            return null;
-        }
-    }
 }

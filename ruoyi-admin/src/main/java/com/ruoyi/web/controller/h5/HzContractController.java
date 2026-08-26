@@ -2,6 +2,7 @@ package com.ruoyi.web.controller.h5;
 
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzTenant;
 import com.ruoyi.system.service.IHzContractService;
@@ -32,7 +33,7 @@ public class HzContractController extends BaseController {
     @GetMapping("/list")
     public AjaxResult list() {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -48,6 +49,8 @@ public class HzContractController extends BaseController {
     @GetMapping("/{contractId}")
     public AjaxResult getInfo(@PathVariable("contractId") Long contractId) {
         HzContract contract = contractService.selectContractById(contractId);
+        if (contract == null) return error("合同不存在");
+        requireOwnedContract(contract);
         return success(contract);
     }
 
@@ -60,6 +63,13 @@ public class HzContractController extends BaseController {
         if (contract == null) {
             return error("合同不存在");
         }
+        requireOwnedContract(contract);
         return success(contract.getContractFile());
+    }
+
+    private void requireOwnedContract(HzContract contract) {
+        HzTenant tenant = tenantService.selectTenantById(contract.getTenantId());
+        if (tenant == null) throw new com.ruoyi.common.exception.ServiceException("租户信息不存在");
+        SecurityUtils.requireCurrentHzUser(tenant.getUserId());
     }
 }

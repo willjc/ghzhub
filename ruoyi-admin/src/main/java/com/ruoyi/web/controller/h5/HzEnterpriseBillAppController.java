@@ -4,6 +4,7 @@ import com.ruoyi.common.config.RuoYiConfig;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.file.FileUploadUtils;
 import com.ruoyi.system.domain.HzEnterpriseBill;
 import com.ruoyi.system.domain.HzEnterpriseBatchHouse;
@@ -12,6 +13,7 @@ import com.ruoyi.system.mapper.HzEnterpriseBatchHouseMapper;
 import com.ruoyi.system.mapper.HzEnterpriseBatchMapper;
 import com.ruoyi.system.service.IHzEnterpriseBillService;
 import com.ruoyi.system.service.IHzEnterpriseCheckoutService;
+import com.ruoyi.system.service.IHzUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -47,14 +49,15 @@ public class HzEnterpriseBillAppController extends BaseController {
     @Autowired
     private ResourceLoader resourceLoader;
 
+    @Autowired
+    private IHzUserService userService;
+
     /**
      * 获取我的企业账单列表（根据登录用户手机号）
      */
     @GetMapping("/myBills")
     public AjaxResult getMyBills(@RequestParam String phone) {
-        if (phone == null || phone.trim().isEmpty()) {
-            return error("联系方式不能为空");
-        }
+        phone = currentPhone();
         List<HzEnterpriseBill> list = enterpriseBillService.selectBillsByContactPhone(phone);
         return success(list);
     }
@@ -65,9 +68,7 @@ public class HzEnterpriseBillAppController extends BaseController {
      */
     @GetMapping("/paidBills")
     public AjaxResult getPaidBills(@RequestParam String phone) {
-        if (phone == null || phone.trim().isEmpty()) {
-            return error("联系方式不能为空");
-        }
+        phone = currentPhone();
         List<HzEnterpriseBill> allBills = enterpriseBillService.selectBillsByContactPhone(phone);
         // 过滤出已支付状态的账单（不管是否已上传人员名单）
         List<HzEnterpriseBill> paidBills = new ArrayList<>();
@@ -88,6 +89,7 @@ public class HzEnterpriseBillAppController extends BaseController {
         if (bill == null) {
             return error("账单不存在");
         }
+        requireOwnedBill(bill);
 
         // 构建返回数据
         Map<String, Object> result = new HashMap<>();
@@ -159,6 +161,7 @@ public class HzEnterpriseBillAppController extends BaseController {
     public AjaxResult submitCheckin(@RequestParam("billId") Long billId,
                                      @RequestParam(value = "file", required = false) MultipartFile file) {
         try {
+            requireOwnedBill(requireBill(billId));
             String personnelFile = null;
             if (file != null && !file.isEmpty()) {
                 // 上传文件
@@ -208,7 +211,9 @@ public class HzEnterpriseBillAppController extends BaseController {
      */
     @GetMapping("/{billId}")
     public AjaxResult getInfo(@PathVariable("billId") Long billId) {
-        return success(enterpriseBillService.selectEnterpriseBillById(billId));
+        HzEnterpriseBill bill = requireBill(billId);
+        requireOwnedBill(bill);
+        return success(bill);
     }
 
     /**
@@ -227,9 +232,7 @@ public class HzEnterpriseBillAppController extends BaseController {
      */
     @GetMapping("/checkoutBills")
     public AjaxResult getCheckoutBills(@RequestParam String phone) {
-        if (phone == null || phone.trim().isEmpty()) {
-            return error("联系方式不能为空");
-        }
+        phone = currentPhone();
 
         List<HzEnterpriseBill> allBills = enterpriseBillService.selectBillsByContactPhone(phone);
         List<Map<String, Object>> result = new ArrayList<>();
@@ -293,6 +296,7 @@ public class HzEnterpriseBillAppController extends BaseController {
         if (billId == null) {
             return error("账单ID不能为空");
         }
+        requireOwnedBill(requireBill(billId));
 
         try {
             int result = checkoutService.submitCheckout(billId);
@@ -311,5 +315,25 @@ public class HzEnterpriseBillAppController extends BaseController {
         }
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
         return sdf.format(date);
+    }
+
+    private String currentPhone() {
+        com.ruoyi.system.domain.HzUser user = userService.selectHzUserById(SecurityUtils.getHzUserId());
+        if (user == null || StringUtils.isEmpty(user.getPhone())) {
+            throw new com.ruoyi.common.exception.ServiceException("当前用户手机号不存在");
+        }
+        return user.getPhone();
+    }
+
+    private HzEnterpriseBill requireBill(Long billId) {
+        HzEnterpriseBill bill = enterpriseBillService.selectEnterpriseBillById(billId);
+        if (bill == null) throw new com.ruoyi.common.exception.ServiceException("账单不存在");
+        return bill;
+    }
+
+    private void requireOwnedBill(HzEnterpriseBill bill) {
+        if (!currentPhone().equals(bill.getContactPhone())) {
+            throw new com.ruoyi.common.exception.ServiceException("无权操作此账单", 403);
+        }
     }
 }

@@ -235,3 +235,7 @@ gov:
 # 多个手机号用英文逗号分隔；留空则关闭此能力
 ghz:
   preview-phones: ${GHZ_PREVIEW_PHONES:}
+  # 客户要求保留的测试身份切换。权限只授予该手机号通过微信登录创建的服务端会话。
+  debug-switch:
+    enabled: ${GHZ_DEBUG_SWITCH_ENABLED:true}
+    operator-phone: ${GHZ_DEBUG_SWITCH_OPERATOR_PHONE:18539279011}

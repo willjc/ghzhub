@@ -8,8 +8,8 @@ import config from '@/config/index'
  * 获取当前用户信息
  * @param {Number} userId 用户ID（临时参数，后期会从token获取）
  */
-export function getUserInfo(userId) {
-  return get('/h5/user/info', { userId })
+export function getUserInfo() {
+  return get('/h5/user/info')
 }
 
 /**
@@ -17,9 +17,9 @@ export function getUserInfo(userId) {
  * @param {String} filePath 本地文件路径
  * @param {Number} userId 用户ID（临时参数）
  */
-export function uploadAvatar(filePath, userId) {
+export function uploadAvatar(filePath) {
   return new Promise((resolve, reject) => {
-    const fullUrl = config.uploadUrl + '/h5/user/uploadAvatar' + (userId ? `?userId=${userId}` : '')
+    const fullUrl = config.uploadUrl + '/h5/user/uploadAvatar'
 
     console.log('上传头像URL:', fullUrl)
     console.log('uploadUrl配置:', config.uploadUrl)
@@ -73,10 +73,10 @@ export function uploadAvatar(filePath, userId) {
  * @param {File} file 文件对象
  * @param {Number} userId 用户ID（临时参数）
  */
-export function uploadWorkProof(file, userId) {
+export function uploadWorkProof(file) {
   return new Promise((resolve, reject) => {
     // uni.uploadFile 需要完整的URL地址
-    const fullUrl = config.uploadUrl + '/h5/user/uploadWorkProof' + (userId ? `?userId=${userId}` : '')
+    const fullUrl = config.uploadUrl + '/h5/user/uploadWorkProof'
 
     uni.uploadFile({
       url: fullUrl,
@@ -125,11 +125,10 @@ export function uploadWorkProof(file, userId) {
  * @param {Object} userData 用户数据
  */
 export function updateUser(userData) {
-  const { userId, ...data } = userData
   return request({
-    url: '/h5/user/update' + (userId ? `?userId=${userId}` : ''),
+    url: '/h5/user/update',
     method: 'PUT',
-    data: data
+    data: userData
   })
 }
 

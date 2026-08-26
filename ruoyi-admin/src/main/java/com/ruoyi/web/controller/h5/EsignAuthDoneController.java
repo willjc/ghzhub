@@ -1,5 +1,6 @@
 package com.ruoyi.web.controller.h5;
 
+import com.ruoyi.common.annotation.Anonymous;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +19,7 @@ import java.io.PrintWriter;
 @RequestMapping("/h5/esign")
 public class EsignAuthDoneController {
 
+    @Anonymous
     @GetMapping("/auth-done")
     public void authDone(HttpServletResponse response) throws IOException {
         response.setContentType("text/html;charset=UTF-8");

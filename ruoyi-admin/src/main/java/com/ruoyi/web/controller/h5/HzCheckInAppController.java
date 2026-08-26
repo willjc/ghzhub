@@ -77,6 +77,7 @@ public class HzCheckInAppController extends BaseController {
     @GetMapping("/mylistings/{tenantId}")
     public AjaxResult getMyListings(@PathVariable Long tenantId) {
         try {
+            SecurityUtils.requireCurrentHzUser(tenantId);
             List<Map<String, Object>> listings = checkInMapper.selectMyListingsByTenantId(tenantId);
 
             // 组装前端需要的数据格式
@@ -188,6 +189,7 @@ public class HzCheckInAppController extends BaseController {
     @GetMapping("/list/{tenantId}")
     public AjaxResult getCheckInList(@PathVariable Long tenantId,
                                      @RequestParam(required = false) String projectType) {
+        SecurityUtils.requireCurrentHzUser(tenantId);
         List<HzCheckIn> list = checkInService.selectCheckInListByTenantId(tenantId, projectType);
 
         return success(list);
@@ -204,6 +206,7 @@ public class HzCheckInAppController extends BaseController {
     @GetMapping("/confirmed/{tenantId}")
     public AjaxResult getConfirmedCheckInList(@PathVariable Long tenantId,
                                               @RequestParam(required = false) String type) {
+        SecurityUtils.requireCurrentHzUser(tenantId);
         // 用合同ID去重，避免重复
         java.util.Set<Long> addedContractIds = new java.util.HashSet<>();
         List<Map<String, Object>> result = new java.util.ArrayList<>();
@@ -375,6 +378,9 @@ public class HzCheckInAppController extends BaseController {
         if (checkIn == null) {
             return error("入住单不存在");
         }
+        if (!SecurityUtils.getHzUserId().equals(checkIn.getTenantId())) {
+            return error("无权查看");
+        }
 
         // 组装返回数据
         Map<String, Object> result = new HashMap<>();
@@ -455,6 +461,9 @@ public class HzCheckInAppController extends BaseController {
             HzCheckIn checkIn = checkInService.selectCheckInById(recordId);
             if (checkIn == null) {
                 return error("入住单不存在");
+            }
+            if (!SecurityUtils.getHzUserId().equals(checkIn.getTenantId())) {
+                return error("无权操作");
             }
 
             // 检查状态
@@ -539,6 +548,9 @@ public class HzCheckInAppController extends BaseController {
         if (checkIn == null) {
             return error("未找到该合同的入住单");
         }
+        if (!SecurityUtils.getHzUserId().equals(checkIn.getTenantId())) {
+            return error("无权查看");
+        }
 
         // 组装返回数据
         Map<String, Object> result = new HashMap<>();
@@ -580,6 +592,9 @@ public class HzCheckInAppController extends BaseController {
             HzCheckIn checkIn = checkInService.selectCheckInById(recordId);
             if (checkIn == null) {
                 return error("入住单不存在");
+            }
+            if (!SecurityUtils.getHzUserId().equals(checkIn.getTenantId())) {
+                return error("无权查看");
             }
 
             // 检查状态
@@ -651,6 +666,9 @@ public class HzCheckInAppController extends BaseController {
             HzCheckIn checkIn = checkInService.selectCheckInById(recordId);
             if (checkIn == null) {
                 return error("入住单不存在");
+            }
+            if (!SecurityUtils.getHzUserId().equals(checkIn.getTenantId())) {
+                return error("无权操作");
             }
 
             // 检查状态
@@ -729,6 +747,9 @@ public class HzCheckInAppController extends BaseController {
             HzCheckIn checkIn = checkInService.selectCheckInById(recordId);
             if (checkIn == null) {
                 return error("入住单不存在");
+            }
+            if (!SecurityUtils.getHzUserId().equals(checkIn.getTenantId())) {
+                return error("无权操作");
             }
 
             // 检查状态 - 只有待审核状态(status='1')可以取消
@@ -917,6 +938,10 @@ public class HzCheckInAppController extends BaseController {
 
         if (contractId == null) {
             return AjaxResult.success(data);
+        }
+        com.ruoyi.system.domain.HzContract ownerContract = contractService.selectContractById(contractId);
+        if (ownerContract == null || !SecurityUtils.getHzUserId().equals(ownerContract.getTenantId())) {
+            return error("无权查看");
         }
 
         // 1. 配置开关 + 启用日 + 超时小时数

@@ -1,7 +1,9 @@
 package com.ruoyi.web.controller.h5;
 
+import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzUser;
 import com.ruoyi.system.mapper.HzContractMapper;
@@ -39,6 +41,7 @@ public class EsignController extends BaseController {
                                  @RequestParam(required = false) String realName,
                                  @RequestParam(required = false) String idCard,
                                  @RequestParam(required = false) String redirectUrl) {
+        userId = SecurityUtils.getHzUserId();
         HzUser user = userMapper.selectById(userId);
         if (user == null) return error("用户信息不存在，请先完善个人信息");
         if (user.getEsignPsnId() != null && !user.getEsignPsnId().isEmpty()) {
@@ -74,6 +77,7 @@ public class EsignController extends BaseController {
      */
     @GetMapping("/auth-status/{userId}")
     public AjaxResult getAuthStatus(@PathVariable Long userId) {
+        userId = SecurityUtils.getHzUserId();
         HzUser user = userMapper.selectById(userId);
         if (user == null) return error("用户信息不存在");
         if (user.getEsignPsnId() != null && !user.getEsignPsnId().isEmpty()) {
@@ -99,11 +103,14 @@ public class EsignController extends BaseController {
     public AjaxResult initSign(@RequestBody Map<String, Object> params) {
         Long contractId = params.containsKey("contractId")
                 ? Long.valueOf(params.get("contractId").toString()) : null;
-        Long userId = params.containsKey("userId")
-                ? Long.valueOf(params.get("userId").toString()) : null;
+        Long userId = SecurityUtils.getHzUserId();
         String platform = params.containsKey("platform") ? params.get("platform").toString() : "h5";
 
-        if (contractId == null || userId == null) return error("参数不完整");
+        if (contractId == null) return error("参数不完整");
+
+        HzContract contract = contractMapper.selectById(contractId);
+        if (contract == null) return error("合同不存在");
+        SecurityUtils.requireCurrentHzUser(contract.getTenantId());
 
         HzUser user = userMapper.selectById(userId);
         if (user == null) return error("用户信息不存在");
@@ -142,8 +149,10 @@ public class EsignController extends BaseController {
      */
     @GetMapping("/sign-url/{contractId}")
     public AjaxResult getSignUrl(@PathVariable Long contractId, @RequestParam Long userId) {
+        userId = SecurityUtils.getHzUserId();
         HzContract contract = contractMapper.selectById(contractId);
         if (contract == null) return error("合同不存在");
+        SecurityUtils.requireCurrentHzUser(contract.getTenantId());
         if ("2".equals(contract.getContractStatus())) return error("合同已签署");
 
         HzUser user = userMapper.selectById(userId);
@@ -175,28 +184,17 @@ public class EsignController extends BaseController {
     /**
      * e签宝回调通知
      */
+    @Anonymous
     @PostMapping("/notify")
     public ResponseEntity<Map<String, Object>> esignNotify(HttpServletRequest request, @RequestBody String body) {
         Map<String, Object> resp = new HashMap<>();
         try {
-            // 打印全部请求头，便于排查验签 header 名称
-            StringBuilder headerLog = new StringBuilder();
-            java.util.Enumeration<String> names = request.getHeaderNames();
-            while (names != null && names.hasMoreElements()) {
-                String n = names.nextElement();
-                headerLog.append(n).append("=").append(request.getHeader(n)).append("; ");
-            }
-            logger.info("e签宝回调 headers: {}", headerLog);
-            logger.info("e签宝回调 body: {}", body);
-
             // e签宝 V3 回调实际 header 名（TIMESTAMP/SIGNATURE 全大写）
             String timestamp = request.getHeader("X-Tsign-Open-TIMESTAMP");
             if (timestamp == null) timestamp = request.getHeader("X-Tsign-Open-Timestamp"); // 兼容
             String signature = request.getHeader("X-Tsign-Open-SIGNATURE");
             if (signature == null) signature = request.getHeader("X-Tsign-Open-Sign"); // 兼容旧名
             String requestQuery = request.getQueryString() != null ? request.getQueryString() : "";
-
-            logger.info("e签宝回调参数: timestamp={}, signature={}, requestQuery={}", timestamp, signature, requestQuery);
 
             esignService.handleSignCallback(timestamp, requestQuery, body, signature);
             resp.put("code", "0");
@@ -216,6 +214,9 @@ public class EsignController extends BaseController {
     @GetMapping("/check-sign/{contractId}")
     public AjaxResult checkSign(@PathVariable Long contractId) {
         try {
+            HzContract contract = contractMapper.selectById(contractId);
+            if (contract == null) return error("合同不存在");
+            SecurityUtils.requireCurrentHzUser(contract.getTenantId());
             boolean signed = esignService.checkAndFinalizeSignFlow(contractId);
             Map<String, Object> r = new HashMap<>();
             r.put("signed", signed);

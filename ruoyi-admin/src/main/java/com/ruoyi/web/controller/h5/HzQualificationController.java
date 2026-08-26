@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzBatchTenant;
 import com.ruoyi.system.domain.HzCommitment;
 import com.ruoyi.system.domain.HzQualification;
@@ -72,6 +73,7 @@ public class HzQualificationController extends BaseController {
      */
     @GetMapping("/is-batch-tenant")
     public AjaxResult isBatchTenant(@RequestParam Long userId) {
+        userId = SecurityUtils.getHzUserId();
         Map<String, Object> data = new HashMap<>();
         data.put("isBatchTenant", false);
         if (userId == null) {
@@ -121,9 +123,7 @@ public class HzQualificationController extends BaseController {
     @GetMapping("/status")
     public AjaxResult status(@RequestParam Long userId,
                              @RequestParam(defaultValue = "1") String applyType) {
-        if (userId == null) {
-            return error("用户未登录");
-        }
+        userId = SecurityUtils.getHzUserId();
         QualificationCheckResult result = qualificationCheckService.getStatus(userId, applyType);
         return success(result);
     }
@@ -134,9 +134,7 @@ public class HzQualificationController extends BaseController {
     @PostMapping("/check")
     public AjaxResult check(@RequestParam Long userId,
                             @RequestParam(defaultValue = "1") String applyType) {
-        if (userId == null) {
-            return error("用户未登录");
-        }
+        userId = SecurityUtils.getHzUserId();
         try {
             QualificationCheckResult result = qualificationCheckService.check(userId, applyType);
             return success(result);
@@ -152,8 +150,7 @@ public class HzQualificationController extends BaseController {
      */
     @GetMapping("/list")
     public AjaxResult list() {
-        // TODO: 从登录态获取userId
-        Long userId = 1L; // 暂时模拟
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -169,6 +166,10 @@ public class HzQualificationController extends BaseController {
     @GetMapping("/{qualificationId:\\d+}")
     public AjaxResult getInfo(@PathVariable("qualificationId") Long qualificationId) {
         HzQualification qualification = qualificationService.selectQualificationById(qualificationId);
+        if (qualification == null) {
+            return error("资格申请不存在");
+        }
+        SecurityUtils.requireCurrentHzUser(requireTenantUserId(qualification.getTenantId()));
         return success(qualification);
     }
 
@@ -177,8 +178,7 @@ public class HzQualificationController extends BaseController {
      */
     @PostMapping("/apply")
     public AjaxResult apply(@RequestBody HzQualification qualification) {
-        // TODO: 从登录态获取userId
-        Long userId = 1L; // 暂时模拟
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -201,11 +201,8 @@ public class HzQualificationController extends BaseController {
      */
     @PostMapping("/appeal")
     public AjaxResult appeal(@RequestBody HzQualificationAppeal appeal) {
-        // 从前端传递的参数中获取userId
-        Long userId = appeal.getUserId();
-        if (userId == null) {
-            return error("用户未登录");
-        }
+        Long userId = SecurityUtils.getHzUserId();
+        appeal.setUserId(userId);
 
         // 学历申诉不需要租户信息，直接使用用户ID
         appeal.setTenantId(userId);  // 这里tenant_id实际存储的是user_id
@@ -219,10 +216,7 @@ public class HzQualificationController extends BaseController {
      */
     @GetMapping("/appeal/list")
     public AjaxResult appealList(@RequestParam(required = false) Long userId) {
-        // 从前端传递的参数中获取userId
-        if (userId == null) {
-            return error("用户未登录");
-        }
+        userId = SecurityUtils.getHzUserId();
 
         // 学历申诉不需要租户信息，tenant_id字段实际存储的是user_id
         // 使用VO方法返回包含用户信息的列表
@@ -236,6 +230,10 @@ public class HzQualificationController extends BaseController {
     @GetMapping("/appeal/{appealId:\\d+}")
     public AjaxResult appealDetail(@PathVariable("appealId") Long appealId) {
         HzQualificationAppeal appeal = appealService.selectAppealById(appealId);
+        if (appeal == null) {
+            return error("申诉不存在");
+        }
+        SecurityUtils.requireCurrentHzUser(appeal.getTenantId());
         return success(appeal);
     }
 
@@ -244,8 +242,7 @@ public class HzQualificationController extends BaseController {
      */
     @PostMapping("/commitment")
     public AjaxResult commitment(@RequestBody HzCommitment commitment) {
-        // TODO: 从登录态获取userId
-        Long userId = 1L; // 暂时模拟
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -264,8 +261,7 @@ public class HzQualificationController extends BaseController {
      */
     @GetMapping("/commitment/list")
     public AjaxResult commitmentList() {
-        // TODO: 从登录态获取userId
-        Long userId = 1L; // 暂时模拟
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -273,5 +269,13 @@ public class HzQualificationController extends BaseController {
 
         List<HzCommitment> list = commitmentService.selectCommitmentListByTenantId(tenant.getTenantId());
         return success(list);
+    }
+
+    private Long requireTenantUserId(Long tenantId) {
+        HzTenant tenant = tenantService.selectTenantById(tenantId);
+        if (tenant == null || tenant.getUserId() == null) {
+            throw new com.ruoyi.common.exception.ServiceException("租户信息不存在");
+        }
+        return tenant.getUserId();
     }
 }

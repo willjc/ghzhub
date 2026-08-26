@@ -16,8 +16,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
@@ -27,8 +25,6 @@ import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.service.IHzCheckInService;
 import com.ruoyi.system.service.IHzCheckoutService;
 import com.ruoyi.system.service.IHzContractService;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * H5用户端 - 退租办理API
@@ -54,6 +50,7 @@ public class HzCheckOutAppController extends BaseController {
      */
     @GetMapping("/list/{tenantId}")
     public AjaxResult getCheckoutList(@PathVariable Long tenantId) {
+        SecurityUtils.requireCurrentHzUser(tenantId);
         List<Map<String, Object>> list = checkoutService.selectCheckoutApplyListWithHouseInfo(tenantId);
         return success(list);
     }
@@ -70,6 +67,9 @@ public class HzCheckOutAppController extends BaseController {
 
         if (apply == null) {
             return error("退租申请不存在");
+        }
+        if (!SecurityUtils.getHzUserId().equals(apply.getTenantId())) {
+            return error("无权查看");
         }
 
         // 组装返回数据
@@ -106,37 +106,8 @@ public class HzCheckOutAppController extends BaseController {
         return success(result);
     }
 
-    /**
-     * 从请求头中的Token解析出hz_user的ID
-     * Token格式：hz_token_{userId}_{timestamp}
-     */
     private Long getHzUserIdFromToken() {
-        try {
-            HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-            String token = request.getHeader("Authorization");
-
-            if (token == null || token.isEmpty()) {
-                return null;
-            }
-
-            // 移除 "Bearer " 前缀（如果有）
-            if (token.startsWith("Bearer ")) {
-                token = token.substring(7);
-            }
-
-            // 解析token: hz_token_{userId}_{timestamp}
-            if (token.startsWith("hz_token_")) {
-                String[] parts = token.split("_");
-                if (parts.length >= 3) {
-                    return Long.parseLong(parts[2]); // parts[0]=hz, parts[1]=token, parts[2]=userId
-                }
-            }
-
-            return null;
-        } catch (Exception e) {
-            logger.error("解析token失败", e);
-            return null;
-        }
+        return SecurityUtils.getHzUserId();
     }
 
     /**
@@ -161,6 +132,10 @@ public class HzCheckOutAppController extends BaseController {
         if (contract == null) {
             return error("合同不存在");
         }
+        Long tenantId = getHzUserIdFromToken();
+        if (!tenantId.equals(contract.getTenantId())) {
+            return error("无权操作此合同");
+        }
         if ("4".equals(contract.getContractStatus())) {
             return error("合同已到期，无法发起退租，请联系管理员");
         }
@@ -174,12 +149,6 @@ public class HzCheckOutAppController extends BaseController {
         // 校验该合同是否已办理入住（无入住记录不允许退租）
         if (checkInService.selectCheckInByContractId(contractId) == null) {
             return error("该合同尚未办理入住，无法申请退租，请先办理入住手续");
-        }
-
-        // 从token中获取租户ID
-        Long tenantId = getHzUserIdFromToken();
-        if (tenantId == null) {
-            return error("获取用户信息失败，请重新登录");
         }
 
         // 校验是否已存在活跃的退租申请（审批中/已通过/待确认），防止重复提交
@@ -252,6 +221,9 @@ public class HzCheckOutAppController extends BaseController {
         if (apply == null) {
             return error("退租申请不存在");
         }
+        if (!SecurityUtils.getHzUserId().equals(apply.getTenantId())) {
+            return error("无权操作");
+        }
 
         // 只有审批中的申请可以修改
         if (!"0".equals(apply.getApplyStatus())) {
@@ -265,7 +237,7 @@ public class HzCheckOutAppController extends BaseController {
             apply.setCheckoutReason(requestData.get("checkoutReason").toString());
         }
 
-        apply.setUpdateBy(SecurityUtils.getUsername());
+        apply.setUpdateBy("用户端");
 
         int result = checkoutService.updateCheckoutApply(apply);
 
@@ -288,6 +260,9 @@ public class HzCheckOutAppController extends BaseController {
 
         if (apply == null) {
             return error("退租申请不存在");
+        }
+        if (!SecurityUtils.getHzUserId().equals(apply.getTenantId())) {
+            return error("无权操作");
         }
 
         // 只有审批中的申请可以取消
@@ -313,6 +288,10 @@ public class HzCheckOutAppController extends BaseController {
     @GetMapping("/confirm/{applyId}")
     public AjaxResult getCheckoutConfirm(@PathVariable Long applyId) {
         try {
+            HzCheckoutApply apply = checkoutService.selectCheckoutApplyByApplyId(applyId);
+            if (apply == null || !SecurityUtils.getHzUserId().equals(apply.getTenantId())) {
+                return error("无权查看");
+            }
             Map<String, Object> result = checkoutService.getCheckoutConfirmInfo(applyId);
             return success(result);
         } catch (RuntimeException e) {
@@ -332,6 +311,10 @@ public class HzCheckOutAppController extends BaseController {
     @PostMapping("/confirm/{applyId}")
     public AjaxResult submitCheckoutConfirm(@PathVariable Long applyId,
                                             @RequestBody Map<String, Object> requestData) {
+        HzCheckoutApply apply = checkoutService.selectCheckoutApplyByApplyId(applyId);
+        if (apply == null || !SecurityUtils.getHzUserId().equals(apply.getTenantId())) {
+            return error("无权操作");
+        }
         String tenantSignature = requestData.get("tenantSignature") != null ?
                                   requestData.get("tenantSignature").toString() : "";
 

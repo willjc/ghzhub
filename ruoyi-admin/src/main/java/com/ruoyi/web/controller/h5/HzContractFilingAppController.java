@@ -4,6 +4,7 @@ import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzContractFiling;
 import com.ruoyi.system.service.IHzContractFilingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ public class HzContractFilingAppController extends BaseController
     public AjaxResult myList(@RequestParam("tenantId") Long tenantId,
                              @RequestParam(required = false) String approveStatus)
     {
-        if (tenantId == null) return error("租户ID不能为空");
+        tenantId = SecurityUtils.getHzUserId();
         List<HzContractFiling> list = filingService.selectMyFilings(tenantId, approveStatus);
         return success(list);
     }
@@ -43,6 +44,7 @@ public class HzContractFilingAppController extends BaseController
     {
         HzContractFiling filing = filingService.selectFilingById(filingId);
         if (filing == null) return error("备案不存在");
+        SecurityUtils.requireCurrentHzUser(filing.getTenantId());
         return success(filing);
     }
 
@@ -53,6 +55,7 @@ public class HzContractFilingAppController extends BaseController
     @PostMapping("/submit")
     public AjaxResult submit(@RequestBody HzContractFiling filing)
     {
+        filing.setTenantId(SecurityUtils.getHzUserId());
         return toAjax(filingService.submitFiling(filing));
     }
 }

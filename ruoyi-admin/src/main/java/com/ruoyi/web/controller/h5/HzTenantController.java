@@ -2,6 +2,7 @@ package com.ruoyi.web.controller.h5;
 
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzBlacklist;
 import com.ruoyi.system.domain.HzTenant;
 import com.ruoyi.system.service.IHzBlacklistService;
@@ -30,7 +31,7 @@ public class HzTenantController extends BaseController {
     @GetMapping("/info")
     public AjaxResult getInfo() {
         // TODO: 从登录态获取userId
-        Long userId = 1L; // 暂时模拟
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         return success(tenant);
     }
@@ -40,6 +41,13 @@ public class HzTenantController extends BaseController {
      */
     @PostMapping("/save")
     public AjaxResult save(@RequestBody HzTenant tenant) {
+        Long userId = SecurityUtils.getHzUserId();
+        if (tenant.getTenantId() != null) {
+            HzTenant current = tenantService.selectTenantById(tenant.getTenantId());
+            if (current == null || !userId.equals(current.getUserId())) {
+                return error("无权修改此租户信息");
+            }
+        }
         // 检查是否在黑名单中
         if (tenant.getIdCard() != null) {
             HzBlacklist blacklist = blacklistService.selectBlacklistByIdCard(tenant.getIdCard());
@@ -55,7 +63,6 @@ public class HzTenantController extends BaseController {
         }
 
         // TODO: 从登录态获取userId
-        Long userId = 1L; // 暂时模拟
         tenant.setUserId(userId);
         tenant.setStatus("0");
 

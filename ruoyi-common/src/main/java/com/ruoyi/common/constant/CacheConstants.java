@@ -12,6 +12,9 @@ public class CacheConstants
      */
     public static final String LOGIN_TOKEN_KEY = "login_tokens:";
 
+    /** 微信小程序用户登录令牌 Redis 前缀 */
+    public static final String HZ_USER_TOKEN_KEY = "hz_user_tokens:";
+
     /**
      * 验证码 redis key
      */

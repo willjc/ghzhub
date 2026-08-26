@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzHouse;
@@ -70,6 +71,7 @@ public class HzInvoiceController extends BaseController
     @GetMapping("/myList")
     public AjaxResult myList(@RequestParam Long userId)
     {
+        userId = SecurityUtils.getHzUserId();
         HzUser user = userService.selectHzUserById(userId);
         if (user == null)
         {
@@ -87,6 +89,7 @@ public class HzInvoiceController extends BaseController
     @GetMapping("/checkinInfo")
     public AjaxResult getCheckinInfo(@RequestParam Long userId)
     {
+        userId = SecurityUtils.getHzUserId();
         // 查询用户所有可开票账单（已支付且未开票）
         LambdaQueryWrapper<HzBill> billWrapper = new LambdaQueryWrapper<>();
         billWrapper.eq(HzBill::getTenantId, userId)
@@ -155,6 +158,7 @@ public class HzInvoiceController extends BaseController
     @GetMapping("/availableBills")
     public AjaxResult getAvailableBills(@RequestParam Long userId, @RequestParam(required = false) Long contractId)
     {
+        userId = SecurityUtils.getHzUserId();
         // 查询用户的可开票账单
         LambdaQueryWrapper<HzBill> billWrapper = new LambdaQueryWrapper<>();
         billWrapper.eq(HzBill::getTenantId, userId)
@@ -180,7 +184,7 @@ public class HzInvoiceController extends BaseController
     @PostMapping("/apply")
     public AjaxResult submitApply(@RequestBody Map<String, Object> params)
     {
-        Long userId = Long.valueOf(params.get("userId").toString());
+        Long userId = SecurityUtils.getHzUserId();
         Long billId = Long.valueOf(params.get("billId").toString());
         String headType = (String) params.get("headType"); // personal 或 company
         String name = (String) params.get("name"); // 个人名称或企业名称
@@ -258,11 +262,7 @@ public class HzInvoiceController extends BaseController
             return error("开票申请不存在");
         }
 
-        // 如果提供了userId，校验申请是否属于当前用户（tenantId = userId）
-        if (userId != null && !invoiceApply.getTenantId().equals(userId))
-        {
-            return error("无权查看此申请");
-        }
+        SecurityUtils.requireCurrentHzUser(invoiceApply.getTenantId());
 
         Map<String, Object> result = new HashMap<>();
         result.put("applyId", invoiceApply.getApplyId());

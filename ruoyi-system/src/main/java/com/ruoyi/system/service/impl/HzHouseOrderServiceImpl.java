@@ -222,6 +222,7 @@ public class HzHouseOrderServiceImpl
         }
 
         Map<String, Object> result = new HashMap<>();
+        result.put("tenantId", order.getTenantId());
         result.put("orderNo", order.getOrderNo());
         result.put("orderStatus", order.getOrderStatus());
 

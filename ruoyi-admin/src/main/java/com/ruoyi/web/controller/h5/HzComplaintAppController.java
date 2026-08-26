@@ -4,12 +4,12 @@ import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzComplaint;
 import com.ruoyi.system.service.IHzComplaintService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -24,9 +24,6 @@ public class HzComplaintAppController extends BaseController
     @Autowired
     private IHzComplaintService complaintService;
 
-    @Autowired
-    private HttpServletRequest request;
-
     /**
      * 提交投诉建议
      */
@@ -34,19 +31,7 @@ public class HzComplaintAppController extends BaseController
     @PostMapping("/submit")
     public AjaxResult submit(@RequestBody HzComplaint complaint)
     {
-        // 从请求体获取userId（前端已传递）
-        Long userId = complaint.getUserId();
-        if (userId == null)
-        {
-            // 兜底：从请求参数或请求头获取
-            userId = getCurrentUserId();
-        }
-        if (userId == null)
-        {
-            return error("用户未登录");
-        }
-
-        complaint.setUserId(userId);
+        complaint.setUserId(getCurrentUserId());
         return toAjax(complaintService.insertComplaint(complaint));
     }
 
@@ -57,11 +42,6 @@ public class HzComplaintAppController extends BaseController
     public AjaxResult myList()
     {
         Long userId = getCurrentUserId();
-        if (userId == null)
-        {
-            return error("用户未登录");
-        }
-
         List<HzComplaint> list = complaintService.selectComplaintListByUserId(userId);
         return success(list);
     }
@@ -78,7 +58,7 @@ public class HzComplaintAppController extends BaseController
         if (complaint != null)
         {
             Long userId = getCurrentUserId();
-            if (userId != null && !userId.equals(complaint.getUserId()))
+            if (!userId.equals(complaint.getUserId()))
             {
                 return error("无权查看");
             }
@@ -118,38 +98,12 @@ public class HzComplaintAppController extends BaseController
     public AjaxResult cancel(@PathVariable("complaintId") Long complaintId)
     {
         Long userId = getCurrentUserId();
-        if (userId == null)
-        {
-            return error("用户未登录");
-        }
-
         int result = complaintService.cancelComplaint(complaintId, userId);
         return result > 0 ? success("取消成功") : error("取消失败，仅待处理的投诉可取消");
     }
 
-    /**
-     * 临时方法：获取当前用户ID
-     * TODO: 实现JWT认证后，从token中获取
-     */
     protected Long getCurrentUserId()
     {
-        // 临时方案：从请求头或参数获取
-        String userIdStr = request.getParameter("userId");
-        if (userIdStr == null)
-        {
-            userIdStr = request.getHeader("userId");
-        }
-        if (userIdStr != null)
-        {
-            try
-            {
-                return Long.parseLong(userIdStr);
-            }
-            catch (NumberFormatException e)
-            {
-                return null;
-            }
-        }
-        return null;
+        return SecurityUtils.getHzUserId();
     }
 }

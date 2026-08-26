@@ -2,6 +2,7 @@ package com.ruoyi.web.controller.h5;
 
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzTenant;
 import com.ruoyi.system.service.IHzBillService;
@@ -32,7 +33,7 @@ public class HzBillController extends BaseController {
     @GetMapping("/list")
     public AjaxResult list() {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -48,6 +49,8 @@ public class HzBillController extends BaseController {
     @GetMapping("/{billId}")
     public AjaxResult getInfo(@PathVariable("billId") Long billId) {
         HzBill bill = billService.selectBillById(billId);
+        if (bill == null) return error("账单不存在");
+        SecurityUtils.requireCurrentHzUser(bill.getTenantId());
         return success(bill);
     }
 
@@ -57,7 +60,7 @@ public class HzBillController extends BaseController {
     @GetMapping("/unpaid")
     public AjaxResult unpaidList() {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -73,7 +76,7 @@ public class HzBillController extends BaseController {
     @GetMapping("/overdue")
     public AjaxResult overdueList() {
         // TODO: 从登录态获取userId
-        Long userId = 1L;
+        Long userId = SecurityUtils.getHzUserId();
         HzTenant tenant = tenantService.selectTenantByUserId(userId);
         if (tenant == null) {
             return error("请先完善租户信息");
@@ -89,6 +92,9 @@ public class HzBillController extends BaseController {
     @GetMapping("/contract/{contractId}")
     public AjaxResult listByContract(@PathVariable("contractId") Long contractId) {
         List<HzBill> list = billService.selectBillListByContractId(contractId);
+        if (list != null && !list.isEmpty()) {
+            SecurityUtils.requireCurrentHzUser(list.get(0).getTenantId());
+        }
         return success(list);
     }
 }

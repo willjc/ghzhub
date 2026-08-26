@@ -2,12 +2,12 @@ package com.ruoyi.web.controller.h5;
 
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzUserMessage;
 import com.ruoyi.system.service.IHzUserMessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -22,9 +22,6 @@ public class HzUserMessageAppController extends BaseController
     @Autowired
     private IHzUserMessageService messageService;
 
-    @Autowired
-    private HttpServletRequest request;
-
     /**
      * 查询当前用户的消息列表
      */
@@ -32,11 +29,6 @@ public class HzUserMessageAppController extends BaseController
     public AjaxResult list()
     {
         Long userId = getCurrentUserId();
-        if (userId == null)
-        {
-            return error("用户未登录");
-        }
-
         List<HzUserMessage> list = messageService.selectMessageListByUserId(userId);
         return success(list);
     }
@@ -48,11 +40,6 @@ public class HzUserMessageAppController extends BaseController
     public AjaxResult unreadList()
     {
         Long userId = getCurrentUserId();
-        if (userId == null)
-        {
-            return error("用户未登录");
-        }
-
         List<HzUserMessage> list = messageService.selectUnreadMessageListByUserId(userId);
         return success(list);
     }
@@ -64,11 +51,6 @@ public class HzUserMessageAppController extends BaseController
     public AjaxResult unreadCount()
     {
         Long userId = getCurrentUserId();
-        if (userId == null)
-        {
-            return success(0);
-        }
-
         long count = messageService.countUnreadMessageByUserId(userId);
         return success(count);
     }
@@ -80,6 +62,11 @@ public class HzUserMessageAppController extends BaseController
     public AjaxResult getInfo(@PathVariable("messageId") Long messageId)
     {
         HzUserMessage message = messageService.selectMessageById(messageId);
+        Long userId = getCurrentUserId();
+        if (message != null && !userId.equals(message.getUserId()))
+        {
+            return error("无权查看");
+        }
 
         // 自动标记为已读
         if (message != null && "0".equals(message.getIsRead()))
@@ -96,6 +83,11 @@ public class HzUserMessageAppController extends BaseController
     @PutMapping("/read/{messageId}")
     public AjaxResult markAsRead(@PathVariable("messageId") Long messageId)
     {
+        HzUserMessage message = messageService.selectMessageById(messageId);
+        if (message == null || !getCurrentUserId().equals(message.getUserId()))
+        {
+            return error("无权操作");
+        }
         int result = messageService.markMessageAsRead(messageId);
         return result > 0 ? success() : error("操作失败");
     }
@@ -106,33 +98,17 @@ public class HzUserMessageAppController extends BaseController
     @DeleteMapping("/{messageId}")
     public AjaxResult delete(@PathVariable("messageId") Long messageId)
     {
+        HzUserMessage message = messageService.selectMessageById(messageId);
+        if (message == null || !getCurrentUserId().equals(message.getUserId()))
+        {
+            return error("无权操作");
+        }
         int result = messageService.deleteMessageById(messageId);
         return result > 0 ? success() : error("删除失败");
     }
 
-    /**
-     * 临时方法：获取当前用户ID
-     * TODO: 实现JWT认证后，从token中获取
-     */
     protected Long getCurrentUserId()
     {
-        // 临时方案：从请求头或参数获取
-        String userIdStr = request.getParameter("userId");
-        if (userIdStr == null)
-        {
-            userIdStr = request.getHeader("userId");
-        }
-        if (userIdStr != null)
-        {
-            try
-            {
-                return Long.parseLong(userIdStr);
-            }
-            catch (NumberFormatException e)
-            {
-                return null;
-            }
-        }
-        return null;
+        return SecurityUtils.getHzUserId();
     }
 }
