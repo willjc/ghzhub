@@ -24,7 +24,7 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519 -p 3322 \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.BACKEND_HOST }} \
-            "bash /www/wwwroot/ghz-source/server-deploy.sh 2>&1 | tee /www/wwwroot/ghz-backend/logs/deploy.log"
+            "bash -o pipefail -c 'bash /www/wwwroot/ghz-source/server-deploy.sh 2>&1 | tee /www/wwwroot/ghz-backend/logs/deploy.log'"
 
       - name: Cleanup SSH
         if: always()
