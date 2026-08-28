@@ -1,10 +1,14 @@
 <template>
 	<view class="page">
 		<scroll-view class="scroll-content" scroll-y>
+			<view class="review-notice">
+				因数据端口原因，请上传证明材料。提交后将由工作人员人工审核，审核将在3个工作日内完成。
+			</view>
+
 			<!-- 申诉项卡片 -->
 			<view class="card card-appeal-item">
 				<view class="card-indicator"></view>
-				<text class="card-label">申诉项</text>
+				<text class="card-label">审核项目</text>
 				<text class="card-value">学历证明</text>
 			</view>
 
@@ -12,7 +16,7 @@
 			<view class="card card-material">
 				<view class="card-header-material">
 					<view class="card-indicator"></view>
-					<text class="card-label">申诉材料</text>
+					<text class="card-label">证明材料</text>
 				</view>
 
 				<!-- 学历选择 -->
@@ -74,7 +78,7 @@
 		<!-- 底部提交按钮 -->
 		<view class="bottom-btn-container">
 			<view class="bottom-btn" @click="handleSubmit">
-				<text class="bottom-btn-text">提交申诉</text>
+				<text class="bottom-btn-text">提交学历证明</text>
 			</view>
 		</view>
 
@@ -312,13 +316,12 @@
 
 							uni.hideLoading()
 							if (res.data.code === 200) {
-								uni.showToast({
+								uni.showModal({
 									title: '提交成功',
-									icon: 'success'
+									content: '学历证明已提交，请等待人工审核，审核将在3个工作日内完成。',
+									showCancel: false,
+									success: () => uni.navigateBack()
 								})
-								setTimeout(() => {
-									uni.navigateBack()
-								}, 1500)
 							} else {
 								console.error('申诉提交失败:', res.data.msg)
 								uni.showToast({
@@ -356,6 +359,16 @@
 		background-color: #f5f6fc;
 		display: flex;
 		flex-direction: column;
+	}
+
+	.review-notice {
+		margin: 24rpx 30rpx 0;
+		padding: 24rpx;
+		border-radius: 16rpx;
+		background: #fff7e8;
+		color: #b85c00;
+		font-size: 26rpx;
+		line-height: 40rpx;
 	}
 
 	.scroll-content {
@@ -667,4 +680,3 @@
 		line-height: 80rpx;
 	}
 </style>
-

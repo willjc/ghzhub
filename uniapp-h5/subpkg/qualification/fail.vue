@@ -10,7 +10,7 @@
       <view class="reason-list" v-if="reasons.length">
         <view class="reason-item" v-for="(r, idx) in reasons" :key="idx">
           <text class="dot">•</text>
-          <text class="reason-text">{{ r }}</text>
+          <text class="reason-text">{{ formatReason(r) }}</text>
         </view>
       </view>
 
@@ -27,6 +27,10 @@
         </view>
       </view>
 
+      <view v-if="educationFailed" class="education-notice">
+        因数据端口原因，请上传证明材料。提交后将由工作人员人工审核，审核将在3个工作日内完成。
+      </view>
+
       <view class="tips">
         如信息有误（如政务数据尚未更新），可稍后重新校验；若仍不通过请联系工作人员。
       </view>
@@ -35,7 +39,9 @@
     <view class="footer">
       <view class="btn-secondary" @click="goHome">返回首页</view>
       <view class="btn-primary" @click="recheck">重新校验</view>
-      <view v-if="canAppeal" class="btn-primary btn-appeal" @click="goAppeal">发起申诉</view>
+      <view v-if="canAppeal" class="btn-primary btn-appeal" @click="goAppeal">
+        {{ educationFailed ? '上传学历证明' : '发起申诉' }}
+      </view>
     </view>
   </view>
 </template>
@@ -57,6 +63,9 @@ export default {
     }
   },
   computed: {
+    educationFailed() {
+      return this.items.some(i => i.code === 'education' && i.status === 'failed')
+    },
     // 仅当学历或社保 failed 时才允许申诉
     canAppeal() {
       return this.items.some(i =>
@@ -65,6 +74,12 @@ export default {
     }
   },
   methods: {
+    formatReason(reason) {
+      if (this.educationFailed && reason && reason.indexOf('学历待人工审核') !== -1) {
+        return '因数据端口原因，学历信息需上传证明材料进行人工审核'
+      }
+      return reason
+    },
     statusText(s) {
       switch (s) {
         case 'passed': return '通过'
@@ -178,6 +193,15 @@ export default {
 .state-failed .detail-status { color: #e74c3c; }
 .state-error .detail-status { color: #e59700; }
 .state-skipped .detail-status { color: #bbb; }
+.education-notice {
+  margin-top: 32rpx;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  background: #fff7e8;
+  color: #b85c00;
+  font-size: 26rpx;
+  line-height: 40rpx;
+}
 .tips {
   margin-top: 32rpx;
   font-size: 22rpx;
