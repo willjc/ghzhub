@@ -135,9 +135,10 @@ mybatis-plus:
 # Springdoc配置
 springdoc:
   api-docs:
+    enabled: false
     path: /v3/api-docs
   swagger-ui:
-    enabled: true
+    enabled: false
     path: /swagger-ui.html
     tags-sorter: alpha
   group-configs:
