@@ -62,6 +62,7 @@
 
 <script>
 	import { getProjectListByType } from '@/api/project'
+	import config from '@/config/index'
 
 	export default {
 		data() {
@@ -174,8 +175,13 @@
 					return imagePath
 				}
 
-				// 直接返回相对路径，由manifest.json中的代理转发到后端
-				return imagePath
+				// 本地静态资源直接返回
+				if (imagePath.startsWith('/static/')) {
+					return imagePath
+				}
+
+				// 后端资源使用统一配置的静态资源地址，小程序端不依赖 H5 代理
+				return config.staticUrl + (imagePath.startsWith('/') ? imagePath : '/' + imagePath)
 			},
 
 			goToDetail(item) {
@@ -487,4 +493,3 @@
 		display: inline-block;
 	}
 </style>
-
