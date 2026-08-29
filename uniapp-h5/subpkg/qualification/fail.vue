@@ -28,7 +28,7 @@
       </view>
 
       <view v-if="educationFailed" class="education-notice">
-        因数据端口原因，请上传证明材料。提交后将由工作人员人工审核，审核将在3个工作日内完成。
+        因系统暂无法查验您的学历信息，请您上传学历证明相关材料，人工审核预计2个工作日内完成，敬请耐心等候。
       </view>
 
       <view class="tips">
@@ -76,7 +76,7 @@ export default {
   methods: {
     formatReason(reason) {
       if (this.educationFailed && reason && reason.indexOf('学历待人工审核') !== -1) {
-        return '因数据端口原因，学历信息需上传证明材料进行人工审核'
+        return '学历信息暂无法核验'
       }
       return reason
     },

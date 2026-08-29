@@ -2,7 +2,7 @@
 	<view class="page">
 		<scroll-view class="scroll-content" scroll-y>
 			<view class="review-notice">
-				因数据端口原因，请上传证明材料。提交后将由工作人员人工审核，审核将在3个工作日内完成。
+				因系统暂无法查验您的学历信息，请您上传学历证明相关材料，人工审核预计2个工作日内完成，敬请耐心等候。
 			</view>
 
 			<!-- 申诉项卡片 -->
@@ -318,7 +318,7 @@
 							if (res.data.code === 200) {
 								uni.showModal({
 									title: '提交成功',
-									content: '学历证明已提交，请等待人工审核，审核将在3个工作日内完成。',
+									content: '学历证明已提交，人工审核预计2个工作日内完成，敬请耐心等候。',
 									showCancel: false,
 									success: () => uni.navigateBack()
 								})
