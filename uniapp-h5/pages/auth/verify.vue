@@ -145,7 +145,8 @@
 					uni.showToast({ title: '请输入真实姓名', icon: 'none' })
 					return
 				}
-				if (!this.form.idCard.trim() || this.form.idCard.trim().length < 15) {
+				const idCard = this.form.idCard.trim().toUpperCase()
+				if (!/^[1-8]\d{16}[\dX]$/.test(idCard)) {
 					uni.showToast({ title: '请输入正确的身份证号', icon: 'none' })
 					return
 				}
@@ -160,7 +161,7 @@
 
 					const res = await getAuthUrl(this.userId, {
 						realName: this.form.realName.trim(),
-						idCard: this.form.idCard.trim(),
+						idCard,
 						redirectUrl
 					})
 
@@ -184,7 +185,8 @@
 						uni.showToast({ title: res.msg || '获取认证链接失败', icon: 'none' })
 					}
 				} catch (e) {
-					uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+					// 请求层已经展示业务、HTTP 和网络错误，仅补充显示本地异常。
+					if (e && e.message) uni.showToast({ title: e.message, icon: 'none' })
 				} finally {
 					this.submitting = false
 				}

@@ -3,6 +3,7 @@ package com.ruoyi.web.controller.h5;
 import com.ruoyi.common.annotation.Anonymous;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.IdCardUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzUser;
@@ -49,13 +50,18 @@ public class EsignController extends BaseController {
             r.put("needAuth", false);
             return success(r);
         }
+        String effectiveIdCard = idCard != null && !idCard.isBlank() ? idCard.trim() : user.getIdCard();
+        if (effectiveIdCard != null && !effectiveIdCard.isBlank()
+                && IdCardUtils.calculateAge(effectiveIdCard) == null) {
+            return error("请输入正确的18位身份证号");
+        }
         // 如果传入了 realName/idCard，保存到用户表（后续模板填充等流程使用）
         if (realName != null && !realName.isBlank()) {
             userMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<HzUser>()
-                    .eq(HzUser::getUserId, userId).set(HzUser::getRealName, realName));
+                    .eq(HzUser::getUserId, userId).set(HzUser::getRealName, realName.trim()));
         }
         String callbackUrl = (redirectUrl != null && !redirectUrl.isBlank()) ? redirectUrl : this.redirectUrl;
-        String authUrl = esignService.getPsnAuthUrl(userId, user.getPhone(), realName, idCard, callbackUrl);
+        String authUrl = esignService.getPsnAuthUrl(userId, user.getPhone(), realName, effectiveIdCard, callbackUrl);
         Map<String, Object> r = new HashMap<>();
         r.put("needAuth", true);
         r.put("authUrl", authUrl);

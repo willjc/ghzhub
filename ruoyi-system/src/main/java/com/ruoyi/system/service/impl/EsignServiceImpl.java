@@ -20,6 +20,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.utils.IdCardUtils;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzBuilding;
 import com.ruoyi.system.domain.HzCheckIn;
@@ -122,6 +123,12 @@ public class EsignServiceImpl implements EsignService {
                 : (user != null ? user.getRealName() : null);
         String finalIdCard = (idCard != null && !idCard.isBlank()) ? idCard
                 : (user != null ? user.getIdCard() : null);
+        if (finalIdCard != null && !finalIdCard.isBlank()
+                && IdCardUtils.calculateAge(finalIdCard) == null) {
+            throw new IllegalArgumentException("请输入正确的18位身份证号");
+        }
+        if (finalRealName != null) finalRealName = finalRealName.trim();
+        if (finalIdCard != null) finalIdCard = finalIdCard.trim().toUpperCase();
 
         // 构建实名认证请求参数，预填充姓名和身份证号
         StringBuilder jsonBuilder = new StringBuilder();
