@@ -309,35 +309,48 @@ public class EsignServiceImpl implements EsignService {
 
         // 2. 创建签署流
         // contract 已在方法开头查询
+        boolean rentalContract = isRentalContract(contract);
+        String finalSignPage = rentalContract ? "13" : "14";
+        int orgSignX = rentalContract ? 252 : 240;
+        int orgSignY = rentalContract ? 677 : 646;
+        int firstPsnSignX = rentalContract ? 281 : 255;
+        int firstPsnSignY = rentalContract ? 254 : 290;
+        int secondPsnSignX = rentalContract ? 279 : 282;
+        int secondPsnSignY = rentalContract ? 603 : 595;
+        int finalPsnSignX = rentalContract ? 259 : 243;
+        int finalPsnSignY = rentalContract ? 568 : 536;
+        int orgSignDateY = rentalContract ? 667 : 639;
+        int psnSignDateX = rentalContract ? 380 : 376;
+        int psnSignDateY = rentalContract ? 560 : 531;
 
         String jsonParm = "{\"docs\":[{\"fileId\":\"" + fileId + "\",\"fileName\":\"港好住租赁合同.pdf\"}],"
                 + "\"signFlowConfig\":{\"signFlowTitle\":\"港好住租赁合同-" + contractId + "\",\"autoFinish\":true,"
                 + "\"notifyUrl\":\"" + notifyUrl + "\",\"chargeConfig\":{\"chargeMode\":0}},"
-                // 甲方（平台企业，自动盖章）— 签在第14页企业章位置，显示签署日期
+                // 甲方（平台企业，自动盖章）— 坐标来自对应 e签宝模板详情
                 + "\"signers\":[{\"signerType\":1,\"orgSignerInfo\":{\"orgId\":\"" + orgId + "\"},"
                 + "\"signConfig\":{\"signOrder\":1},\"signFields\":[{\"fileId\":\"" + fileId + "\","
                 + "\"normalSignFieldConfig\":{\"autoSign\":true,\"freeMode\":false,"
-                + "\"signFieldPosition\":{\"positionPage\":\"14\",\"positionX\":240,\"positionY\":646},"
+                + "\"signFieldPosition\":{\"positionPage\":\"" + finalSignPage + "\",\"positionX\":" + orgSignX + ",\"positionY\":" + orgSignY + "},"
                 + "\"signFieldStyle\":1},\"signFieldType\":0,"
-                + "\"signDateConfig\":{\"showSignDate\":1,\"dateFormat\":\"yyyy年MM月dd日\",\"fontSize\":12,\"signDatePositionX\":380,\"signDatePositionY\":639}}]},"
+                + "\"signDateConfig\":{\"showSignDate\":1,\"dateFormat\":\"yyyy年MM月dd日\",\"fontSize\":12,\"signDatePositionX\":380,\"signDatePositionY\":" + orgSignDateY + "}}]},"
                 + "{\"signerType\":0,\"psnSignerInfo\":{\"psnId\":\"" + psnId + "\"},"
                 + "\"signConfig\":{\"signOrder\":2},\"signFields\":["
-                // 乙方签名1: 页1 个人章/签名2
+                // 乙方签名1
                 + "{\"fileId\":\"" + fileId + "\","
                 + "\"normalSignFieldConfig\":{\"autoSign\":false,\"freeMode\":false,"
-                + "\"signFieldPosition\":{\"positionPage\":\"1\",\"positionX\":255,\"positionY\":290},"
+                + "\"signFieldPosition\":{\"positionPage\":\"1\",\"positionX\":" + firstPsnSignX + ",\"positionY\":" + firstPsnSignY + "},"
                 + "\"signFieldStyle\":1},\"signFieldType\":0},"
-                // 乙方签名2: 页2 个人章/签名1
+                // 乙方签名2
                 + "{\"fileId\":\"" + fileId + "\","
                 + "\"normalSignFieldConfig\":{\"autoSign\":false,\"freeMode\":false,"
-                + "\"signFieldPosition\":{\"positionPage\":\"2\",\"positionX\":282,\"positionY\":595},"
+                + "\"signFieldPosition\":{\"positionPage\":\"2\",\"positionX\":" + secondPsnSignX + ",\"positionY\":" + secondPsnSignY + "},"
                 + "\"signFieldStyle\":1},\"signFieldType\":0},"
-                // 乙方签名3: 页14 个人章/签名4，显示签署日期
+                // 乙方签名3，显示签署日期
                 + "{\"fileId\":\"" + fileId + "\","
                 + "\"normalSignFieldConfig\":{\"autoSign\":false,\"freeMode\":false,"
-                + "\"signFieldPosition\":{\"positionPage\":\"14\",\"positionX\":243,\"positionY\":536},"
+                + "\"signFieldPosition\":{\"positionPage\":\"" + finalSignPage + "\",\"positionX\":" + finalPsnSignX + ",\"positionY\":" + finalPsnSignY + "},"
                 + "\"signFieldStyle\":1},\"signFieldType\":0,"
-                + "\"signDateConfig\":{\"showSignDate\":1,\"dateFormat\":\"yyyy年MM月dd日\",\"fontSize\":12,\"signDatePositionX\":376,\"signDatePositionY\":531}}"
+                + "\"signDateConfig\":{\"showSignDate\":1,\"dateFormat\":\"yyyy年MM月dd日\",\"fontSize\":12,\"signDatePositionX\":" + psnSignDateX + ",\"signDatePositionY\":" + psnSignDateY + "}}"
                 + "]}]}";
 
         EsignHttpResponse resp = callApi("POST", "/v3/sign-flow/create-by-file", jsonParm);
