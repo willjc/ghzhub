@@ -14,11 +14,12 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## 数据库操作规范 (极其重要! 必须遵守!)
 
-**🔴 强制要求：所有数据库查询和操作必须使用 MCP MySQL 工具**
+**🔴 强制要求：数据库操作优先使用 MCP MySQL；MCP 不可用时允许使用 mysql CLI**
 
-- ✅ **必须使用**: `mcp__mcp_server_mysql__mysql_query` 工具进行数据库操作
-- ❌ **严禁使用**: Bash 执行 `mysql` 命令行工具
-- ❌ **严禁使用**: 其他任何直接连接数据库的方式
+- ✅ **优先使用**: `mcp__mcp_server_mysql__mysql_query` 工具进行数据库操作
+- ✅ **允许降级**: MCP 未配置、启动失败或连接不可用时，可使用 `mysql` 命令行工具
+- ✅ **生产写操作**: 先确认目标范围并备份，使用事务或可重复执行脚本，执行后必须校验结果
+- ❌ **严禁**: 在命令、日志或回复中输出数据库密码等敏感信息
 
 ### MCP 工具说明
 
