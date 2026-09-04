@@ -25,6 +25,7 @@ import com.ruoyi.system.mapper.HzBillMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzHouseOrderMapper;
 import com.ruoyi.system.mapper.HzProjectMapper;
+import com.ruoyi.system.gov.service.QualificationCheckService;
 import com.ruoyi.system.service.IHzCheckoutService;
 import com.ruoyi.system.service.IHzContractService;
 import com.ruoyi.system.service.IHzRoleProjectService;
@@ -78,6 +79,9 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
 
     @Autowired
     private IHzRoleProjectService roleProjectService;
+
+    @Autowired
+    private QualificationCheckService qualificationCheckService;
 
     @Override
     public HzContract selectContractById(Long contractId) {
@@ -396,16 +400,32 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
     public int insertContract(HzContract contract) {
         // 一人一户校验：租户已有活跃合同（已签署/履行中）且非同一房源续租，则拦截
         // 换房合同（contractType='3'）跳过校验，因为换房流程会在签署回调中终止老合同
-        if (contract.getTenantId() != null && !"3".equals(contract.getContractType())) {
-            List<HzContract> activeContracts = baseMapper.selectList(
-                    new LambdaQueryWrapper<HzContract>()
-                            .eq(HzContract::getTenantId, contract.getTenantId())
-                            .in(HzContract::getContractStatus, "0", "1", "2", "3")
-                            .eq(HzContract::getDelFlag, "0"));
+        HzProject contractProject = contract.getProjectId() == null
+                ? null : projectMapper.selectById(contract.getProjectId());
+        String projectType = contractProject == null ? null : contractProject.getProjectType();
+        if (contract.getTenantId() != null && !"3".equals(contract.getContractType())
+                && !"3".equals(projectType)
+                && !("2".equals(projectType) && qualificationCheckService.isQualificationExempt(contract.getTenantId()))) {
+            LambdaQueryWrapper<HzContract> activeQuery = new LambdaQueryWrapper<HzContract>()
+                    .eq(HzContract::getTenantId, contract.getTenantId())
+                    .eq(HzContract::getDelFlag, "0");
+            activeQuery.in(HzContract::getContractStatus,
+                    "2".equals(projectType) ? java.util.Arrays.asList("2", "3") : java.util.Arrays.asList("0", "1", "2", "3"));
+            List<HzContract> activeContracts = baseMapper.selectList(activeQuery);
             if (activeContracts != null && !activeContracts.isEmpty()) {
+                // 保租房只限制同为保租房的合同；人才公寓及未知旧数据保持原有全局限制。
+                if ("2".equals(projectType)) {
+                    activeContracts = activeContracts.stream()
+                            .filter(ac -> {
+                                HzProject activeProject = ac.getProjectId() == null
+                                        ? null : projectMapper.selectById(ac.getProjectId());
+                                return activeProject != null && "2".equals(activeProject.getProjectType());
+                            })
+                            .collect(Collectors.toList());
+                }
                 // 同房源续租放行（旧合同尚未标记已续租），不同房源的活跃合同一律拦截
                 boolean hasBlockingContract = activeContracts.stream()
-                        .anyMatch(ac -> !ac.getHouseId().equals(contract.getHouseId())
+                        .anyMatch(ac -> !java.util.Objects.equals(ac.getHouseId(), contract.getHouseId())
                                 || "1".equals(ac.getIsRenewed()));
                 if (hasBlockingContract) {
                     throw new RuntimeException("该租户已有活跃合同，不可同时签约新房源");

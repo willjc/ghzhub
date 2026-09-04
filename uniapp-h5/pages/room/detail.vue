@@ -124,7 +124,7 @@
 <script>
 import { getHouseDetail, getHouseVR, getHouseImages } from '@/api/house'
 import { createOrder } from '@/api/order'
-import { guardOrRedirect } from '@/api/qualification'
+import { ensureQualified } from '@/api/qualification'
 import { getTalentRentPreview } from '@/api/contract'
 import config from '@/config/index'
 
@@ -133,6 +133,7 @@ import config from '@/config/index'
 			return {
 				roomId: '',
 				projectId: '',
+				projectType: '1',
 				houseStatus: '0',  // 房源状态：0-空闲 1-已预订 2-已出租
 				isBatchAssigned: false,  // 是否为批次配租分配给当前用户的房源
 				activeImageTab: 'vr',
@@ -180,8 +181,6 @@ import config from '@/config/index'
 			}
 		},
 		onLoad(options) {
-			// 兜底：若用户已校验未通过，直接跳失败页
-			guardOrRedirect()
 			if (options.roomId) {
 				this.roomId = options.roomId
 			}
@@ -318,15 +317,19 @@ import config from '@/config/index'
 					url: `/pages/room/reserve?roomId=${this.roomId}&projectId=${this.projectId}`
 				})
 			},
-			async selectRoom() {
+			selectRoom() {
 				if (!this.isBatchAssigned && (this.houseStatus === '1' || this.houseStatus === '2')) {
 					return
 				}
-				const userInfo = uni.getStorageSync('userInfo')
-				if (!userInfo || !userInfo.userId) {
-					uni.showToast({ title: '请先登录', icon: 'none' })
-					return
-				}
+				uni.setStorageSync('currentApplyType', this.projectType || '1')
+				ensureQualified(() => this.createOrderAndContinue(), {
+					applyType: this.projectType || '1',
+					redirectAfterPass: '/pages/room/detail',
+					redirectParams: { roomId: this.roomId, projectId: this.projectId }
+				})
+			},
+			async createOrderAndContinue() {
+				const userInfo = uni.getStorageSync('userInfo') || {}
 				// 先调用预订单API锁定房源
 				uni.showLoading({ title: '选房中...' })
 				try {
@@ -396,6 +399,8 @@ import config from '@/config/index'
 						if (data.projectId) {
 							this.projectId = data.projectId
 						}
+						this.projectType = data.projectType || '1'
+						uni.setStorageSync('currentApplyType', this.projectType)
 
 						// 保存房源状态
 						if (data.houseStatus !== undefined && data.houseStatus !== null) {
@@ -998,4 +1003,3 @@ backdrop-filter: blur(4rpx);
 		opacity: 0.7;
 	}
 </style>
-

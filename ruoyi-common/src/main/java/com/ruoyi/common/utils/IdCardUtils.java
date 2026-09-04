@@ -1,5 +1,11 @@
 package com.ruoyi.common.utils;
 
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
+import java.time.format.ResolverStyle;
+
 /**
  * 身份证工具类
  *
@@ -9,6 +15,55 @@ public class IdCardUtils
 {
     /** 合法18位身份证正则（前17位数字 + 校验位 0-9 或 X/x） */
     private static final String ID_CARD_18 = "^[0-9]{17}[0-9Xx]$";
+
+    private static final int[] CHECKSUM_WEIGHTS = {7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2};
+    private static final char[] CHECKSUM_CODES = {'1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'};
+    private static final DateTimeFormatter BIRTH_DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("uuuuMMdd").withResolverStyle(ResolverStyle.STRICT);
+
+    /**
+     * 严格校验18位大陆居民身份证，并按完整年月日计算周岁。
+     *
+     * @param idCard 身份证号
+     * @return 当前周岁；证件号非法时返回 null
+     */
+    public static Integer calculateAge(String idCard)
+    {
+        if (StringUtils.isEmpty(idCard))
+        {
+            return null;
+        }
+        String id = idCard.trim().toUpperCase();
+        if (!id.matches("^[1-8]\\d{16}[0-9X]$") || "000".equals(id.substring(14, 17)))
+        {
+            return null;
+        }
+
+        int sum = 0;
+        for (int i = 0; i < CHECKSUM_WEIGHTS.length; i++)
+        {
+            sum += (id.charAt(i) - '0') * CHECKSUM_WEIGHTS[i];
+        }
+        if (id.charAt(17) != CHECKSUM_CODES[sum % 11])
+        {
+            return null;
+        }
+
+        try
+        {
+            LocalDate birthDate = LocalDate.parse(id.substring(6, 14), BIRTH_DATE_FORMATTER);
+            LocalDate today = LocalDate.now();
+            if (birthDate.isAfter(today))
+            {
+                return null;
+            }
+            return Period.between(birthDate, today).getYears();
+        }
+        catch (DateTimeException e)
+        {
+            return null;
+        }
+    }
 
     /**
      * 根据身份证号推算性别（港好住 hz_user.gender 库内编码：1=男 2=女）。

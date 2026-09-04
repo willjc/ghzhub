@@ -664,7 +664,7 @@
       </div>
       <div slot="footer">
         <el-button @click="facilityDialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="saveFacilities" :loading="facilitySaving">保 存</el-button>
+        <el-button type="primary" @click="saveFacilities" :loading="facilitySaving" :disabled="facilityLoading">保 存</el-button>
       </div>
     </el-dialog>
   </div>
@@ -725,11 +725,13 @@ export default {
       currentProjectName: '',
       // 设施管理相关
       facilityDialogVisible: false,
+      currentFacilityProjectType: '1',
       currentFacilityHouseTypeId: null,
       facilityHouseTypeList: [],
       allFacilityItems: [],
       facilityConfigList: [],
       facilityCategories: ['电气类', '灯具类', '卫浴类', '厨房类', '墙地面类', '门窗类', '家具类'],
+      facilityLoading: false,
       facilitySaving: false,
       // 查询参数
       queryParams: {
@@ -930,23 +932,26 @@ export default {
     handleFacilityManage(row) {
       this.currentProjectId = row.projectId
       this.currentProjectName = row.projectName
+      this.currentFacilityProjectType = row.projectType || '1'
       this.currentFacilityHouseTypeId = null
       this.facilityConfigList = []
-      this.facilityDialogVisible = true
-      // 加载该项目的户型列表
-      listHouseType({ projectId: row.projectId }).then(res => {
-        this.facilityHouseTypeList = res.rows || res.data || []
+      this.allFacilityItems = []
+      // 保租房和市场租赁共用 RENTAL 点验单，人才公寓使用原有 TALENT 点验单。
+      const params = this.currentFacilityProjectType === '2' || this.currentFacilityProjectType === '3'
+        ? { templateType: 'RENTAL' }
+        : { templateType: 'TALENT' }
+      Promise.all([listHouseType({ projectId: row.projectId }), listFacilityItem(params)]).then(([typeRes, itemRes]) => {
+        this.facilityHouseTypeList = typeRes.rows || typeRes.data || []
+        this.allFacilityItems = itemRes.data || itemRes.rows || []
+        this.facilityCategories = [...new Set(this.allFacilityItems.map(item => item.facilityCategory).filter(Boolean))]
+        this.facilityDialogVisible = true
       })
-      // 加载设施总表
-      if (this.allFacilityItems.length === 0) {
-        listFacilityItem().then(res => {
-          this.allFacilityItems = res.data || res.rows || []
-        })
-      }
     },
     /** 选择户型 */
     selectHouseType(type) {
-      this.currentFacilityHouseTypeId = type.houseTypeId
+      const houseTypeId = type.houseTypeId
+      this.currentFacilityHouseTypeId = houseTypeId
+      this.facilityLoading = true
       // 基于总表构建配置列表，默认全部未勾选
       this.facilityConfigList = this.allFacilityItems.map(item => ({
         facilityItemId: item.facilityItemId,
@@ -958,7 +963,8 @@ export default {
         remark: ''
       }))
       // 加载该户型已保存的配置，回填
-      listHouseTypeFacility(type.houseTypeId).then(res => {
+      listHouseTypeFacility(houseTypeId).then(res => {
+        if (this.currentFacilityHouseTypeId !== houseTypeId) return
         const saved = res.data || res.rows || []
         saved.forEach(s => {
           const target = this.facilityConfigList.find(f => f.facilityItemId === s.facilityItemId)
@@ -969,6 +975,8 @@ export default {
             target.remark = s.remark || ''
           }
         })
+      }).finally(() => {
+        if (this.currentFacilityHouseTypeId === houseTypeId) this.facilityLoading = false
       })
     },
     /** 按类别过滤设施 */

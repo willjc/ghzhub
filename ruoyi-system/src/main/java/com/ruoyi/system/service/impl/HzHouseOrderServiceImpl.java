@@ -31,7 +31,9 @@ import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzDocument;
 import com.ruoyi.system.domain.HzHouse;
 import com.ruoyi.system.domain.HzHouseOrder;
+import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.domain.HzUser;
+import com.ruoyi.system.gov.service.QualificationCheckService;
 import com.ruoyi.system.domain.vo.BatchPreferenceVo;
 import com.ruoyi.system.mapper.HzBatchHouseMapper;
 import com.ruoyi.system.mapper.HzBatchTenantMapper;
@@ -40,6 +42,7 @@ import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.mapper.HzDocumentMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzHouseOrderMapper;
+import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.mapper.HzUserMapper;
 import com.ruoyi.system.service.IHzHouseOrderService;
 
@@ -62,6 +65,12 @@ public class HzHouseOrderServiceImpl
     private HzHouseMapper houseMapper;
 
     @Autowired
+    private HzProjectMapper projectMapper;
+
+    @Autowired
+    private QualificationCheckService qualificationCheckService;
+
+    @Autowired
     private HzDocumentMapper documentMapper;
 
     @Autowired
@@ -82,6 +91,20 @@ public class HzHouseOrderServiceImpl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public AjaxResult createOrder(Long tenantId, Long houseId) {
+        HzHouse house = houseMapper.selectById(houseId);
+        if (house == null) {
+            return AjaxResult.error("房源不存在");
+        }
+        HzProject project = projectMapper.selectById(house.getProjectId());
+        if (project == null) {
+            return AjaxResult.error("房源所属项目不存在");
+        }
+        try {
+            qualificationCheckService.requireEligible(tenantId, project.getProjectType());
+        } catch (IllegalStateException e) {
+            return AjaxResult.error(e.getMessage());
+        }
+
         // 1. 检查是否有进行中的活跃订单
         List<HzHouseOrder> activeOrders = list(new LambdaQueryWrapper<HzHouseOrder>()
                 .eq(HzHouseOrder::getTenantId, tenantId)
@@ -164,9 +187,6 @@ public class HzHouseOrderServiceImpl
                 return AjaxResult.error("该房源已被他人选中，请重新选择");
             }
         }
-
-        // 4. 查询房源信息
-        HzHouse house = houseMapper.selectById(houseId);
 
         // 5. 创建预订单
         HzHouseOrder order = new HzHouseOrder();

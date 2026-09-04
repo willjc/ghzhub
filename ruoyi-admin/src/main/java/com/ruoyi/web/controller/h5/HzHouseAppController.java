@@ -370,6 +370,7 @@ public class HzHouseAppController extends BaseController {
         // 项目信息
         if (project != null) {
             result.put("projectId", project.getProjectId());
+            result.put("projectType", project.getProjectType());
             result.put("projectName", project.getProjectName());
             result.put("address", project.getAddress());
             result.put("latitude", project.getLatitude());

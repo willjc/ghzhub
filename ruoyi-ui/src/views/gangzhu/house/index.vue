@@ -873,7 +873,7 @@
       </div>
       <div slot="footer">
         <el-button @click="houseFacilityDialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="saveHouseFacilities" :loading="houseFacilitySaving">保 存</el-button>
+        <el-button type="primary" @click="saveHouseFacilities" :loading="houseFacilitySaving" :disabled="houseFacilityLoading">保 存</el-button>
       </div>
     </el-dialog>
 
@@ -1023,6 +1023,7 @@ export default {
       allFacilityItems: [],
       facilityCategories: ['电气类', '灯具类', '卫浴类', '厨房类', '墙地面类', '门窗类', '家具类'],
       houseFacilityCount: 0,
+      houseFacilityLoading: false,
       houseFacilitySaving: false,
       // 是否显示导入对话框
       upload: {
@@ -1204,6 +1205,7 @@ export default {
       this.buildingList = [];
       this.unitList = [];
       this.houseTypeList = [];
+      this.allFacilityItems = [];
       if (projectId) {
         // 加载楼栋列表
         listBuilding({ projectId: projectId, status: "0" }).then(response => {
@@ -1625,21 +1627,28 @@ export default {
     },
 
     /** 打开设施编辑器 */
-    openFacilityEditor() {
+    async openFacilityEditor() {
       if (!this.form.houseId) {
         this.$modal.msgWarning('请先保存房源基本信息后再配置设施');
         return;
       }
       this.houseFacilityDialogVisible = true;
-      this.loadAllFacilityItems();
+      this.houseFacilityLoading = true;
+      try {
+        await this.loadAllFacilityItems();
+      } finally {
+        this.houseFacilityLoading = false;
+      }
     },
 
     /** 加载设施总表并合并已有配置 */
     async loadAllFacilityItems() {
-      if (this.allFacilityItems.length === 0) {
-        const res = await listFacilityItem();
-        this.allFacilityItems = res.data || res.rows || [];
-      }
+      const project = this.projectList.find(item => String(item.projectId) === String(this.form.projectId));
+      const projectType = project ? String(project.projectType || '1') : '1';
+      const params = { templateType: projectType === '2' || projectType === '3' ? 'RENTAL' : 'TALENT' };
+      const res = await listFacilityItem(params);
+      this.allFacilityItems = res.data || res.rows || [];
+      this.facilityCategories = [...new Set(this.allFacilityItems.map(item => item.facilityCategory).filter(Boolean))];
       // 构建配置列表
       this.houseFacilityList = this.allFacilityItems.map(item => ({
         facilityItemId: item.facilityItemId,

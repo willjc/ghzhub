@@ -54,8 +54,8 @@ export function getCurrentApplyType() {
 
 /**
  * 资格前置守卫：
- * 0. 批量配租用户 → 直接放行（无需走资格校验）
  * 1. 未登录 → 跳登录
+ * 2. 人才公寓批量配租用户 → 直接放行（无需走政务资格校验）
  * 2. 已校验通过 → onPass 回调（放行）
  * 3. 已校验未通过 → 跳 fail 页
  * 4. 未校验过 → 跳 check 页（进度页跑完再决定去哪）
@@ -78,14 +78,31 @@ export function ensureQualified(onPass, options = {}) {
   uni.showLoading({ title: '校验中...', mask: true })
   const applyType = options.applyType || getCurrentApplyType()
 
-  // 市场租赁：跳过政务资格审查，直接放行（防御，正常已在入口页短路）
-  if (applyType === '3') {
-    uni.hideLoading()
-    if (typeof onPass === 'function') onPass()
+  const checkStatus = () => getQualificationStatus(userId, applyType).then((res2) => {
+        uni.hideLoading()
+        const data = (res2 && res2.data) || {}
+        if (data.checked && data.passed) {
+          if (typeof onPass === 'function') onPass()
+          return
+        }
+        if (data.checked && !data.passed) {
+          goFailPage(data, applyType)
+          return
+        }
+        // 未校验过 → 跳进度页
+        goCheckPage({ ...options, applyType })
+      })
+
+  // 保租房/市场租赁始终由服务端校验有效身份证和年龄，不能被测试豁免绕过。
+  if (applyType === '2' || applyType === '3') {
+    checkStatus().catch(() => {
+      uni.hideLoading()
+      goCheckPage({ ...options, applyType })
+    })
     return
   }
 
-  // 先判断批量配租豁免，命中则直接放行（不再调资格校验）
+  // 人才公寓保留原批量配租/预览账号豁免。
   getIsBatchTenant(userId)
     .then((res) => {
       const isBatch = !!(res && res.data && res.data.isBatchTenant)
@@ -94,21 +111,7 @@ export function ensureQualified(onPass, options = {}) {
         if (typeof onPass === 'function') onPass()
         return
       }
-      // 未命中批量配租 → 走原资格校验流程
-      return getQualificationStatus(userId, applyType).then((res2) => {
-        uni.hideLoading()
-        const data = (res2 && res2.data) || {}
-        if (data.checked && data.passed) {
-          if (typeof onPass === 'function') onPass()
-          return
-        }
-        if (data.checked && !data.passed) {
-          goFailPage(data)
-          return
-        }
-        // 未校验过 → 跳进度页
-        goCheckPage(options)
-      })
+      return checkStatus()
     })
     .catch(() => {
       uni.hideLoading()
@@ -119,6 +122,9 @@ export function ensureQualified(onPass, options = {}) {
 
 function goCheckPage(options = {}) {
   const params = []
+  if (options.applyType) {
+    params.push(`applyType=${encodeURIComponent(options.applyType)}`)
+  }
   if (options.redirectAfterPass) {
     params.push(`redirect=${encodeURIComponent(options.redirectAfterPass)}`)
   }
@@ -130,11 +136,11 @@ function goCheckPage(options = {}) {
   uni.navigateTo({ url: `/subpkg/qualification/check${qs}` })
 }
 
-function goFailPage(data) {
+function goFailPage(data, applyType) {
   const reasons = encodeURIComponent(JSON.stringify(data.failReasons || []))
   const items = encodeURIComponent(JSON.stringify(data.items || []))
   uni.navigateTo({
-    url: `/subpkg/qualification/fail?reasons=${reasons}&items=${items}`
+    url: `/subpkg/qualification/fail?reasons=${reasons}&items=${items}&applyType=${encodeURIComponent(applyType || '1')}`
   })
 }
 
@@ -145,27 +151,27 @@ function goFailPage(data) {
  * - 已校验且未通过：redirect 到 fail 页
  * - 其余情况：放行
  */
-export function guardOrRedirect() {
+export function guardOrRedirect(applyType = getCurrentApplyType()) {
   const userId = getCurrentUserId()
   if (!userId) return
-  const applyType = getCurrentApplyType()
-  // 市场租赁无需政务资格审查，直接放行
-  if (applyType === '3') return
-  // 先判断批量配租豁免
+  const checkStatus = () => getQualificationStatus(userId, applyType)
+    .then((res2) => {
+      const data = (res2 && res2.data) || {}
+      if (data.checked && !data.passed) {
+        goFailPage(data, applyType)
+      }
+    })
+
+  if (applyType === '2' || applyType === '3') {
+    checkStatus().catch(() => {})
+    return
+  }
+
   getIsBatchTenant(userId)
     .then((res) => {
       const isBatch = !!(res && res.data && res.data.isBatchTenant)
       if (isBatch) return
-      return getQualificationStatus(userId, applyType).then((res2) => {
-        const data = (res2 && res2.data) || {}
-        if (data.checked && !data.passed) {
-          const reasons = encodeURIComponent(JSON.stringify(data.failReasons || []))
-          const items = encodeURIComponent(JSON.stringify(data.items || []))
-          uni.redirectTo({
-            url: `/subpkg/qualification/fail?reasons=${reasons}&items=${items}`
-          })
-        }
-      })
+      return checkStatus()
     })
     .catch(() => {})
 }

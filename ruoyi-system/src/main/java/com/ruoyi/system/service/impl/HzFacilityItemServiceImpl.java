@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzFacilityItem;
 import com.ruoyi.system.mapper.HzFacilityItemMapper;
+import com.ruoyi.system.mapper.HzFacilityTemplateItemMapper;
 import com.ruoyi.system.service.IHzFacilityItemService;
 import org.springframework.stereotype.Service;
 
@@ -19,12 +20,23 @@ import java.util.List;
 @Service
 public class HzFacilityItemServiceImpl extends ServiceImpl<HzFacilityItemMapper, HzFacilityItem> implements IHzFacilityItemService
 {
+    private final HzFacilityTemplateItemMapper templateItemMapper;
+
+    public HzFacilityItemServiceImpl(HzFacilityTemplateItemMapper templateItemMapper)
+    {
+        this.templateItemMapper = templateItemMapper;
+    }
+
     /**
      * 查询设施物品列表（支持按分类筛选）
      */
     @Override
     public List<HzFacilityItem> selectFacilityItemList(HzFacilityItem query)
     {
+        if (StringUtils.isNotEmpty(query.getTemplateType()))
+        {
+            return templateItemMapper.selectFacilityItemsByTemplate(query);
+        }
         LambdaQueryWrapper<HzFacilityItem> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(StringUtils.isNotEmpty(query.getFacilityName()), HzFacilityItem::getFacilityName, query.getFacilityName())
                .eq(StringUtils.isNotEmpty(query.getFacilityCategory()), HzFacilityItem::getFacilityCategory, query.getFacilityCategory())

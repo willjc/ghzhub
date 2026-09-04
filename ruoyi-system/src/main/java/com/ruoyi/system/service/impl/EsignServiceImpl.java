@@ -3,6 +3,7 @@ package com.ruoyi.system.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,7 @@ import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.mapper.HzUnitMapper;
 import com.ruoyi.system.mapper.HzUserMapper;
 import com.ruoyi.system.service.EsignService;
+import com.ruoyi.system.service.HzFacilityTemplateMappingService;
 import com.ruoyi.system.service.IHzCheckInService;
 import com.ruoyi.system.service.IHzUserMessageService;
 import com.ruoyi.system.util.TalentApartmentRentCalculator;
@@ -66,6 +68,7 @@ public class EsignServiceImpl implements EsignService {
     @Value("${esign.org-id}") private String orgId;
     @Value("${esign.redirect-url}") private String redirectUrl;
     @Value("${esign.template-id}") private String templateId;
+    @Value("${esign.rental-template-id:}") private String rentalTemplateId;
 
     private final HzUserMapper userMapper;
     private final HzContractMapper contractMapper;
@@ -80,6 +83,7 @@ public class EsignServiceImpl implements EsignService {
     private final IHzCheckInService checkInService;
     private final IHzUserMessageService messageService;
     private final HzHouseExchangeMapper houseExchangeMapper;
+    private final HzFacilityTemplateMappingService facilityTemplateMappingService;
 
     public EsignServiceImpl(HzUserMapper userMapper, HzContractMapper contractMapper,
                             HzHouseOrderMapper orderMapper, HzBillMapper billMapper,
@@ -88,7 +92,8 @@ public class EsignServiceImpl implements EsignService {
                             HzHouseFacilityMapper houseFacilityMapper,
                             HzHouseTypeFacilityMapper houseTypeFacilityMapper,
                             IHzCheckInService checkInService, IHzUserMessageService messageService,
-                            HzHouseExchangeMapper houseExchangeMapper) {
+                            HzHouseExchangeMapper houseExchangeMapper,
+                            HzFacilityTemplateMappingService facilityTemplateMappingService) {
         this.userMapper = userMapper;
         this.contractMapper = contractMapper;
         this.orderMapper = orderMapper;
@@ -102,6 +107,7 @@ public class EsignServiceImpl implements EsignService {
         this.checkInService = checkInService;
         this.messageService = messageService;
         this.houseExchangeMapper = houseExchangeMapper;
+        this.facilityTemplateMappingService = facilityTemplateMappingService;
     }
 
     // ==================== 实名认证 ====================
@@ -226,19 +232,24 @@ public class EsignServiceImpl implements EsignService {
         HzUser user = userMapper.selectById(contract.getTenantId());
         if (user == null) throw new RuntimeException("用户不存在");
 
-        String componentsJson = buildTemplateComponents(contract, user);
+        boolean rentalContract = isRentalContract(contract);
+        String selectedTemplateId = rentalContract ? rentalTemplateId : templateId;
+        if (selectedTemplateId == null || selectedTemplateId.isBlank()) {
+            throw new RuntimeException("保租房/市场租赁合同模板尚未配置");
+        }
+        String componentsJson = rentalContract
+                ? buildRentalTemplateComponents(contract, user)
+                : buildTemplateComponents(contract, user);
         String fileName = "租赁合同_" + contractId + ".pdf";
 
-        String jsonParm = "{\"docTemplateId\":\"" + templateId + "\","
+        String jsonParm = "{\"docTemplateId\":\"" + selectedTemplateId + "\","
                 + "\"fileName\":\"" + fileName + "\","
                 + "\"components\":" + componentsJson + "}";
 
         EsignHttpResponse resp = callApi("POST", "/v3/files/create-by-doc-template", jsonParm);
         JsonObject root = gson.fromJson(resp.getBody(), JsonObject.class);
         if (root.get("code").getAsInt() != 0) {
-            // 详细日志：定位 e签宝模板填充失败的具体控件
-            log.error("e签宝模板填充失败 contractId={} response={} requestComponents={}",
-                    contractId, resp.getBody(), componentsJson);
+            log.error("e签宝模板填充失败 contractId={} response={}", contractId, resp.getBody());
             throw new RuntimeException("模板填充生成文件失败: " + root.get("message").getAsString());
         }
 
@@ -594,6 +605,141 @@ public class EsignServiceImpl implements EsignService {
         sb.append("]");
         return sb.toString();
         // 单行文本5 (default:栗毅, 甲方代表人)、单行文本7 (default:\) — 保留模板默认值，不传
+    }
+
+    /** 保租房、市场租赁共用的新合同模板，全部按控件编码填充。 */
+    private String buildRentalTemplateComponents(HzContract contract, HzUser user) {
+        HzHouse house = contract.getHouseId() == null ? null : houseMapper.selectById(contract.getHouseId());
+        HzProject project = house != null && house.getProjectId() != null
+                ? projectMapper.selectById(house.getProjectId())
+                : (contract.getProjectId() == null ? null : projectMapper.selectById(contract.getProjectId()));
+
+        String tenantName = contract.getTenantName() != null ? contract.getTenantName()
+                : (user.getRealName() != null ? user.getRealName() : "");
+        String idCard = contract.getTenantIdCard() != null ? contract.getTenantIdCard()
+                : (user.getIdCard() != null ? user.getIdCard() : "");
+        String phone = contract.getTenantPhone() != null ? contract.getTenantPhone()
+                : (user.getPhone() != null ? user.getPhone() : "");
+        String contractNo = contract.getContractNo() != null ? contract.getContractNo() : "";
+        String houseNo = house != null && house.getHouseNo() != null ? house.getHouseNo() : "";
+        String houseAddress = contract.getHouseAddress() != null ? contract.getHouseAddress() : "";
+        if (!houseNo.isEmpty() && !houseAddress.endsWith(houseNo)) houseAddress += houseNo;
+        String houseArea = house != null && house.getArea() != null ? house.getArea().toString() : "0";
+        BigDecimal monthlyRentValue = contract.getRentPrice() != null ? contract.getRentPrice() : BigDecimal.ZERO;
+        BigDecimal depositValue = contract.getDeposit() != null ? contract.getDeposit() : BigDecimal.ZERO;
+        String unitPrice = "0";
+        if (house != null && house.getArea() != null && house.getArea().compareTo(BigDecimal.ZERO) > 0) {
+            unitPrice = monthlyRentValue.divide(house.getArea(), 2, java.math.RoundingMode.HALF_UP).toPlainString();
+        }
+        String[] start = splitDate(contract.getStartDate());
+        String[] end = splitDate(contract.getEndDate());
+        String projectAddress = project != null && project.getAddress() != null ? project.getAddress() : "";
+        String projectName = project != null && project.getProjectName() != null ? project.getProjectName() : "";
+        String managerName = project != null && project.getManagerName() != null ? project.getManagerName() : "";
+        HzBuilding building = house != null && house.getBuildingId() != null
+                ? buildingMapper.selectById(house.getBuildingId()) : null;
+        HzUnit unit = house != null && house.getUnitId() != null
+                ? unitMapper.selectById(house.getUnitId()) : null;
+        String inspectionTitle = projectName
+                + (building != null && building.getBuildingName() != null ? "-" + building.getBuildingName() : "")
+                + (unit != null && unit.getUnitName() != null ? "-" + unit.getUnitName() : "")
+                + (!houseNo.isEmpty() ? "-" + houseNo : "")
+                + "房屋设施及物品点验单";
+
+        Map<Long, Integer> quantities = new HashMap<>();
+        if (contract.getHouseId() != null) {
+            List<HzHouseFacility> facilities = houseFacilityMapper.selectList(
+                    new LambdaQueryWrapper<HzHouseFacility>()
+                            .eq(HzHouseFacility::getHouseId, contract.getHouseId())
+                            .eq(HzHouseFacility::getDelFlag, "0"));
+            if (facilities == null || facilities.isEmpty()) {
+                facilities = new ArrayList<>();
+                if (house != null && house.getHouseTypeId() != null) {
+                    for (HzHouseTypeFacility item : houseTypeFacilityMapper.selectList(
+                            new LambdaQueryWrapper<HzHouseTypeFacility>()
+                                    .eq(HzHouseTypeFacility::getHouseTypeId, house.getHouseTypeId())
+                                    .eq(HzHouseTypeFacility::getDelFlag, "0"))) {
+                        HzHouseFacility facility = new HzHouseFacility();
+                        facility.setFacilityItemId(item.getFacilityItemId());
+                        facility.setQuantity(item.getQuantity());
+                        facilities.add(facility);
+                    }
+                }
+            }
+            for (HzHouseFacility facility : facilities) {
+                if (facility.getFacilityItemId() != null) {
+                    quantities.merge(facility.getFacilityItemId(),
+                            facility.getQuantity() == null ? 0 : facility.getQuantity(), Integer::sum);
+                }
+            }
+        }
+        Map<Long, String> facilityKeys = facilityTemplateMappingService.componentKeys(
+                HzFacilityTemplateMappingService.RENTAL, quantities.keySet());
+
+        List<Map<String, String>> components = new ArrayList<>();
+        addComponent(components, "rental_contract_no", contractNo);
+        addComponent(components, "rental_tenant_name_cover", tenantName);
+        addComponent(components, "rental_tenant_name", tenantName);
+        addComponent(components, "rental_tenant_id_card", idCard);
+        addComponent(components, "rental_tenant_phone", phone);
+        addComponent(components, "rental_house_address", houseAddress);
+        addComponent(components, "rental_house_area", houseArea);
+        addComponent(components, "rental_start_year", start[0]);
+        addComponent(components, "rental_start_month", start[1]);
+        addComponent(components, "rental_start_day", start[2]);
+        addComponent(components, "rental_end_year", end[0]);
+        addComponent(components, "rental_end_month", end[1]);
+        addComponent(components, "rental_end_day", end[2]);
+        addComponent(components, "rental_unit_price", unitPrice);
+        addComponent(components, "rental_monthly_rent", monthlyRentValue.toPlainString());
+        addComponent(components, "rental_monthly_rent_upper", convertToChineseAmount(monthlyRentValue));
+        addComponent(components, "rental_deposit", depositValue.toPlainString());
+        addComponent(components, "rental_deposit_upper", convertToChineseAmount(depositValue));
+        addComponent(components, "rental_contract_no_sign", contractNo);
+        addComponent(components, "rental_inspection_title", inspectionTitle);
+        addComponent(components, "rental_inspection_tenant_name", tenantName);
+        addComponent(components, "rental_inspection_project_address", projectAddress);
+        addComponent(components, "rental_inspection_manager", managerName);
+        for (Map.Entry<Long, Integer> entry : quantities.entrySet()) {
+            if (entry.getValue() > 0) {
+                addComponent(components, facilityKeys.get(entry.getKey()), String.valueOf(entry.getValue()));
+            }
+        }
+        return gson.toJson(components);
+    }
+
+    private boolean isRentalContract(HzContract contract) {
+        Long projectId = null;
+        if (contract.getHouseId() != null) {
+            HzHouse house = houseMapper.selectById(contract.getHouseId());
+            if (house != null) {
+                projectId = house.getProjectId();
+                if (contract.getProjectId() != null && !contract.getProjectId().equals(projectId)) {
+                    throw new RuntimeException("合同项目与房源所属项目不一致");
+                }
+            }
+        }
+        if (projectId == null) projectId = contract.getProjectId();
+        HzProject project = projectId == null ? null : projectMapper.selectById(projectId);
+        return project != null && ("2".equals(project.getProjectType()) || "3".equals(project.getProjectType()));
+    }
+
+    private String[] splitDate(String value) {
+        if (value == null || value.isBlank()) return new String[]{"", "", ""};
+        try {
+            LocalDate date = LocalDate.parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            return new String[]{String.valueOf(date.getYear()), String.valueOf(date.getMonthValue()), String.valueOf(date.getDayOfMonth())};
+        } catch (Exception e) {
+            throw new IllegalArgumentException("合同日期格式错误: " + value);
+        }
+    }
+
+    private void addComponent(List<Map<String, String>> components, String key, String value) {
+        if (key == null || key.isBlank() || value == null || value.isBlank()) return;
+        Map<String, String> component = new HashMap<>();
+        component.put("componentKey", key);
+        component.put("componentValue", value);
+        components.add(component);
     }
 
     /**

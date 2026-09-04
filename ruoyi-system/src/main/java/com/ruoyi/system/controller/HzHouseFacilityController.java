@@ -87,7 +87,10 @@ public class HzHouseFacilityController extends BaseController
     @PostMapping("/batchSave")
     public AjaxResult batchSave(@RequestBody HouseFacilitySaveRequest request)
     {
-        hzHouseFacilityService.batchSave(request.getHouseId(), request.getList());
+        if (request.getFacilities() == null) {
+            return error("设施列表不能为空");
+        }
+        hzHouseFacilityService.batchSave(request.getHouseId(), request.getFacilities());
         return success();
     }
 
@@ -109,7 +112,7 @@ public class HzHouseFacilityController extends BaseController
     public static class HouseFacilitySaveRequest
     {
         private Long houseId;
-        private List<HzHouseFacility> list;
+        private List<HzHouseFacility> facilities;
 
         public Long getHouseId()
         {
@@ -121,14 +124,14 @@ public class HzHouseFacilityController extends BaseController
             this.houseId = houseId;
         }
 
-        public List<HzHouseFacility> getList()
+        public List<HzHouseFacility> getFacilities()
         {
-            return list;
+            return facilities;
         }
 
-        public void setList(List<HzHouseFacility> list)
+        public void setFacilities(List<HzHouseFacility> facilities)
         {
-            this.list = list;
+            this.facilities = facilities;
         }
     }
 

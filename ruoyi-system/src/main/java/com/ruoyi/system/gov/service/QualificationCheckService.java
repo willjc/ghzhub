@@ -23,6 +23,8 @@ import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.ruoyi.common.utils.IdCardUtils;
+import com.ruoyi.system.domain.HzBatchTenant;
 import com.ruoyi.system.domain.HzContract;
 import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.domain.HzQualification;
@@ -30,6 +32,7 @@ import com.ruoyi.system.domain.HzUser;
 import com.ruoyi.system.gov.client.GovDataClient;
 import com.ruoyi.system.gov.dto.QualificationCheckResult;
 import com.ruoyi.system.gov.dto.QualificationCheckResult.CheckItem;
+import com.ruoyi.system.mapper.HzBatchTenantMapper;
 import com.ruoyi.system.mapper.HzContractMapper;
 import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.service.IHzQualificationService;
@@ -66,6 +69,9 @@ public class QualificationCheckService {
      */
     @Value("${gov.proxy.hangzone-codes:410173,410126}")
     private String hangzoneCodesRaw;
+
+    @Value("${ghz.preview-phones:}")
+    private String previewPhones;
 
     /** 申请人在港区单位连续缴纳社保所需月份数 */
     private static final int REQUIRED_SOCIAL_MONTHS = 3;
@@ -116,6 +122,9 @@ public class QualificationCheckService {
     @Autowired
     private HzProjectMapper projectMapper;
 
+    @Autowired
+    private HzBatchTenantMapper batchTenantMapper;
+
     // ==================== 查询最新资格态 ====================
 
     public QualificationCheckResult getStatus(Long userId) {
@@ -123,13 +132,22 @@ public class QualificationCheckService {
     }
 
     public QualificationCheckResult getStatus(Long userId, String applyType) {
-        QualificationCheckResult ret = new QualificationCheckResult();
-        // 市场租赁：无需政务资格审查，直接视为通过（防御，正常前端已短路）
-        if ("3".equals(applyType)) {
-            ret.setChecked(true);
-            ret.setPassed(true);
+        if (isRentalType(applyType)) {
+            HzUser user = userService.selectHzUserById(userId);
+            validateRentalUser(user);
+            HzQualification q = qualificationService.selectQualificationByTenantIdAndType(userId, applyType);
+            if (q == null || !isCheckedToday(q.getLastCheckTime())) {
+                QualificationCheckResult ret = new QualificationCheckResult();
+                ret.setChecked(false);
+                return ret;
+            }
+            QualificationCheckResult ret = buildRentalResult(user, applyType, !isQualificationExempt(userId));
+            ret.setQualificationId(q.getQualificationId());
+            ret.setLastCheckTime(q.getLastCheckTime());
             return ret;
         }
+
+        QualificationCheckResult ret = new QualificationCheckResult();
         HzQualification q = qualificationService.selectQualificationByTenantIdAndType(userId, applyType);
         if (q == null) {
             ret.setChecked(false);
@@ -187,6 +205,13 @@ public class QualificationCheckService {
 
     public QualificationCheckResult check(Long userId, String applyType) {
         HzUser user = userService.selectHzUserById(userId);
+        if (isRentalType(applyType)) {
+            validateRentalUser(user);
+            QualificationCheckResult result = buildRentalResult(user, applyType, !isQualificationExempt(userId));
+            persistRentalResult(user, applyType, result);
+            return result;
+        }
+
         if (user == null || isBlank(user.getIdCard()) || isBlank(user.getRealName())) {
             QualificationCheckResult r = new QualificationCheckResult();
             r.setChecked(true);
@@ -197,14 +222,6 @@ public class QualificationCheckService {
         }
         String idCard = user.getIdCard().trim();
         String name = user.getRealName().trim();
-
-        // 市场租赁：跳过全部政务资格审查，实名通过即放行（防御，正常前端已短路）
-        if ("3".equals(applyType)) {
-            QualificationCheckResult r = new QualificationCheckResult();
-            r.setChecked(true);
-            r.setPassed(true);
-            return r;
-        }
 
         // 一人一户/在住拦截：若用户当前有在住的同类型合同，直接拦截
         if (hasActiveContractOfType(userId, applyType)) {
@@ -335,6 +352,117 @@ public class QualificationCheckService {
         upsert(entity, applyType);
         result.setQualificationId(entity.getQualificationId());
         return result;
+    }
+
+    /**
+     * 创建预订单/合同前的服务端资格守卫。
+     */
+    public void requireEligible(Long userId, String projectType) {
+        QualificationCheckResult result;
+        if (isRentalType(projectType)) {
+            HzUser user = userService.selectHzUserById(userId);
+            validateRentalUser(user);
+            result = buildRentalResult(user, projectType, !isQualificationExempt(userId));
+        } else if ("1".equals(projectType)) {
+            if (isQualificationExempt(userId)) {
+                return;
+            }
+            result = getStatus(userId, projectType);
+        } else {
+            throw new IllegalStateException("房源项目类型无效");
+        }
+
+        if (!result.isChecked()) {
+            throw new IllegalStateException("请先完成资格校验");
+        }
+        if (!result.isPassed()) {
+            String reason = result.getFailReasons().isEmpty()
+                    ? "当前不符合申请条件"
+                    : result.getFailReasons().get(0);
+            throw new IllegalStateException(reason);
+        }
+    }
+
+    private boolean isRentalType(String applyType) {
+        return "2".equals(applyType) || "3".equals(applyType);
+    }
+
+    private void validateRentalUser(HzUser user) {
+        if (user == null) {
+            throw new IllegalStateException("用户不存在");
+        }
+        if (IdCardUtils.calculateAge(user.getIdCard()) == null) {
+            throw new IllegalStateException("身份证信息无效，请先完善有效身份信息");
+        }
+    }
+
+    private QualificationCheckResult buildRentalResult(HzUser user, String applyType, boolean checkActiveContract) {
+        Integer ageValue = IdCardUtils.calculateAge(user.getIdCard());
+        if (ageValue == null) {
+            throw new IllegalStateException("身份证信息无效，请先完善有效身份信息");
+        }
+        int age = ageValue;
+        boolean agePassed = age >= 18 && (!"2".equals(applyType) || age <= 60);
+        String ageRequirement = "2".equals(applyType) ? "18至60周岁（含）" : "年满18周岁";
+
+        QualificationCheckResult result = new QualificationCheckResult();
+        result.setChecked(true);
+        result.getItems().add(new CheckItem("age", "年龄校验",
+                agePassed ? "passed" : "failed",
+                agePassed ? "当前" + age + "周岁，符合年龄要求" : "申请人年龄须为" + ageRequirement));
+        if (!agePassed) {
+            result.getFailReasons().add("申请人年龄须为" + ageRequirement);
+        }
+        if (checkActiveContract && "2".equals(applyType) && hasActiveContractOfType(user.getUserId(), applyType)) {
+            result.getFailReasons().add("您当前正在租住保租房，不可重复申请");
+        }
+        result.setPassed(agePassed && result.getFailReasons().isEmpty());
+        return result;
+    }
+
+    private void persistRentalResult(HzUser user, String applyType, QualificationCheckResult result) {
+        String now = LocalDateTime.now().format(FMT);
+        result.setLastCheckTime(now);
+
+        HzQualification entity = new HzQualification();
+        entity.setTenantId(user.getUserId());
+        entity.setApplyType(applyType);
+        entity.setIdCard(user.getIdCard());
+        entity.setName(user.getRealName());
+        entity.setPhone(user.getPhone());
+        entity.setSocialValid("0");
+        entity.setHasLocalHouse("0");
+        entity.setSelfHasHousing("0");
+        entity.setSpouseHasEstate("0");
+        entity.setSpouseHasHousing("0");
+        entity.setAutoCheckResult(result.isPassed() ? "1" : "0");
+        entity.setFinalResult(result.isPassed() ? "1" : "0");
+        entity.setAutoCheckReason(joinReasons(result.getFailReasons()));
+        entity.setLastCheckTime(now);
+        entity.setApplyTime(now);
+        upsert(entity, applyType);
+        result.setQualificationId(entity.getQualificationId());
+    }
+
+    public boolean isQualificationExempt(Long userId) {
+        HzUser user = userService.selectHzUserById(userId);
+        if (user == null) {
+            return false;
+        }
+        if (!isBlank(user.getPhone()) && !isBlank(previewPhones)) {
+            for (String phone : previewPhones.split(",")) {
+                if (user.getPhone().trim().equals(phone.trim())) {
+                    return true;
+                }
+            }
+        }
+        if (isBlank(user.getIdCard())) {
+            return false;
+        }
+        Long count = batchTenantMapper.selectCount(new LambdaQueryWrapper<HzBatchTenant>()
+                .eq(HzBatchTenant::getIdCard, user.getIdCard())
+                .eq(HzBatchTenant::getDelFlag, "0"));
+        return count != null && count > 0;
     }
 
     // ==================== 逐项判定 ====================

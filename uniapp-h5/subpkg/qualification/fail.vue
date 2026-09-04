@@ -50,11 +50,13 @@
 export default {
   data() {
     return {
+      applyType: '1',
       reasons: [],
       items: []
     }
   },
   onLoad(options) {
+    this.applyType = (options && options.applyType) || '1'
     if (options && options.reasons) {
       try { this.reasons = JSON.parse(decodeURIComponent(options.reasons)) } catch (e) { this.reasons = [] }
     }
@@ -91,7 +93,7 @@ export default {
     },
     recheck() {
       // 手动重新校验：回 check 页重新跑一次
-      uni.redirectTo({ url: '/subpkg/qualification/check' })
+      uni.redirectTo({ url: `/subpkg/qualification/check?applyType=${encodeURIComponent(this.applyType)}` })
     },
     goAppeal() {
       uni.navigateTo({ url: '/subpkg/affairs/appeal-submit' })

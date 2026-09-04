@@ -44,6 +44,9 @@ public class HzHouseTypeFacilityController extends BaseController
     @PostMapping("/batchSave")
     public AjaxResult batchSave(@RequestBody HouseTypeFacilitySaveRequest request)
     {
+        if (request.getFacilities() == null) {
+            return error("设施列表不能为空");
+        }
         hzHouseTypeFacilityService.batchSave(request.getHouseTypeId(), request.getFacilities());
         return success();
     }

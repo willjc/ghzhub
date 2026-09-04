@@ -2,7 +2,7 @@
   <view class="page">
     <view class="header">
       <view class="title">正在校验申请资格</view>
-      <view class="subtitle">我们正在核对您的婚姻、学历及房产信息</view>
+      <view class="subtitle">{{ subtitle }}</view>
     </view>
 
     <view class="progress-bar">
@@ -64,6 +64,13 @@ export default {
       redirectParams: null
     }
   },
+  computed: {
+    subtitle() {
+      return this.applyType === '2' || this.applyType === '3'
+        ? '我们正在核对您的年龄信息'
+        : '我们正在核对您的婚姻、学历及房产信息'
+    }
+  },
   onLoad(options) {
     if (options && options.redirect) {
       this.redirect = decodeURIComponent(options.redirect)
@@ -75,10 +82,10 @@ export default {
         this.redirectParams = null
       }
     }
-    // 当前办理类型：保租房(2)不展示学历校验行；人才公寓(1)【暂时关闭】社保校验，不展示社保行
-    this.applyType = getCurrentApplyType()
-    if (this.applyType === '2') {
-      this.items = this.items.filter(it => it.code !== 'education')
+    this.applyType = (options && options.applyType) || getCurrentApplyType()
+    uni.setStorageSync('currentApplyType', this.applyType)
+    if (this.applyType === '2' || this.applyType === '3') {
+      this.items = [{ code: 'age', label: '年龄校验', status: 'pending', message: '' }]
     } else {
       this.items = this.items.filter(it => it.code !== 'social')
     }
@@ -131,7 +138,7 @@ export default {
       // 服务端返回的 items 按 code 匹配
       const map = {}
       ;(data.items || []).forEach((it) => { map[it.code] = it })
-      this.items = this.items.map((it) => {
+      const merged = this.items.map((it) => {
         const srv = map[it.code]
         if (!srv) {
           // 服务端没返回（例如未婚就不会有 spouseEstate/spouseHousing），标记为跳过
@@ -144,6 +151,11 @@ export default {
           message: srv.message || ''
         }
       })
+      const knownCodes = merged.map(it => it.code)
+      ;(data.items || []).forEach((it) => {
+        if (knownCodes.indexOf(it.code) === -1) merged.push(it)
+      })
+      this.items = merged
 
       this.finished = true
       this.resultPassed = !!data.passed
@@ -194,7 +206,7 @@ export default {
       const reasons = encodeURIComponent(JSON.stringify(this.failReasons))
       const itemsPayload = encodeURIComponent(JSON.stringify(this.items))
       uni.redirectTo({
-        url: `/subpkg/qualification/fail?reasons=${reasons}&items=${itemsPayload}`
+        url: `/subpkg/qualification/fail?reasons=${reasons}&items=${itemsPayload}&applyType=${encodeURIComponent(this.applyType)}`
       })
     }
   }

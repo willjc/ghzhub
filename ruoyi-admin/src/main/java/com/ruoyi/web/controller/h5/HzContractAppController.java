@@ -44,6 +44,7 @@ import com.ruoyi.system.domain.HzProject;
 import com.ruoyi.system.domain.HzTenant;
 import com.ruoyi.system.domain.HzUnit;
 import com.ruoyi.system.domain.HzUser;
+import com.ruoyi.system.gov.service.QualificationCheckService;
 import com.ruoyi.system.domain.vo.BatchPreferenceVo;
 import com.ruoyi.system.mapper.HzBatchHouseMapper;
 import com.ruoyi.system.mapper.HzBillMapper;
@@ -115,6 +116,9 @@ public class HzContractAppController extends BaseController {
 
     @Autowired
     private IHzHouseOrderService houseOrderService;
+
+    @Autowired
+    private QualificationCheckService qualificationCheckService;
 
     /**
      * 根据用户ID获取合同列表
@@ -401,6 +405,9 @@ public class HzContractAppController extends BaseController {
                 return error("原合同不存在");
             }
             SecurityUtils.requireCurrentHzUser(oldContract.getTenantId());
+            if (!houseId.equals(oldContract.getHouseId())) {
+                return error("续租房源与原合同不一致");
+            }
             startDate = parseUtcToLocalDate(oldContract.getEndDate()).plusDays(1);
         } else {
             // 新签模式：当前日期+3天
@@ -543,7 +550,6 @@ public class HzContractAppController extends BaseController {
         try {
             // 参数安全解析（兼容e签宝流程，部分参数可选）
             Long houseId = Long.parseLong(params.getOrDefault("houseId", "0").toString());
-            Long projectId = Long.parseLong(params.getOrDefault("projectId", "0").toString());
             Long templateId = params.get("templateId") != null
                 ? Long.parseLong(params.get("templateId").toString()) : 0L;
             String contractContent = params.getOrDefault("contractContent", "").toString();
@@ -552,6 +558,22 @@ public class HzContractAppController extends BaseController {
                 ? Integer.parseInt(params.get("rentMonths").toString()) : 12;
 
             Long userId = getHzUserIdFromToken();
+
+            // 项目类型必须由服务端按房源归属判定，不信任前端 projectId/applyType。
+            HzHouse house = houseMapper.selectById(houseId);
+            if (house == null) {
+                return error("房源不存在");
+            }
+            Long projectId = house.getProjectId();
+            HzProject project = projectMapper.selectById(projectId);
+            if (project == null) {
+                return error("房源所属项目不存在");
+            }
+            try {
+                qualificationCheckService.requireEligible(userId, project.getProjectType());
+            } catch (IllegalStateException e) {
+                return error(e.getMessage());
+            }
 
             // 检测房源是否属于配租批次（优先使用批次日期）
             boolean isBatchMode = false;
@@ -601,11 +623,6 @@ public class HzContractAppController extends BaseController {
                 finalContract = contractContent.replace("乙方（签字）：______________",
                     "乙方（签字）：<img src='" + signatureUrl + "' style='height:60px;vertical-align:middle;'/>");
             }
-
-            // 3. 获取房源和项目信息
-            HzHouse house = houseMapper.selectById(houseId);
-
-            HzProject project = projectMapper.selectById(projectId);
 
             // 拼接完整地址（自动去重楼栋名）
             String houseAddress = buildHouseAddress(project, house);
@@ -736,6 +753,7 @@ public class HzContractAppController extends BaseController {
                 // 有预订单号：验证预订单有效性，跳过锁房
                 matchedOrder = houseOrderService.getOne(new LambdaQueryWrapper<HzHouseOrder>()
                         .eq(HzHouseOrder::getOrderNo, orderNo)
+                        .eq(HzHouseOrder::getTenantId, userId)
                         .eq(HzHouseOrder::getDelFlag, "0"));
                 if (matchedOrder == null) {
                     return error("预订单不存在");
@@ -893,7 +911,13 @@ public class HzContractAppController extends BaseController {
 
             // 3. 获取房源和项目信息
             HzHouse house = houseMapper.selectById(houseId);
-            HzProject project = projectMapper.selectById(projectId);
+            if (house == null) {
+                return error("房源不存在");
+            }
+            if (house.getProjectId() == null || !house.getProjectId().equals(projectId)) {
+                return error("续租项目与房源所属项目不一致");
+            }
+            HzProject project = projectMapper.selectById(house.getProjectId());
 
             // 拼接完整地址（自动去重楼栋名）
             String houseAddress = buildHouseAddress(project, house);

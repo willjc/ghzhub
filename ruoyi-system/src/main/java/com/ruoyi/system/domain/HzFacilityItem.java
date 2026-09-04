@@ -43,6 +43,14 @@ public class HzFacilityItem extends BaseEntity
     @TableLogic
     private String delFlag;
 
+    /** 点验单模板类型（查询条件/返回值，非数据库字段） */
+    @TableField(exist = false)
+    private String templateType;
+
+    /** e签宝模板控件编码（非数据库字段） */
+    @TableField(exist = false)
+    private String esignComponentKey;
+
     public Long getFacilityItemId()
     {
         return facilityItemId;
@@ -101,6 +109,26 @@ public class HzFacilityItem extends BaseEntity
     public void setDelFlag(String delFlag)
     {
         this.delFlag = delFlag;
+    }
+
+    public String getTemplateType()
+    {
+        return templateType;
+    }
+
+    public void setTemplateType(String templateType)
+    {
+        this.templateType = templateType;
+    }
+
+    public String getEsignComponentKey()
+    {
+        return esignComponentKey;
+    }
+
+    public void setEsignComponentKey(String esignComponentKey)
+    {
+        this.esignComponentKey = esignComponentKey;
     }
 
     @Override
