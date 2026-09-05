@@ -703,7 +703,7 @@ public class HzContractAppController extends BaseController {
             }
 
             // 5.2 市场化配租：不享受人才公寓30%补贴，合同金额按原价（rentPrice / 0.7）
-            if (contract.getBatchId() != null) {
+            if ("1".equals(project.getProjectType()) && contract.getBatchId() != null) {
                 try {
                     BatchPreferenceVo __bp = batchHouseMapper.selectBatchPreferenceByHouseId(houseId);
                     if (__bp != null && "2".equals(__bp.getPreferentialType())) {
@@ -969,7 +969,8 @@ public class HzContractAppController extends BaseController {
             // 市场化配租续租：不享受30%补贴，按原价
             try {
                 BatchPreferenceVo __renewBp = batchHouseMapper.selectBatchPreferenceByHouseId(houseId);
-                if (__renewBp != null && "2".equals(__renewBp.getPreferentialType())) {
+                if (project != null && "1".equals(project.getProjectType())
+                        && __renewBp != null && "2".equals(__renewBp.getPreferentialType())) {
                     BigDecimal renewOriginalPrice = house.getRentPrice().divide(new BigDecimal("0.7"), 2, RoundingMode.HALF_UP);
                     contract.setRentPrice(renewOriginalPrice);
                     contract.setBatchId(__renewBp.getBatchId());
