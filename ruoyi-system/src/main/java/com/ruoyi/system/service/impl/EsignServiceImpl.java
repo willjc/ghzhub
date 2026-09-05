@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.IdCardUtils;
@@ -353,6 +354,20 @@ public class EsignServiceImpl implements EsignService {
                 + "\"signDateConfig\":{\"showSignDate\":1,\"dateFormat\":\"yyyy年MM月dd日\",\"fontSize\":12,\"signDatePositionX\":" + psnSignDateX + ",\"signDatePositionY\":" + psnSignDateY + "}}"
                 + "]}]}";
 
+        if (rentalContract) {
+            // 租赁模板的日期为独立控件，明确绑定签署方和页码，由平台写入实际签署日期。
+            JsonObject signRequest = gson.fromJson(jsonParm, JsonObject.class);
+            JsonArray signers = signRequest.getAsJsonArray("signers");
+            JsonArray orgFields = signers.get(0).getAsJsonObject().getAsJsonArray("signFields");
+            orgFields.get(0).getAsJsonObject().remove("signDateConfig");
+            orgFields.add(rentalSignDate(fileId, 13, 380, 667, true));
+            JsonArray psnFields = signers.get(1).getAsJsonObject().getAsJsonArray("signFields");
+            psnFields.get(2).getAsJsonObject().remove("signDateConfig");
+            psnFields.add(rentalSignDate(fileId, 13, 380, 560, false));
+            psnFields.add(rentalSignDate(fileId, 1, 138.57468, 187.00957, false));
+            jsonParm = gson.toJson(signRequest);
+        }
+
         EsignHttpResponse resp = callApi("POST", "/v3/sign-flow/create-by-file", jsonParm);
         JsonObject root = gson.fromJson(resp.getBody(), JsonObject.class);
         if (root.get("code").getAsInt() != 0) {
@@ -627,7 +642,22 @@ public class EsignServiceImpl implements EsignService {
         // 单行文本5 (default:栗毅, 甲方代表人)、单行文本7 (default:\) — 保留模板默认值，不传
     }
 
-    /** 保租房、市场租赁共用的新合同模板，全部按控件编码填充。 */
+    private JsonObject rentalSignDate(String fileId, int page, double x, double y, boolean autoSign) {
+        JsonObject config = new JsonObject();
+        config.addProperty("dateFormat", "yyyy-MM-dd");
+        config.addProperty("fontSize", 10);
+        config.addProperty("signDatePositionPage", page);
+        config.addProperty("signDatePositionX", x);
+        config.addProperty("signDatePositionY", y);
+        config.addProperty("autoSign", autoSign);
+        JsonObject field = new JsonObject();
+        field.addProperty("fileId", fileId);
+        field.addProperty("signFieldType", 2);
+        field.add("dateSignFieldConfig", config);
+        return field;
+    }
+
+    /** 保租房、市场租赁共用模板，按 e签宝实际控件 ID 填充。 */
     private String buildRentalTemplateComponents(HzContract contract, HzUser user) {
         HzHouse house = contract.getHouseId() == null ? null : houseMapper.selectById(contract.getHouseId());
         HzProject project = house != null && house.getProjectId() != null
@@ -651,20 +681,9 @@ public class EsignServiceImpl implements EsignService {
         if (house != null && house.getArea() != null && house.getArea().compareTo(BigDecimal.ZERO) > 0) {
             unitPrice = monthlyRentValue.divide(house.getArea(), 2, java.math.RoundingMode.HALF_UP).toPlainString();
         }
-        String[] start = splitDate(contract.getStartDate());
-        String[] end = splitDate(contract.getEndDate());
+        String start = LocalDate.parse(contract.getStartDate()).toString();
+        String end = LocalDate.parse(contract.getEndDate()).toString();
         String projectAddress = project != null && project.getAddress() != null ? project.getAddress() : "";
-        String projectName = project != null && project.getProjectName() != null ? project.getProjectName() : "";
-        String managerName = project != null && project.getManagerName() != null ? project.getManagerName() : "";
-        HzBuilding building = house != null && house.getBuildingId() != null
-                ? buildingMapper.selectById(house.getBuildingId()) : null;
-        HzUnit unit = house != null && house.getUnitId() != null
-                ? unitMapper.selectById(house.getUnitId()) : null;
-        String inspectionTitle = projectName
-                + (building != null && building.getBuildingName() != null ? "-" + building.getBuildingName() : "")
-                + (unit != null && unit.getUnitName() != null ? "-" + unit.getUnitName() : "")
-                + (!houseNo.isEmpty() ? "-" + houseNo : "")
-                + "房屋设施及物品点验单";
 
         Map<Long, Integer> quantities = new HashMap<>();
         if (contract.getHouseId() != null) {
@@ -697,32 +716,75 @@ public class EsignServiceImpl implements EsignService {
                 HzFacilityTemplateMappingService.RENTAL, quantities.keySet());
 
         List<Map<String, String>> components = new ArrayList<>();
-        addComponent(components, "rental_contract_no", contractNo);
-        addComponent(components, "rental_tenant_name_cover", tenantName);
-        addComponent(components, "rental_tenant_name", tenantName);
-        addComponent(components, "rental_tenant_id_card", idCard);
-        addComponent(components, "rental_tenant_phone", phone);
-        addComponent(components, "rental_house_address", houseAddress);
-        addComponent(components, "rental_house_area", houseArea);
-        addComponent(components, "rental_start_year", start[0]);
-        addComponent(components, "rental_start_month", start[1]);
-        addComponent(components, "rental_start_day", start[2]);
-        addComponent(components, "rental_end_year", end[0]);
-        addComponent(components, "rental_end_month", end[1]);
-        addComponent(components, "rental_end_day", end[2]);
-        addComponent(components, "rental_unit_price", unitPrice);
-        addComponent(components, "rental_monthly_rent", monthlyRentValue.toPlainString());
-        addComponent(components, "rental_monthly_rent_upper", convertToChineseAmount(monthlyRentValue));
-        addComponent(components, "rental_deposit", depositValue.toPlainString());
-        addComponent(components, "rental_deposit_upper", convertToChineseAmount(depositValue));
-        addComponent(components, "rental_contract_no_sign", contractNo);
-        addComponent(components, "rental_inspection_title", inspectionTitle);
-        addComponent(components, "rental_inspection_tenant_name", tenantName);
-        addComponent(components, "rental_inspection_project_address", projectAddress);
-        addComponent(components, "rental_inspection_manager", managerName);
+        addComponent(components, "325dabd56f72484c9ecc11a01266c004", contractNo);
+        addComponent(components, "86d1304e301a43eb9b92645da5fc4bc8", idCard);
+        addComponent(components, "eea05ce390834c73a47ab30e3ad9a865", phone);
+        addComponent(components, "d0414d72640f4d59923fa003b6a48f30", houseAddress);
+        addComponent(components, "bec7b060ea1643d69c2fc6e6ff9f4d66", houseArea);
+        addComponent(components, "9401ecfc562647bd9bbecb3283a67257", start);
+        addComponent(components, "0aa2782647e64466a3e1c000fbb84a3a", end);
+        addComponent(components, "29c8dbca9fb0487390d2b83b2034888a", unitPrice);
+        addComponent(components, "d78f8b3851984e9d93c0e4cf6e396c10", monthlyRentValue.toPlainString());
+        addComponent(components, "88b48ddede934c3ca3e73004a1217475", convertToChineseAmount(monthlyRentValue));
+        addComponent(components, "766fa437dd6b43a6858f9909b3304b35", depositValue.toPlainString());
+        addComponent(components, "ec27c977da0a4a43b9ff4b310e2474a7", convertToChineseAmount(depositValue));
+        addComponent(components, "1cbfe592ccff4b3b9f4ba39ce529fa8b", contractNo);
+        addComponent(components, "6aa969b8300b4390a3811fe8243eac0c", tenantName);
+        addComponent(components, "5ddcd63eeca4475d9acc9b755a5626dc", projectAddress);
+        // 数据库业务编码保留用于 RENTAL 隔离；平台填充使用实际控件 ID。
+        Map<String, String> facilityIds = Map.ofEntries(
+                Map.entry("rental_facility_tv", "0706a026ac5a4a008e82b6805780a0af"),
+                Map.entry("rental_facility_air_conditioner", "8273fd753376434fa18b7f6043196bf5"),
+                Map.entry("rental_facility_washing_machine", "a6d65423ce4844e8b40ed11c125d5db6"),
+                Map.entry("rental_facility_refrigerator", "481ec35527a645b287b530324af853eb"),
+                Map.entry("rental_facility_water_heater", "47d7d21462dc4b7c835e4bdc1a2e4044"),
+                Map.entry("rental_facility_gas_stove", "a8fa32bc2946480e875fc55a9ba9ecaf"),
+                Map.entry("rental_facility_range_hood", "f9063a3125e04eb58a2db1f393193365"),
+                Map.entry("rental_facility_living_room_light", "63e27579f7fe428d88996a272628d823"),
+                Map.entry("rental_facility_bedroom_light", "53992baef1264290b8bc0368af9da6bc"),
+                Map.entry("rental_facility_kitchen_light", "297892bc36fc44b3ad79438842fb7209"),
+                Map.entry("rental_facility_bathroom_light", "879b2e11b1d6435e99f11734a0ac77a8"),
+                Map.entry("rental_facility_balcony_light", "1efba733e64649d1bc704d4d5b4aebc5"),
+                Map.entry("rental_facility_bathroom_shower", "83af5549af7a44afb752b9e895a559ab"),
+                Map.entry("rental_facility_mirror", "95b7a7c2a393433997680bbd8b2c4153"),
+                Map.entry("rental_facility_washstand", "1c5c345020114550925bfe5ebf0950d0"),
+                Map.entry("rental_facility_sink", "799fb7bf95b54abf8384867f0095c002"),
+                Map.entry("rental_facility_hose", "d0a8aecb39724c348c244b817481883a"),
+                Map.entry("rental_facility_toilet", "8fdf0e0bd4da46e4b748cd7984b83ffd"),
+                Map.entry("rental_facility_kitchen_faucet", "882c87d0a1c9436aa0aa7b94f3dbe1c2"),
+                Map.entry("rental_facility_kitchen_sink", "d9332215fc7541718d3934107311fa2a"),
+                Map.entry("rental_facility_wall", "fe99f4f60536433faad4bd8f49f0d72f"),
+                Map.entry("rental_facility_floor", "89f88873f40646deb0bae87601228662"),
+                Map.entry("rental_facility_carpet", "2bce1774650149e2a776185c9f46048d"),
+                Map.entry("rental_facility_breaker_box", "c01434ec9a7042c393d74d292af3d634"),
+                Map.entry("rental_facility_tile", "d495fdd78c0b45448e44da9cf1480f42"),
+                Map.entry("rental_facility_entry_door", "a4d0efd178f044ea9fdf804f3da6b93d"),
+                Map.entry("rental_facility_smart_lock", "15e70f22c8134f3088d80803507f7aba"),
+                Map.entry("rental_facility_interior_door", "0d091a77814949108a2258565d5c61d9"),
+                Map.entry("rental_facility_kitchen_sliding_door", "f1bbebb960ee470cbafc0ea55f654b5a"),
+                Map.entry("rental_facility_window", "2c6f0274555949f0aca9be331c6d865e"),
+                Map.entry("rental_facility_living_room_curtain", "7ba149eb20604dc6b3c8757f412968f5"),
+                Map.entry("rental_facility_bedroom_curtain", "9a500e21318f4ef0bea3d143c9271f8b"),
+                Map.entry("rental_facility_coffee_table", "ad8b661b7a954a448dc754e4508c15d1"),
+                Map.entry("rental_facility_dining_table", "94126ad63e134079b9ef08adc4c7a63d"),
+                Map.entry("rental_facility_chair", "7f853ee1ac6d4a53b9dca0aac44958b3"),
+                Map.entry("rental_facility_desk", "6742fa155b9b4d5680666640b4583c27"),
+                Map.entry("rental_facility_tv_cabinet", "26b72ef61fad4104b85ae0d265523a4b"),
+                Map.entry("rental_facility_kitchen_cabinet", "cb00461d4bd2497f8b6ecfd9323f1a84"),
+                Map.entry("rental_facility_shoe_cabinet", "4d2ec397c88f4b669bf29d31137afede"),
+                Map.entry("rental_facility_wardrobe", "30fe6862402d4227a482b807026be726"),
+                Map.entry("rental_facility_bedside_table", "b8c99ec19e764889b531a8b1e21da63b"),
+                Map.entry("rental_facility_sofa", "3f0202de9222489bbb42e84b3622a6f8"),
+                Map.entry("rental_facility_bed", "ee11f8dcee764d489eca0b7f2772527c"),
+                Map.entry("rental_facility_mattress", "6273628dc81b405c852b4789cd9959d4"),
+                Map.entry("rental_facility_drying_rack", "f7082d2099e048228c8a7ce4542ae301"));
         for (Map.Entry<Long, Integer> entry : quantities.entrySet()) {
             if (entry.getValue() > 0) {
-                addComponent(components, facilityKeys.get(entry.getKey()), String.valueOf(entry.getValue()));
+                String componentId = facilityIds.get(facilityKeys.get(entry.getKey()));
+                if (componentId == null) {
+                    throw new IllegalArgumentException("租赁点验单设施缺少平台控件映射，请联系管理员");
+                }
+                addComponent(components, componentId, String.valueOf(entry.getValue()));
             }
         }
         return gson.toJson(components);
@@ -744,20 +806,10 @@ public class EsignServiceImpl implements EsignService {
         return project != null && ("2".equals(project.getProjectType()) || "3".equals(project.getProjectType()));
     }
 
-    private String[] splitDate(String value) {
-        if (value == null || value.isBlank()) return new String[]{"", "", ""};
-        try {
-            LocalDate date = LocalDate.parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            return new String[]{String.valueOf(date.getYear()), String.valueOf(date.getMonthValue()), String.valueOf(date.getDayOfMonth())};
-        } catch (Exception e) {
-            throw new IllegalArgumentException("合同日期格式错误: " + value);
-        }
-    }
-
     private void addComponent(List<Map<String, String>> components, String key, String value) {
         if (key == null || key.isBlank() || value == null || value.isBlank()) return;
         Map<String, String> component = new HashMap<>();
-        component.put("componentKey", key);
+        component.put("componentId", key);
         component.put("componentValue", value);
         components.add(component);
     }

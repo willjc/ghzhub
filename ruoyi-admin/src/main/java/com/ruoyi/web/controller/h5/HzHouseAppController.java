@@ -24,6 +24,7 @@ import com.ruoyi.system.domain.HzHouseTypeFacility;
 import com.ruoyi.system.service.IHzAppointmentService;
 import com.ruoyi.system.service.IHzHouseFacilityService;
 import com.ruoyi.system.service.IHzHouseTypeFacilityService;
+import com.ruoyi.system.util.RentalDeposit;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -353,7 +354,8 @@ public class HzHouseAppController extends BaseController {
         result.put("roomNo", house.getHouseNo());
         result.put("floor", house.getFloor());
         result.put("price", house.getRentPrice());
-        result.put("deposit", house.getDeposit());
+        result.put("deposit", RentalDeposit.resolve(
+                project != null ? project.getProjectType() : null, house.getDeposit()));
         result.put("area", house.getArea());
         result.put("layout", house.getHouseTypeName());
         result.put("orientation", house.getOrientation());

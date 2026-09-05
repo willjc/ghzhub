@@ -62,6 +62,7 @@ import com.ruoyi.system.service.IHzContractService;
 import com.ruoyi.system.service.IHzDocumentService;
 import com.ruoyi.system.service.IHzHouseOrderService;
 import com.ruoyi.system.util.TalentApartmentRentCalculator;
+import com.ruoyi.system.util.RentalDeposit;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -373,7 +374,7 @@ public class HzContractAppController extends BaseController {
     @PostMapping("/generate")
     public AjaxResult generateContract(@RequestBody Map<String, Object> params) {
         Long houseId = Long.parseLong(params.get("houseId").toString());
-        Integer rentMonths = Integer.parseInt(params.get("rentMonths").toString());
+        int rentMonths = 12;
 
         // 判断是否续租模式
         Long oldContractId = params.containsKey("oldContractId") && params.get("oldContractId") != null
@@ -464,6 +465,7 @@ public class HzContractAppController extends BaseController {
         BigDecimal depositAmount = (house.getDeposit() != null && house.getDeposit().compareTo(BigDecimal.ZERO) > 0)
                 ? house.getDeposit()
                 : (template.getDepositAmount() != null ? template.getDepositAmount() : BigDecimal.ZERO);
+        depositAmount = RentalDeposit.resolve(project.getProjectType(), depositAmount);
 
         String contractContent = template.getTemplateContent();
         contractContent = contractContent.replace("${tenantName}", tenant.getTenantName())
@@ -553,9 +555,7 @@ public class HzContractAppController extends BaseController {
             Long templateId = params.get("templateId") != null
                 ? Long.parseLong(params.get("templateId").toString()) : 0L;
             String contractContent = params.getOrDefault("contractContent", "").toString();
-            String endDate = params.getOrDefault("endDate", "").toString();
-            Integer rentMonths = params.get("rentMonths") != null
-                ? Integer.parseInt(params.get("rentMonths").toString()) : 12;
+            int rentMonths = 12;
 
             Long userId = getHzUserIdFromToken();
 
@@ -724,20 +724,19 @@ public class HzContractAppController extends BaseController {
             BigDecimal houseDeposit = (house.getDeposit() != null && house.getDeposit().compareTo(BigDecimal.ZERO) > 0)
                     ? house.getDeposit()
                     : (template.getDepositAmount() != null ? template.getDepositAmount() : BigDecimal.ZERO);
-            contract.setDeposit(houseDeposit);
+            contract.setDeposit(RentalDeposit.resolve(project.getProjectType(), houseDeposit));
 
             contract.setStartDate(startDate);  // 批次配租使用批次日期，否则签字日期+3天
-            // 批次配租模式：使用批次入驻结束日期覆盖前端传入的endDate
+            // 批次沿用批次日期；普通新签由服务端固定一年。
             if (isBatchMode) {
                 contract.setEndDate(batchEndDateStr);
             } else {
-                contract.setEndDate(endDate);
+                contract.setEndDate(LocalDate.parse(startDate).plusMonths(rentMonths).minusDays(1).toString());
             }
             contract.setRentMonths(rentMonths);
 
-            // 转换支付周期：模板中是英文全称，合同表中是单字符代码
-            String paymentCycleCode = convertPaymentCycleToCode(template.getPaymentCycle());
-            contract.setPaymentCycle(paymentCycleCode);
+            // 三类项目统一按月生成完整租期的账单。
+            contract.setPaymentCycle("1");
 
             contract.setContractContent(finalContract);
             contract.setTenantSignature(signatureUrl.isEmpty() ? null : signatureUrl);
@@ -780,6 +779,7 @@ public class HzContractAppController extends BaseController {
                 // 避免签约耗时较长导致原10分钟锁房到期后房源被误释放
                 if (result > 0) {
                     matchedOrder.setContractId(contract.getContractId());
+                    matchedOrder.setDepositAmount(contract.getDeposit());
                     matchedOrder.setOrderStatus("1");
                     java.util.Calendar lockCal = java.util.Calendar.getInstance();
                     lockCal.add(java.util.Calendar.MINUTE, 30);
@@ -824,9 +824,7 @@ public class HzContractAppController extends BaseController {
             Long projectId = Long.parseLong(params.get("projectId").toString());
             Long templateId = Long.parseLong(params.get("templateId").toString());
             String contractContent = params.getOrDefault("contractContent", "").toString();
-            String endDate = params.getOrDefault("endDate", "").toString();
-            Integer rentMonths = params.get("rentMonths") != null
-                ? Integer.parseInt(params.get("rentMonths").toString()) : 12;
+            int rentMonths = 12;
 
             // ========== 续租校验 ==========
             HzContract oldContract = contractService.selectContractById(oldContractId);
@@ -881,11 +879,7 @@ public class HzContractAppController extends BaseController {
             String startDate = startDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
             // 结束日期 = 起始日 + 租月 - 1天
             LocalDate endDateLocal = startDateLocal.plusMonths(rentMonths).minusDays(1);
-            String endDateCalc = endDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
-            // 如果前端未传endDate或为空，使用计算值
-            if (endDate == null || endDate.isEmpty()) {
-                endDate = endDateCalc;
-            }
+            String endDate = endDateLocal.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
             // 1. 处理签名图片（e签宝模式下签名由e签宝完成）
             String signatureUrl = "";
@@ -993,15 +987,15 @@ public class HzContractAppController extends BaseController {
             BigDecimal renewDeposit = (house.getDeposit() != null && house.getDeposit().compareTo(BigDecimal.ZERO) > 0)
                     ? house.getDeposit()
                     : (template.getDepositAmount() != null ? template.getDepositAmount() : BigDecimal.ZERO);
-            contract.setDeposit(renewDeposit);
+            // 租赁续租沿用原合同押金，不重新按房源配置计算。
+            contract.setDeposit(project != null && ("2".equals(project.getProjectType())
+                    || "3".equals(project.getProjectType())) ? oldContract.getDeposit() : renewDeposit);
 
-            contract.setStartDate(startDate);  // 使用自动计算的生效日期（签字日期+3天）
+            contract.setStartDate(startDate);  // 衔接原合同到期日次日
             contract.setEndDate(endDate);
             contract.setRentMonths(rentMonths);
 
-            // 转换支付周期
-            String paymentCycleCode = convertPaymentCycleToCode(template.getPaymentCycle());
-            contract.setPaymentCycle(paymentCycleCode);
+            contract.setPaymentCycle("1");
 
             contract.setContractContent(finalContract);
             contract.setTenantSignature(signatureUrl);
@@ -1037,32 +1031,6 @@ public class HzContractAppController extends BaseController {
         } catch (Exception e) {
             logger.error("续租合同失败", e);
             return error("续租合同失败：" + e.getMessage());
-        }
-    }
-
-    /**
-     * 转换支付周期：英文全称转为单字符代码
-     * monthly -> 1 (月付)
-     * quarterly -> 3 (季付)
-     * half_yearly -> 6 (半年付)
-     * yearly -> 12 (年付)
-     */
-    private String convertPaymentCycleToCode(String paymentCycle) {
-        if (paymentCycle == null) {
-            return "1"; // 默认月付
-        }
-
-        switch (paymentCycle.toLowerCase()) {
-            case "monthly":
-                return "1";
-            case "quarterly":
-                return "3";
-            case "half_yearly":
-                return "6";
-            case "yearly":
-                return "12";
-            default:
-                return "1"; // 默认月付
         }
     }
 

@@ -45,6 +45,7 @@ import com.ruoyi.system.mapper.HzHouseOrderMapper;
 import com.ruoyi.system.mapper.HzProjectMapper;
 import com.ruoyi.system.mapper.HzUserMapper;
 import com.ruoyi.system.service.IHzHouseOrderService;
+import com.ruoyi.system.util.RentalDeposit;
 
 /**
  * 选房预订单Service业务层处理
@@ -194,7 +195,8 @@ public class HzHouseOrderServiceImpl
         order.setTenantId(tenantId);
         order.setHouseId(houseId);
         order.setProjectId(house.getProjectId());
-        order.setDepositAmount(house.getDeposit() != null ? house.getDeposit() : BigDecimal.ZERO);
+        order.setDepositAmount(RentalDeposit.resolve(project.getProjectType(),
+                house.getDeposit() != null ? house.getDeposit() : BigDecimal.ZERO));
         order.setRentPrice(house.getRentPrice() != null ? house.getRentPrice() : BigDecimal.ZERO);
         order.setOrderStatus("0"); // 待签约
         order.setIsBatchAlloc(isBatch ? "1" : "0");
