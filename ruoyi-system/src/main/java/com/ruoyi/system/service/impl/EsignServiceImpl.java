@@ -364,7 +364,6 @@ public class EsignServiceImpl implements EsignService {
             JsonArray psnFields = signers.get(1).getAsJsonObject().getAsJsonArray("signFields");
             psnFields.get(2).getAsJsonObject().remove("signDateConfig");
             psnFields.add(rentalSignDate(fileId, 13, 380, 560, false));
-            psnFields.add(rentalSignDate(fileId, 1, 138.57468, 187.00957, false));
             jsonParm = gson.toJson(signRequest);
         }
 
@@ -660,10 +659,6 @@ public class EsignServiceImpl implements EsignService {
     /** 保租房、市场租赁共用模板，按 e签宝实际控件 ID 填充。 */
     private String buildRentalTemplateComponents(HzContract contract, HzUser user) {
         HzHouse house = contract.getHouseId() == null ? null : houseMapper.selectById(contract.getHouseId());
-        HzProject project = house != null && house.getProjectId() != null
-                ? projectMapper.selectById(house.getProjectId())
-                : (contract.getProjectId() == null ? null : projectMapper.selectById(contract.getProjectId()));
-
         String tenantName = contract.getTenantName() != null ? contract.getTenantName()
                 : (user.getRealName() != null ? user.getRealName() : "");
         String idCard = contract.getTenantIdCard() != null ? contract.getTenantIdCard()
@@ -681,9 +676,10 @@ public class EsignServiceImpl implements EsignService {
         if (house != null && house.getArea() != null && house.getArea().compareTo(BigDecimal.ZERO) > 0) {
             unitPrice = monthlyRentValue.divide(house.getArea(), 2, java.math.RoundingMode.HALF_UP).toPlainString();
         }
-        String start = LocalDate.parse(contract.getStartDate()).toString();
-        String end = LocalDate.parse(contract.getEndDate()).toString();
-        String projectAddress = project != null && project.getAddress() != null ? project.getAddress() : "";
+        LocalDate start = LocalDate.parse(contract.getStartDate());
+        LocalDate end = LocalDate.parse(contract.getEndDate());
+        // 与人才公寓一致：首页填写生成当天，签章旁由平台记录实际签署日期。
+        LocalDate signDate = LocalDate.now();
 
         Map<Long, Integer> quantities = new HashMap<>();
         if (contract.getHouseId() != null) {
@@ -721,8 +717,15 @@ public class EsignServiceImpl implements EsignService {
         addComponent(components, "eea05ce390834c73a47ab30e3ad9a865", phone);
         addComponent(components, "d0414d72640f4d59923fa003b6a48f30", houseAddress);
         addComponent(components, "bec7b060ea1643d69c2fc6e6ff9f4d66", houseArea);
-        addComponent(components, "9401ecfc562647bd9bbecb3283a67257", start);
-        addComponent(components, "0aa2782647e64466a3e1c000fbb84a3a", end);
+        addComponent(components, "afa0dfe2cfdb470fafa6bdefca08b94c", String.valueOf(signDate.getYear()));
+        addComponent(components, "915518903a8a4fcfa1abdeaf2e7d4cdd", String.valueOf(signDate.getMonthValue()));
+        addComponent(components, "f4f1ad76a10648168bf622eef1e498f5", String.valueOf(signDate.getDayOfMonth()));
+        addComponent(components, "879dd04f6592434db28dd13862bcede7", String.valueOf(start.getYear()));
+        addComponent(components, "51773c4695124db9b0e8dda1cd45042e", String.valueOf(start.getMonthValue()));
+        addComponent(components, "6da5c952abd24d40935f3cae1d33af87", String.valueOf(start.getDayOfMonth()));
+        addComponent(components, "89736a2d0fdb42f587a4a9804a1805b3", String.valueOf(end.getYear()));
+        addComponent(components, "333fac06959343cabd3719f0e4ec9463", String.valueOf(end.getMonthValue()));
+        addComponent(components, "0932a0c15cb4439b8edd72c69b49ab11", String.valueOf(end.getDayOfMonth()));
         addComponent(components, "29c8dbca9fb0487390d2b83b2034888a", unitPrice);
         addComponent(components, "d78f8b3851984e9d93c0e4cf6e396c10", monthlyRentValue.toPlainString());
         addComponent(components, "88b48ddede934c3ca3e73004a1217475", convertToChineseAmount(monthlyRentValue));
@@ -730,7 +733,7 @@ public class EsignServiceImpl implements EsignService {
         addComponent(components, "ec27c977da0a4a43b9ff4b310e2474a7", convertToChineseAmount(depositValue));
         addComponent(components, "1cbfe592ccff4b3b9f4ba39ce529fa8b", contractNo);
         addComponent(components, "6aa969b8300b4390a3811fe8243eac0c", tenantName);
-        addComponent(components, "5ddcd63eeca4475d9acc9b755a5626dc", projectAddress);
+        addComponent(components, "a232a0bda4904c969de30e24ed1f0903", houseAddress);
         // 数据库业务编码保留用于 RENTAL 隔离；平台填充使用实际控件 ID。
         Map<String, String> facilityIds = Map.ofEntries(
                 Map.entry("rental_facility_tv", "0706a026ac5a4a008e82b6805780a0af"),
