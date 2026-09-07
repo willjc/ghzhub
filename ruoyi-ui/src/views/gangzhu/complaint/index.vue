@@ -60,6 +60,18 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="complaintId" width="70" />
       <el-table-column label="用户ID" align="center" prop="userId" width="90" />
+      <el-table-column label="姓名" align="center" prop="userName" width="100" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span v-if="scope.row.userName">{{ scope.row.userName }}</span>
+          <span v-else style="color: #C0C4CC;">-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="所在房源" align="center" min-width="160" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span v-if="scope.row.projectName || scope.row.houseNo">{{ scope.row.projectName }}-{{ scope.row.houseNo }}</span>
+          <span v-else style="color: #C0C4CC;">-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="投诉标题" align="center" prop="title" min-width="150" show-overflow-tooltip />
       <el-table-column label="联系方式" align="center" prop="contactPhone" width="120" />
       <el-table-column label="处理状态" align="center" prop="status" width="90">
@@ -123,6 +135,8 @@
       <el-descriptions :column="1" border>
         <el-descriptions-item label="投诉ID">{{ detailData.complaintId }}</el-descriptions-item>
         <el-descriptions-item label="用户ID">{{ detailData.userId }}</el-descriptions-item>
+        <el-descriptions-item label="姓名">{{ detailData.userName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="所在房源">{{ (detailData.projectName || detailData.houseNo) ? detailData.projectName + '-' + detailData.houseNo : '-' }}</el-descriptions-item>
         <el-descriptions-item label="投诉标题">{{ detailData.title }}</el-descriptions-item>
         <el-descriptions-item label="投诉内容">{{ detailData.content }}</el-descriptions-item>
         <el-descriptions-item label="联系方式">{{ detailData.contactPhone }}</el-descriptions-item>

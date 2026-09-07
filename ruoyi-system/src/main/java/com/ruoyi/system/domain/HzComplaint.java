@@ -69,6 +69,19 @@ public class HzComplaint extends BaseEntity
     @TableField("del_flag")
     private String delFlag;
 
+    // ========== 以下为列表展示用的关联查询字段（非数据库字段） ==========
+    /** 用户姓名（hz_user.real_name，空则 nickname） */
+    @TableField(exist = false)
+    private String userName;
+
+    /** 项目名称（用户最近一条合同所属项目 hz_project.project_name） */
+    @TableField(exist = false)
+    private String projectName;
+
+    /** 房间号（用户最近一条合同所属房源 hz_house.house_no） */
+    @TableField(exist = false)
+    private String houseNo;
+
     public Long getComplaintId()
     {
         return complaintId;
@@ -207,6 +220,36 @@ public class HzComplaint extends BaseEntity
     public void setDelFlag(String delFlag)
     {
         this.delFlag = delFlag;
+    }
+
+    public String getUserName()
+    {
+        return userName;
+    }
+
+    public void setUserName(String userName)
+    {
+        this.userName = userName;
+    }
+
+    public String getProjectName()
+    {
+        return projectName;
+    }
+
+    public void setProjectName(String projectName)
+    {
+        this.projectName = projectName;
+    }
+
+    public String getHouseNo()
+    {
+        return houseNo;
+    }
+
+    public void setHouseNo(String houseNo)
+    {
+        this.houseNo = houseNo;
     }
 
     @Override
