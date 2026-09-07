@@ -220,18 +220,24 @@ public class HzStatisticsController extends BaseController {
      * 返回 { education: { highSchool, college, bachelor, master, doctor },
      *        profession: { company, civil, selfEmployed, student, retired, other } }
      * 与前端 EducationJob.vue 组件契约一致。
+     * 注意：使用 SQL 聚合而非 selectList 映射实体，避免投影查询产生 null 元素。
      */
     @GetMapping("/education-job")
     public AjaxResult educationJob() {
         // 学历：hz_user.education（字典 hz_education_type: 1小学/2初中/3高中/4大专/5本科/6硕士/7博士）
-        List<com.ruoyi.system.domain.HzUser> eduUsers = userMapper.selectList(
-                new QueryWrapper<com.ruoyi.system.domain.HzUser>()
-                        .select("education").eq("del_flag", "0"));
         Map<String, Long> eduMap = new HashMap<>();
-        for (com.ruoyi.system.domain.HzUser u : eduUsers) {
-            String e = u.getEducation();
-            if (e == null || e.isEmpty()) continue;
-            eduMap.merge(e, 1L, Long::sum);
+        List<Map<String, Object>> eduRows = userMapper.selectMaps(
+                new QueryWrapper<com.ruoyi.system.domain.HzUser>()
+                        .select("education, COUNT(*) AS cnt")
+                        .eq("del_flag", "0")
+                        .isNotNull("education")
+                        .groupBy("education"));
+        for (Map<String, Object> row : eduRows) {
+            Object v = row.get("education");
+            Object c = row.get("cnt");
+            if (v != null && c != null) {
+                eduMap.merge(String.valueOf(v), Long.parseLong(String.valueOf(c)), Long::sum);
+            }
         }
         // 高中及以下 = 字典1/2/3，大专=4，本科=5，硕士=6，博士=7
         Map<String, Object> education = new LinkedHashMap<>();
@@ -242,14 +248,19 @@ public class HzStatisticsController extends BaseController {
         education.put("doctor", eduMap.getOrDefault("7", 0L));
 
         // 职业：hz_user.unit_nature（字典 hz_unit_nature: 1机关事业单位/2国有企业/3私营企业/4其他）
-        List<com.ruoyi.system.domain.HzUser> jobUsers = userMapper.selectList(
-                new QueryWrapper<com.ruoyi.system.domain.HzUser>()
-                        .select("unit_nature").eq("del_flag", "0"));
         Map<String, Long> jobMap = new HashMap<>();
-        for (com.ruoyi.system.domain.HzUser u : jobUsers) {
-            String j = u.getUnitNature();
-            if (j == null || j.isEmpty()) continue;
-            jobMap.merge(j, 1L, Long::sum);
+        List<Map<String, Object>> jobRows = userMapper.selectMaps(
+                new QueryWrapper<com.ruoyi.system.domain.HzUser>()
+                        .select("unit_nature, COUNT(*) AS cnt")
+                        .eq("del_flag", "0")
+                        .isNotNull("unit_nature")
+                        .groupBy("unit_nature"));
+        for (Map<String, Object> row : jobRows) {
+            Object v = row.get("unit_nature");
+            Object c = row.get("cnt");
+            if (v != null && c != null) {
+                jobMap.merge(String.valueOf(v), Long.parseLong(String.valueOf(c)), Long::sum);
+            }
         }
         // 映射到组件契约：company=企业（2/3），civil=事业单位（1），其余归 other
         Map<String, Object> profession = new LinkedHashMap<>();
