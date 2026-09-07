@@ -39,7 +39,7 @@
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template slot-scope="scope">
             <el-tag :type="getStatusType(scope.row.status)">
-              {{ getStatusText(scope.row.status) }}
+              {{ getStatusText(scope.row) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -100,7 +100,7 @@
           <el-descriptions-item label="累计金额">¥{{ formatNumber(currentProject.yearToDateAmount) }}</el-descriptions-item>
           <el-descriptions-item label="状态">
             <el-tag :type="getStatusType(currentProject.status)">
-              {{ getStatusText(currentProject.status) }}
+              {{ getStatusText(currentProject) }}
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="更新时间">{{ currentProject.updateTime }}</el-descriptions-item>
@@ -291,13 +291,18 @@ export default {
       }
       return statusMap[status] || 'info'
     },
-    getStatusText(status) {
+    getStatusText(row) {
       const statusMap = {
         normal: '正常',
         warning: '预警',
         error: '异常'
       }
-      return statusMap[status] || '未知'
+      const base = statusMap[row.status] || '未知'
+      // 展示收缴率，如"异常 (收缴率24%)"；无收缴率时只显示状态
+      if (row.collectionRate !== undefined && row.collectionRate !== null && row.collectionRate !== '') {
+        return `${base} (收缴率${row.collectionRate}%)`
+      }
+      return base
     }
   },
   watch: {

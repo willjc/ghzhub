@@ -62,6 +62,12 @@ public class HzStatisticsController extends BaseController {
     @Autowired
     private HzRefundApplyMapper refundApplyMapper;
 
+    @Autowired
+    private com.ruoyi.system.mapper.HzCheckoutRecordMapper checkoutRecordMapper;
+
+    @Autowired
+    private com.ruoyi.system.mapper.HzCheckoutApplyMapper checkoutApplyMapper;
+
     /**
      * 财务指标（按月）
      * 返回 { financial: { receivableAmount, receivedAmount, expectedAmount, overdueAmount, refundAmount } }
@@ -107,15 +113,30 @@ public class HzStatisticsController extends BaseController {
                 .le(HzBill::getDueDate, endStr));
         BigDecimal expected = sumBillAmount(expectedBills);
 
-        // 退款：hz_refund_apply 审核通过且审批时间落在月内
-        List<HzRefundApply> refunds = refundApplyMapper.selectList(new LambdaQueryWrapper<HzRefundApply>()
-                .eq(HzRefundApply::getDelFlag, "0")
-                .eq(HzRefundApply::getApproveStatus, "1")
-                .ge(HzRefundApply::getApproveTime, startDt)
-                .le(HzRefundApply::getApproveTime, endDt));
-        BigDecimal refundAmount = refunds.stream()
-                .map(r -> nz(r.getRefundAmount()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // 退款：hz_checkout_record 已退款（refund_status='1'）且退款时间落在月内，取关联退租申请 refund_amount
+        // （真实退款走微信原路退款并写 hz_checkout_record；hz_refund_apply 为废弃申请单，不参与统计）
+        List<com.ruoyi.system.domain.HzCheckoutRecord> refundRecords = checkoutRecordMapper.selectList(
+                new LambdaQueryWrapper<com.ruoyi.system.domain.HzCheckoutRecord>()
+                        .eq(com.ruoyi.system.domain.HzCheckoutRecord::getDelFlag, "0")
+                        .eq(com.ruoyi.system.domain.HzCheckoutRecord::getRefundStatus, "1")
+                        .ge(com.ruoyi.system.domain.HzCheckoutRecord::getRefundTime, startDt)
+                        .le(com.ruoyi.system.domain.HzCheckoutRecord::getRefundTime, endDt));
+        BigDecimal refundAmount = BigDecimal.ZERO;
+        if (!refundRecords.isEmpty()) {
+            java.util.Set<Long> applyIds = refundRecords.stream()
+                    .map(com.ruoyi.system.domain.HzCheckoutRecord::getApplyId)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toSet());
+            if (!applyIds.isEmpty()) {
+                List<com.ruoyi.system.domain.HzCheckoutApply> applies = checkoutApplyMapper.selectList(
+                        new LambdaQueryWrapper<com.ruoyi.system.domain.HzCheckoutApply>()
+                                .in(com.ruoyi.system.domain.HzCheckoutApply::getApplyId, applyIds)
+                                .eq(com.ruoyi.system.domain.HzCheckoutApply::getDelFlag, "0"));
+                refundAmount = applies.stream()
+                        .map(a -> nz(a.getRefundAmount()))
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+            }
+        }
 
         Map<String, Object> financial = new LinkedHashMap<>();
         financial.put("receivableAmount", receivable);
@@ -385,6 +406,7 @@ public class HzStatisticsController extends BaseController {
             row.put("monthlyAmount", monthlyAmount);
             row.put("yearToDateAmount", ytd);
             row.put("status", collectionRate >= 90 ? "normal" : collectionRate >= 80 ? "warning" : "error");
+            row.put("collectionRate", collectionRate);
             row.put("updateTime", updateTime);
             row.put("trendMonths", trendLabels);
             row.put("trendData", trendData);
