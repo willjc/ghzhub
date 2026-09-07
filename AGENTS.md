@@ -38,9 +38,10 @@ scripts/           增量数据库脚本
 
 ### 验证规则
 
-- 不在本地运行测试、构建或启动命令，包括 `mvn test/package/install`、`npm test`、`npm run dev/build`。
+- 允许本地运行 **编译检查**（如 `mvn compile`、`npx eslint` 之类的静态检查），Java/Python 改动交付前必须先编译通过再提交；前端改动允许 npm lint（不跑 build）。
+- 不允许本地运行测试或完整构建/启动命令，包括 `mvn test/package/install`、`npm test`、`npm run dev/build`。
 - 可以执行只读检查、`git diff --check`、日志检查和经用户明确授权的业务验证。
-- 编译结果由 CI 验证，实际业务结果由生产日志、接口、数据库及用户端回归共同确认。
+- 完整编译结果由 CI 验证，实际业务结果由生产日志、接口、数据库及用户端回归共同确认。
 - “代码存在”“CI 成功”“健康检查成功”均不等于业务流程已经跑通。
 
 ### 代码约定

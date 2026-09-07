@@ -194,8 +194,77 @@ public class HzStatisticsController extends BaseController {
         household.put("nonlocal", nonlocal);
         household.put("unknown", unknown);
 
+        // 婚姻状态分布：hz_user.marriage_status（字典 1未婚/2已婚/3离异/4丧偶），other=未采集
+        long married = userMapper.selectCount(new QueryWrapper<com.ruoyi.system.domain.HzUser>()
+                .eq("del_flag", "0").eq("marriage_status", "2"));
+        long unmarried = userMapper.selectCount(new QueryWrapper<com.ruoyi.system.domain.HzUser>()
+                .eq("del_flag", "0").eq("marriage_status", "1"));
+        long divorced = userMapper.selectCount(new QueryWrapper<com.ruoyi.system.domain.HzUser>()
+                .eq("del_flag", "0").eq("marriage_status", "3"));
+        long other = Math.max(0, total - married - unmarried - divorced);
+
+        Map<String, Object> marriageStatus = new LinkedHashMap<>();
+        marriageStatus.put("married", married);
+        marriageStatus.put("unmarried", unmarried);
+        marriageStatus.put("divorced", divorced);
+        marriageStatus.put("other", other);
+
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("household", household);
+        data.put("marriageStatus", marriageStatus);
+        return AjaxResult.success(data);
+    }
+
+    /**
+     * 学历与职业分布（租户画像）
+     * 返回 { education: { highSchool, college, bachelor, master, doctor },
+     *        profession: { company, civil, selfEmployed, student, retired, other } }
+     * 与前端 EducationJob.vue 组件契约一致。
+     */
+    @GetMapping("/education-job")
+    public AjaxResult educationJob() {
+        // 学历：hz_user.education（字典 hz_education_type: 1小学/2初中/3高中/4大专/5本科/6硕士/7博士）
+        List<com.ruoyi.system.domain.HzUser> eduUsers = userMapper.selectList(
+                new QueryWrapper<com.ruoyi.system.domain.HzUser>()
+                        .select("education").eq("del_flag", "0"));
+        Map<String, Long> eduMap = new HashMap<>();
+        for (com.ruoyi.system.domain.HzUser u : eduUsers) {
+            String e = u.getEducation();
+            if (e == null || e.isEmpty()) continue;
+            eduMap.merge(e, 1L, Long::sum);
+        }
+        // 高中及以下 = 字典1/2/3，大专=4，本科=5，硕士=6，博士=7
+        Map<String, Object> education = new LinkedHashMap<>();
+        education.put("highSchool", eduMap.getOrDefault("1", 0L) + eduMap.getOrDefault("2", 0L) + eduMap.getOrDefault("3", 0L));
+        education.put("college", eduMap.getOrDefault("4", 0L));
+        education.put("bachelor", eduMap.getOrDefault("5", 0L));
+        education.put("master", eduMap.getOrDefault("6", 0L));
+        education.put("doctor", eduMap.getOrDefault("7", 0L));
+
+        // 职业：hz_user.unit_nature（字典 hz_unit_nature: 1机关事业单位/2国有企业/3私营企业/4其他）
+        List<com.ruoyi.system.domain.HzUser> jobUsers = userMapper.selectList(
+                new QueryWrapper<com.ruoyi.system.domain.HzUser>()
+                        .select("unit_nature").eq("del_flag", "0"));
+        Map<String, Long> jobMap = new HashMap<>();
+        for (com.ruoyi.system.domain.HzUser u : jobUsers) {
+            String j = u.getUnitNature();
+            if (j == null || j.isEmpty()) continue;
+            jobMap.merge(j, 1L, Long::sum);
+        }
+        // 映射到组件契约：company=企业（2/3），civil=事业单位（1），其余归 other
+        Map<String, Object> profession = new LinkedHashMap<>();
+        profession.put("company", jobMap.getOrDefault("2", 0L) + jobMap.getOrDefault("3", 0L));
+        profession.put("civil", jobMap.getOrDefault("1", 0L));
+        profession.put("selfEmployed", 0L);
+        profession.put("student", 0L);
+        profession.put("retired", 0L);
+        long otherCnt = jobMap.values().stream().mapToLong(Long::longValue).sum()
+                - (long) profession.get("company") - (long) profession.get("civil");
+        profession.put("other", Math.max(0L, otherCnt));
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("education", education);
+        data.put("profession", profession);
         return AjaxResult.success(data);
     }
 

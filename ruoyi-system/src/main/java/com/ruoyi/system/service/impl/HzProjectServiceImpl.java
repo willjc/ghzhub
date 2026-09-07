@@ -97,6 +97,74 @@ public class HzProjectServiceImpl extends ServiceImpl<HzProjectMapper, HzProject
     }
 
     /**
+     * 导入项目数据（按项目编码判重；支持 updateSupport 覆盖更新）
+     *
+     * @param projectList 导入的项目列表
+     * @param updateSupport 是否支持更新已存在数据
+     * @return 导入结果消息
+     */
+    @Override
+    public String importProject(List<HzProject> projectList, boolean updateSupport)
+    {
+        if (projectList == null || projectList.isEmpty())
+        {
+            throw new RuntimeException("导入项目数据不能为空！");
+        }
+        int successNum = 0;
+        int failureNum = 0;
+        StringBuilder successMsg = new StringBuilder();
+        StringBuilder failureMsg = new StringBuilder();
+        for (HzProject project : projectList)
+        {
+            try
+            {
+                if (project.getProjectName() == null || project.getProjectName().trim().isEmpty())
+                {
+                    failureNum++;
+                    failureMsg.append("<br/>").append(failureNum).append("、项目名称不能为空");
+                    continue;
+                }
+                // 按项目名称判重
+                HzProject exist = this.getOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<HzProject>()
+                        .eq(HzProject::getProjectName, project.getProjectName().trim())
+                        .eq(HzProject::getDelFlag, "0"));
+                if (exist != null)
+                {
+                    if (updateSupport)
+                    {
+                        project.setProjectId(exist.getProjectId());
+                        this.updateById(project);
+                        successNum++;
+                        successMsg.append("<br/>").append(successNum).append("、项目 ").append(project.getProjectName()).append(" 更新成功");
+                    }
+                    else
+                    {
+                        failureNum++;
+                        failureMsg.append("<br/>").append(failureNum).append("、项目 ").append(project.getProjectName()).append(" 已存在");
+                    }
+                    continue;
+                }
+                project.setDelFlag("0");
+                this.save(project);
+                successNum++;
+                successMsg.append("<br/>").append(successNum).append("、项目 ").append(project.getProjectName()).append(" 导入成功");
+            }
+            catch (Exception e)
+            {
+                failureNum++;
+                failureMsg.append("<br/>").append(failureNum).append("、项目 ").append(project.getProjectName() == null ? "未知" : project.getProjectName()).append(" 导入失败：").append(e.getMessage());
+            }
+        }
+        StringBuilder result = new StringBuilder();
+        result.append("导入完成：成功 ").append(successNum).append(" 条，失败 ").append(failureNum).append(" 条。");
+        if (failureMsg.length() > 0)
+        {
+            result.append(failureMsg);
+        }
+        return result.toString();
+    }
+
+    /**
      * 删除项目
      *
      * @param projectId 项目ID

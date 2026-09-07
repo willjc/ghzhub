@@ -715,6 +715,9 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
         result.put("rented", (int) rented);
         result.put("maintain", (int) maintain);
         result.put("offline", (int) offline);
+        // 兜底：空值/异常状态房源计入 total 但不属于任何分组，归入"其他"，保证 total = 各分组之和
+        long others = total - vacant - booked - rented - maintain - offline;
+        result.put("other", (int) Math.max(0, others));
         return result;
     }
 

@@ -61,6 +61,26 @@
           v-hasPermi="['gangzhu:project:remove']"
         >删除</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="info"
+          plain
+          icon="el-icon-upload2"
+          size="mini"
+          @click="handleImport"
+          v-hasPermi="['gangzhu:project:import']"
+        >导入</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          plain
+          icon="el-icon-download"
+          size="mini"
+          @click="handleExport"
+          v-hasPermi="['gangzhu:project:export']"
+        >导出</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -667,6 +687,45 @@
         <el-button type="primary" @click="saveFacilities" :loading="facilitySaving" :disabled="facilityLoading">保 存</el-button>
       </div>
     </el-dialog>
+
+    <!-- 项目导入对话框 -->
+    <el-dialog :title="upload.title" :visible.sync="upload.open" width="500px" append-to-body>
+      <el-alert
+        title="导入说明"
+        type="info"
+        :closable="false"
+        style="margin-bottom: 15px;">
+        <div style="font-size: 12px; line-height: 1.8;">
+          1. 项目名称必填，按项目名称判重（已存在时提示）<br/>
+          2. 项目类型填写：1人才公寓 / 2保租房 / 3市场租赁<br/>
+          3. 状态填写：0正常 / 1停用<br/>
+          4. 模板可下载后填写，格式勿修改
+        </div>
+      </el-alert>
+      <el-upload
+        ref="upload"
+        :limit="1"
+        accept=".xlsx, .xls"
+        :headers="upload.headers"
+        :action="upload.url"
+        :disabled="upload.isUploading"
+        :on-progress="handleFileUploadProgress"
+        :on-success="handleFileSuccess"
+        :auto-upload="false"
+        drag
+      >
+        <i class="el-icon-upload"></i>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+        <div class="el-upload__tip text-center" slot="tip">
+          <span>仅允许导入xls、xlsx格式文件。</span>
+          <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importTemplate">下载模板</el-link>
+        </div>
+      </el-upload>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitFileForm">确 定</el-button>
+        <el-button @click="upload.open = false">取 消</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -733,6 +792,14 @@ export default {
       facilityCategories: ['电气类', '灯具类', '卫浴类', '厨房类', '墙地面类', '门窗类', '家具类'],
       facilityLoading: false,
       facilitySaving: false,
+      // 导入上传
+      upload: {
+        title: "",
+        open: false,
+        isUploading: false,
+        headers: { Authorization: "Bearer " + this.$store.getters.token },
+        url: process.env.VUE_APP_BASE_API + "/system/project/importData"
+      },
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -881,6 +948,37 @@ export default {
         this.getList();
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
+    },
+    /** 导出项目列表 */
+    handleExport() {
+      this.download('system/project/export', {
+        ...this.queryParams
+      }, `project_${new Date().getTime()}.xlsx`)
+    },
+    /** 打开项目导入对话框 */
+    handleImport() {
+      this.upload.title = "项目数据导入";
+      this.upload.open = true;
+    },
+    /** 下载导入模板 */
+    importTemplate() {
+      this.download('system/project/importTemplate', {}, `project_template_${new Date().getTime()}.xlsx`)
+    },
+    /** 文件上传中处理 */
+    handleFileUploadProgress(event, file, fileList) {
+      this.upload.isUploading = true;
+    },
+    /** 文件上传成功处理 */
+    handleFileSuccess(response, file, fileList) {
+      this.upload.open = false;
+      this.upload.isUploading = false;
+      this.$refs.upload.clearFiles();
+      this.$alert("<div style='overflow: auto;overflow-x: hidden;max-height: 70vh;padding: 10px 20px 0;'>" + response.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
+      this.getList();
+    },
+    /** 提交上传文件 */
+    submitFileForm() {
+      this.$refs.upload.submit();
     },
     /** 管理楼栋按钮操作 */
     handleManageBuilding(row) {

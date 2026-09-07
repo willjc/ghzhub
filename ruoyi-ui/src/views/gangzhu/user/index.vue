@@ -335,6 +335,16 @@
         <el-form-item label="配偶姓名">
           <el-input v-model="form.spouseName" placeholder="请输入配偶姓名" />
         </el-form-item>
+        <el-form-item label="婚姻状态">
+          <el-select v-model="form.marriageStatus" placeholder="请选择婚姻状态" clearable style="width: 100%">
+            <el-option
+              v-for="dict in dict.type.hz_marriage_status"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+            />
+          </el-select>
+        </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -349,7 +359,7 @@ import { listUser, getUser, updateUser, changeUserStatus, delUser } from "@/api/
 
 export default {
   name: "HzUser",
-  dicts: ['hz_user_sex', 'hz_user_source_type', 'hz_education_type', 'hz_identity_type', 'hz_unit_nature'],
+  dicts: ['hz_user_sex', 'hz_user_source_type', 'hz_education_type', 'hz_identity_type', 'hz_unit_nature', 'hz_marriage_status'],
   data() {
     return {
       loading: true,

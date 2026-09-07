@@ -63,4 +63,13 @@ public interface IHzProjectService extends IService<HzProject>
      * @return 结果
      */
     int deleteProjectById(Long projectId);
+
+    /**
+     * 导入项目数据
+     *
+     * @param projectList 导入的项目列表
+     * @param updateSupport 是否支持更新已存在数据
+     * @return 导入结果消息
+     */
+    String importProject(List<HzProject> projectList, boolean updateSupport);
 }

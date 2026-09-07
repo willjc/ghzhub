@@ -68,6 +68,31 @@ public class HzProjectController extends BaseController
     }
 
     /**
+     * 下载项目导入模板
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:project:import')")
+    @PostMapping("/importTemplate")
+    public void importTemplate(HttpServletResponse response)
+    {
+        ExcelUtil<HzProject> util = new ExcelUtil<HzProject>(HzProject.class);
+        util.importTemplateExcel(response, "项目数据");
+    }
+
+    /**
+     * 导入项目数据
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:project:import')")
+    @Log(title = "项目管理", businessType = BusinessType.IMPORT)
+    @PostMapping("/importData")
+    public AjaxResult importData(org.springframework.web.multipart.MultipartFile file, boolean updateSupport) throws Exception
+    {
+        ExcelUtil<HzProject> util = new ExcelUtil<HzProject>(HzProject.class);
+        List<HzProject> projectList = util.importExcel(file.getInputStream());
+        String message = projectService.importProject(projectList, updateSupport);
+        return success(message);
+    }
+
+    /**
      * 获取项目详细信息
      */
     @PreAuthorize("@ss.hasPermi('gangzhu:project:query')")

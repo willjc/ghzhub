@@ -92,6 +92,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="entity.tenantName != null and entity.tenantName != ''">
                 AND EXISTS (SELECT 1 FROM hz_batch_tenant t WHERE t.batch_id = b.batch_id AND t.del_flag = '0' AND t.tenant_name LIKE CONCAT('%', #{entity.tenantName}, '%'))
             </if>
+            <if test="entity.approveStatus != null and entity.approveStatus != ''">
+                AND b.approve_status = #{entity.approveStatus}
+            </if>
+            <if test="entity.batchStatus != null and entity.batchStatus != ''">
+                AND b.batch_status = #{entity.batchStatus}
+            </if>
         </where>
         GROUP BY b.batch_id
         ORDER BY b.create_time DESC, b.batch_id DESC

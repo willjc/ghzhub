@@ -88,6 +88,10 @@ public class HzUser extends BaseEntity {
     @Excel(name = "配偶姓名")
     private String spouseName;
 
+    /** 婚姻状态（1未婚/2已婚/3离异/4丧偶） */
+    @Excel(name = "婚姻状态", dictType = "hz_marriage_status")
+    private String marriageStatus;
+
     /** 工作证明附件 */
     @Excel(name = "工作证明附件")
     private String workProofAttachment;
@@ -263,6 +267,14 @@ public class HzUser extends BaseEntity {
 
     public void setSpouseName(String spouseName) {
         this.spouseName = spouseName;
+    }
+
+    public String getMarriageStatus() {
+        return marriageStatus;
+    }
+
+    public void setMarriageStatus(String marriageStatus) {
+        this.marriageStatus = marriageStatus;
     }
 
     public String getWorkProofAttachment() {

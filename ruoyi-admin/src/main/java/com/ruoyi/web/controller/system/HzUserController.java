@@ -30,6 +30,9 @@ public class HzUserController extends BaseController {
     @Autowired
     private IHzUserService hzUserService;
 
+    @Autowired
+    private com.ruoyi.system.mapper.HzTenantMapper hzTenantMapper;
+
     /**
      * 查询用户列表（真正走数据库分页，避免全表扫描导致前端 10s 超时）
      */
@@ -89,7 +92,32 @@ public class HzUserController extends BaseController {
         if (hzUser == null || hzUser.getUserId() == null) {
             return error("用户ID不能为空");
         }
-        return toAjax(hzUserService.updateById(hzUser) ? 1 : 0);
+        boolean ok = hzUserService.updateById(hzUser);
+        // 婚姻状态同步写 hz_tenant（迁移快照表），保持租户画像一致
+        if (ok && hzUser.getMarriageStatus() != null) {
+            try {
+                com.ruoyi.system.domain.HzTenant tenant = hzTenantMapper.selectOne(
+                        new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.ruoyi.system.domain.HzTenant>()
+                                .eq(com.ruoyi.system.domain.HzTenant::getUserId, hzUser.getUserId())
+                                .eq(com.ruoyi.system.domain.HzTenant::getDelFlag, "0")
+                                .last("LIMIT 1"));
+                if (tenant != null) {
+                    // hz_tenant.marriage_status 存中文
+                    String label = switch (hzUser.getMarriageStatus()) {
+                        case "1" -> "未婚";
+                        case "2" -> "已婚";
+                        case "3" -> "离异";
+                        case "4" -> "丧偶";
+                        default -> hzUser.getMarriageStatus();
+                    };
+                    tenant.setMarriageStatus(label);
+                    hzTenantMapper.updateById(tenant);
+                }
+            } catch (Exception e) {
+                // 同步失败不影响本次用户保存
+            }
+        }
+        return toAjax(ok ? 1 : 0);
     }
 
     /**

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.common.annotation.Excel;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -26,18 +27,22 @@ public class HzProject extends BaseEntity
     private Long projectId;
 
     /** 项目名称 */
+    @Excel(name = "项目名称")
     @TableField("project_name")
     private String projectName;
 
     /** 项目编码 */
+    @Excel(name = "项目编码")
     @TableField("project_code")
     private String projectCode;
 
     /** 项目类型(1:人才公寓 2:保租房 3:市场租赁) */
+    @Excel(name = "项目类型", readConverterExp = "1=人才公寓,2=保租房,3=市场租赁")
     @TableField("project_type")
     private String projectType;
 
     /** 项目地址 */
+    @Excel(name = "项目地址")
     @TableField("address")
     private String address;
 
@@ -50,10 +55,12 @@ public class HzProject extends BaseEntity
     private BigDecimal latitude;
 
     /** 总楼栋数 */
+    @Excel(name = "总楼栋数")
     @TableField("total_buildings")
     private Integer totalBuildings;
 
     /** 总房源数 */
+    @Excel(name = "总房源数")
     @TableField("total_houses")
     private Integer totalHouses;
 
@@ -78,6 +85,7 @@ public class HzProject extends BaseEntity
     private String coverImage;
 
     /** 起租价格(元/月) */
+    @Excel(name = "起租价格")
     @TableField("price")
     private BigDecimal price;
 
@@ -94,26 +102,32 @@ public class HzProject extends BaseEntity
     private Long managerId;
 
     /** 项目负责人姓名 */
+    @Excel(name = "项目负责人")
     @TableField("manager_name")
     private String managerName;
 
     /** 负责人电话 */
+    @Excel(name = "负责人电话")
     @TableField("manager_phone")
     private String managerPhone;
 
     /** 人才公寓服务电话（一键拨号） */
+    @Excel(name = "服务电话")
     @TableField("service_phone")
     private String servicePhone;
 
     /** 物业服务电话（一键拨号） */
+    @Excel(name = "物业服务电话")
     @TableField("property_phone")
     private String propertyPhone;
 
     /** 状态(0:正常 1:停用) */
+    @Excel(name = "状态", readConverterExp = "0=正常,1=停用")
     @TableField("status")
     private String status;
 
     /** 显示顺序 */
+    @Excel(name = "显示顺序")
     @TableField("sort_order")
     private Integer sortOrder;
 

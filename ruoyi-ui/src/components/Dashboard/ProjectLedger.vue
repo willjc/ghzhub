@@ -205,6 +205,11 @@ export default {
           }
         ]
       })
+      // 点击柱状图 → 打开对应项目详情（与表格行点击一致）
+      this.barChart.on('click', params => {
+        const row = this.tableData[params.dataIndex]
+        if (row) this.handleDetail(row)
+      })
     },
     handleRefresh() {
       this.loadData()

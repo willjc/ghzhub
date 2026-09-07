@@ -41,6 +41,20 @@
           <el-option label="定向人才" value="1" />
         </el-select>
       </el-form-item>
+      <el-form-item label="审批状态" prop="approveStatus">
+        <el-select v-model="queryParams.approveStatus" placeholder="请选择审批状态" clearable style="width: 120px">
+          <el-option label="待审批" value="0" />
+          <el-option label="已通过" value="1" />
+          <el-option label="已拒绝" value="2" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="批次状态" prop="batchStatus">
+        <el-select v-model="queryParams.batchStatus" placeholder="请选择批次状态" clearable style="width: 120px">
+          <el-option label="待分配" value="0" />
+          <el-option label="分配中" value="1" />
+          <el-option label="已完成" value="2" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -593,7 +607,9 @@ export default {
         enterpriseName: null,
         tenantName: null,
         projectId: null,
-        talentType: null
+        talentType: null,
+        approveStatus: null,
+        batchStatus: null
       },
       form: {},
       rules: {

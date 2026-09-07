@@ -97,8 +97,26 @@
         <project-ledger :month="currentMonth" ref="projectLedger" />
       </div>
 
-      <!-- ④ 租户画像 - 户籍来源分布 -->
+      <!-- ③-2 学历职业分布 -->
       <div class="ghz-panel">
+        <div class="ghz-panel-head">
+          <span class="panel-accent cyan"></span>
+          <span class="panel-title">客户分析</span>
+        </div>
+        <education-job :data="educationJobData" />
+      </div>
+
+      <!-- ③-3 租户画像（婚姻状态 + 户籍） -->
+      <div class="ghz-panel">
+        <div class="ghz-panel-head">
+          <span class="panel-accent cyan"></span>
+          <span class="panel-title">租户画像</span>
+        </div>
+        <tenant-profile :data="tenantData" />
+      </div>
+
+      <!-- ④ 租户画像 - 户籍来源分布 -->
+      <div class="ghz-panel" v-if="false">
         <div class="ghz-panel-head">
           <span class="panel-accent cyan"></span>
           <span class="panel-title">户籍来源分布</span>
@@ -122,10 +140,12 @@
 
 <script>
 import ProjectLedger from '@/components/Dashboard/ProjectLedger'
+import TenantProfile from '@/components/Dashboard/TenantProfile'
+import EducationJob from '@/components/Dashboard/EducationJob'
 
 export default {
   name: 'Dashboard',
-  components: { ProjectLedger },
+  components: { ProjectLedger, TenantProfile, EducationJob },
   data() {
     const now = new Date()
     return {
@@ -149,6 +169,10 @@ export default {
       },
       tenantData: {
         household: {}
+      },
+      educationJobData: {
+        education: {},
+        profession: {}
       },
       // 财务指标定义
       financialList: [
@@ -186,15 +210,17 @@ export default {
     async loadAll() {
       this.loading = true
       try {
-        const { getDashboardStats, getHouseStats, getTenantProfile } = await import('@/api/gangzhu/statistics')
-        const [finRes, houseRes, tenantRes] = await Promise.all([
+        const { getDashboardStats, getHouseStats, getTenantProfile, getEducationJob } = await import('@/api/gangzhu/statistics')
+        const [finRes, houseRes, tenantRes, eduRes] = await Promise.all([
           getDashboardStats(this.currentMonth),
           getHouseStats(),
-          getTenantProfile()
+          getTenantProfile(),
+          getEducationJob().catch(() => ({ data: null }))
         ])
         this.financialData = finRes.data.financial
         this.houseData     = houseRes.data
         this.tenantData    = tenantRes.data
+        this.educationJobData = eduRes.data || this.educationJobData
       } catch (e) {
         console.error('加载仪表板数据失败', e)
         this.$message.error('数据加载失败，请稍后重试')
