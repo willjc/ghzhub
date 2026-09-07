@@ -13,7 +13,7 @@
 					<view class="auth-tag" v-if="userInfo.authStatus === '2'">
 						<text class="auth-tag-text verified">已实名</text>
 					</view>
-					<view class="auth-tag" v-else @click.stop="goToAuth">
+					<view class="auth-tag" v-else-if="userInfo.userId" @click.stop="goToAuth">
 						<text class="auth-tag-text unverified">未实名认证</text>
 						<text class="auth-go">去认证 ></text>
 					</view>
@@ -59,7 +59,7 @@
 					phone: '',
 					avatar: ''
 				},
-				maskedPhone: '134****3475',
+				maskedPhone: '',
 				_tapCount: 0,
 				_tapTimer: null,
 				menuList: [
@@ -101,6 +101,8 @@
 		methods: {
 			// 加载用户信息
 			loadUserInfo(userId) {
+				this.userInfo = {}
+				this.maskedPhone = '加载中...'
 				getUserInfo(userId).then(res => {
 					if (res.code === 200 && res.data) {
 						this.userInfo = res.data
@@ -108,8 +110,12 @@
 						this.maskedPhone = maskPhone(res.data.phone)
 						// 处理头像URL
 						this.processAvatar()
+					} else {
+						this.maskedPhone = '用户信息加载失败'
 					}
 				}).catch(err => {
+					this.maskedPhone = '用户信息加载失败'
+					if (err && err.code === 401) this.isLogin = false
 					console.error('获取用户信息失败:', err)
 				})
 			},

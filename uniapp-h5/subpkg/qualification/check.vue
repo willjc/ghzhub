@@ -174,6 +174,8 @@ export default {
         clearInterval(this.progressTimer)
         this.progressTimer = null
       }
+      // 登录失效由统一请求层引导登录，不应显示为资格不通过。
+      if (err && err.code === 401) return
       this.progressPercent = 100
       this.finished = true
       this.resultPassed = false

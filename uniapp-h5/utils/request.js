@@ -7,6 +7,7 @@ import config from '@/config/index'
 // 后端API基础地址
 // 从配置文件读取
 const BASE_URL = config.baseUrl
+let loginRedirecting = false
 
 /**
  * 发起HTTP请求
@@ -32,13 +33,26 @@ export function request(options) {
         ...options.header
       },
       success: (res) => {
-        if (res.statusCode === 401) {
-          uni.removeStorageSync('token')
-          uni.removeStorageSync('userId')
-          uni.removeStorageSync('userInfo')
-          uni.showToast({ title: '登录已失效，请重新登录', icon: 'none' })
-          setTimeout(() => uni.reLaunch({ url: '/pages/login/index' }), 500)
-          reject(res)
+        if (res.statusCode === 401 || (res.data && Number(res.data.code) === 401)) {
+          // 旧请求返回时不能清除刚登录或切换后的新会话；并发失败只跳转一次。
+          if (token === (uni.getStorageSync('token') || '') && !loginRedirecting) {
+            uni.removeStorageSync('token')
+            uni.removeStorageSync('userId')
+            uni.removeStorageSync('userInfo')
+            loginRedirecting = true
+            uni.showToast({ title: '登录已失效，请重新登录', icon: 'none' })
+            setTimeout(() => {
+              if (uni.getStorageSync('token')) {
+                loginRedirecting = false
+                return
+              }
+              uni.reLaunch({
+                url: '/pages/login/index',
+                complete: () => { loginRedirecting = false }
+              })
+            }, 500)
+          }
+          reject({ code: 401, msg: '登录已失效，请重新登录' })
           return
         }
         // 请求成功
