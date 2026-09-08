@@ -78,6 +78,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="entity.enterpriseName != null and entity.enterpriseName != ''">
                 AND b.enterprise_name LIKE CONCAT('%', #{entity.enterpriseName}, '%')
             </if>
+            <if test="entity.approveStatus != null and entity.approveStatus != ''">
+                AND b.approve_status = #{entity.approveStatus}
+            </if>
+            <if test="entity.batchStatus != null and entity.batchStatus != ''">
+                AND b.batch_status = #{entity.batchStatus}
+            </if>
         </where>
         GROUP BY b.batch_id
         ORDER BY b.create_time DESC
