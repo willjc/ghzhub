@@ -17,6 +17,20 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="审批状态" prop="approveStatus">
+        <el-select v-model="queryParams.approveStatus" placeholder="请选择审批状态" clearable style="width: 120px">
+          <el-option label="待审核" value="0" />
+          <el-option label="已通过" value="1" />
+          <el-option label="已拒绝" value="2" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="批次状态" prop="batchStatus">
+        <el-select v-model="queryParams.batchStatus" placeholder="请选择批次状态" clearable style="width: 120px">
+          <el-option label="进行中" value="0" />
+          <el-option label="已完成" value="1" />
+          <el-option label="已作废" value="2" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -64,6 +78,22 @@
       <el-table-column label="批次编号" align="center" prop="batchNo" width="150" show-overflow-tooltip />
       <el-table-column label="批次名称" align="center" prop="batchName" min-width="160" show-overflow-tooltip />
       <el-table-column label="单位名称" align="center" prop="enterpriseName" min-width="160" show-overflow-tooltip />
+      <el-table-column label="审批状态" align="center" prop="approveStatus" width="100">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.approveStatus === '0'" type="info" size="small">待审核</el-tag>
+          <el-tag v-else-if="scope.row.approveStatus === '1'" type="success" size="small">已通过</el-tag>
+          <el-tag v-else-if="scope.row.approveStatus === '2'" type="danger" size="small">已拒绝</el-tag>
+          <span v-else style="color: #C0C4CC;">-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="批次状态" align="center" prop="batchStatus" width="100">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.batchStatus === '0'" type="warning" size="small">进行中</el-tag>
+          <el-tag v-else-if="scope.row.batchStatus === '1'" type="success" size="small">已完成</el-tag>
+          <el-tag v-else-if="scope.row.batchStatus === '2'" type="info" size="small">已作废</el-tag>
+          <span v-else style="color: #C0C4CC;">-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="联系人" align="center" prop="contactPerson" width="100" />
       <el-table-column label="联系方式" align="center" prop="contactPhone" width="130" />
       <el-table-column label="所属项目" align="center" prop="projectName" min-width="140" show-overflow-tooltip />
@@ -390,7 +420,9 @@ export default {
         pageNum: 1,
         pageSize: 10,
         batchName: null,
-        enterpriseName: null
+        enterpriseName: null,
+        approveStatus: null,
+        batchStatus: null
       },
       form: {},
       rules: {
