@@ -10,7 +10,7 @@
             </div>
             <div class="header-content">
               <h3 class="card-title">婚姻状态分布</h3>
-              <p class="card-subtitle">租户婚姻状况统计分析</p>
+              <p class="card-subtitle">全部未删除用户（含迁移用户）；其他含丧偶、未采集</p>
             </div>
           </div>
           <div class="chart-container">
@@ -82,21 +82,27 @@ export default {
     }
   },
   computed: {
+    marriageCounts() {
+      return (this.data && this.data.marriageStatus) || {}
+    },
+    householdCounts() {
+      return (this.data && this.data.household) || {}
+    },
     marriageData() {
-      const total = Object.values(this.data.marriageStatus).reduce((sum, val) => sum + val, 0)
+      const total = Object.values(this.marriageCounts).reduce((sum, val) => sum + Number(val || 0), 0) || 1
       return [
-        { name: '已婚', value: this.data.marriageStatus.married || 0, percent: ((this.data.marriageStatus.married || 0) / total * 100).toFixed(1) },
-        { name: '未婚', value: this.data.marriageStatus.unmarried || 0, percent: ((this.data.marriageStatus.unmarried || 0) / total * 100).toFixed(1) },
-        { name: '离异', value: this.data.marriageStatus.divorced || 0, percent: ((this.data.marriageStatus.divorced || 0) / total * 100).toFixed(1) },
-        { name: '其他', value: this.data.marriageStatus.other || 0, percent: ((this.data.marriageStatus.other || 0) / total * 100).toFixed(1) }
+        { name: '已婚', value: this.marriageCounts.married || 0, percent: ((this.marriageCounts.married || 0) / total * 100).toFixed(1) },
+        { name: '未婚', value: this.marriageCounts.unmarried || 0, percent: ((this.marriageCounts.unmarried || 0) / total * 100).toFixed(1) },
+        { name: '离异', value: this.marriageCounts.divorced || 0, percent: ((this.marriageCounts.divorced || 0) / total * 100).toFixed(1) },
+        { name: '其他', value: this.marriageCounts.other || 0, percent: ((this.marriageCounts.other || 0) / total * 100).toFixed(1) }
       ]
     },
     householdData() {
-      const total = Object.values(this.data.household).reduce((sum, val) => sum + val, 0)
+      const total = Object.values(this.householdCounts).reduce((sum, val) => sum + Number(val || 0), 0) || 1
       return [
-        { name: '本地户籍', value: this.data.household.local || 0, percent: ((this.data.household.local || 0) / total * 100).toFixed(1) },
-        { name: '外地户籍', value: this.data.household.nonlocal || 0, percent: ((this.data.household.nonlocal || 0) / total * 100).toFixed(1) },
-        { name: '未知户籍', value: this.data.household.unknown || 0, percent: ((this.data.household.unknown || 0) / total * 100).toFixed(1) }
+        { name: '本地户籍', value: this.householdCounts.local || 0, percent: ((this.householdCounts.local || 0) / total * 100).toFixed(1) },
+        { name: '外地户籍', value: this.householdCounts.nonlocal || 0, percent: ((this.householdCounts.nonlocal || 0) / total * 100).toFixed(1) },
+        { name: '未知户籍', value: this.householdCounts.unknown || 0, percent: ((this.householdCounts.unknown || 0) / total * 100).toFixed(1) }
       ]
     }
   },
@@ -106,6 +112,7 @@ export default {
     })
   },
   beforeDestroy() {
+    window.removeEventListener('resize', this.handleResize)
     if (this.marriageChart) {
       this.marriageChart.dispose()
     }
@@ -115,8 +122,9 @@ export default {
   },
   methods: {
     initCharts() {
+      if (!this.$refs.marriageChart || !this.$refs.householdChart) return
       // 初始化婚姻状态图表
-      this.marriageChart = echarts.init(this.$refs.marriageChart)
+      if (!this.marriageChart) this.marriageChart = echarts.init(this.$refs.marriageChart)
       const marriageOption = {
         tooltip: {
           trigger: 'item',
@@ -155,7 +163,7 @@ export default {
       this.marriageChart.setOption(marriageOption)
 
       // 初始化户籍分布图表
-      this.householdChart = echarts.init(this.$refs.householdChart)
+      if (!this.householdChart) this.householdChart = echarts.init(this.$refs.householdChart)
       const householdOption = {
         tooltip: {
           trigger: 'item',

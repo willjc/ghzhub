@@ -308,7 +308,7 @@ public class HzStatisticsController extends BaseController {
     public AjaxResult projectLedger(@RequestParam(required = false) String month) {
         LocalDate first = parseMonth(month);
         String selectedKey = first.format(DateTimeFormatter.ofPattern("yyyy-MM"));
-        String monthEndDt = first.plusMonths(1).minusDays(1) + " 23:59:59";
+        String monthEndDt = first.plusMonths(1) + " 00:00:00";
 
         // 近6个月区间（含当月）
         LocalDate trendStart = first.minusMonths(5);
@@ -334,14 +334,14 @@ public class HzStatisticsController extends BaseController {
                 .eq(HzBill::getDelFlag, "0")
                 .eq(HzBill::getBillStatus, "1")
                 .ge(HzBill::getPayTime, queryStartDt)
-                .le(HzBill::getPayTime, monthEndDt));
+                .lt(HzBill::getPayTime, monthEndDt));
 
         // 应收（当月，用于计算收缴率与状态）
         List<HzBill> monthReceivableBills = billMapper.selectList(new LambdaQueryWrapper<HzBill>()
                 .eq(HzBill::getDelFlag, "0")
                 .ne(HzBill::getBillStatus, "4")
                 .ge(HzBill::getDueDate, first.toString())
-                .le(HzBill::getDueDate, first.plusMonths(1).minusDays(1).toString()));
+                .lt(HzBill::getDueDate, first.plusMonths(1).toString()));
 
         // projectId -> (monthKey -> 实收合计)
         Map<Long, Map<String, BigDecimal>> projectMonthReceived = new HashMap<>();
@@ -357,9 +357,14 @@ public class HzStatisticsController extends BaseController {
 
         // projectId -> 当月应收
         Map<Long, BigDecimal> projectMonthReceivable = new HashMap<>();
+        Map<Long, BigDecimal> projectDueCollected = new HashMap<>();
         for (HzBill b : monthReceivableBills) {
             Long pid = contractProjectMap.getOrDefault(b.getContractId(), 0L);
             projectMonthReceivable.merge(pid, nz(b.getBillAmount()), BigDecimal::add);
+            // 同一批到期账单截至查询时的已收，不能用当月到账（含补缴/预缴）代替。
+            BigDecimal collected = nz(b.getPaidAmount()).max(BigDecimal.ZERO)
+                    .min(nz(b.getBillAmount()).max(BigDecimal.ZERO));
+            projectDueCollected.merge(pid, collected, BigDecimal::add);
         }
 
         List<HzProject> projects = projectMapper.selectList(
@@ -390,22 +395,23 @@ public class HzStatisticsController extends BaseController {
             }
 
             BigDecimal receivable = projectMonthReceivable.getOrDefault(pid, BigDecimal.ZERO);
-            int collectionRate = receivable.compareTo(BigDecimal.ZERO) > 0
-                    ? monthlyAmount.multiply(BigDecimal.valueOf(100)).divide(receivable, 0, RoundingMode.HALF_UP).intValue()
-                    : (monthlyAmount.compareTo(BigDecimal.ZERO) > 0 ? 100 : 0);
-
-            // 无任何数据的项目不展示
-            if (monthlyAmount.compareTo(BigDecimal.ZERO) == 0 && ytd.compareTo(BigDecimal.ZERO) == 0) {
-                continue;
-            }
+            BigDecimal dueCollected = projectDueCollected.getOrDefault(pid, BigDecimal.ZERO);
+            Integer collectionRate = ledgerCollectionRate(receivable, dueCollected);
 
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("projectId", pid);
             row.put("projectName", project.getProjectName());
             row.put("projectCode", project.getProjectCode());
+            row.put("projectType", project.getProjectType());
+            row.put("projectAddress", project.getAddress());
+            row.put("statisticsMonth", selectedKey);
             row.put("monthlyAmount", monthlyAmount);
             row.put("yearToDateAmount", ytd);
-            row.put("status", collectionRate >= 90 ? "normal" : collectionRate >= 80 ? "warning" : "error");
+            row.put("receivableAmount", receivable);
+            row.put("dueCollectedAmount", dueCollected);
+            row.put("uncollectedAmount", receivable.subtract(dueCollected).max(BigDecimal.ZERO));
+            row.put("status", collectionRate == null ? "noDue"
+                    : collectionRate >= 90 ? "normal" : collectionRate >= 80 ? "warning" : "error");
             row.put("collectionRate", collectionRate);
             row.put("updateTime", updateTime);
             row.put("trendMonths", trendLabels);
@@ -423,6 +429,12 @@ public class HzStatisticsController extends BaseController {
     }
 
     // ================= 私有辅助 =================
+
+    static Integer ledgerCollectionRate(BigDecimal receivable, BigDecimal collected) {
+        if (receivable.signum() <= 0) return null;
+        return collected.max(BigDecimal.ZERO).min(receivable).multiply(BigDecimal.valueOf(100))
+                .divide(receivable, 0, RoundingMode.HALF_UP).intValue();
+    }
 
     private long houseCount(String houseStatus) {
         QueryWrapper<com.ruoyi.system.domain.HzHouse> wrapper = new QueryWrapper<>();

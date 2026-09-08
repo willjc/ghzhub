@@ -94,11 +94,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         LEFT JOIN hz_unit u ON h.unit_id = u.unit_id
     </sql>
 
+    <!-- 首页台账钻取：按合同归属项目，与统计接口一致；仅传入台账参数时生效。 -->
+    <sql id="ledgerFilters">
+        <if test="bill.params.ledgerProjectId != null">
+            AND c.project_id = #{bill.params.ledgerProjectId}
+            <choose>
+                <when test='bill.params.ledgerBasis == "due"'>
+                    AND b.bill_status != '4'
+                    AND b.due_date &gt;= #{bill.params.ledgerStart}
+                    AND b.due_date &lt; #{bill.params.ledgerEnd}
+                </when>
+                <otherwise>
+                    AND b.bill_status = '1'
+                    AND b.pay_time &gt;= #{bill.params.ledgerStart}
+                    AND b.pay_time &lt; #{bill.params.ledgerEnd}
+                </otherwise>
+            </choose>
+        </if>
+    </sql>
+
     <!-- 查询账单列表 -->
     <select id="selectBillVOList" parameterType="com.ruoyi.system.domain.HzBill" resultMap="HzBillVOResult">
         <include refid="selectBillVOSql"/>
         <where>
             b.del_flag = '0'
+            <include refid="ledgerFilters"/>
             <if test="bill.billNo != null and bill.billNo != ''">
                 AND b.bill_no LIKE CONCAT('%', #{bill.billNo}, '%')
             </if>
@@ -178,6 +198,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectBillVOSql"/>
         <where>
             b.del_flag = '0'
+            <include refid="ledgerFilters"/>
             <if test="bill.billNo != null and bill.billNo != ''">
                 AND b.bill_no LIKE CONCAT('%', #{bill.billNo}, '%')
             </if>

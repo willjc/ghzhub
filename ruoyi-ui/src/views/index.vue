@@ -168,6 +168,7 @@ export default {
         userConversionRate: 0
       },
       tenantData: {
+        marriageStatus: {},
         household: {}
       },
       educationJobData: {

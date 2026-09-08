@@ -7,7 +7,7 @@
         </div>
         <div class="header-content">
           <h3 class="card-title">项目台账统计</h3>
-          <p class="card-subtitle">月度项目数据汇总分析</p>
+          <p class="card-subtitle">点击柱子、项目行或“详情”查看台账；零金额项目可从列表进入</p>
         </div>
         <div class="header-actions">
           <el-button size="small" icon="el-icon-refresh" circle @click="handleRefresh" />
@@ -26,12 +26,12 @@
       >
         <el-table-column prop="projectName" label="项目名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="projectCode" label="项目编码" width="120" />
-        <el-table-column prop="monthlyAmount" label="本月金额" width="120" align="right">
+        <el-table-column prop="monthlyAmount" label="所选月实收" width="120" align="right">
           <template slot-scope="scope">
             <span class="amount-text">¥{{ formatNumber(scope.row.monthlyAmount) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="yearToDateAmount" label="累计金额" width="120" align="right">
+        <el-table-column prop="yearToDateAmount" label="本年累计实收" width="140" align="right">
           <template slot-scope="scope">
             <span class="amount-text total">¥{{ formatNumber(scope.row.yearToDateAmount) }}</span>
           </template>
@@ -43,13 +43,13 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="updateTime" label="更新时间" width="180" />
+        <el-table-column prop="updateTime" label="统计查询时间" width="180" />
         <el-table-column label="操作" width="100" align="center" fixed="right">
           <template slot-scope="scope">
             <el-button
               size="mini"
               type="text"
-              @click="handleDetail(scope.row)"
+              @click.stop="handleDetail(scope.row)"
             >
               详情
             </el-button>
@@ -73,7 +73,7 @@
               <i class="el-icon-coin"></i>
             </div>
             <div class="stat-content">
-              <div class="stat-label">本月总计</div>
+              <div class="stat-label">所选月实收合计</div>
               <div class="stat-value">¥{{ formatNumber(monthlyTotal) }}</div>
             </div>
           </div>
@@ -82,7 +82,7 @@
               <i class="el-icon-s-finance"></i>
             </div>
             <div class="stat-content">
-              <div class="stat-label">累计总计</div>
+              <div class="stat-label">本年累计实收合计</div>
               <div class="stat-value">¥{{ formatNumber(yearToDateTotal) }}</div>
             </div>
           </div>
@@ -91,20 +91,64 @@
     </div>
 
     <!-- 项目详情对话框 -->
-    <el-dialog title="项目详情" :visible.sync="detailVisible" width="600px">
+    <el-dialog title="项目台账详情" :visible.sync="detailVisible" width="90%" @opened="initTrendChart">
       <div v-if="currentProject" class="project-detail">
         <el-descriptions :column="2" border>
           <el-descriptions-item label="项目名称">{{ currentProject.projectName }}</el-descriptions-item>
           <el-descriptions-item label="项目编码">{{ currentProject.projectCode }}</el-descriptions-item>
-          <el-descriptions-item label="本月金额">¥{{ formatNumber(currentProject.monthlyAmount) }}</el-descriptions-item>
-          <el-descriptions-item label="累计金额">¥{{ formatNumber(currentProject.yearToDateAmount) }}</el-descriptions-item>
+          <el-descriptions-item label="项目类型">{{ projectTypes[currentProject.projectType] || '未设置' }}</el-descriptions-item>
+          <el-descriptions-item label="统计月份">{{ currentProject.statisticsMonth }}</el-descriptions-item>
+          <el-descriptions-item label="项目地址" :span="2">{{ currentProject.projectAddress || '未设置' }}</el-descriptions-item>
+          <el-descriptions-item label="所选月实收">¥{{ formatNumber(currentProject.monthlyAmount) }}</el-descriptions-item>
+          <el-descriptions-item label="本年累计实收">¥{{ formatNumber(currentProject.yearToDateAmount) }}</el-descriptions-item>
+          <el-descriptions-item label="所选月到期应收">¥{{ formatNumber(currentProject.receivableAmount) }}</el-descriptions-item>
+          <el-descriptions-item label="上述应收截至当前已收">¥{{ formatNumber(currentProject.dueCollectedAmount) }}</el-descriptions-item>
+          <el-descriptions-item label="上述应收截至当前未收">¥{{ formatNumber(currentProject.uncollectedAmount) }}</el-descriptions-item>
           <el-descriptions-item label="状态">
             <el-tag :type="getStatusType(currentProject.status)">
               {{ getStatusText(currentProject) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="更新时间">{{ currentProject.updateTime }}</el-descriptions-item>
+          <el-descriptions-item label="统计查询时间">{{ currentProject.updateTime }}</el-descriptions-item>
         </el-descriptions>
+
+        <el-alert style="margin-top: 16px" :closable="false" type="info"
+          title="实收按支付时间统计已支付账单；应收按应付日期统计未关闭账单。收缴率=上述到期账单截至当前已收/应收，不是历史月末快照。" />
+        <el-tabs v-model="billBasis" @tab-click="resetBills">
+          <el-tab-pane label="所选月实收账单" name="received" />
+          <el-tab-pane label="所选月应收账单" name="due" />
+          <el-tab-pane label="本年实收账单" name="year" />
+        </el-tabs>
+        <div v-if="canListBills">
+          <el-alert v-if="billError" :title="billError" type="error" :closable="false" />
+          <el-table :data="bills" v-loading="billLoading" border>
+            <el-table-column prop="billNo" label="账单编号" min-width="170" />
+            <el-table-column label="房间" min-width="160">
+              <template slot-scope="scope">{{ roomText(scope.row) }}</template>
+            </el-table-column>
+            <el-table-column prop="contractNo" label="合同编号" min-width="170" />
+            <el-table-column label="费用类型" width="100">
+              <template slot-scope="scope">{{ billTypes[scope.row.billType] || scope.row.billType }}</template>
+            </el-table-column>
+            <el-table-column label="账期" min-width="190">
+              <template slot-scope="scope">{{ scope.row.periodStartDate || '-' }} 至 {{ scope.row.periodEndDate || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="应收 / 已收" min-width="150" align="right">
+              <template slot-scope="scope">¥{{ formatNumber(scope.row.billAmount) }} / ¥{{ formatNumber(scope.row.paidAmount) }}</template>
+            </el-table-column>
+            <el-table-column label="支付状态" width="100">
+              <template slot-scope="scope">{{ billStatuses[scope.row.billStatus] || scope.row.billStatus }}</template>
+            </el-table-column>
+            <el-table-column prop="payTime" label="支付时间" min-width="160" />
+            <el-table-column label="操作" width="80" fixed="right">
+              <template slot-scope="scope">
+                <el-button type="text" v-hasPermi="['gangzhu:bill:query']" @click="showBill(scope.row)">详情</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+          <pagination v-show="billTotal > 0" :total="billTotal" :page.sync="billPage" :limit.sync="billPageSize" @pagination="loadBills" />
+        </div>
+        <el-alert v-else title="当前账号无账单列表权限，请联系管理员授权。" type="info" :closable="false" />
 
         <div style="margin-top: 20px;">
           <h4>月度趋势</h4>
@@ -112,11 +156,29 @@
         </div>
       </div>
     </el-dialog>
+    <el-dialog title="账单详情" :visible.sync="billVisible" width="720px" append-to-body>
+      <el-descriptions v-if="billDetail" :column="2" border>
+        <el-descriptions-item label="账单编号">{{ billDetail.billNo }}</el-descriptions-item>
+        <el-descriptions-item label="合同编号">{{ billDetail.contractNo || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="项目">{{ billDetail.projectName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="房间">{{ roomText(billDetail) }}</el-descriptions-item>
+        <el-descriptions-item label="费用类型">{{ billTypes[billDetail.billType] || billDetail.billType }}</el-descriptions-item>
+        <el-descriptions-item label="支付状态">{{ billStatuses[billDetail.billStatus] || billDetail.billStatus }}</el-descriptions-item>
+        <el-descriptions-item label="账期" :span="2">{{ billDetail.periodStartDate || '-' }} 至 {{ billDetail.periodEndDate || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="应收金额">¥{{ formatNumber(billDetail.billAmount) }}</el-descriptions-item>
+        <el-descriptions-item label="已收金额">¥{{ formatNumber(billDetail.paidAmount) }}</el-descriptions-item>
+        <el-descriptions-item label="应付日期">{{ billDetail.dueDate || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="支付时间">{{ billDetail.payTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="交易流水" :span="2">{{ billDetail.transactionNo || '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import * as echarts from 'echarts'
+import { listBill, getBill } from '@/api/gangzhu/bill'
+import { checkPermi } from '@/utils/permission'
 
 export default {
   name: 'ProjectLedger',
@@ -133,10 +195,26 @@ export default {
       currentProject: null,
       trendChart: null,
       barChart: null,
-      loading: false
+      loading: false,
+      projectTypes: { '1': '人才公寓', '2': '保租房', '3': '市场化租赁' },
+      billTypes: { '1': '押金', '2': '租金', '3': '水费', '4': '电费', '5': '燃气费', '6': '物业费' },
+      billStatuses: { '0': '待支付', '1': '已支付', '2': '部分支付', '3': '已逾期', '4': '已关闭' },
+      bills: [],
+      billBasis: 'received',
+      billPage: 1,
+      billPageSize: 10,
+      billTotal: 0,
+      billLoading: false,
+      billError: '',
+      billRequest: 0,
+      billVisible: false,
+      billDetail: null
     }
   },
   computed: {
+    canListBills() {
+      return checkPermi(['gangzhu:bill:list'])
+    },
     totalProjects() {
       return this.tableData.length
     },
@@ -171,6 +249,7 @@ export default {
     },
     initBarChart() {
       if (!this.$refs.barChart || !this.tableData.length) return
+      this.$refs.barChart.style.height = Math.max(320, this.tableData.length * 65 + 70) + 'px'
       if (this.barChart) this.barChart.dispose()
       this.barChart = echarts.init(this.$refs.barChart)
       const names = this.tableData.map(r => r.projectName)
@@ -184,24 +263,24 @@ export default {
             return params.map(p => `${p.seriesName}: ¥${p.value.toLocaleString()}`).join('<br/>')
           }
         },
-        legend: { data: ['本月金额', '累计金额'], top: 0, right: 0 },
+        legend: { data: ['所选月实收', '本年累计实收'], top: 0, right: 0 },
         grid: { left: '2%', right: '4%', bottom: '3%', containLabel: true },
         xAxis: { type: 'value', axisLabel: { formatter: v => v >= 10000 ? (v / 10000).toFixed(0) + '万' : v } },
         yAxis: { type: 'category', data: names, axisLabel: { width: 120, overflow: 'truncate' } },
         series: [
           {
-            name: '本月金额', type: 'bar', data: monthly, barMaxWidth: 22,
+            name: '所选月实收', type: 'bar', data: monthly, barMaxWidth: 22,
             itemStyle: { color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
               { offset: 0, color: '#1d4ed8' }, { offset: 1, color: '#60a5fa' }
             ])},
-            label: { show: true, position: 'right', formatter: p => '¥' + (p.value / 10000).toFixed(0) + '万', fontSize: 11, color: '#1d4ed8' }
+            label: { show: true, position: 'right', formatter: p => '¥' + this.formatNumber(p.value), fontSize: 11, color: '#1d4ed8' }
           },
           {
-            name: '累计金额', type: 'bar', data: ytd, barMaxWidth: 22,
+            name: '本年累计实收', type: 'bar', data: ytd, barMaxWidth: 22,
             itemStyle: { color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
               { offset: 0, color: '#15803d' }, { offset: 1, color: '#86efac' }
             ])},
-            label: { show: true, position: 'right', formatter: p => '¥' + (p.value / 10000).toFixed(0) + '万', fontSize: 11, color: '#15803d' }
+            label: { show: true, position: 'right', formatter: p => '¥' + this.formatNumber(p.value), fontSize: 11, color: '#15803d' }
           }
         ]
       })
@@ -217,11 +296,59 @@ export default {
     handleDetail(row) {
       this.currentProject = row
       this.detailVisible = true
-      this.$nextTick(() => {
-        this.initTrendChart()
-      })
+      this.billBasis = 'received'
+      this.resetBills()
+    },
+    resetBills() {
+      this.billPage = 1
+      this.loadBills()
+    },
+    async loadBills() {
+      if (!this.currentProject || !this.canListBills) return
+      const requestId = ++this.billRequest
+      const month = this.currentProject.statisticsMonth
+      const [year, number] = month.split('-').map(Number)
+      const end = number === 12 ? `${year + 1}-01-01` : `${year}-${String(number + 1).padStart(2, '0')}-01`
+      this.bills = []
+      this.billTotal = 0
+      this.billLoading = true
+      this.billError = ''
+      try {
+        const response = await listBill({
+          pageNum: this.billPage, pageSize: this.billPageSize,
+          params: {
+            ledgerProjectId: this.currentProject.projectId,
+            ledgerBasis: this.billBasis === 'due' ? 'due' : 'received',
+            ledgerStart: this.billBasis === 'year' ? `${year}-01-01` : `${month}-01`,
+            ledgerEnd: end
+          }
+        })
+        if (requestId !== this.billRequest) return
+        this.bills = response.rows || []
+        this.billTotal = Number(response.total || 0)
+      } catch (error) {
+        if (requestId === this.billRequest) this.billError = '账单列表加载失败，请切换页签重试'
+      } finally {
+        if (requestId === this.billRequest) this.billLoading = false
+      }
+    },
+    async showBill(row) {
+      this.billVisible = false
+      this.billDetail = null
+      try {
+        const response = await getBill(row.billId)
+        if (!response.data) return this.$message.warning('账单不存在或已删除')
+        this.billDetail = response.data
+        this.billVisible = true
+      } catch (error) {
+        this.$message.error('账单详情加载失败，请重试')
+      }
+    },
+    roomText(row) {
+      return [row.buildingName, row.unitName, row.houseNo].filter(Boolean).join(' ') || row.houseCode || '-'
     },
     initTrendChart() {
+      if (!this.$refs.trendChart || !this.currentProject) return
       if (this.trendChart) {
         this.trendChart.dispose()
       }
@@ -259,9 +386,6 @@ export default {
             data: monthlyData,
             type: 'line',
             smooth: true,
-            areaStyle: {
-              opacity: 0.3
-            },
             itemStyle: {
               color: '#409EFF'
             },
@@ -281,7 +405,7 @@ export default {
       this.trendChart.setOption(option)
     },
     formatNumber(num) {
-      return num.toLocaleString()
+      return Number(num || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     },
     getStatusType(status) {
       const statusMap = {
@@ -295,7 +419,8 @@ export default {
       const statusMap = {
         normal: '正常',
         warning: '预警',
-        error: '异常'
+        error: '异常',
+        noDue: '无到期应收'
       }
       const base = statusMap[row.status] || '未知'
       // 展示收缴率，如"异常 (收缴率24%)"；无收缴率时只显示状态
