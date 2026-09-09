@@ -60,7 +60,7 @@
 				<view class="form-row" @click="showDatePicker = true">
 					<text class="form-label"><text class="required">*</text>期望时间</text>
 					<view class="form-value-wrap">
-						<text class="form-value placeholder" v-if="!formData.expectTime">请选择期望服务时间</text>
+						<text class="form-value placeholder" v-if="!formData.expectTime">请选择服务时间（最早明天）</text>
 						<text class="form-value" v-else>{{ formData.expectTime }}</text>
 						<image class="arrow-right" src="/static/向右1@2x.png" mode="aspectFit"></image>
 					</view>
@@ -196,11 +196,11 @@ export default {
 	methods: {
 		initDatePicker() {
 			const now = new Date()
+			now.setDate(now.getDate() + 1)
 			const currentYear = now.getFullYear()
 			this.years = []
 			for (let i = currentYear; i <= currentYear + 1; i++) this.years.push(i)
-			this.months = Array.from({ length: 12 }, (_, i) => i + 1)
-			this.days = Array.from({ length: 31 }, (_, i) => i + 1)
+			this.updateDateRange(currentYear, now.getMonth() + 1, now.getDate(), 0)
 			this.hours = Array.from({ length: 24 }, (_, i) => i)
 		},
 
@@ -218,7 +218,27 @@ export default {
 		},
 
 		onDateChange(e) {
-			this.datePickerValue = e.detail.value
+			const v = e.detail.value
+			this.updateDateRange(this.years[v[0]], this.months[v[1]], this.days[v[2]], v[3])
+		},
+		updateDateRange(year, month, day, hourIndex) {
+			const tomorrow = new Date()
+			tomorrow.setDate(tomorrow.getDate() + 1)
+			const minMonth = year === tomorrow.getFullYear() ? tomorrow.getMonth() + 1 : 1
+			month = Math.max(minMonth, month || minMonth)
+			const minDay = year === tomorrow.getFullYear() && month === minMonth ? tomorrow.getDate() : 1
+			const maxDay = new Date(year, month, 0).getDate()
+			day = Math.min(maxDay, Math.max(minDay, day || minDay))
+			this.months = Array.from({ length: 13 - minMonth }, (_, i) => minMonth + i)
+			this.days = Array.from({ length: maxDay - minDay + 1 }, (_, i) => minDay + i)
+			this.datePickerValue = [this.years.indexOf(year), this.months.indexOf(month), this.days.indexOf(day), hourIndex || 0]
+		},
+		isFutureServiceTime(value) {
+			const selected = new Date(value.replace(/-/g, '/'))
+			const tomorrow = new Date()
+			tomorrow.setHours(0, 0, 0, 0)
+			tomorrow.setDate(tomorrow.getDate() + 1)
+			return !isNaN(selected.getTime()) && selected >= tomorrow
 		},
 		confirmDate() {
 			const v = this.datePickerValue
@@ -226,12 +246,22 @@ export default {
 			const m = String(this.months[v[1]]).padStart(2, '0')
 			const d = String(this.days[v[2]]).padStart(2, '0')
 			const h = String(this.hours[v[3]]).padStart(2, '0')
-			this.formData.expectTime = `${y}-${m}-${d} ${h}:00:00`
+			const value = `${y}-${m}-${d} ${h}:00:00`
+			if (!this.isFutureServiceTime(value)) {
+				uni.showToast({ title: '保洁服务最早可预约明天', icon: 'none' })
+				this.initDatePicker()
+				return
+			}
+			this.formData.expectTime = value
 			this.showDatePicker = false
 		},
 
 		async handleSubmit() {
 			if (this.submitting) return
+			if (!this.formData.expectTime || !this.isFutureServiceTime(this.formData.expectTime)) {
+				uni.showToast({ title: '请选择明天或以后的保洁时间', icon: 'none' })
+				return
+			}
 
 			if (!this.formData.cleanType) {
 				uni.showToast({ title: '请选择保洁类型', icon: 'none' })

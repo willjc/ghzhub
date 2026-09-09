@@ -35,7 +35,7 @@
 					</view>
 					<view class="form-row">
 						<text class="form-label">服务地址</text>
-						<view class="form-value-wrap-full"><text class="form-value-desc">{{ detail.serviceAddress }}</text></view>
+						<view class="form-value-wrap-full"><text class="form-value-desc">{{ detail.houseAddress || detail.serviceAddress }}</text></view>
 					</view>
 					<view class="form-row" v-if="detail.roomCount">
 						<text class="form-label">房间数</text>

@@ -13,13 +13,7 @@ import { get, post } from '@/utils/request'
  * @param {string} [params.keyword] 关键字（订单号/地址）
  */
 export function getMyServiceOrders(params) {
-  const usp = new URLSearchParams()
-  Object.keys(params || {}).forEach(k => {
-    if (params[k] !== undefined && params[k] !== null && params[k] !== '') {
-      usp.append(k, params[k])
-    }
-  })
-  return get(`/h5/app/serviceOrder/myOrders?${usp.toString()}`)
+  return get('/h5/app/serviceOrder/myOrders', params)
 }
 
 /**

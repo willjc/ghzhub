@@ -97,6 +97,11 @@ public class HzServiceOrderServiceImpl
         // 保洁专属校验
         if ("1".equals(order.getOrderType()))
         {
+            java.time.ZoneId zone = java.time.ZoneId.of("Asia/Shanghai");
+            java.time.LocalDate serviceDate = order.getExpectTime().toInstant().atZone(zone).toLocalDate();
+            if (!serviceDate.isAfter(java.time.LocalDate.now(zone))) {
+                throw new ServiceException("保洁服务最早可预约明天，请重新选择时间");
+            }
             if (StringUtils.isEmpty(order.getCleanType())) throw new ServiceException("请选择保洁类型");
             if (StringUtils.isEmpty(order.getHouseAddress())) throw new ServiceException("请填写房间地址");
         }

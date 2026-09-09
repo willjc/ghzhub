@@ -45,7 +45,7 @@
 					</view>
 					<view class="info-row">
 						<text class="info-label">服务地址：</text>
-						<text class="info-value ellipsis2">{{ item.serviceAddress }}</text>
+						<text class="info-value ellipsis2">{{ item.houseAddress || item.serviceAddress }}</text>
 					</view>
 					<view class="info-row">
 						<text class="info-label">期望时间：</text>
@@ -169,6 +169,7 @@ export default {
 				}
 			} catch (err) {
 				console.error('加载订单列表失败:', err)
+				uni.showToast({ title: err.msg || err.message || '订单加载失败，请重试', icon: 'none' })
 			} finally {
 				this.loading = false
 			}
