@@ -180,7 +180,9 @@ public class HzHouseTypeController extends BaseController
     public AjaxResult saveImages(@PathVariable("houseTypeId") Long houseTypeId,
                                   @RequestBody List<HzHouseTypeImage> imageList)
     {
-        return toAjax(hzHouseTypeImageService.batchSaveImages(houseTypeId, imageList));
+        hzHouseTypeImageService.batchSaveImages(houseTypeId, imageList);
+        // 图片非必填，空列表表示不上传或清空图片，同样保存成功。
+        return success();
     }
 
     /**

@@ -536,21 +536,19 @@ export default {
       this.$refs["form"].validate(valid => {
         if (valid) {
           const saveHouseType = this.form.houseTypeId != null ? updateHouseType : addHouseType;
-          const successMsg = this.form.houseTypeId != null ? "修改成功" : "新增成功";
+          const successMsg = "房型信息已保存";
 
           saveHouseType(this.form).then(response => {
             // 保存户型成功后,保存图片
             const houseTypeId = this.form.houseTypeId || response.data;
             if (houseTypeId) {
+              // 基本信息已保存，图片失败后重试应更新原房型，避免重复新增。
+              this.form.houseTypeId = houseTypeId;
               this.saveImages(houseTypeId).then(() => {
                 this.$modal.msgSuccess(successMsg);
                 this.open = false;
                 this.resetQuery();
-              }).catch(() => {
-                this.$modal.msgSuccess(successMsg);
-                this.open = false;
-                this.resetQuery();
-              });
+              }).catch(() => {});
             } else {
               this.$modal.msgSuccess(successMsg);
               this.open = false;
