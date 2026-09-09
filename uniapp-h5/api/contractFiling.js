@@ -5,12 +5,7 @@ import { get, post } from '@/utils/request'
 
 /** 我的合同备案列表 */
 export function getMyFilingList(tenantId, approveStatus) {
-  const usp = new URLSearchParams()
-  usp.append('tenantId', tenantId)
-  if (approveStatus !== undefined && approveStatus !== null && approveStatus !== '') {
-    usp.append('approveStatus', approveStatus)
-  }
-  return get(`/h5/app/contractFiling/myList?${usp.toString()}`)
+  return get('/h5/app/contractFiling/myList', { tenantId, approveStatus })
 }
 
 /** 合同备案详情 */
