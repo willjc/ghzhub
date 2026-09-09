@@ -97,10 +97,17 @@
 					</view>
 				</view>
 
-				<!-- 按钮区域 - 已拒绝/已取消 (status=3) -->
+				<view class="info-row" v-if="item.statusCode === '3'">
+					<text class="info-label">拒绝原因</text>
+					<text class="info-value">{{ item.auditRemark || '请联系管理员了解原因后修改资料' }}</text>
+				</view>
+				<!-- 按钮区域 - 已拒绝 (status=3) -->
 				<view class="button-group" v-if="item.statusCode === '3'">
 					<view class="btn btn-detail" @click="handleDetail(index)">
 						<text class="btn-text-blue">查看详情</text>
+					</view>
+					<view class="btn btn-edit" @click="handleEdit(index)">
+						<text class="btn-text-white">修改并重新提交</text>
 					</view>
 				</view>
 
@@ -257,6 +264,7 @@
 					checkinNo: item.checkinNo,
 					status: statusMap[item.status] || 'pending',
 					statusCode: item.status,
+					auditRemark: item.auditRemark,
 					statusText: statusTextMap[item.status] || '未知',
 					community: community || '未知小区',
 					room: room || '未知房间',
@@ -737,4 +745,3 @@
 	.countdown-danger .countdown-progress-inner { background: #fa5740; }
 	.countdown-danger .countdown-tip { color: #d4380d; }
 </style>
-

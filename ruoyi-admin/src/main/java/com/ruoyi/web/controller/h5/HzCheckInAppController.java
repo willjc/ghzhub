@@ -475,7 +475,9 @@ public class HzCheckInAppController extends BaseController {
             }
 
             // 检查状态
-            if (!"0".equals(checkIn.getStatus())) {
+            String originalStatus = checkIn.getStatus();
+            if (!java.util.Arrays.asList("0", "1", "3").contains(originalStatus)
+                    || !"0".equals(checkIn.getDelFlag())) {
                 return error("该入住单已办理，无法重复提交");
             }
 
@@ -503,8 +505,19 @@ public class HzCheckInAppController extends BaseController {
             // 更新状态为待审核
             checkIn.setStatus("1");  // 1=待审核
             checkIn.setUpdateTime(DateUtils.getNowDate());
+            checkIn.setAuditBy(null);
+            checkIn.setAuditTime(null);
+            checkIn.setAuditRemark(null);
 
-            int result = checkInService.updateCheckIn(checkIn);
+            int result = checkInMapper.update(checkIn,
+                new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<HzCheckIn>()
+                    .eq(HzCheckIn::getRecordId, recordId)
+                    .eq(HzCheckIn::getTenantId, SecurityUtils.getHzUserId())
+                    .eq(HzCheckIn::getStatus, originalStatus)
+                    .eq(HzCheckIn::getDelFlag, "0")
+                    .set(HzCheckIn::getAuditBy, null)
+                    .set(HzCheckIn::getAuditTime, null)
+                    .set(HzCheckIn::getAuditRemark, null));
 
             if (result > 0) {
                 // 同步写入 hz_co_tenant 表（若有合住人信息）
@@ -518,6 +531,12 @@ public class HzCheckInAppController extends BaseController {
                             for (Map<String, Object> rm : roommates) {
                                 String name = rm.get("name") != null ? rm.get("name").toString() : "";
                                 if (name.isEmpty()) continue; // 没有姓名则跳过
+                                HzCoTenant query = new HzCoTenant();
+                                query.setContractId(checkIn.getContractId());
+                                boolean alreadyExists = coTenantService.selectCoTenantList(query).stream()
+                                    .anyMatch(existing -> checkIn.getContractId().equals(existing.getContractId())
+                                        && name.equals(existing.getTenantName()));
+                                if (alreadyExists) continue; // 重提不重复创建合住人，不覆盖独立审核记录
                                 HzCoTenant coTenant = new HzCoTenant();
                                 coTenant.setContractId(checkIn.getContractId());
                                 coTenant.setTenantName(name);
