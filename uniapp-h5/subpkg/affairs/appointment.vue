@@ -46,7 +46,7 @@
 						<text class="btn-text-blue">取消预约</text>
 					</view>
 					<view class="btn btn-confirm" @click="handleConfirm(index)">
-						<text class="btn-text-white">确认看房</text>
+						<text class="btn-text-white">我已完成看房</text>
 					</view>
 				</view>
 			</view>
@@ -131,13 +131,13 @@ export default {
 		},
 
 		// 映射后端状态值到前端状态标识
-		// 后端: 0-待确认, 1-已确认, 2-用户已确认看房, 3-已完成, 4-已取消, 5-已过期
+		// 后端: 0-待确认, 1-已确认, 2-已看房待核实, 3-已完成, 4-已取消, 5-已过期
 		// 前端: pending(待看房), viewed(已看房), expired(已过期), cancelled(已取消)
 		mapBackendStatus(backendStatus) {
 			const statusMap = {
 				'0': 'pending',   // 待确认 → 待看房
 				'1': 'pending',   // 已确认 → 待看房
-				'2': 'viewed',    // 用户已确认看房 → 已看房
+				'2': 'viewed',    // 已看房待核实 → 已看房
 				'3': 'viewed',    // 已完成 → 已看房
 				'4': 'cancelled', // 已取消
 				'5': 'expired'    // 已过期
@@ -148,10 +148,10 @@ export default {
 		// 获取状态文本
 		getStatusText(backendStatus) {
 			const textMap = {
-				'0': '待看房',
+				'0': '待确认预约',
 				'1': '待看房',
-				'2': '已看房',
-				'3': '已看房',
+				'2': '已看房待核实',
+				'3': '已完成',
 				'4': '已取消',
 				'5': '已过期'
 			}
@@ -220,7 +220,7 @@ export default {
 							const response = await confirmViewing(item.id)
 							if (response.code === 200) {
 								uni.showToast({
-									title: '已确认，等待管理员审核',
+									title: '已确认，等待管理员核实',
 									icon: 'success'
 								})
 								// 刷新列表

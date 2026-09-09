@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzAppointment;
 import com.ruoyi.system.domain.HzAppointmentVO;
@@ -121,7 +122,23 @@ public class HzAppointmentServiceImpl extends ServiceImpl<HzAppointmentMapper, H
 
     @Override
     public int updateAppointment(HzAppointment appointment) {
-        return this.updateById(appointment) ? 1 : 0;
+        HzAppointment existing = selectAppointmentById(appointment.getAppointmentId());
+        if (existing == null || !"0".equals(existing.getDelFlag())) {
+            throw new ServiceException("预约不存在");
+        }
+        if (appointment.getAppointmentStatus() != null
+                && !appointment.getAppointmentStatus().equals(existing.getAppointmentStatus())) {
+            throw new ServiceException("请通过确认预约、取消预约或核实完成按钮变更状态");
+        }
+        appointment.setAppointmentStatus(null);
+        appointment.setConfirmTime(null);
+        appointment.setConfirmBy(null);
+        appointment.setCancelTime(null);
+        appointment.setCancelReason(null);
+        return this.update(appointment, new LambdaUpdateWrapper<HzAppointment>()
+                .eq(HzAppointment::getAppointmentId, existing.getAppointmentId())
+                .eq(HzAppointment::getAppointmentStatus, existing.getAppointmentStatus())
+                .eq(HzAppointment::getDelFlag, "0")) ? 1 : 0;
     }
 
     @Override
@@ -140,13 +157,16 @@ public class HzAppointmentServiceImpl extends ServiceImpl<HzAppointmentMapper, H
 
     @Override
     public int updateAppointmentStatus(Long appointmentId, String appointmentStatus) {
+        if (!"1".equals(appointmentStatus)) {
+            throw new ServiceException("不支持的预约状态操作");
+        }
         HzAppointment appointment = new HzAppointment();
         appointment.setAppointmentId(appointmentId);
         appointment.setAppointmentStatus(appointmentStatus);
         if ("1".equals(appointmentStatus)) {
             appointment.setConfirmTime(DateUtils.getTime());
         }
-        return this.updateById(appointment) ? 1 : 0;
+        return transitionAppointment(appointment, "0");
     }
 
     @Override
@@ -156,7 +176,7 @@ public class HzAppointmentServiceImpl extends ServiceImpl<HzAppointmentMapper, H
         appointment.setAppointmentStatus("4"); // 已取消（修改为4）
         appointment.setCancelReason(cancelReason);
         appointment.setCancelTime(DateUtils.getTime());
-        return this.updateById(appointment) ? 1 : 0;
+        return transitionAppointment(appointment, "0", "1");
     }
 
     @Override
@@ -174,7 +194,7 @@ public class HzAppointmentServiceImpl extends ServiceImpl<HzAppointmentMapper, H
         HzAppointment appointment = new HzAppointment();
         appointment.setAppointmentId(appointmentId);
         appointment.setAppointmentStatus("2");
-        return this.updateById(appointment) ? 1 : 0;
+        return transitionAppointment(appointment, "1");
     }
 
     @Override
@@ -192,18 +212,29 @@ public class HzAppointmentServiceImpl extends ServiceImpl<HzAppointmentMapper, H
         HzAppointment appointment = new HzAppointment();
         appointment.setAppointmentId(appointmentId);
         appointment.setAppointmentStatus("3");
-        return this.updateById(appointment) ? 1 : 0;
+        return transitionAppointment(appointment, "2");
+    }
+
+    private int transitionAppointment(HzAppointment appointment, String... allowedStatuses) {
+        boolean updated = this.update(appointment, new LambdaUpdateWrapper<HzAppointment>()
+                .eq(HzAppointment::getAppointmentId, appointment.getAppointmentId())
+                .in(HzAppointment::getAppointmentStatus, (Object[]) allowedStatuses)
+                .eq(HzAppointment::getDelFlag, "0"));
+        if (!updated) {
+            throw new ServiceException("预约不存在或状态已变化，请刷新后重试");
+        }
+        return 1;
     }
 
     @Override
     public int autoExpireAppointments() {
-        // 查询预约日期 < 当前日期 且 状态为 0/1/2 的预约
+        // 已看房待核实的预约不自动过期，留给管理员核实
         LambdaUpdateWrapper<HzAppointment> wrapper = new LambdaUpdateWrapper<>();
         wrapper.set(HzAppointment::getAppointmentStatus, "5") // 已过期
                .lt(HzAppointment::getAppointmentDate, DateUtils.getDate())
-               .in(HzAppointment::getAppointmentStatus, "0", "1", "2")
+               .in(HzAppointment::getAppointmentStatus, "0", "1")
                .eq(HzAppointment::getDelFlag, "0");
-        return this.update(wrapper) ? 1 : 0;
+        return appointmentMapper.update(null, wrapper);
     }
 
     @Override

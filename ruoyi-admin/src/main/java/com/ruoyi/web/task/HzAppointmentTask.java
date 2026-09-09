@@ -21,7 +21,7 @@ public class HzAppointmentTask
 
     /**
      * 自动过期处理
-     * 将预约日期已过且状态为待确认/已确认/用户已确认看房的预约更新为已过期
+     * 将预约日期已过且状态为待确认预约/待看房的预约更新为已过期
      */
     public void autoExpire()
     {

@@ -69,7 +69,7 @@ public class HzAppointment extends BaseEntity {
     @TableField("visitor_count")
     private Integer visitorCount;
 
-    /** 预约状态(0:待确认 1:已确认 2:已取消 3:已完成 4:已过期) */
+    /** 预约状态(0:待确认预约 1:待看房 2:已看房待核实 3:已完成 4:已取消 5:已过期) */
     @TableField("appointment_status")
     private String appointmentStatus;
 

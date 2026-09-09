@@ -155,7 +155,7 @@ public class HzAppointmentController extends BaseController {
 
         try {
             int result = appointmentService.confirmViewing(appointmentId);
-            return result > 0 ? success("确认成功，等待管理员审核") : error("确认失败");
+            return result > 0 ? success("确认成功，等待管理员核实") : error("确认失败");
         } catch (RuntimeException e) {
             return error(e.getMessage());
         }

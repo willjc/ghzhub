@@ -1,5 +1,9 @@
 <template>
   <div class="app-container">
+    <el-alert title="预约状态说明" type="info" :closable="false" show-icon style="margin-bottom: 16px">
+      <div v-for="(description, status) in statusDescriptions" :key="status">{{ description }}</div>
+      <div>请使用列表操作按钮变更状态；修改表单不直接变更状态。已看房待核实的预约不会自动过期。</div>
+    </el-alert>
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
       <el-form-item label="预约编号" prop="appointmentNo">
         <el-input
@@ -11,9 +15,9 @@
       </el-form-item>
       <el-form-item label="预约状态" prop="appointmentStatus">
         <el-select v-model="queryParams.appointmentStatus" placeholder="请选择预约状态" clearable>
-          <el-option label="待确认" value="0" />
-          <el-option label="已确认" value="1" />
-          <el-option label="用户已确认看房" value="2" />
+          <el-option label="待确认预约" value="0" />
+          <el-option label="待看房" value="1" />
+          <el-option label="已看房待核实" value="2" />
           <el-option label="已完成" value="3" />
           <el-option label="已取消" value="4" />
           <el-option label="已过期" value="5" />
@@ -84,9 +88,9 @@
       <el-table-column label="预约人数" align="center" prop="visitorCount" width="100" />
       <el-table-column label="预约状态" align="center" prop="appointmentStatus" width="120">
         <template slot-scope="scope">
-          <el-tag v-if="scope.row.appointmentStatus === '0'" type="warning">待确认</el-tag>
-          <el-tag v-else-if="scope.row.appointmentStatus === '1'" type="success">已确认</el-tag>
-          <el-tag v-else-if="scope.row.appointmentStatus === '2'" type="primary">用户已确认看房</el-tag>
+          <el-tag v-if="scope.row.appointmentStatus === '0'" type="warning">待确认预约</el-tag>
+          <el-tag v-else-if="scope.row.appointmentStatus === '1'" type="success">待看房</el-tag>
+          <el-tag v-else-if="scope.row.appointmentStatus === '2'" type="primary">已看房待核实</el-tag>
           <el-tag v-else-if="scope.row.appointmentStatus === '3'" type="info">已完成</el-tag>
           <el-tag v-else-if="scope.row.appointmentStatus === '4'" type="danger">已取消</el-tag>
           <el-tag v-else type="info">已过期</el-tag>
@@ -115,7 +119,7 @@
             icon="el-icon-check"
             @click="handleConfirm(scope.row)"
             v-hasPermi="['gangzhu:appointment:confirm']"
-          >确认</el-button>
+          >确认预约</el-button>
           <el-button
             v-if="scope.row.appointmentStatus === '2'"
             size="mini"
@@ -123,7 +127,7 @@
             icon="el-icon-success"
             @click="handleComplete(scope.row)"
             v-hasPermi="['gangzhu:appointment:complete']"
-          >审核完成</el-button>
+          >核实完成</el-button>
           <el-button
             v-if="scope.row.appointmentStatus === '0' || scope.row.appointmentStatus === '1'"
             size="mini"
@@ -215,20 +219,14 @@
           <el-input-number v-model="form.visitorCount" controls-position="right" :min="1" :max="10" />
         </el-form-item>
         <el-form-item label="预约状态" prop="appointmentStatus">
-          <el-select v-model="form.appointmentStatus" placeholder="请选择预约状态">
-            <el-option label="待确认" value="0" />
-            <el-option label="已确认" value="1" />
-            <el-option label="用户已确认看房" value="2" />
+          <el-select v-model="form.appointmentStatus" placeholder="请选择预约状态" disabled>
+            <el-option label="待确认预约" value="0" />
+            <el-option label="待看房" value="1" />
+            <el-option label="已看房待核实" value="2" />
             <el-option label="已完成" value="3" />
             <el-option label="已取消" value="4" />
             <el-option label="已过期" value="5" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="是否到访" prop="isVisited">
-          <el-radio-group v-model="form.isVisited">
-            <el-radio label="0">否</el-radio>
-            <el-radio label="1">是</el-radio>
-          </el-radio-group>
         </el-form-item>
         <el-form-item label="评价" prop="evaluation">
           <el-input v-model="form.evaluation" type="textarea" placeholder="请输入评价" :rows="3" />
@@ -259,16 +257,16 @@
         <el-descriptions-item label="预约日期">{{ detailData.appointmentDate }}</el-descriptions-item>
         <el-descriptions-item label="预约时间">{{ detailData.appointmentTime }}</el-descriptions-item>
         <el-descriptions-item label="预约状态">
-          <el-tag v-if="detailData.appointmentStatus === '0'" type="warning">待确认</el-tag>
-          <el-tag v-else-if="detailData.appointmentStatus === '1'" type="success">已确认</el-tag>
-          <el-tag v-else-if="detailData.appointmentStatus === '2'" type="primary">用户已确认看房</el-tag>
+          <el-tag v-if="detailData.appointmentStatus === '0'" type="warning">待确认预约</el-tag>
+          <el-tag v-else-if="detailData.appointmentStatus === '1'" type="success">待看房</el-tag>
+          <el-tag v-else-if="detailData.appointmentStatus === '2'" type="primary">已看房待核实</el-tag>
           <el-tag v-else-if="detailData.appointmentStatus === '3'" type="info">已完成</el-tag>
           <el-tag v-else-if="detailData.appointmentStatus === '4'" type="danger">已取消</el-tag>
           <el-tag v-else type="info">已过期</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="是否到访">
-          <el-tag v-if="detailData.isVisited === '1'" type="success">是</el-tag>
-          <el-tag v-else type="info">否</el-tag>
+        <el-descriptions-item label="状态说明" :span="2">{{ statusDescriptions[detailData.appointmentStatus] || '未知状态，请联系管理员核查' }}</el-descriptions-item>
+        <el-descriptions-item label="到访情况">
+          {{ detailData.appointmentStatus === '3' ? '已核实到访' : detailData.appointmentStatus === '2' ? '用户自报已到访，待核实' : '暂无已到访确认' }}
         </el-descriptions-item>
         <el-descriptions-item label="确认人" v-if="detailData.confirmBy">{{ detailData.confirmBy }}</el-descriptions-item>
         <el-descriptions-item label="确认时间" v-if="detailData.confirmTime">{{ detailData.confirmTime }}</el-descriptions-item>
@@ -293,6 +291,14 @@ export default {
   name: "Appointment",
   data() {
     return {
+      statusDescriptions: {
+        '0': '待确认预约：用户已提交，管理员核对时间后点击“确认预约”，不接受可取消。',
+        '1': '待看房：管理员已接受预约，等待用户到访；看房后由用户点击“我已完成看房”。',
+        '2': '已看房待核实：用户自报已完成看房，管理员核实后点击“核实完成”。',
+        '3': '已完成：管理员已核实看房完成，无需继续操作。',
+        '4': '已取消：预约已取消，如需看房请重新预约。',
+        '5': '已过期：预约日期已过且未确认完成看房，由定时任务处理；如需看房请重新预约。'
+      },
       loading: true,
       ids: [],
       single: true,
@@ -366,7 +372,6 @@ export default {
         contactPhone: null,
         visitorCount: 1,
         appointmentStatus: "0",
-        isVisited: "0",
         evaluation: null,
         remark: null
       };
@@ -453,7 +458,7 @@ export default {
         return completeAppointment(row.appointmentId);
       }).then(() => {
         this.getList();
-        this.$modal.msgSuccess("审核完成");
+        this.$modal.msgSuccess("核实完成");
       }).catch(() => {});
     },
     handleDetail(row) {
