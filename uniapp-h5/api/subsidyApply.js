@@ -5,12 +5,7 @@ import { get, post } from '@/utils/request'
 
 /** 我的代购补贴列表 */
 export function getMySubsidyList(tenantId, approveStatus) {
-  const usp = new URLSearchParams()
-  usp.append('tenantId', tenantId)
-  if (approveStatus !== undefined && approveStatus !== null && approveStatus !== '') {
-    usp.append('approveStatus', approveStatus)
-  }
-  return get(`/h5/app/subsidyApply/myList?${usp.toString()}`)
+  return get('/h5/app/subsidyApply/myList', { tenantId, approveStatus })
 }
 
 /** 代购补贴详情 */

@@ -1051,6 +1051,7 @@ public class EsignServiceImpl implements EsignService {
             log.info("主动查询：换房合同结算完成，contractId={}", contractId);
         } else if ("2".equals(contract.getContractType())) {
             // 续租合同仅生成租金账单
+            markOriginalContractRenewed(contract);
             generateRentBillsOnly(contract);
             generateCheckInRecord(contract);
             log.info("主动查询：续租合同仅生成租金账单，contractId={}", contractId);
@@ -1180,6 +1181,7 @@ public class EsignServiceImpl implements EsignService {
             log.info("签署回调：换房合同结算完成，contractId={}", contract.getContractId());
         } else if ("2".equals(contract.getContractType())) {
             // 续租合同：仅生成租金账单，不生成押金
+            markOriginalContractRenewed(contract);
             generateRentBillsOnly(contract);
             log.info("签署回调：续租合同仅生成租金账单，contractId={}", contract.getContractId());
         } else {
@@ -1217,6 +1219,19 @@ public class EsignServiceImpl implements EsignService {
             messageService.sendMessage(contract.getTenantId(), "contract", "合同签署成功", msgContent);
         } catch (Exception e) {
             log.warn("发送合同签署成功消息失败，不影响主流程: {}", e.getMessage());
+        }
+    }
+
+    /** 仅在确认签署成功后标记原合同，兼容已存在的续租草稿关联。 */
+    private void markOriginalContractRenewed(HzContract renewal) {
+        int updated = contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                .eq(HzContract::getRenewedContractId, renewal.getContractId())
+                .eq(HzContract::getTenantId, renewal.getTenantId())
+                .eq(HzContract::getHouseId, renewal.getHouseId())
+                .eq(HzContract::getDelFlag, "0")
+                .set(HzContract::getIsRenewed, "1"));
+        if (updated == 0) {
+            throw new IllegalStateException("续租合同未关联原合同，无法完成签署处理");
         }
     }
 

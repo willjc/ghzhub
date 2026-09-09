@@ -21,7 +21,8 @@
 					<text class="lbl">驳回原因：</text><text class="val">{{ item.approveRemark }}</text>
 				</view>
 			</view>
-			<view class="empty" v-if="dataList.length === 0 && !loading">暂无补贴申请</view>
+			<view class="empty" v-if="!loading && loadError" @click="loadList">加载失败，点击重试</view>
+			<view class="empty" v-else-if="dataList.length === 0 && !loading">暂无补贴申请</view>
 		</scroll-view>
 
 		<view class="bottom-btn-container">
@@ -37,7 +38,7 @@ import { getMySubsidyList } from '@/api/subsidyApply'
 
 export default {
 	data() {
-		return { filter: '', dataList: [], loading: false, tenantId: null }
+		return { filter: '', dataList: [], loading: false, loadError: false, tenantId: null }
 	},
 	onLoad() {
 		const u = uni.getStorageSync('userInfo')
@@ -53,10 +54,15 @@ export default {
 		setFilter(v) { this.filter = v; this.loadList() },
 		async loadList() {
 			this.loading = true
+			this.loadError = false
 			try {
 				const res = await getMySubsidyList(this.tenantId, this.filter)
-				if (res.code === 200) this.dataList = res.data || []
-			} catch (e) { console.error(e) }
+				if (res.code !== 200) throw new Error(res.msg || '补贴申请加载失败')
+				this.dataList = res.data || []
+			} catch (e) {
+				this.loadError = true
+				uni.showToast({ title: (e && (e.msg || e.message)) || '加载失败，请重试', icon: 'none' })
+			}
 			finally { this.loading = false }
 		},
 		statusText(s) { return { '0': '待审批', '1': '已通过', '2': '已驳回' }[s] || '—' },

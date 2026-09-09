@@ -1011,10 +1011,9 @@ public class HzContractAppController extends BaseController {
             int result = contractService.insertContract(contract);
 
             if (result > 0) {
-                // 7. 标记原合同已续租（复用前面校验时查询的 oldContract）
+                // 7. 仅记录续租草稿关联；已续租标记由签署成功处理更新。
                 oldContract = contractService.selectContractById(oldContractId);
                 if (oldContract != null) {
-                    oldContract.setIsRenewed("1");
                     oldContract.setRenewedContractId(contract.getContractId());
                     contractService.updateContract(oldContract);
                 }
