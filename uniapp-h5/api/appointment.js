@@ -7,8 +7,8 @@ import { get, post } from '@/utils/request'
  * 获取我的预约列表
  * @param {Number} userId 用户ID
  */
-export function getMyAppointments(userId) {
-  return get(`/h5/appointment/user/${userId}`)
+export function getMyAppointments(userId, projectType) {
+  return get(`/h5/appointment/user/${userId}`, projectType ? { projectType } : {})
 }
 
 /**

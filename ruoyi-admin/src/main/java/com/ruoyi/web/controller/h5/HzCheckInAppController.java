@@ -206,7 +206,8 @@ public class HzCheckInAppController extends BaseController {
      */
     @GetMapping("/confirmed/{tenantId}")
     public AjaxResult getConfirmedCheckInList(@PathVariable Long tenantId,
-                                              @RequestParam(required = false) String type) {
+                                              @RequestParam(required = false) String type,
+                                              @RequestParam(required = false) String projectType) {
         SecurityUtils.requireCurrentHzUser(tenantId);
         // 用合同ID去重，避免重复
         java.util.Set<Long> addedContractIds = new java.util.HashSet<>();
@@ -214,6 +215,11 @@ public class HzCheckInAppController extends BaseController {
 
         // 方式1：查询该用户所有已入住确认的入住单 (status='4' 且 del_flag='0')
         List<HzCheckIn> list = checkInService.selectConfirmedCheckInListByTenantId(tenantId);
+        java.util.Set<Long> contractIds = projectType == null || projectType.isEmpty() ? null
+                : contractService.selectContractIdsByProjectType(tenantId, projectType);
+        if (contractIds != null) {
+            list = list.stream().filter(item -> contractIds.contains(item.getContractId())).toList();
+        }
 
         for (HzCheckIn checkIn : list) {
             if (checkIn.getContractId() == null || addedContractIds.contains(checkIn.getContractId())) {
@@ -247,6 +253,7 @@ public class HzCheckInAppController extends BaseController {
         // 方式2：通过合同表补充（兼容老数据迁移场景，无入住记录但有已签署合同）
         List<com.ruoyi.system.domain.HzContract> allContracts = contractService.selectContractListByTenantId(tenantId);
         List<com.ruoyi.system.domain.HzContract> activeContracts = allContracts.stream()
+                .filter(c -> contractIds == null || contractIds.contains(c.getContractId()))
                 .filter(c -> {
                     String status = c.getContractStatus();
                     if ("renew".equals(type)) {

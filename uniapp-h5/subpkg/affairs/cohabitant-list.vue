@@ -119,7 +119,8 @@
 			async loadCohabitantList() {
 				try {
 					this.loading = true
-					const response = await getCohabitantList(this.tenantId)
+					const projectType = { talent: '1', guaranteed: '2', market: '3' }[this.housingType]
+					const response = await getCohabitantList(this.tenantId, projectType)
 
 					if (response.code === 200) {
 						this.cohabitantList = response.data || []

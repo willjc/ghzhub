@@ -129,6 +129,11 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
     }
 
     @Override
+    public Set<Long> selectContractIdsByProjectType(Long tenantId, String projectType) {
+        return baseMapper.selectContractIdsByProjectType(tenantId, projectType);
+    }
+
+    @Override
     public HzContract selectValidContractByHouseId(Long houseId) {
         LambdaQueryWrapper<HzContract> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzContract::getHouseId, houseId)

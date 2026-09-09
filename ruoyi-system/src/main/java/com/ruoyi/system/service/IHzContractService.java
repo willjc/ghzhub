@@ -11,6 +11,9 @@ import java.util.List;
  * @author ruoyi
  */
 public interface IHzContractService {
+    /** 按合同所属项目分类，保留历史合同关联，供办事记录筛选使用。 */
+    java.util.Set<Long> selectContractIdsByProjectType(Long tenantId, String projectType);
+
     /**
      * 查询合同
      *

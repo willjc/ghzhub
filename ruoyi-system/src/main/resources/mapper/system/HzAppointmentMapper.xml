@@ -102,7 +102,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <!-- 根据用户ID查询预约列表（H5端使用） -->
-    <select id="selectAppointmentListByUserId" parameterType="Long" resultType="com.ruoyi.system.domain.HzAppointment">
+    <select id="selectAppointmentListByUserId" resultType="com.ruoyi.system.domain.HzAppointment">
         SELECT
             a.appointment_id, a.appointment_no, a.tenant_id, a.house_id, a.project_id,
             a.appointment_date, a.time_slot, a.visitor_name, a.visitor_phone, a.id_card,
@@ -116,6 +116,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         LEFT JOIN hz_project p ON a.project_id = p.project_id AND p.del_flag = '0'
         WHERE a.del_flag = '0'
         AND a.tenant_id = #{userId}
+        <if test="projectType != null and projectType != ''">
+            AND p.project_type = #{projectType}
+        </if>
         ORDER BY a.create_time DESC
     </select>
 

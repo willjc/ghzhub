@@ -99,7 +99,8 @@ export default {
 
 			this.loading = true
 			try {
-				const response = await getMyAppointments(this.userId)
+				const projectType = { talent: '1', guaranteed: '2', market: '3' }[this.housingType]
+				const response = await getMyAppointments(this.userId, projectType)
 				if (response.code === 200) {
 					// 转换后端数据为前端展示格式
 					this.appointmentList = response.data.map(item => ({
@@ -433,4 +434,3 @@ export default {
 		font-size: 28rpx;
 	}
 </style>
-

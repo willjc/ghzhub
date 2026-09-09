@@ -7,8 +7,8 @@ import { get, post } from '@/utils/request'
  * 获取用户的调换房申请列表
  * @param {Number} tenantId 租户ID
  */
-export function getExchangeList(tenantId) {
-  return get(`/h5/app/exchange/list/${tenantId}`)
+export function getExchangeList(tenantId, projectType) {
+  return get(`/h5/app/exchange/list/${tenantId}`, projectType ? { projectType } : {})
 }
 
 /**
@@ -23,8 +23,8 @@ export function getExchangeDetail(exchangeId) {
  * 获取用户已确认的合同列表（可调换的房源）
  * @param {Number} tenantId 租户ID
  */
-export function getConfirmedContractList(tenantId) {
-  return get(`/h5/app/exchange/confirmed/${tenantId}`)
+export function getConfirmedContractList(tenantId, projectType) {
+  return get(`/h5/app/exchange/confirmed/${tenantId}`, projectType ? { projectType } : {})
 }
 
 /**

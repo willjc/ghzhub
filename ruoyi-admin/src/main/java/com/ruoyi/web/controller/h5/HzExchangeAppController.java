@@ -49,9 +49,14 @@ public class HzExchangeAppController extends BaseController {
      * @return 调换房申请列表
      */
     @GetMapping("/list/{tenantId}")
-    public AjaxResult getExchangeList(@PathVariable Long tenantId) {
+    public AjaxResult getExchangeList(@PathVariable Long tenantId,
+                                      @RequestParam(required = false) String projectType) {
         SecurityUtils.requireCurrentHzUser(tenantId);
         List<HzHouseExchange> list = exchangeService.selectExchangeListByTenantId(tenantId);
+        if (projectType != null && !projectType.isEmpty()) {
+            java.util.Set<Long> contractIds = contractService.selectContractIdsByProjectType(tenantId, projectType);
+            list = list.stream().filter(item -> contractIds.contains(item.getOldContractId())).toList();
+        }
 
         // 转换为前端需要的格式
         List<Map<String, Object>> result = list.stream().map(exchange -> {
@@ -124,10 +129,16 @@ public class HzExchangeAppController extends BaseController {
      * @return 已确认的合同列表
      */
     @GetMapping("/confirmed/{tenantId}")
-    public AjaxResult getConfirmedContractList(@PathVariable Long tenantId) {
+    public AjaxResult getConfirmedContractList(@PathVariable Long tenantId,
+                                             @RequestParam(required = false) String projectType) {
         SecurityUtils.requireCurrentHzUser(tenantId);
         // 方式1：查询该用户所有已入住确认的入住单 (status='4')
         List<HzCheckIn> checkInList = checkInService.selectConfirmedCheckInListByTenantId(tenantId);
+        java.util.Set<Long> contractIds = projectType == null || projectType.isEmpty() ? null
+                : contractService.selectContractIdsByProjectType(tenantId, projectType);
+        if (contractIds != null) {
+            checkInList = checkInList.stream().filter(item -> contractIds.contains(item.getContractId())).toList();
+        }
 
         // 用合同ID去重，避免重复
         java.util.Set<Long> addedContractIds = new java.util.HashSet<>();
@@ -196,6 +207,7 @@ public class HzExchangeAppController extends BaseController {
         // 查询该用户所有合同，筛选状态为已签署(2)/生效中(3)/续签(4)/退租中(5)的合同
         List<HzContract> allContracts = contractService.selectContractListByTenantId(tenantId);
         List<HzContract> activeContracts = allContracts.stream()
+                .filter(c -> contractIds == null || contractIds.contains(c.getContractId()))
                 .filter(c -> "2".equals(c.getContractStatus()) || "3".equals(c.getContractStatus())
                         || "4".equals(c.getContractStatus()) || "5".equals(c.getContractStatus()))
                 .toList();

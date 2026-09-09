@@ -40,5 +40,6 @@ public interface HzAppointmentMapper extends BaseMapper<HzAppointment> {
      * @param userId 用户ID
      * @return 预约列表
      */
-    List<HzAppointment> selectAppointmentListByUserId(@Param("userId") Long userId);
+    List<HzAppointment> selectAppointmentListByUserId(@Param("userId") Long userId,
+                                                    @Param("projectType") String projectType);
 }

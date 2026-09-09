@@ -52,8 +52,12 @@ public class HzAppointmentServiceImpl extends ServiceImpl<HzAppointmentMapper, H
 
     @Override
     public List<HzAppointment> selectAppointmentListByUserId(Long userId) {
-        // 通过Mapper查询，需要关联hz_user表
-        return appointmentMapper.selectAppointmentListByUserId(userId);
+        return selectAppointmentListByUserId(userId, null);
+    }
+
+    @Override
+    public List<HzAppointment> selectAppointmentListByUserId(Long userId, String projectType) {
+        return appointmentMapper.selectAppointmentListByUserId(userId, projectType);
     }
 
     @Override

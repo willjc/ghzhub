@@ -40,9 +40,14 @@ public class HzCohabitantAppController extends BaseController {
      * @return 合租户申请列表
      */
     @GetMapping("/list/{tenantId}")
-    public AjaxResult getCohabitantList(@PathVariable Long tenantId) {
+    public AjaxResult getCohabitantList(@PathVariable Long tenantId,
+                                       @RequestParam(required = false) String projectType) {
         SecurityUtils.requireCurrentHzUser(tenantId);
         List<HzCoTenant> list = coTenantService.selectCoTenantListByTenantId(tenantId);
+        if (projectType != null && !projectType.isEmpty()) {
+            java.util.Set<Long> contractIds = contractService.selectContractIdsByProjectType(tenantId, projectType);
+            list = list.stream().filter(item -> contractIds.contains(item.getContractId())).toList();
+        }
 
         // 转换为前端需要的格式
         List<Map<String, Object>> result = list.stream().map(coTenant -> {
@@ -108,10 +113,15 @@ public class HzCohabitantAppController extends BaseController {
      * @return 已确认的合同列表
      */
     @GetMapping("/confirmed/{tenantId}")
-    public AjaxResult getConfirmedContractList(@PathVariable Long tenantId) {
+    public AjaxResult getConfirmedContractList(@PathVariable Long tenantId,
+                                             @RequestParam(required = false) String projectType) {
         SecurityUtils.requireCurrentHzUser(tenantId);
         // 查询该用户所有已入住确认的入住单 (status='2','3','4'，兼容老数据)
         List<HzCheckIn> checkInList = checkInService.selectConfirmedCheckInListByTenantId(tenantId);
+        if (projectType != null && !projectType.isEmpty()) {
+            java.util.Set<Long> contractIds = contractService.selectContractIdsByProjectType(tenantId, projectType);
+            checkInList = checkInList.stream().filter(item -> contractIds.contains(item.getContractId())).toList();
+        }
 
         // 转换为前端需要的格式（展示合同信息）
         // 只保留履行中的合同（contract_status='3'）

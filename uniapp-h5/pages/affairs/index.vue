@@ -31,7 +31,7 @@
 				<view class="icon-grid">
 					<view 
 						class="icon-item" 
-						v-for="(item, index) in functionList" 
+						v-for="(item, index) in rentalFunctionList"
 						:key="index"
 						@click="handleFunctionClick('guaranteed', item.key)"
 					>
@@ -52,7 +52,7 @@
 				<view class="icon-grid">
 					<view 
 						class="icon-item" 
-						v-for="(item, index) in functionList" 
+						v-for="(item, index) in rentalFunctionList"
 						:key="index"
 						@click="handleFunctionClick('market', item.key)"
 					>
@@ -87,6 +87,11 @@
 					{ key: 'cohabitant', name: '合住人申请' },
 					{ key: 'exchange', name: '调换房申请' }
 				]
+			}
+		},
+		computed: {
+			rentalFunctionList() {
+				return this.functionList.filter(item => item.key !== 'appeal')
 			}
 		},
 		onLoad() {
@@ -126,6 +131,7 @@
 				return `/static/banshi/${iconName}${colorSuffix}@2x.png`
 			},
 			handleFunctionClick(type, key) {
+				if (key === 'appeal' && type !== 'talent') return
 				console.log('点击功能:', type, key)
 
 				// 根据功能key跳转到对应页面

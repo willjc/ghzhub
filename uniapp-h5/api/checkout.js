@@ -7,8 +7,8 @@ import { get, post, put, del } from '@/utils/request'
  * 获取用户���退租申请列表
  * @param {Number} tenantId 租户ID
  */
-export function getCheckoutList(tenantId) {
-  return get(`/h5/app/checkout/list/${tenantId}`)
+export function getCheckoutList(tenantId, projectType) {
+  return get(`/h5/app/checkout/list/${tenantId}`, projectType ? { projectType } : {})
 }
 
 /**

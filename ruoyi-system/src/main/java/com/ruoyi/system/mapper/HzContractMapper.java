@@ -17,6 +17,12 @@ import java.util.Map;
 @Mapper
 public interface HzContractMapper extends BaseMapper<HzContract> {
 
+    @org.apache.ibatis.annotations.Select("SELECT c.contract_id FROM hz_contract c "
+            + "JOIN hz_project p ON p.project_id = c.project_id "
+            + "WHERE c.tenant_id = #{tenantId} AND p.project_type = #{projectType}")
+    java.util.Set<Long> selectContractIdsByProjectType(@Param("tenantId") Long tenantId,
+                                                     @Param("projectType") String projectType);
+
     /**
      * 根据用户ID查询合同列表（关联项目、楼栋、单元信息）
      *

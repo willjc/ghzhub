@@ -46,6 +46,8 @@ public interface IHzAppointmentService {
      */
     public List<HzAppointment> selectAppointmentListByUserId(Long userId);
 
+    public List<HzAppointment> selectAppointmentListByUserId(Long userId, String projectType);
+
     /**
      * 根据房源ID查询预约看房列表
      *

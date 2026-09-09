@@ -158,14 +158,15 @@
 					this.loading = true
 
 					// 1. 获取已入住确认的入住单
-					const checkinResponse = await getConfirmedCheckInList(this.tenantId, 'checkout')
+					const projectType = { talent: '1', guaranteed: '2', market: '3' }[this.housingType]
+					const checkinResponse = await getConfirmedCheckInList(this.tenantId, 'checkout', projectType)
 					let checkinList = []
 					if (checkinResponse.code === 200 && checkinResponse.data) {
 						checkinList = checkinResponse.data.map(item => this.convertCheckInData(item))
 					}
 
 					// 2. 获取退租申请列表
-					const checkoutResponse = await getCheckoutList(this.tenantId)
+					const checkoutResponse = await getCheckoutList(this.tenantId, projectType)
 					let checkoutList = []
 					if (checkoutResponse.code === 200 && checkoutResponse.data) {
 						checkoutList = checkoutResponse.data.map(item => this.convertCheckoutData(item))

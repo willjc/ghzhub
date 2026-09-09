@@ -33,9 +33,10 @@ public class HzAppointmentController extends BaseController {
      * @param userId 用户ID
      */
     @GetMapping("/user/{userId}")
-    public AjaxResult list(@PathVariable Long userId) {
+    public AjaxResult list(@PathVariable Long userId,
+                           @RequestParam(required = false) String projectType) {
         SecurityUtils.requireCurrentHzUser(userId);
-        List<HzAppointment> list = appointmentService.selectAppointmentListByUserId(userId);
+        List<HzAppointment> list = appointmentService.selectAppointmentListByUserId(userId, projectType);
         return success(list);
     }
 

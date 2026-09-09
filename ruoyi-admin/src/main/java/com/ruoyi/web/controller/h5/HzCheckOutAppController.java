@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ruoyi.common.core.controller.BaseController;
@@ -49,9 +50,15 @@ public class HzCheckOutAppController extends BaseController {
      * @return 退租申请列表
      */
     @GetMapping("/list/{tenantId}")
-    public AjaxResult getCheckoutList(@PathVariable Long tenantId) {
+    public AjaxResult getCheckoutList(@PathVariable Long tenantId,
+                                      @RequestParam(required = false) String projectType) {
         SecurityUtils.requireCurrentHzUser(tenantId);
         List<Map<String, Object>> list = checkoutService.selectCheckoutApplyListWithHouseInfo(tenantId);
+        if (projectType != null && !projectType.isEmpty()) {
+            java.util.Set<Long> contractIds = contractService.selectContractIdsByProjectType(tenantId, projectType);
+            list = list.stream().filter(item -> item.get("contractId") instanceof Number
+                    && contractIds.contains(((Number) item.get("contractId")).longValue())).toList();
+        }
         return success(list);
     }
 

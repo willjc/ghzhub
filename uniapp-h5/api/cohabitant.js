@@ -7,8 +7,8 @@ import { get, post } from '@/utils/request'
  * 获取用户的合租户申请列表
  * @param {Number} tenantId 租户ID
  */
-export function getCohabitantList(tenantId) {
-  return get(`/h5/app/cohabitant/list/${tenantId}`)
+export function getCohabitantList(tenantId, projectType) {
+  return get(`/h5/app/cohabitant/list/${tenantId}`, projectType ? { projectType } : {})
 }
 
 /**
@@ -23,8 +23,8 @@ export function getCohabitantDetail(coTenantId) {
  * 获取用户已确认的合同列表（可添加合租户的房源）
  * @param {Number} tenantId 租户ID
  */
-export function getConfirmedContractList(tenantId) {
-  return get(`/h5/app/cohabitant/confirmed/${tenantId}`)
+export function getConfirmedContractList(tenantId, projectType) {
+  return get(`/h5/app/cohabitant/confirmed/${tenantId}`, projectType ? { projectType } : {})
 }
 
 /**

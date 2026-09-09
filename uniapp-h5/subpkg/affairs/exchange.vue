@@ -141,7 +141,8 @@
 			async loadExchangeList() {
 				try {
 					this.loading = true
-					const response = await getExchangeList(this.tenantId)
+					const projectType = { talent: '1', guaranteed: '2', market: '3' }[this.housingType]
+					const response = await getExchangeList(this.tenantId, projectType)
 
 					if (response.code === 200) {
 						// 处理数据，添加状态文本

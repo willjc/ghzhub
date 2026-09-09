@@ -26,11 +26,11 @@ export function getCheckinCountdown(contractId) {
  * @param {Number} tenantId 租户ID
  * @param {String} type 页面类型：renew=续租, checkout=退租
  */
-export function getConfirmedCheckInList(tenantId, type) {
+export function getConfirmedCheckInList(tenantId, type, projectType) {
   const url = type
     ? `/h5/app/checkin/confirmed/${tenantId}?type=${type}`
     : `/h5/app/checkin/confirmed/${tenantId}`
-  return get(url)
+  return get(url, projectType ? { projectType } : {})
 }
 
 /**
