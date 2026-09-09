@@ -1,15 +1,5 @@
 <template>
 	<view class="page">
-		<!-- 入住前置检查警告 -->
-		<view v-if="!canCheckin" style="background:#fff7e6;border:1rpx solid #ffd591;border-radius:12rpx;padding:20rpx 24rpx;margin:20rpx 24rpx;display:flex;align-items:center;justify-content:space-between;">
-			<text style="font-size:24rpx;color:#d46b08;flex:1;line-height:36rpx;">{{ checkinBlockMsg }}</text>
-			<view v-if="!depositPaid" @click="goToBill" style="background:#fa8c16;border-radius:8rpx;padding:10rpx 20rpx;margin-left:16rpx;flex-shrink:0;">
-				<text style="font-size:24rpx;color:#fff;">去缴押金</text>
-			</view>
-			<view v-else-if="!firstRentPaid" @click="goToBill" style="background:#fa8c16;border-radius:8rpx;padding:10rpx 20rpx;margin-left:16rpx;flex-shrink:0;">
-				<text style="font-size:24rpx;color:#fff;">去缴房租</text>
-			</view>
-		</view>
 
 		<scroll-view class="scroll-content" scroll-y>
 			<!-- 入住申请卡片列表 -->
@@ -70,13 +60,17 @@
 				</view>
 
 				<!-- 按钮区域 - 待办理 (status=0) -->
+				<view v-if="item.statusCode === '0' && !item.canCheckin" class="info-row">
+					<text class="info-value">{{ item.checkinBlockMsg }}</text>
+					<text v-if="item.conditionLoaded && item.validContract && (!item.depositPaid || !item.firstRentPaid)" class="btn-text-blue" @click="goToBill(item)">{{ !item.depositPaid ? '去缴押金' : '去缴房租' }}</text>
+				</view>
 				<view class="button-group" v-if="item.statusCode === '0'">
 					<view
 						class="btn"
-						:class="canCheckin ? 'btn-checkin' : 'btn-disabled'"
-						@click="canCheckin ? handleCheckin(index) : showBlockReason()"
+						:class="item.canCheckin ? 'btn-checkin' : 'btn-disabled'"
+						@click="item.canCheckin ? handleCheckin(index) : showBlockReason(item)"
 					>
-						<text class="btn-text-white">{{ canCheckin ? '办理入住' : '条件未满足' }}</text>
+						<text class="btn-text-white">{{ item.canCheckin ? '办理入住' : '条件未满足' }}</text>
 					</view>
 				</view>
 
@@ -170,7 +164,6 @@
 				}
 				this.tenantId = this.userId
 				this.loadCheckinList()
-				this.checkCheckinCondition()
 			})
 		},
 		onUnload() {
@@ -219,6 +212,7 @@
 							return this.convertCheckInData(item)
 						})
 						// 加载倒计时数据（仅 status=0 待办理项）
+						this.checkCheckinCondition()
 						this.loadCountdowns()
 					} else {
 						this.checkinList = []
@@ -264,6 +258,12 @@
 					checkinNo: item.checkinNo,
 					status: statusMap[item.status] || 'pending',
 					statusCode: item.status,
+					canCheckin: false,
+					conditionLoaded: false,
+					validContract: false,
+					depositPaid: false,
+					firstRentPaid: false,
+					checkinBlockMsg: '正在检查入住条件',
 					auditRemark: item.auditRemark,
 					statusText: statusTextMap[item.status] || '未知',
 					community: community || '未知小区',
@@ -375,23 +375,27 @@
 
 			// 入住前置检查（三重校验：押金+资料审核+首期房租）
 			async checkCheckinCondition() {
-				try {
-					const res = await checkinCheck(this.userId)
-					if (res.code === 200 && res.data) {
+				const items = this.checkinList.filter(item => item.statusCode === '0')
+				await Promise.all(items.map(async item => {
+					try {
+						if (!item.contractId) throw new Error('入住单未关联合同，请联系管理员')
+						const res = await checkinCheck(this.userId, item.contractId)
+						if (res.code !== 200 || !res.data) throw new Error(res.msg || '入住条件检查失败')
 						const d = res.data
-						this.depositPaid      = d.depositPaid      || false
-						this.materialApproved = d.materialApproved || false
-						this.firstRentPaid    = d.firstRentPaid    || false
-						this.canCheckin       = d.canCheckin       || false
-						this.checkinBlockMsg  = d.blockMsg         || ''
+						item.canCheckin = !!d.canCheckin
+						item.depositPaid = !!d.depositPaid
+						item.firstRentPaid = !!d.firstRentPaid
+						item.validContract = Number(d.contractId) === Number(item.contractId)
+						item.checkinBlockMsg = d.blockMsg || ''
+						item.conditionLoaded = true
+					} catch (e) {
+						item.canCheckin = false
+						item.checkinBlockMsg = e.message || '状态检查失败，请刷新重试'
 					}
-				} catch (e) {
-					console.error('入住前置检查失败', e)
-					uni.showToast({ title: '状态检查失败，请刷新重试', icon: 'none' })
-				}
+				}))
 			},
-			goToBill() {
-				uni.navigateTo({ url: '/subpkg/affairs/bill' })
+			goToBill(item) {
+				uni.navigateTo({ url: `/subpkg/affairs/bill?type=${this.housingType}&contractId=${item.contractId}&billType=${item.depositPaid ? '2' : '1'}&depositPaid=${item.depositPaid ? '1' : '0'}` })
 			},
 			startCheckinCountdown() {
 				if (this._checkinTimer) clearInterval(this._checkinTimer)
@@ -410,8 +414,8 @@
 			goUpload() {
 				uni.navigateTo({ url: '/pages/upload/index' })
 			},
-			showBlockReason() {
-				uni.showToast({ title: this.checkinBlockMsg || '请先满足入住条件', icon: 'none', duration: 2500 })
+			showBlockReason(item) {
+				uni.showToast({ title: item.checkinBlockMsg || '请先满足入住条件', icon: 'none', duration: 2500 })
 			},
 
 			// 加载倒计时数据（针对所有 status=0 的合同）

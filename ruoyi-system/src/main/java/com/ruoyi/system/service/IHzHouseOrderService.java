@@ -55,6 +55,8 @@ public interface IHzHouseOrderService extends IService<HzHouseOrder> {
      */
     Map<String, Object> checkinCheck(Long tenantId);
 
+    Map<String, Object> checkinCheck(Long tenantId, Long contractId);
+
     /**
      * 押金支付成功后更新订单状态（由支付回调调用）
      *

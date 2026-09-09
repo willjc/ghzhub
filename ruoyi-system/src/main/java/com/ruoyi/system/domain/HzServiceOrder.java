@@ -54,6 +54,7 @@ public class HzServiceOrder extends BaseEntity
     /** 房间地址 */
     @Excel(name = "房间地址")
     @TableField("house_address")
+    @com.fasterxml.jackson.annotation.JsonAlias("serviceAddress")
     private String houseAddress;
 
     /** 期望服务时间 */

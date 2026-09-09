@@ -247,7 +247,9 @@
 					}
 
 					if (billRes.code === 200 && billRes.data) {
-						const bills = billRes.data
+						const bills = this.contractId
+							? billRes.data.filter(b => Number(b.contractId) === this.contractId)
+							: billRes.data
 
 						// 从账单数据自动检测押金是否已缴：
 						// 1. 指定了 contractId 时，只判断该合同的押金账单
@@ -256,7 +258,7 @@
 						const deposits = bills.filter(b => b.billType === '1')
 						if (this.contractId) {
 							const curDeposit = deposits.find(b => b.contractId === this.contractId)
-							this.depositPaid = curDeposit ? curDeposit.billStatus === '1' : false
+							this.depositPaid = curDeposit ? curDeposit.billStatus === '1' : bills.some(b => b.contractType === '2')
 						} else if (deposits.length > 0) {
 							this.depositPaid = deposits.some(b => b.billStatus === '1')
 						} else {

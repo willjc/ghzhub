@@ -266,11 +266,11 @@ export default {
 				const submitData = {
 					applicantName: this.formData.applicantName,
 					applicantPhone: this.formData.applicantPhone,
-					serviceAddress: this.formData.serviceAddress,
+					houseAddress: this.formData.serviceAddress,
 					cleanType: this.formData.cleanType,
 					roomCount: this.formData.roomCount ? parseInt(this.formData.roomCount) : null,
 					expectTime: this.formData.expectTime,
-					remark: this.formData.remark
+					applyRemark: this.formData.remark
 				}
 
 				const res = await submitCleanOrder(submitData)
@@ -286,7 +286,7 @@ export default {
 			} catch (err) {
 				uni.hideLoading()
 				console.error('提交保洁订单失败:', err)
-				uni.showToast({ title: '提交失败', icon: 'none' })
+				uni.showToast({ title: err.msg || err.message || '提交失败，请稍后重试', icon: 'none' })
 			} finally {
 				this.submitting = false
 			}

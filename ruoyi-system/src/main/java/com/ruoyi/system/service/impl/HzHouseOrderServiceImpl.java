@@ -303,11 +303,17 @@ public class HzHouseOrderServiceImpl
 
     @Override
     public Map<String, Object> checkinCheck(Long tenantId) {
+        return checkinCheck(tenantId, null);
+    }
+
+    @Override
+    public Map<String, Object> checkinCheck(Long tenantId, Long contractId) {
         Map<String, Object> result = new HashMap<>();
 
-        // 1. 查找该用户最新的已签署合同
+        // 指定合同时只检查本人该合同；未传时兼容旧版小程序。
         HzContract contract = contractMapper.selectOne(
             new LambdaQueryWrapper<HzContract>()
+                .eq(contractId != null, HzContract::getContractId, contractId)
                 .eq(HzContract::getTenantId, tenantId)
                 .in(HzContract::getContractStatus, "2", "3")
                 .eq(HzContract::getDelFlag, "0")
@@ -330,7 +336,8 @@ public class HzHouseOrderServiceImpl
                 .eq(HzBill::getBillType, "1")
                 .eq(HzBill::getDelFlag, "0")
                 .last("LIMIT 1"));
-        boolean depositPaid = depositBill != null && "1".equals(depositBill.getBillStatus());
+        boolean depositPaid = depositBill != null ? "1".equals(depositBill.getBillStatus())
+                : "2".equals(contract.getContractType()); // 续租沿用原押金，不生成新押金账单
 
         // 3. 检查资料是否已审核通过（至少一条通过）
         List<HzDocument> docs = documentMapper.selectList(

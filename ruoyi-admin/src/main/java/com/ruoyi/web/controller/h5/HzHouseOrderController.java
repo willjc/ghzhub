@@ -137,8 +137,9 @@ public class HzHouseOrderController extends BaseController {
      * @param tenantId 租户ID
      */
     @GetMapping("/checkin-check/{tenantId}")
-    public AjaxResult checkinCheck(@PathVariable Long tenantId) {
+    public AjaxResult checkinCheck(@PathVariable Long tenantId,
+                                  @RequestParam(required = false) Long contractId) {
         SecurityUtils.requireCurrentHzUser(tenantId);
-        return success(orderService.checkinCheck(tenantId));
+        return success(orderService.checkinCheck(tenantId, contractId));
     }
 }

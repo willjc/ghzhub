@@ -22,6 +22,6 @@ export function getPendingUploadOrders(tenantId) {
 }
 
 /** 入住前置检查 */
-export function checkinCheck(tenantId) {
-  return get(`/h5/order/checkin-check/${tenantId}`)
+export function checkinCheck(tenantId, contractId) {
+  return get(`/h5/order/checkin-check/${tenantId}`, contractId ? { contractId } : {})
 }
