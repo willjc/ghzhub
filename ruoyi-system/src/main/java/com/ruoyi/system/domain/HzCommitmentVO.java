@@ -8,9 +8,6 @@ package com.ruoyi.system.domain;
 public class HzCommitmentVO extends HzCommitment {
     private static final long serialVersionUID = 1L;
 
-    /** 用户昵称 */
-    private String userNickname;
-
     /** 用户账号 */
     private String userAccount;
 
@@ -19,14 +16,6 @@ public class HzCommitmentVO extends HzCommitment {
 
     /** 项目编码 */
     private String projectCode;
-
-    public String getUserNickname() {
-        return userNickname;
-    }
-
-    public void setUserNickname(String userNickname) {
-        this.userNickname = userNickname;
-    }
 
     public String getUserAccount() {
         return userAccount;

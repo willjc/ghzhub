@@ -3,6 +3,7 @@ package com.ruoyi.web.controller.system;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
@@ -68,14 +69,31 @@ public class HzProjectController extends BaseController
     }
 
     /**
-     * 下载项目导入模板
+     * 下载项目导入模板（含一行"市场租赁"示例数据，导入时自动跳过示例行）
      */
     @PreAuthorize("@ss.hasPermi('gangzhu:project:import')")
     @PostMapping("/importTemplate")
     public void importTemplate(HttpServletResponse response)
     {
         ExcelUtil<HzProject> util = new ExcelUtil<HzProject>(HzProject.class);
-        util.importTemplateExcel(response, "项目数据");
+        List<HzProject> sample = new java.util.ArrayList<>();
+        HzProject demo = new HzProject();
+        demo.setProjectName("示例项目（导入前请删除本行）");
+        demo.setProjectCode("DEMO-0001");
+        demo.setProjectType("3"); // 3=市场租赁
+        demo.setAddress("示例地址：航空港区XX路XX号");
+        demo.setTotalBuildings(1);
+        demo.setTotalHouses(100);
+        demo.setPrice(new BigDecimal("1000.00"));
+        demo.setManagerName("示例负责人");
+        demo.setManagerPhone("13800000000");
+        demo.setServicePhone("0371-63337151");
+        demo.setPropertyPhone("0371-63337151");
+        demo.setStatus("0");
+        demo.setSortOrder(1);
+        sample.add(demo);
+        util.init(sample, "项目数据", "", Excel.Type.IMPORT);
+        util.exportExcel(response);
     }
 
     /**

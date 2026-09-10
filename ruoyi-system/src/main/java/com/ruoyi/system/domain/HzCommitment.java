@@ -61,6 +61,55 @@ public class HzCommitment extends BaseEntity {
     @TableField("del_flag")
     private String delFlag;
 
+    // ========== 以下为查询/展示用关联字段（hz_user，非持久化） ==========
+    /** 用户昵称（查询条件） */
+    @TableField(exist = false)
+    private String userNickname;
+
+    /** 真实姓名（查询条件） */
+    @TableField(exist = false)
+    private String realName;
+
+    /** 身份证号（查询条件） */
+    @TableField(exist = false)
+    private String idCard;
+
+    /** 手机号（查询条件） */
+    @TableField(exist = false)
+    private String phone;
+
+    public String getUserNickname() {
+        return userNickname;
+    }
+
+    public void setUserNickname(String userNickname) {
+        this.userNickname = userNickname;
+    }
+
+    public String getRealName() {
+        return realName;
+    }
+
+    public void setRealName(String realName) {
+        this.realName = realName;
+    }
+
+    public String getIdCard() {
+        return idCard;
+    }
+
+    public void setIdCard(String idCard) {
+        this.idCard = idCard;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
     public void setCommitmentId(Long commitmentId) {
         this.commitmentId = commitmentId;
     }

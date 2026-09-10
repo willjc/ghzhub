@@ -124,6 +124,11 @@ public class HzProjectServiceImpl extends ServiceImpl<HzProjectMapper, HzProject
                     failureMsg.append("<br/>").append(failureNum).append("、项目名称不能为空");
                     continue;
                 }
+                // 跳过模板自带的示例行（不参与统计）
+                if (project.getProjectName().contains("导入前请删除本行"))
+                {
+                    continue;
+                }
                 // 按项目名称判重
                 HzProject exist = this.getOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<HzProject>()
                         .eq(HzProject::getProjectName, project.getProjectName().trim())

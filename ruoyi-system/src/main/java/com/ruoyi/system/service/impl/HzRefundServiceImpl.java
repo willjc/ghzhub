@@ -47,7 +47,7 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
     private HzHouseMapper houseMapper;
 
     @Override
-    public TableDataInfo selectRefundList(Page<HzCheckoutApply> page, String refundNo, String contractNo, String refundStatus, Long projectId, String refundType, String tenantName) {
+    public TableDataInfo selectRefundList(Page<HzCheckoutApply> page, String refundNo, String contractNo, String refundStatus, Long projectId, String refundType, String tenantName, String beginApplyTime, String endApplyTime) {
         // 构建退租申请查询条件（已确认且有退款金额）
         LambdaQueryWrapper<HzCheckoutApply> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzCheckoutApply::getApplyStatus, "5")
@@ -65,6 +65,14 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
                 wrapper.and(w -> w.isNull(HzCheckoutApply::getCheckoutReason)
                         .or().notLike(HzCheckoutApply::getCheckoutReason, "入住超时自动解约"));
             }
+        }
+
+        // 发起时间范围过滤（hz_checkout_apply.apply_time）
+        if (beginApplyTime != null && !beginApplyTime.isEmpty()) {
+            wrapper.ge(HzCheckoutApply::getApplyTime, beginApplyTime + " 00:00:00");
+        }
+        if (endApplyTime != null && !endApplyTime.isEmpty()) {
+            wrapper.le(HzCheckoutApply::getApplyTime, endApplyTime + " 23:59:59");
         }
 
         // 退款编号（申请ID）过滤

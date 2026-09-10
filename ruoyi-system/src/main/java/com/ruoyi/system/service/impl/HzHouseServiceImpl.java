@@ -725,6 +725,8 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
     private LambdaQueryWrapper<HzHouse> buildStatsQueryWrapper(HzHouse house)
     {
         LambdaQueryWrapper<HzHouse> qw = new LambdaQueryWrapper<>();
+        // 与列表查询（XML selectHouseListWithImages）保持一致：过滤已软删除房源
+        qw.apply("del_flag = '0'");
         if (house == null)
         {
             return qw;

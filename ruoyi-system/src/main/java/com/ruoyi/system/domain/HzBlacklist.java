@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -26,42 +27,50 @@ public class HzBlacklist extends BaseEntity {
     private Long tenantId;
 
     /** 姓名 */
+    @Excel(name = "姓名")
     @TableField("tenant_name")
     private String tenantName;
 
     /** 身份证号 */
+    @Excel(name = "身份证号")
     @TableField("id_card")
     private String idCard;
 
-    /** 手机号 */
-    @TableField("phone")
+    /** 手机号（展示用，来自 hz_user，非持久化） */
+    @Excel(name = "手机号")
+    @TableField(exist = false)
     private String phone;
 
-    /** 加入原因 */
-    @TableField("reason")
+    /** 加入原因（数据库列 blacklist_reason） */
+    @Excel(name = "加入原因")
+    @TableField("blacklist_reason")
     private String reason;
 
-    /** 加入类型(1:违约 2:欠费 3:违规 4:其他) */
-    @TableField("blacklist_type")
+    /** 加入类型(1:违约 2:欠费 3:违规 4:其他)（暂未启用，非持久化） */
+    @TableField(exist = false)
     private String blacklistType;
 
-    /** 关联合同ID */
-    @TableField("contract_id")
+    /** 关联合同ID（暂未启用，非持久化） */
+    @TableField(exist = false)
     private Long contractId;
 
     /** 加入时间 */
+    @Excel(name = "加入时间", width = 20)
     @TableField("blacklist_time")
     private String blacklistTime;
 
     /** 解除时间 */
+    @Excel(name = "解除时间", width = 20)
     @TableField("remove_time")
     private String removeTime;
 
     /** 解除原因 */
+    @Excel(name = "解除原因")
     @TableField("remove_reason")
     private String removeReason;
 
-    /** 状态(0:生效中 1:已解除) */
+    /** 状态(1:生效中 0:已解除)，与数据库表注释和存量数据保持一致 */
+    @Excel(name = "状态", readConverterExp = "1=生效中,0=已解除")
     @TableField("status")
     private String status;
 

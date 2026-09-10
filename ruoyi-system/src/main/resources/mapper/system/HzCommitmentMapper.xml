@@ -25,6 +25,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <!-- 关联字段 -->
         <result property="userNickname" column="user_nickname"/>
         <result property="userAccount" column="user_account"/>
+        <result property="realName" column="real_name"/>
+        <result property="idCard" column="id_card"/>
+        <result property="phone" column="phone"/>
         <result property="projectName" column="project_name"/>
         <result property="projectCode" column="project_code"/>
     </resultMap>
@@ -50,6 +53,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             c.del_flag,
             u.nickname as user_nickname,
             u.phone as user_account,
+            u.real_name as real_name,
+            u.id_card as id_card,
+            u.phone as phone,
             p.project_name,
             p.project_code
         FROM hz_commitment c
@@ -61,6 +67,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         <if test="projectId != null">
             AND c.project_id = #{projectId}
+        </if>
+        <if test="userNickname != null and userNickname != ''">
+            AND u.nickname LIKE CONCAT('%', #{userNickname}, '%')
+        </if>
+        <if test="realName != null and realName != ''">
+            AND u.real_name LIKE CONCAT('%', #{realName}, '%')
+        </if>
+        <if test="idCard != null and idCard != ''">
+            AND u.id_card LIKE CONCAT('%', #{idCard}, '%')
+        </if>
+        <if test="phone != null and phone != ''">
+            AND u.phone LIKE CONCAT('%', #{phone}, '%')
         </if>
         <if test="commitmentType != null and commitmentType != ''">
             AND c.commitment_type = #{commitmentType}
@@ -98,6 +116,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             c.del_flag,
             u.nickname as user_nickname,
             u.phone as user_account,
+            u.real_name as real_name,
+            u.id_card as id_card,
+            u.phone as phone,
             p.project_name,
             p.project_code
         FROM hz_commitment c
@@ -127,6 +148,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             c.del_flag,
             u.nickname as user_nickname,
             u.phone as user_account,
+            u.real_name as real_name,
+            u.id_card as id_card,
+            u.phone as phone,
             p.project_name,
             p.project_code
         FROM hz_commitment c
@@ -138,6 +162,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         <if test="entity.projectId != null">
             AND c.project_id = #{entity.projectId}
+        </if>
+        <if test="entity.userNickname != null and entity.userNickname != ''">
+            AND u.nickname LIKE CONCAT('%', #{entity.userNickname}, '%')
+        </if>
+        <if test="entity.realName != null and entity.realName != ''">
+            AND u.real_name LIKE CONCAT('%', #{entity.realName}, '%')
+        </if>
+        <if test="entity.idCard != null and entity.idCard != ''">
+            AND u.id_card LIKE CONCAT('%', #{entity.idCard}, '%')
+        </if>
+        <if test="entity.phone != null and entity.phone != ''">
+            AND u.phone LIKE CONCAT('%', #{entity.phone}, '%')
         </if>
         <if test="entity.commitmentType != null and entity.commitmentType != ''">
             AND c.commitment_type = #{entity.commitmentType}

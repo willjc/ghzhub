@@ -148,7 +148,7 @@
           <span v-else style="color: #909399">未登录</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="260">
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -164,6 +164,14 @@
             @click="handleUpdate(scope.row)"
             v-hasPermi="['gangzhu:user:edit']"
           >修改</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-circle-close"
+            @click="handleAddBlacklist(scope.row)"
+            v-hasPermi="['gangzhu:blacklist:add']"
+            style="color: #E6A23C"
+          >加入黑名单</el-button>
           <el-button
             size="mini"
             type="text"
@@ -351,11 +359,36 @@
         <el-button @click="cancel">取 消</el-button>
       </div>
     </el-dialog>
+
+    <!-- 加入黑名单对话框 -->
+    <el-dialog title="加入黑名单" :visible.sync="blacklistOpen" width="500px" append-to-body>
+      <el-form ref="blacklistForm" :model="blacklistForm" label-width="90px">
+        <el-form-item label="用户">
+          <span>{{ blacklistForm.tenantName }}{{ blacklistForm.idCard ? '（' + blacklistForm.idCard + '）' : '' }}</span>
+        </el-form-item>
+        <el-form-item label="加入原因" prop="reason" :rules="[{ required: true, message: '请填写加入原因', trigger: 'blur' }]">
+          <el-input
+            v-model="blacklistForm.reason"
+            type="textarea"
+            :rows="4"
+            placeholder="请输入加入黑名单的原因"
+          />
+        </el-form-item>
+        <div style="color: #E6A23C; font-size: 12px; padding-left: 90px;">
+          加入黑名单后，该用户将无法再登录小程序
+        </div>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitBlacklist">确 定</el-button>
+        <el-button @click="blacklistOpen = false">取 消</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { listUser, getUser, updateUser, changeUserStatus, delUser } from "@/api/gangzhu/user";
+import { addBlacklist } from "@/api/gangzhu/blacklist";
 
 export default {
   name: "HzUser",
@@ -371,6 +404,14 @@ export default {
       userData: {},
       form: {},
       dateRange: [],
+      // 加入黑名单
+      blacklistOpen: false,
+      blacklistForm: {
+        tenantId: null,
+        tenantName: '',
+        idCard: '',
+        reason: ''
+      },
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -484,6 +525,33 @@ export default {
         this.getList();
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
+    },
+    /** 加入黑名单按钮操作 */
+    handleAddBlacklist(row) {
+      this.blacklistForm = {
+        tenantId: row.userId,
+        tenantName: row.realName || row.nickname || '',
+        idCard: row.idCard || '',
+        reason: ''
+      };
+      this.blacklistOpen = true;
+    },
+    /** 提交加入黑名单 */
+    submitBlacklist() {
+      this.$refs["blacklistForm"].validate(valid => {
+        if (valid) {
+          this.$modal.confirm('确认将用户"' + this.blacklistForm.tenantName + '"加入黑名单？加入后该用户将无法登录小程序。').then(() => {
+            return addBlacklist({
+              tenantId: this.blacklistForm.tenantId,
+              reason: this.blacklistForm.reason
+            });
+          }).then(() => {
+            this.$modal.msgSuccess("已加入黑名单");
+            this.blacklistOpen = false;
+            this.getList();
+          }).catch(() => {});
+        }
+      });
     },
     /** 获取图片完整URL */
     getImageUrl(url) {

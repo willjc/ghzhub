@@ -26,7 +26,7 @@
         <div class="stats-label">下架</div>
         <div class="stats-value">{{ stats.offline || 0 }}</div>
       </div>
-      <div class="stats-tip">统计跟随当前查询条件动态刷新</div>
+      <div class="stats-tip">统计随所属项目、楼栋、单元、房源编码、房间号、状态等条件联动；房源状态筛选仅作用于下方列表</div>
     </div>
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
       <el-form-item label="所属项目" prop="projectId">

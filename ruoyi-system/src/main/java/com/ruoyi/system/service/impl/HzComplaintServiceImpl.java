@@ -177,11 +177,23 @@ public class HzComplaintServiceImpl extends ServiceImpl<HzComplaintMapper, HzCom
     {
         LambdaQueryWrapper<HzComplaint> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(complaint.getUserId() != null, HzComplaint::getUserId, complaint.getUserId())
+               .like(StringUtils.isNotEmpty(complaint.getContactPhone()), HzComplaint::getContactPhone, complaint.getContactPhone())
                .eq(StringUtils.isNotEmpty(complaint.getStatus()), HzComplaint::getStatus, complaint.getStatus())
                .eq(StringUtils.isNotEmpty(complaint.getIsUrged()), HzComplaint::getIsUrged, complaint.getIsUrged())
                .eq(StringUtils.isNotEmpty(complaint.getTitle()), HzComplaint::getTitle, complaint.getTitle())
-               .eq(HzComplaint::getDelFlag, "0")
-               .orderByDesc(HzComplaint::getCreateTime);
+               .eq(HzComplaint::getDelFlag, "0");
+        // 投诉时间范围（前端 params.beginCreateTime / endCreateTime）
+        if (complaint.getParams() != null) {
+            Object begin = complaint.getParams().get("beginCreateTime");
+            Object end = complaint.getParams().get("endCreateTime");
+            if (begin != null && StringUtils.isNotEmpty(begin.toString())) {
+                wrapper.ge(HzComplaint::getCreateTime, begin.toString() + " 00:00:00");
+            }
+            if (end != null && StringUtils.isNotEmpty(end.toString())) {
+                wrapper.le(HzComplaint::getCreateTime, end.toString() + " 23:59:59");
+            }
+        }
+        wrapper.orderByDesc(HzComplaint::getCreateTime);
         return wrapper;
     }
 

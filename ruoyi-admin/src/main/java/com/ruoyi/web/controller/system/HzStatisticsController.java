@@ -238,13 +238,18 @@ public class HzStatisticsController extends BaseController {
 
     /**
      * 学历与职业分布（租户画像）
-     * 返回 { education: { highSchool, college, bachelor, master, doctor },
-     *        profession: { company, civil, selfEmployed, student, retired, other } }
+     * 返回 { education: { highSchool, college, bachelor, master, doctor, unknown },
+     *        profession: { company, civil, selfEmployed, student, retired, other, unknown } }
      * 与前端 EducationJob.vue 组件契约一致。
+     * 口径：与户籍/婚姻统计统一，分母均为全量注册用户（del_flag='0'），
+     *       未采集（字段为空）计入 unknown，保证四个图表合计一致。
      * 注意：使用 SQL 聚合而非 selectList 映射实体，避免投影查询产生 null 元素。
      */
     @GetMapping("/education-job")
     public AjaxResult educationJob() {
+        long totalUsers = userMapper.selectCount(new QueryWrapper<com.ruoyi.system.domain.HzUser>()
+                .eq("del_flag", "0"));
+
         // 学历：hz_user.education（字典 hz_education_type: 1小学/2初中/3高中/4大专/5本科/6硕士/7博士）
         Map<String, Long> eduMap = new HashMap<>();
         List<Map<String, Object>> eduRows = userMapper.selectMaps(
@@ -252,6 +257,7 @@ public class HzStatisticsController extends BaseController {
                         .select("education, COUNT(*) AS cnt")
                         .eq("del_flag", "0")
                         .isNotNull("education")
+                        .ne("education", "")
                         .groupBy("education"));
         for (Map<String, Object> row : eduRows) {
             Object v = row.get("education");
@@ -260,13 +266,15 @@ public class HzStatisticsController extends BaseController {
                 eduMap.merge(String.valueOf(v), Long.parseLong(String.valueOf(c)), Long::sum);
             }
         }
-        // 高中及以下 = 字典1/2/3，大专=4，本科=5，硕士=6，博士=7
+        // 高中及以下 = 字典1/2/3，大专=4，本科=5，硕士=6，博士=7，未采集=其余
         Map<String, Object> education = new LinkedHashMap<>();
         education.put("highSchool", eduMap.getOrDefault("1", 0L) + eduMap.getOrDefault("2", 0L) + eduMap.getOrDefault("3", 0L));
         education.put("college", eduMap.getOrDefault("4", 0L));
         education.put("bachelor", eduMap.getOrDefault("5", 0L));
         education.put("master", eduMap.getOrDefault("6", 0L));
         education.put("doctor", eduMap.getOrDefault("7", 0L));
+        long eduKnown = eduMap.values().stream().mapToLong(Long::longValue).sum();
+        education.put("unknown", Math.max(0L, totalUsers - eduKnown));
 
         // 职业：hz_user.unit_nature（字典 hz_unit_nature: 1机关事业单位/2国有企业/3私营企业/4其他）
         Map<String, Long> jobMap = new HashMap<>();
@@ -275,6 +283,7 @@ public class HzStatisticsController extends BaseController {
                         .select("unit_nature, COUNT(*) AS cnt")
                         .eq("del_flag", "0")
                         .isNotNull("unit_nature")
+                        .ne("unit_nature", "")
                         .groupBy("unit_nature"));
         for (Map<String, Object> row : jobRows) {
             Object v = row.get("unit_nature");
@@ -283,20 +292,22 @@ public class HzStatisticsController extends BaseController {
                 jobMap.merge(String.valueOf(v), Long.parseLong(String.valueOf(c)), Long::sum);
             }
         }
-        // 映射到组件契约：company=企业（2/3），civil=事业单位（1），其余归 other
+        // 映射到组件契约：company=企业（2/3），civil=事业单位（1），其余归 other，未采集=其余
         Map<String, Object> profession = new LinkedHashMap<>();
         profession.put("company", jobMap.getOrDefault("2", 0L) + jobMap.getOrDefault("3", 0L));
         profession.put("civil", jobMap.getOrDefault("1", 0L));
         profession.put("selfEmployed", 0L);
         profession.put("student", 0L);
         profession.put("retired", 0L);
-        long otherCnt = jobMap.values().stream().mapToLong(Long::longValue).sum()
-                - (long) profession.get("company") - (long) profession.get("civil");
+        long otherCnt = jobMap.getOrDefault("4", 0L);
         profession.put("other", Math.max(0L, otherCnt));
+        long jobKnown = jobMap.values().stream().mapToLong(Long::longValue).sum();
+        profession.put("unknown", Math.max(0L, totalUsers - jobKnown));
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("education", education);
         data.put("profession", profession);
+        data.put("totalUsers", totalUsers);
         return AjaxResult.success(data);
     }
 

@@ -51,6 +51,17 @@
           <el-option label="入住超时自动退款" value="auto-cancel-checkin" />
         </el-select>
       </el-form-item>
+      <el-form-item label="发起时间">
+        <el-date-picker
+          v-model="daterangeApplyTime"
+          style="width: 240px"
+          value-format="yyyy-MM-dd"
+          type="daterange"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+        ></el-date-picker>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -281,6 +292,7 @@ export default {
       total: 0,
       refundList: [],
       projectList: [],
+      daterangeApplyTime: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -289,7 +301,9 @@ export default {
         contractNo: null,
         refundStatus: null,
         projectId: null,
-        refundType: null
+        refundType: null,
+        beginApplyTime: null,
+        endApplyTime: null
       },
       // 详情
       detailOpen: false,
@@ -361,6 +375,14 @@ export default {
     },
     getList() {
       this.loading = true;
+      // 发起时间范围
+      if (this.daterangeApplyTime && this.daterangeApplyTime.length === 2) {
+        this.queryParams.beginApplyTime = this.daterangeApplyTime[0];
+        this.queryParams.endApplyTime = this.daterangeApplyTime[1];
+      } else {
+        this.queryParams.beginApplyTime = null;
+        this.queryParams.endApplyTime = null;
+      }
       listRefund(this.queryParams).then(response => {
         this.refundList = response.rows;
         this.total = response.total;
@@ -373,6 +395,7 @@ export default {
     },
     resetQuery() {
       this.resetForm("queryForm");
+      this.daterangeApplyTime = [];
       this.handleQuery();
     },
     // 查看详情

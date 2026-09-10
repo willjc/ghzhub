@@ -35,6 +35,9 @@ public class HzAuthController extends BaseController {
     private IHzUserMessageService userMessageService;
 
     @Autowired
+    private com.ruoyi.system.service.IHzBlacklistService blacklistService;
+
+    @Autowired
     private WechatMiniappService wechatMiniappService;
 
     @Autowired
@@ -75,6 +78,20 @@ public class HzAuthController extends BaseController {
 
             // 3. 查找或创建用户
             HzUser user = userService.loginOrRegisterByWechat(openid, unionid, phone);
+
+            // 3.5 黑名单校验：生效中的黑名单用户禁止登录
+            com.ruoyi.system.domain.HzBlacklist blacklist = null;
+            if (user.getIdCard() != null && !user.getIdCard().isEmpty()) {
+                blacklist = blacklistService.selectBlacklistByIdCard(user.getIdCard());
+            }
+            if (blacklist == null) {
+                blacklist = blacklistService.selectBlacklistByTenantId(user.getUserId());
+            }
+            if (blacklist != null) {
+                return error("您已被列入黑名单，暂无法登录。原因："
+                        + (blacklist.getReason() == null ? "" : blacklist.getReason())
+                        + "，如有疑问请联系管理员");
+            }
 
             // 4. 发送登录消息
             sendLoginMessage(user);

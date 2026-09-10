@@ -9,6 +9,30 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="姓名" prop="realName">
+        <el-input
+          v-model="queryParams.realName"
+          placeholder="请输入姓名"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="身份证号" prop="idCard">
+        <el-input
+          v-model="queryParams.idCard"
+          placeholder="请输入身份证号"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="手机号" prop="phone">
+        <el-input
+          v-model="queryParams.phone"
+          placeholder="请输入手机号"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="所属项目" prop="projectId">
         <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable filterable style="width: 200px">
           <el-option
@@ -67,6 +91,12 @@
     <el-table v-loading="loading" :data="commitmentList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="用户昵称" align="center" prop="userNickname" width="100" />
+      <el-table-column label="姓名" align="center" prop="realName" width="100">
+        <template slot-scope="scope">
+          <span v-if="scope.row.realName">{{ scope.row.realName }}</span>
+          <span v-else style="color: #C0C4CC;">-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="用户账号" align="center" prop="userAccount" width="120" />
       <el-table-column label="项目名称" align="center" prop="projectName" min-width="180" show-overflow-tooltip />
       <el-table-column label="项目编码" align="center" prop="projectCode" width="120" />
@@ -193,7 +223,10 @@ export default {
         projectId: null,
         commitmentType: null,
         status: null,
-        userNickname: null
+        userNickname: null,
+        realName: null,
+        idCard: null,
+        phone: null
       }
     };
   },

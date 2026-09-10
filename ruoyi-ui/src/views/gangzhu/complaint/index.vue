@@ -11,6 +11,26 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="手机号" prop="contactPhone">
+        <el-input
+          v-model="queryParams.contactPhone"
+          placeholder="请输入手机号"
+          clearable
+          style="width: 200px"
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="投诉时间">
+        <el-date-picker
+          v-model="daterangeCreateTime"
+          style="width: 240px"
+          value-format="yyyy-MM-dd"
+          type="daterange"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+        ></el-date-picker>
+      </el-form-item>
       <el-form-item label="处理状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px">
           <el-option label="待处理" value="0" />
@@ -237,11 +257,14 @@ export default {
       },
       // 图片访问地址
       baseUrl: process.env.VUE_APP_BASE_API,
+      // 投诉时间范围
+      daterangeCreateTime: [],
       // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         userId: null,
+        contactPhone: null,
         status: null,
         isUrged: null
       }
@@ -265,6 +288,12 @@ export default {
     /** 查询投诉建议列表 */
     getList() {
       this.loading = true;
+      // 投诉时间范围参数
+      this.queryParams.params = {};
+      if (this.daterangeCreateTime && this.daterangeCreateTime.length === 2) {
+        this.queryParams.params["beginCreateTime"] = this.daterangeCreateTime[0];
+        this.queryParams.params["endCreateTime"] = this.daterangeCreateTime[1];
+      }
       listComplaint(this.queryParams).then(response => {
         this.complaintList = response.rows;
         this.total = response.total;

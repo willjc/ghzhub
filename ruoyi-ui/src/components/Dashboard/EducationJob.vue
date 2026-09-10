@@ -76,7 +76,7 @@ export default {
   },
   data() {
     return {
-      colors: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],
+      colors: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc', '#7f8c8d', '#c0392b', '#16a085'],
       educationChart: null,
       professionChart: null
     }
@@ -89,7 +89,8 @@ export default {
         { name: '大专', value: this.data.education.college || 0, percent: ((this.data.education.college || 0) / total * 100).toFixed(1) },
         { name: '本科', value: this.data.education.bachelor || 0, percent: ((this.data.education.bachelor || 0) / total * 100).toFixed(1) },
         { name: '硕士', value: this.data.education.master || 0, percent: ((this.data.education.master || 0) / total * 100).toFixed(1) },
-        { name: '博士', value: this.data.education.doctor || 0, percent: ((this.data.education.doctor || 0) / total * 100).toFixed(1) }
+        { name: '博士', value: this.data.education.doctor || 0, percent: ((this.data.education.doctor || 0) / total * 100).toFixed(1) },
+        { name: '未采集', value: this.data.education.unknown || 0, percent: ((this.data.education.unknown || 0) / total * 100).toFixed(1) }
       ]
     },
     professionData() {
@@ -100,7 +101,8 @@ export default {
         { name: '自由职业', value: this.data.profession.selfEmployed || 0, percent: ((this.data.profession.selfEmployed || 0) / total * 100).toFixed(1) },
         { name: '学生', value: this.data.profession.student || 0, percent: ((this.data.profession.student || 0) / total * 100).toFixed(1) },
         { name: '退休', value: this.data.profession.retired || 0, percent: ((this.data.profession.retired || 0) / total * 100).toFixed(1) },
-        { name: '其他', value: this.data.profession.other || 0, percent: ((this.data.profession.other || 0) / total * 100).toFixed(1) }
+        { name: '其他', value: this.data.profession.other || 0, percent: ((this.data.profession.other || 0) / total * 100).toFixed(1) },
+        { name: '未采集', value: this.data.profession.unknown || 0, percent: ((this.data.profession.unknown || 0) / total * 100).toFixed(1) }
       ]
     }
   },

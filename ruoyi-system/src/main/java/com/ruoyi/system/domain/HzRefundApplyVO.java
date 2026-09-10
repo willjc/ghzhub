@@ -69,6 +69,12 @@ public class HzRefundApplyVO implements Serializable {
     /** 审批意见 */
     private String approveOpinion;
 
+    /** 发起时间范围-开始（查询条件，yyyy-MM-dd） */
+    private String beginApplyTime;
+
+    /** 发起时间范围-结束（查询条件，yyyy-MM-dd） */
+    private String endApplyTime;
+
     /** 开户银行名称 */
     private String bankName;
 
@@ -260,6 +266,22 @@ public class HzRefundApplyVO implements Serializable {
 
     public void setApproveOpinion(String approveOpinion) {
         this.approveOpinion = approveOpinion;
+    }
+
+    public String getBeginApplyTime() {
+        return beginApplyTime;
+    }
+
+    public void setBeginApplyTime(String beginApplyTime) {
+        this.beginApplyTime = beginApplyTime;
+    }
+
+    public String getEndApplyTime() {
+        return endApplyTime;
+    }
+
+    public void setEndApplyTime(String endApplyTime) {
+        this.endApplyTime = endApplyTime;
     }
 
     public String getBankName() {
