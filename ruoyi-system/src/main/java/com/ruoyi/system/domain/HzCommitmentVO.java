@@ -1,5 +1,7 @@
 package com.ruoyi.system.domain;
 
+import com.ruoyi.common.annotation.Excel;
+
 /**
  * 承诺书记录VO对象（用于列表展示）
  *
@@ -12,6 +14,7 @@ public class HzCommitmentVO extends HzCommitment {
     private String userAccount;
 
     /** 项目名称 */
+    @Excel(name = "项目名称", sort = 4)
     private String projectName;
 
     /** 项目编码 */

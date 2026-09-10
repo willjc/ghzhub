@@ -230,8 +230,8 @@
 						this.formData.community = this.extractInfo(remark, '项目：')
 						this.formData.room = this.extractInfo(remark, '房间：')
 
-						// 计算入住日期合法范围：[start_date, sign_time + 3天]
-						this.computeCheckinDateRange(response.data.startDate, response.data.signTime)
+						// 计算入住日期合法范围：[签约日, 签约日 + 3天]（与后端提交校验保持一致）
+						this.computeCheckinDateRange(response.data.signTime)
 						// 范围确定后重新生成可选 years
 						this.initDatePicker()
 
@@ -323,17 +323,17 @@
 				this.days = Array.from({ length: 31 }, (_, i) => i + 1)
 			},
 
-			// 解析合同 startDate 与 signTime，得到 [minCheckinDate, maxCheckinDate]
-			computeCheckinDateRange(startDateStr, signTimeStr) {
-				const startDate = this.parseDate(startDateStr)
+			// 解析合同 signTime，得到 [minCheckinDate, maxCheckinDate]
+			// 规则与后端提交校验一致：[签订合同当日, 签订日后3天]
+			computeCheckinDateRange(signTimeStr) {
 				const signTime = this.parseDate(signTimeStr)
-				if (!startDate || !signTime) {
+				if (!signTime) {
 					return
 				}
-				// minCheckinDate = startDate（去掉时分秒）
-				const minDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())
-				// maxCheckinDate = signTime + 3天（按签订日 0 点起算）
-				const maxDate = new Date(signTime.getFullYear(), signTime.getMonth(), signTime.getDate())
+				// minCheckinDate = 签订合同当日（去掉时分秒）
+				const minDate = new Date(signTime.getFullYear(), signTime.getMonth(), signTime.getDate())
+				// maxCheckinDate = 签约日 + 3天
+				const maxDate = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate())
 				maxDate.setDate(maxDate.getDate() + 3)
 				this.minCheckinDate = minDate
 				this.maxCheckinDate = maxDate

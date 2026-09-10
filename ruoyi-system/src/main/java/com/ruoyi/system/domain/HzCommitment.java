@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -29,7 +30,8 @@ public class HzCommitment extends BaseEntity {
     @TableField("project_id")
     private Long projectId;
 
-    /** 承诺书类型(1:资格申请承诺 2:入住承诺 3:其他) */
+    /** 承诺书类型(1:人才公寓 2:保租房 3:市场租赁，取值与项目类型一致) */
+    @Excel(name = "承诺书类型", readConverterExp = "1=人才公寓,2=保租房,3=市场租赁", sort = 5)
     @TableField("commitment_type")
     private String commitmentType;
 
@@ -38,6 +40,7 @@ public class HzCommitment extends BaseEntity {
     private String commitmentContent;
 
     /** 签署时间 */
+    @Excel(name = "签署时间", width = 20, sort = 6)
     @TableField("sign_time")
     private String signTime;
 
@@ -46,6 +49,7 @@ public class HzCommitment extends BaseEntity {
     private String signatureImage;
 
     /** IP地址 */
+    @Excel(name = "IP地址", sort = 8)
     @TableField("ip_address")
     private String ipAddress;
 
@@ -54,6 +58,7 @@ public class HzCommitment extends BaseEntity {
     private String deviceInfo;
 
     /** 状态(0:有效 1:失效) */
+    @Excel(name = "状态", readConverterExp = "0=有效,1=失效", sort = 7)
     @TableField("status")
     private String status;
 
@@ -67,14 +72,17 @@ public class HzCommitment extends BaseEntity {
     private String userNickname;
 
     /** 真实姓名（查询条件） */
+    @Excel(name = "姓名", sort = 1)
     @TableField(exist = false)
     private String realName;
 
     /** 身份证号（查询条件） */
+    @Excel(name = "身份证号", sort = 3)
     @TableField(exist = false)
     private String idCard;
 
     /** 手机号（查询条件） */
+    @Excel(name = "手机号", sort = 2)
     @TableField(exist = false)
     private String phone;
 

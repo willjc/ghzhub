@@ -85,6 +85,16 @@
           v-hasPermi="['gangzhu:commitment:remove']"
         >删除</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          plain
+          icon="el-icon-download"
+          size="mini"
+          @click="handleExport"
+          v-hasPermi="['gangzhu:commitment:export']"
+        >导出</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -284,6 +294,12 @@ export default {
         this.getList();
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
+    },
+    /** 导出按钮操作 */
+    handleExport() {
+      this.download('system/commitment/export', {
+        ...this.addDateRange(this.queryParams, this.dateRange)
+      }, `commitment_${new Date().getTime()}.xlsx`)
     },
     /** 获取图片完整URL - 支持base64和文件路径 */
     getImageUrl(url) {
