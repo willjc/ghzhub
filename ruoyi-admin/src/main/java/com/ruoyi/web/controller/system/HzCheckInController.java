@@ -22,9 +22,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletResponse;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -222,8 +219,8 @@ public class HzCheckInController extends BaseController
             return "首期租金尚未收齐，无法办理入住";
         }
 
-        // 入住日期必须在 [sign_time, sign_time+3 天]
-        String dateMsg = validateCheckinDateRange(existCheckIn.getActualCheckinDate(), contract.getSignTime());
+        // 入住日期：仅校验必填（不限范围，允许客户晚些时候办理入住）
+        String dateMsg = validateCheckinDateRange(existCheckIn.getActualCheckinDate());
         if (dateMsg != null) {
             return dateMsg;
         }
@@ -231,31 +228,12 @@ public class HzCheckInController extends BaseController
     }
 
     /**
-     * 校验实际入住日期是否落在 [sign_time, sign_time+3 天] 区间。
+     * 校验实际入住日期：仅校验必填（不限范围，允许客户晚些时候办理入住，直至合同末期）。
      * 不通过返回提示文字；通过返回 null。
      */
-    private String validateCheckinDateRange(String actualCheckinDate, String signTime) {
+    private String validateCheckinDateRange(String actualCheckinDate) {
         if (actualCheckinDate == null || actualCheckinDate.isEmpty()) {
             return "实际入住日期不能为空";
-        }
-        if (signTime == null || signTime.isEmpty()) {
-            // 老数据迁移合同可能无 sign_time，放行不卡
-            return null;
-        }
-        try {
-            LocalDate ci = LocalDate.parse(actualCheckinDate.length() >= 10
-                    ? actualCheckinDate.substring(0, 10)
-                    : actualCheckinDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            LocalDateTime st = LocalDateTime.parse(signTime.replace("T", " ").trim(),
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            LocalDate signDay = st.toLocalDate();
-            LocalDate maxDay = signDay.plusDays(3);
-            if (ci.isBefore(signDay) || ci.isAfter(maxDay)) {
-                return "入住日期需在签订合同当日至签订日后 3 日内（" + signDay + " 至 " + maxDay + "）";
-            }
-        } catch (Exception e) {
-            // 解析失败不阻断主流程
-            return null;
         }
         return null;
     }

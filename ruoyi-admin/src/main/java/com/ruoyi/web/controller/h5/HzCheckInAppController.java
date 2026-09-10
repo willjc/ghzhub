@@ -25,7 +25,6 @@ import com.google.gson.reflect.TypeToken;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
@@ -834,7 +833,7 @@ public class HzCheckInAppController extends BaseController {
      * 1) 合同存在且状态为 已签署(2)/履行中(3)
      * 2) 押金（如有）必须全部已付清
      * 3) 首期租金（按 due_date 升序第一条）必须已付清
-     * 4) 实际入住日期需在 [sign_time, sign_time+3 天]
+     * 4) 实际入住日期必填且格式正确（不限范围，允许客户晚些时候办理入住，直至合同末期）
      * 任一不满足返回拒绝原因，通过返回 null。
      */
     private String validateCheckinSubmit(HzCheckIn checkIn, Object rawCheckinDate) {
@@ -870,32 +869,13 @@ public class HzCheckInAppController extends BaseController {
         if (firstRent != null && !"1".equals(firstRent.getBillStatus())) {
             return "首期租金尚未收齐，请先完成支付再办理入住";
         }
-        // 入住日期范围 [sign_time, sign_time+3 天]
+        // 入住日期：仅校验必填与格式（不限范围，客户晚些时候入住或合同末期办理均可）
         if (rawCheckinDate == null || rawCheckinDate.toString().isEmpty()) {
             return "请选择实际入住日期";
         }
         String stdDate = convertChineseDateToDate(rawCheckinDate.toString());
-        String signTime = contract.getSignTime();
         if (stdDate == null || stdDate.isEmpty()) {
             return "入住日期格式不正确";
-        }
-        if (signTime == null || signTime.isEmpty()) {
-            // 老数据迁移合同可能无 sign_time，放行
-            return null;
-        }
-        try {
-            LocalDate ci = LocalDate.parse(stdDate.length() >= 10 ? stdDate.substring(0, 10) : stdDate,
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            LocalDateTime st = LocalDateTime.parse(signTime.replace("T", " ").trim(),
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            LocalDate signDay = st.toLocalDate();
-            LocalDate maxDay = signDay.plusDays(3);
-            if (ci.isBefore(signDay) || ci.isAfter(maxDay)) {
-                return "入住日期需在签订合同当日至签订日后 3 日内（" + signDay + " 至 " + maxDay + "）";
-            }
-        } catch (Exception e) {
-            // 解析异常不阻断主流程
-            return null;
         }
         return null;
     }
