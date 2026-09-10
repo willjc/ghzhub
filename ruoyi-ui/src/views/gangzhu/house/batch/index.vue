@@ -1,5 +1,12 @@
 <template>
   <div class="app-container">
+    <el-alert title="使用说明" type="info" :closable="false" show-icon style="margin-bottom: 16px">
+      <div>1、配租流程：新建批次 → 从项目下选择“修缮中”的房源、导入人员（房源与人员数量须一一对应）→ 提交审批 → 审批通过后房源变为“已预订”，租户在小程序选房签约 → 签约完成后房源变为“已出租”。</div>
+      <div>2、状态含义：审批状态＝待审批／已通过／已拒绝；批次状态＝待分配／分配中／已作废。</div>
+      <div>3、作废：批次不再执行时使用。作废后该批次的房源与人员分配全部解除，房源释放回“修缮中”（可重新加入新批次），批次记录保留并标记“已作废”便于查询；已出租的房源、已签订的合同与账单均不受影响。</div>
+      <div>4、删除：仅用于批次录入错误、不需要留档的情况，删除后列表中不再显示（释放房源、解除分配的效果与作废相同）。</div>
+      <div>5、仅个别租户不住或换房时不必作废整批：在房源管理里把该房源状态改为“空置”即可，系统会自动解除其批次分配，不会再影响后续租户。</div>
+    </el-alert>
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="90px">
       <el-form-item label="批次名称" prop="batchName">
         <el-input
