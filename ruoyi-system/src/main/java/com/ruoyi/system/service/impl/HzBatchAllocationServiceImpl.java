@@ -133,19 +133,8 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
             return 0;
         }
 
-        // 同时逻辑删除关联的房源分配记录
-        LambdaUpdateWrapper<HzBatchHouse> houseUpdateWrapper = new LambdaUpdateWrapper<>();
-        houseUpdateWrapper.eq(HzBatchHouse::getBatchId, batchId)
-                          .eq(HzBatchHouse::getDelFlag, "0")
-                          .set(HzBatchHouse::getDelFlag, "2");
-        batchHouseMapper.update(null, houseUpdateWrapper);
-
-        // 同时逻辑删除关联的人员记录
-        LambdaUpdateWrapper<HzBatchTenant> tenantUpdateWrapper = new LambdaUpdateWrapper<>();
-        tenantUpdateWrapper.eq(HzBatchTenant::getBatchId, batchId)
-                           .eq(HzBatchTenant::getDelFlag, "0")
-                           .set(HzBatchTenant::getDelFlag, "2");
-        batchTenantMapper.update(null, tenantUpdateWrapper);
+        // 同时逻辑删除关联的房源分配与人员记录
+        clearBatchHousesAndTenants(batchId);
 
         return 1;
     }
@@ -209,7 +198,67 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
         HzBatchAllocation batch = new HzBatchAllocation();
         batch.setBatchId(batchId);
         batch.setBatchStatus("2"); // 已作废
-        return this.updateById(batch) ? 1 : 0;
+        if (!this.updateById(batch)) {
+            return 0;
+        }
+
+        // 同步清理批次关联的房源分配与人员记录，避免作废批次的残留记录影响后续选房、签约
+        clearBatchHousesAndTenants(batchId);
+        return 1;
+    }
+
+    @Override
+    @Transactional
+    public int releaseBatchAssignmentByHouseId(Long houseId) {
+        if (houseId == null) {
+            return 0;
+        }
+        LambdaQueryWrapper<HzBatchHouse> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(HzBatchHouse::getHouseId, houseId)
+               .eq(HzBatchHouse::getDelFlag, "0");
+        List<HzBatchHouse> batchHouses = batchHouseMapper.selectList(wrapper);
+        if (batchHouses.isEmpty()) {
+            return 0;
+        }
+
+        for (HzBatchHouse bh : batchHouses) {
+            // 分配记录置为未分配并逻辑删除
+            LambdaUpdateWrapper<HzBatchHouse> houseUpdate = new LambdaUpdateWrapper<>();
+            houseUpdate.eq(HzBatchHouse::getId, bh.getId())
+                       .set(HzBatchHouse::getAllocationStatus, "0")
+                       .set(HzBatchHouse::getDelFlag, "2");
+            batchHouseMapper.update(null, houseUpdate);
+
+            // 对应人员记录解除房源关联，人员保留在批次中可重新分配
+            if (bh.getTenantId() != null) {
+                LambdaUpdateWrapper<HzBatchTenant> tenantUpdate = new LambdaUpdateWrapper<>();
+                tenantUpdate.eq(HzBatchTenant::getId, bh.getTenantId())
+                            .set(HzBatchTenant::getHouseId, null)
+                            .set(HzBatchTenant::getAllocationStatus, "0");
+                batchTenantMapper.update(null, tenantUpdate);
+            }
+        }
+        return batchHouses.size();
+    }
+
+    /**
+     * 逻辑删除批次下的房源分配与人员记录（批次作废/删除时使用）
+     */
+    private void clearBatchHousesAndTenants(Long batchId) {
+        LambdaUpdateWrapper<HzBatchHouse> houseUpdateWrapper = new LambdaUpdateWrapper<>();
+        houseUpdateWrapper.eq(HzBatchHouse::getBatchId, batchId)
+                          .eq(HzBatchHouse::getDelFlag, "0")
+                          .set(HzBatchHouse::getAllocationStatus, "0")
+                          .set(HzBatchHouse::getDelFlag, "2");
+        batchHouseMapper.update(null, houseUpdateWrapper);
+
+        LambdaUpdateWrapper<HzBatchTenant> tenantUpdateWrapper = new LambdaUpdateWrapper<>();
+        tenantUpdateWrapper.eq(HzBatchTenant::getBatchId, batchId)
+                           .eq(HzBatchTenant::getDelFlag, "0")
+                           .set(HzBatchTenant::getAllocationStatus, "0")
+                           .set(HzBatchTenant::getHouseId, null)
+                           .set(HzBatchTenant::getDelFlag, "2");
+        batchTenantMapper.update(null, tenantUpdateWrapper);
     }
 
     @Override

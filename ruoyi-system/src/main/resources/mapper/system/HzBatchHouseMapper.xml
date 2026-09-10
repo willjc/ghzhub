@@ -18,6 +18,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           AND bh.del_flag = '0'
           AND ba.del_flag = '0'
           AND ba.approve_status = '1'
+          <!-- 排除已作废批次（batch_status=2），避免作废批次的残留记录生效 -->
+          AND (ba.batch_status IS NULL OR ba.batch_status &lt;&gt; '2')
+        ORDER BY ba.batch_id DESC
+        LIMIT 1
+    </select>
+
+    <!-- 根据房源ID + 签约人身份证号查找配租批次信息：仅当签约人确为该批次分配对象时命中 -->
+    <select id="selectBatchPreferenceByHouseIdAndIdCard" resultType="com.ruoyi.system.domain.vo.BatchPreferenceVo">
+        SELECT
+            ba.batch_id as batchId,
+            ba.preferential_type as preferentialType,
+            ba.free_rent_periods as freeRentPeriods,
+            DATE_FORMAT(ba.entry_start_date, '%Y-%m-%d') as entryStartDate,
+            DATE_FORMAT(ba.entry_end_date, '%Y-%m-%d') as entryEndDate
+        FROM hz_batch_house bh
+        INNER JOIN hz_batch_allocation ba ON bh.batch_id = ba.batch_id
+        INNER JOIN hz_batch_tenant bt ON bt.id = bh.tenant_id
+        WHERE bh.house_id = #{houseId}
+          AND bh.del_flag = '0'
+          AND ba.del_flag = '0'
+          AND ba.approve_status = '1'
+          AND (ba.batch_status IS NULL OR ba.batch_status &lt;&gt; '2')
+          AND bt.del_flag = '0'
+          AND bt.id_card = #{idCard}
+        ORDER BY ba.batch_id DESC
         LIMIT 1
     </select>
 

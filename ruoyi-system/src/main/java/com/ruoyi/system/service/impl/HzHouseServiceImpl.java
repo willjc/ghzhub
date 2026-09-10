@@ -25,10 +25,14 @@ import com.ruoyi.system.mapper.HzBuildingMapper;
 import com.ruoyi.system.mapper.HzUnitMapper;
 import com.ruoyi.system.mapper.HzHouseTypeMapper;
 import com.ruoyi.system.mapper.HzHouseVrMapper;
+import com.ruoyi.system.service.IHzBatchAllocationService;
 import com.ruoyi.system.service.IHzHouseService;
 import com.ruoyi.system.service.IHzHouseStatusAuditService;
 import com.ruoyi.system.service.IHzRoleProjectService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +53,8 @@ import java.util.Set;
 @Service
 public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> implements IHzHouseService
 {
+    private static final Logger logger = LoggerFactory.getLogger(HzHouseServiceImpl.class);
+
     @Autowired
     private HzHouseImageMapper houseImageMapper;
 
@@ -75,6 +81,10 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
 
     @Autowired
     private IHzHouseStatusAuditService houseStatusAuditService;
+
+    @Autowired
+    @Lazy
+    private IHzBatchAllocationService batchAllocationService;
 
     /**
      * 查询房源列表（支持分页，带项目名称）
@@ -295,7 +305,30 @@ public class HzHouseServiceImpl extends ServiceImpl<HzHouseMapper, HzHouse> impl
                 }
             }
         }
-        return this.updateById(house) ? 1 : 0;
+        // 释放为空置(0)时，联动解除批次分配记录，避免残留分配影响后续选房、签约
+        boolean releaseBatch = false;
+        if (house.getHouseId() != null && "0".equals(house.getHouseStatus()))
+        {
+            HzHouse beforeHouse = this.getById(house.getHouseId());
+            releaseBatch = beforeHouse != null && !"0".equals(beforeHouse.getHouseStatus());
+        }
+        boolean updated = this.updateById(house);
+        if (updated && releaseBatch)
+        {
+            try
+            {
+                int released = batchAllocationService.releaseBatchAssignmentByHouseId(house.getHouseId());
+                if (released > 0)
+                {
+                    logger.info("房源 {} 释放为空置，已解除 {} 条批次分配记录", house.getHouseId(), released);
+                }
+            }
+            catch (Exception e)
+            {
+                logger.warn("联动释放批次分配失败，houseId={}: {}", house.getHouseId(), e.getMessage());
+            }
+        }
+        return updated ? 1 : 0;
     }
 
     /**

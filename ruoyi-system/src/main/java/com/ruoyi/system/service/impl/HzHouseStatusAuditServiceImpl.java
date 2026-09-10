@@ -16,6 +16,7 @@ import com.ruoyi.system.mapper.HzBuildingMapper;
 import com.ruoyi.system.mapper.HzHouseMapper;
 import com.ruoyi.system.mapper.HzHouseStatusAuditMapper;
 import com.ruoyi.system.mapper.HzProjectMapper;
+import com.ruoyi.system.service.IHzBatchAllocationService;
 import com.ruoyi.system.service.IHzHouseService;
 import com.ruoyi.system.service.IHzHouseStatusAuditService;
 import com.ruoyi.system.service.IHzRoleProjectService;
@@ -46,6 +47,9 @@ public class HzHouseStatusAuditServiceImpl extends ServiceImpl<HzHouseStatusAudi
     @Autowired
     @Lazy
     private IHzHouseService houseService;
+
+    @Autowired
+    private IHzBatchAllocationService batchAllocationService;
 
     @Autowired
     private IHzRoleProjectService roleProjectService;
@@ -128,6 +132,18 @@ public class HzHouseStatusAuditServiceImpl extends ServiceImpl<HzHouseStatusAudi
             updateHouse.setHouseStatus(audit.getTargetStatus());
             houseService.updateById(updateHouse);
             logger.info("房源状态审批通过，houseId={}, {}→{}", audit.getHouseId(), audit.getCurrentStatus(), audit.getTargetStatus());
+
+            // 房源释放为空置(0)时，联动清理批次分配记录，避免残留分配影响后续选房、签约
+            if ("0".equals(audit.getTargetStatus()) && !"0".equals(audit.getCurrentStatus())) {
+                try {
+                    int released = batchAllocationService.releaseBatchAssignmentByHouseId(audit.getHouseId());
+                    if (released > 0) {
+                        logger.info("房源 {} 释放为空置，已解除 {} 条批次分配记录", audit.getHouseId(), released);
+                    }
+                } catch (Exception e) {
+                    logger.warn("联动释放批次分配失败，houseId={}: {}", audit.getHouseId(), e.getMessage());
+                }
+            }
         }
 
         return 1;

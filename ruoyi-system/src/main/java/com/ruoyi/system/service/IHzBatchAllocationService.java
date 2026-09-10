@@ -84,6 +84,16 @@ public interface IHzBatchAllocationService extends IService<HzBatchAllocation> {
     int cancelBatchAllocation(Long batchId);
 
     /**
+     * 释放指定房源的批次分配记录。
+     * 房源不再用于批次配租（如从"已预订"释放为"空置"）时调用：
+     * 批次房源分配记录置为未分配并逻辑删除，对应人员记录的房源关联同步解除（人员保留在批次中）。
+     *
+     * @param houseId 房源ID
+     * @return 释放的分配记录数
+     */
+    int releaseBatchAssignmentByHouseId(Long houseId);
+
+    /**
      * 下载人员导入模板
      *
      * @param response 响应对象

@@ -380,12 +380,18 @@ public class HzContractAppController extends BaseController {
         Long oldContractId = params.containsKey("oldContractId") && params.get("oldContractId") != null
                 ? Long.parseLong(params.get("oldContractId").toString()) : null;
 
-        // 检测房源是否属于配租批次（优先使用批次日期）
+        // 承租人信息（批次判定与合同变量替换均依赖）
+        HzUser currentUser = hzUserMapper.selectById(SecurityUtils.getHzUserId());
+        if (currentUser == null) {
+            return error("用户信息不存在，请重新登录");
+        }
+
+        // 检测房源是否属于配租批次（优先使用批次日期）；仅当当前用户确为该批次分配对象时生效
         boolean isBatchMode = false;
         String batchStartDate = null;
         String batchEndDate = null;
         try {
-            BatchPreferenceVo batchPref = batchHouseMapper.selectBatchPreferenceByHouseId(houseId);
+            BatchPreferenceVo batchPref = batchHouseMapper.selectBatchPreferenceByHouseIdAndIdCard(houseId, currentUser.getIdCard());
             if (batchPref != null && batchPref.getEntryStartDate() != null && batchPref.getEntryEndDate() != null) {
                 isBatchMode = true;
                 batchStartDate = batchPref.getEntryStartDate();
@@ -440,11 +446,7 @@ public class HzContractAppController extends BaseController {
             return error("未找到对应的合同模版");
         }
 
-        // 6. 从当前微信登录态获取承租人信息
-        HzUser currentUser = hzUserMapper.selectById(SecurityUtils.getHzUserId());
-        if (currentUser == null) {
-            return error("用户信息不存在，请重新登录");
-        }
+        // 6. 承租人信息（已在方法开头从当前微信登录态获取）
         HzTenant tenant = new HzTenant();
         tenant.setTenantName(currentUser.getRealName() != null ? currentUser.getRealName() : currentUser.getNickname());
         tenant.setIdCard(currentUser.getIdCard() != null ? currentUser.getIdCard() : "");
@@ -559,6 +561,12 @@ public class HzContractAppController extends BaseController {
 
             Long userId = getHzUserIdFromToken();
 
+            // 承租人信息（批次判定、租户信息构造等均依赖）
+            HzUser hzUser = hzUserMapper.selectById(userId);
+            if (hzUser == null) {
+                return error("用户不存在");
+            }
+
             // 项目类型必须由服务端按房源归属判定，不信任前端 projectId/applyType。
             HzHouse house = houseMapper.selectById(houseId);
             if (house == null) {
@@ -575,12 +583,12 @@ public class HzContractAppController extends BaseController {
                 return error(e.getMessage());
             }
 
-            // 检测房源是否属于配租批次（优先使用批次日期）
+            // 检测房源是否属于配租批次（优先使用批次日期）；仅当签约人确为该批次分配对象时生效
             boolean isBatchMode = false;
             String batchStartDateStr = null;
             String batchEndDateStr = null;
             try {
-                BatchPreferenceVo batchPref = batchHouseMapper.selectBatchPreferenceByHouseId(houseId);
+                BatchPreferenceVo batchPref = batchHouseMapper.selectBatchPreferenceByHouseIdAndIdCard(houseId, hzUser.getIdCard());
                 if (batchPref != null && batchPref.getEntryStartDate() != null && batchPref.getEntryEndDate() != null) {
                     isBatchMode = true;
                     batchStartDateStr = batchPref.getEntryStartDate();
@@ -626,13 +634,6 @@ public class HzContractAppController extends BaseController {
 
             // 拼接完整地址（自动去重楼栋名）
             String houseAddress = buildHouseAddress(project, house);
-
-            // userId 已在方法开头从请求参数或token中获取
-
-            HzUser hzUser = hzUserMapper.selectById(userId);
-            if (hzUser == null) {
-                return error("用户不存在");
-            }
 
             // 构造租户信息（优先使用真实姓名，否则使用昵称）
             String tenantName = hzUser.getRealName() != null && !hzUser.getRealName().isEmpty()
@@ -680,11 +681,13 @@ public class HzContractAppController extends BaseController {
                         __rentResult.getRemark());
             }
 
-            // 5.1 获取批次优惠信息（如果该房源属于配租批次）
+            // 5.1 获取批次优惠信息（仅当签约人确为该房源的批次分配对象时命中，避免残留分配影响非批次租户）
+            String batchPreferentialType = null;
             try {
-                BatchPreferenceVo batchPreference = batchHouseMapper.selectBatchPreferenceByHouseId(houseId);
+                BatchPreferenceVo batchPreference = batchHouseMapper.selectBatchPreferenceByHouseIdAndIdCard(houseId, hzUser.getIdCard());
                 if (batchPreference != null) {
-                    // 始终记录批次ID（用于配租方式判定：集中分配/常规分配）
+                    batchPreferentialType = batchPreference.getPreferentialType();
+                    // 记录批次ID（用于配租方式判定：集中分配/常规分配）
                     contract.setBatchId(batchPreference.getBatchId());
                     if ("1".equals(batchPreference.getPreferentialType())) {
                         // 有免租优惠
@@ -703,17 +706,10 @@ public class HzContractAppController extends BaseController {
             }
 
             // 5.2 市场化配租：不享受人才公寓30%补贴，合同金额按原价（rentPrice / 0.7）
-            if ("1".equals(project.getProjectType()) && contract.getBatchId() != null) {
-                try {
-                    BatchPreferenceVo __bp = batchHouseMapper.selectBatchPreferenceByHouseId(houseId);
-                    if (__bp != null && "2".equals(__bp.getPreferentialType())) {
-                        BigDecimal originalPrice = house.getRentPrice().divide(new BigDecimal("0.7"), 2, RoundingMode.HALF_UP);
-                        contract.setRentPrice(originalPrice);
-                        logger.info("市场化配租：houseId={}, 7折价={}, 原价={}", houseId, house.getRentPrice(), originalPrice);
-                    }
-                } catch (Exception ex) {
-                    logger.warn("检查市场化配租失败: {}", ex.getMessage());
-                }
+            if ("1".equals(project.getProjectType()) && "2".equals(batchPreferentialType)) {
+                BigDecimal originalPrice = house.getRentPrice().divide(new BigDecimal("0.7"), 2, RoundingMode.HALF_UP);
+                contract.setRentPrice(originalPrice);
+                logger.info("市场化配租：houseId={}, 7折价={}, 原价={}", houseId, house.getRentPrice(), originalPrice);
             }
 
             // 获取合同模板，押金优先使用房源自身配置，若未配置则回退到模板默认值
@@ -966,9 +962,9 @@ public class HzContractAppController extends BaseController {
                         __renewRentResult.getOriginalRent(), __renewRentResult.getActualMonthlyRent(),
                         __renewRentResult.getRemark());
             }
-            // 市场化配租续租：不享受30%补贴，按原价
+            // 市场化配租续租：不享受30%补贴，按原价（仅当续租人确为该房源的批次分配对象时适用）
             try {
-                BatchPreferenceVo __renewBp = batchHouseMapper.selectBatchPreferenceByHouseId(houseId);
+                BatchPreferenceVo __renewBp = batchHouseMapper.selectBatchPreferenceByHouseIdAndIdCard(houseId, hzUser.getIdCard());
                 if (project != null && "1".equals(project.getProjectType())
                         && __renewBp != null && "2".equals(__renewBp.getPreferentialType())) {
                     BigDecimal renewOriginalPrice = house.getRentPrice().divide(new BigDecimal("0.7"), 2, RoundingMode.HALF_UP);
