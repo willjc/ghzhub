@@ -14,6 +14,17 @@
         <el-input v-model="queryParams.applicantPhone" placeholder="手机号" clearable
           style="width:140px" @keyup.enter.native="handleQuery" />
       </el-form-item>
+      <el-form-item label="申请时间">
+        <el-date-picker
+          v-model="daterangeCreateTime"
+          style="width: 240px"
+          value-format="yyyy-MM-dd"
+          type="daterange"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+        ></el-date-picker>
+      </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="状态" clearable style="width:120px">
           <el-option v-for="dict in dict.type.hz_service_order_status"
@@ -177,13 +188,15 @@ export default {
       assignRules: {
         companyId: [{ required: true, message: "请选择服务公司", trigger: "change" }]
       },
+      daterangeCreateTime: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         orderNo: null,
         applicantName: null,
         applicantPhone: null,
-        status: null
+        status: null,
+        params: {}
       }
     };
   },
@@ -191,6 +204,11 @@ export default {
   methods: {
     getList() {
       this.loading = true;
+      this.queryParams.params = {};
+      if (this.daterangeCreateTime && this.daterangeCreateTime.length === 2) {
+        this.queryParams.params["beginCreateTime"] = this.daterangeCreateTime[0];
+        this.queryParams.params["endCreateTime"] = this.daterangeCreateTime[1];
+      }
       listCleanOrder(this.queryParams).then(res => {
         this.orderList = res.rows;
         this.total = res.total;
@@ -198,7 +216,7 @@ export default {
       });
     },
     handleQuery() { this.queryParams.pageNum = 1; this.getList(); },
-    resetQuery() { this.resetForm("queryForm"); this.handleQuery(); },
+    resetQuery() { this.daterangeCreateTime = []; this.resetForm("queryForm"); this.handleQuery(); },
     handleSelectionChange(s) {
       this.ids = s.map(it => it.orderId);
       this.multiple = !s.length;

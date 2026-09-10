@@ -59,6 +59,34 @@
           <el-option label="集中分配" value="集中分配" />
         </el-select>
       </el-form-item>
+      <el-form-item label="押金状态">
+        <el-select v-model="depositStatus" placeholder="请选择押金状态" clearable style="width: 140px">
+          <el-option label="押金已缴" value="1" />
+          <el-option label="押金未缴" value="0" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="发起时间">
+        <el-date-picker
+          v-model="daterangeCreateTime"
+          style="width: 240px"
+          value-format="yyyy-MM-dd"
+          type="daterange"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+        ></el-date-picker>
+      </el-form-item>
+      <el-form-item label="到期时间">
+        <el-date-picker
+          v-model="daterangeEndDate"
+          style="width: 240px"
+          value-format="yyyy-MM-dd"
+          type="daterange"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+        ></el-date-picker>
+      </el-form-item>
       <el-form-item label="签约时间">
         <el-date-picker
           v-model="daterangeSignTime"
@@ -759,6 +787,11 @@ export default {
       },
       // 签约时间范围筛选 [开始日期, 结束日期]
       daterangeSignTime: [],
+      // 发起时间 / 到期时间范围
+      daterangeCreateTime: [],
+      daterangeEndDate: [],
+      // 押金状态（'1'已缴 '0'未缴）
+      depositStatus: null,
       projectList: [],
     };
   },
@@ -903,11 +936,22 @@ export default {
     },
     getList() {
       this.loading = true;
-      // 把签约时间范围拼到 params 里，交给后端按 sign_time 字段过滤
+      // 把时间范围拼到 params 里，交给后端过滤
       this.queryParams.params = {};
       if (this.daterangeSignTime && this.daterangeSignTime.length === 2) {
         this.queryParams.params["beginSignTime"] = this.daterangeSignTime[0];
         this.queryParams.params["endSignTime"] = this.daterangeSignTime[1];
+      }
+      if (this.daterangeCreateTime && this.daterangeCreateTime.length === 2) {
+        this.queryParams.params["beginCreateTime"] = this.daterangeCreateTime[0];
+        this.queryParams.params["endCreateTime"] = this.daterangeCreateTime[1];
+      }
+      if (this.daterangeEndDate && this.daterangeEndDate.length === 2) {
+        this.queryParams.params["beginEndDate"] = this.daterangeEndDate[0];
+        this.queryParams.params["endEndDate"] = this.daterangeEndDate[1];
+      }
+      if (this.depositStatus) {
+        this.queryParams.params["depositStatus"] = this.depositStatus;
       }
       listContract(this.queryParams).then(response => {
         this.contractList = response.rows;
@@ -921,6 +965,9 @@ export default {
     },
     resetQuery() {
       this.daterangeSignTime = [];
+      this.daterangeCreateTime = [];
+      this.daterangeEndDate = [];
+      this.depositStatus = null;
       this.resetForm("queryForm");
       this.handleQuery();
     },

@@ -1,5 +1,7 @@
 package com.ruoyi.system.domain;
 
+import com.ruoyi.common.annotation.Excel;
+
 /**
  * 资格申述VO对象（用于管理端查询，包含用户信息）
  *
@@ -12,18 +14,22 @@ public class HzQualificationAppealVO extends HzQualificationAppeal {
     private String nickname;
 
     /** 用户真实姓名 */
+    @Excel(name = "申请人姓名", sort = 1)
     private String realName;
 
     /** 用户手机号 */
+    @Excel(name = "手机号", sort = 2)
     private String phone;
 
     /** 用户联系电话 */
     private String contactPhone;
 
     /** 用户身份证号 */
+    @Excel(name = "身份证号", width = 25, sort = 3)
     private String idCard;
 
     /** 用户工作单位（公司名） */
+    @Excel(name = "工作单位", sort = 4)
     private String workUnit;
 
     /** 单位联系电话（公司电话） */
@@ -36,9 +42,11 @@ public class HzQualificationAppealVO extends HzQualificationAppeal {
     private String newEducation;
 
     /** 处理人姓名 */
+    @Excel(name = "处理人", sort = 9)
     private String handlerName;
 
     /** 申请类型文本（人才公寓/保租房） */
+    @Excel(name = "申请类型", sort = 5)
     private String applyTypeText;
 
     public String getNickname() {

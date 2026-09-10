@@ -17,6 +17,25 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="申请人" prop="realName">
+        <el-input
+          v-model="queryParams.realName"
+          placeholder="请输入申请人姓名"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="申诉时间">
+        <el-date-picker
+          v-model="daterangeAppealTime"
+          style="width: 240px"
+          value-format="yyyy-MM-dd"
+          type="daterange"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+        ></el-date-picker>
+      </el-form-item>
       <el-form-item label="处理状态" prop="handleResult">
         <el-select v-model="queryParams.handleResult" placeholder="请选择处理状态" clearable>
           <el-option label="待处理" value="0" />
@@ -40,6 +59,16 @@
           @click="handleDelete"
           v-hasPermi="['gangzhu:qualification:remove']"
         >删除</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          plain
+          icon="el-icon-download"
+          size="mini"
+          @click="handleExport"
+          v-hasPermi="['gangzhu:qualification:export']"
+        >导出</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -351,6 +380,7 @@ export default {
   dicts: ['hz_education_type'],
   data() {
     return {
+      daterangeAppealTime: [],
       loading: true,
       ids: [],
       single: true,
@@ -371,6 +401,8 @@ export default {
         pageSize: 10,
         nickname: null,
         phone: null,
+        realName: null,
+        params: {},
         handleResult: null
       },
       form: {},
@@ -438,6 +470,10 @@ export default {
   methods: {
     getList() {
       this.loading = true;
+      this.queryParams.params = this.queryParams.params || {};
+      const inRange = this.daterangeAppealTime && this.daterangeAppealTime.length === 2;
+      this.queryParams.params["beginAppealTime"] = inRange ? this.daterangeAppealTime[0] : undefined;
+      this.queryParams.params["endAppealTime"] = inRange ? this.daterangeAppealTime[1] : undefined;
       listAppeal(this.queryParams).then(response => {
         this.appealList = response.rows;
         this.total = response.total;
@@ -479,8 +515,17 @@ export default {
       this.getList();
     },
     resetQuery() {
+      this.daterangeAppealTime = [];
       this.resetForm("queryForm");
       this.handleQuery();
+    },
+    /** 导出按钮操作 */
+    handleExport() {
+      const params = JSON.parse(JSON.stringify(this.queryParams));
+      if (this.daterangeAppealTime && this.daterangeAppealTime.length === 2) {
+        params.params = { beginAppealTime: this.daterangeAppealTime[0], endAppealTime: this.daterangeAppealTime[1] };
+      }
+      this.download('system/qualificationAppeal/export', params, `资格申诉_${new Date().getTime()}.xlsx`);
     },
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.appealId)

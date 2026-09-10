@@ -76,7 +76,7 @@ public class HzQualificationAppealServiceImpl extends ServiceImpl<HzQualificatio
         if (StringUtils.isNotEmpty(appeal.getAppealReason())) {
             wrapper.like("a.appeal_reason", appeal.getAppealReason());
         }
-        // 用户昵称 / 手机号模糊搜索（通过 VO 承载）
+        // 用户昵称 / 手机号 / 申请人姓名模糊搜索（通过 VO 承载）
         if (appeal instanceof HzQualificationAppealVO) {
             HzQualificationAppealVO vo = (HzQualificationAppealVO) appeal;
             if (StringUtils.isNotEmpty(vo.getNickname())) {
@@ -84,6 +84,21 @@ public class HzQualificationAppealServiceImpl extends ServiceImpl<HzQualificatio
             }
             if (StringUtils.isNotEmpty(vo.getPhone())) {
                 wrapper.like("u.phone", vo.getPhone());
+            }
+            if (StringUtils.isNotEmpty(vo.getRealName())) {
+                wrapper.like("u.real_name", vo.getRealName());
+            }
+            // 申诉时间范围（前端 params.beginAppealTime / endAppealTime）
+            java.util.Map<String, Object> voParams = vo.getParams();
+            if (voParams != null) {
+                Object beginAppeal = voParams.get("beginAppealTime");
+                Object endAppeal = voParams.get("endAppealTime");
+                if (beginAppeal != null && StringUtils.isNotEmpty(beginAppeal.toString())) {
+                    wrapper.ge("a.appeal_time", beginAppeal.toString());
+                }
+                if (endAppeal != null && StringUtils.isNotEmpty(endAppeal.toString())) {
+                    wrapper.le("a.appeal_time", endAppeal.toString() + " 23:59:59");
+                }
             }
         }
 

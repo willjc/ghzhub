@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -31,6 +32,7 @@ public class HzQualificationAppeal extends BaseEntity {
 
     /** 申诉原因 */
     @TableField("appeal_reason")
+    @Excel(name = "申诉原因", sort = 6)
     private String appealReason;
 
     /** 学历情况说明 */
@@ -51,14 +53,17 @@ public class HzQualificationAppeal extends BaseEntity {
 
     /** 申诉时间 */
     @TableField("appeal_time")
+    @Excel(name = "申诉时间", width = 20, sort = 7)
     private String appealTime;
 
     /** 处理结果(0:待处理 1:通过 2:不通过) */
     @TableField("handle_result")
+    @Excel(name = "处理状态", readConverterExp = "0=待处理,1=已通过,2=已拒绝", sort = 8)
     private String handleResult;
 
     /** 处理意见 */
     @TableField("handle_opinion")
+    @Excel(name = "处理意见", sort = 10)
     private String handleOpinion;
 
     /** 学历审核状态(0:待审核 1:通过 2:驳回 NULL:未提交) */
@@ -83,6 +88,7 @@ public class HzQualificationAppeal extends BaseEntity {
 
     /** 处理时间 */
     @TableField("handle_time")
+    @Excel(name = "处理时间", width = 20, sort = 11)
     private String handleTime;
 
     /** 状态 */

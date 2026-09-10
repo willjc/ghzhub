@@ -9,7 +9,15 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="审核状态" prop="status">
+      <el-form-item label="房间地址" prop="oldHouseCode">
+        <el-input
+          v-model="queryParams.oldHouseCode"
+          placeholder="请输入房间号"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+            <el-form-item label="审核状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="审核状态" clearable>
           <el-option label="待审核" value="0" />
           <el-option label="已完成" value="1" />
@@ -359,6 +367,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         tenantName: null,
+        oldHouseCode: null,
         status: null
       },
       // 级联选择数据

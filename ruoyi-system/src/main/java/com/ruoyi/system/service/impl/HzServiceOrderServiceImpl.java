@@ -257,6 +257,17 @@ public class HzServiceOrderServiceImpl
                         HzServiceOrder::getHouseAddress, o.getHouseAddress())
                .eq(HzServiceOrder::getDelFlag, "0")
                .orderByDesc(HzServiceOrder::getCreateTime);
+        // 申请时间范围（前端 params.beginCreateTime / endCreateTime）
+        if (o.getParams() != null) {
+            Object begin = o.getParams().get("beginCreateTime");
+            Object end = o.getParams().get("endCreateTime");
+            if (begin != null && StringUtils.isNotEmpty(begin.toString())) {
+                wrapper.ge(HzServiceOrder::getCreateTime, begin.toString() + " 00:00:00");
+            }
+            if (end != null && StringUtils.isNotEmpty(end.toString())) {
+                wrapper.le(HzServiceOrder::getCreateTime, end.toString() + " 23:59:59");
+            }
+        }
         return wrapper;
     }
 }

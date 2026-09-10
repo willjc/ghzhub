@@ -43,6 +43,17 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="申请时间">
+        <el-date-picker
+          v-model="daterangeCreateTime"
+          style="width: 240px"
+          value-format="yyyy-MM-dd"
+          type="daterange"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+        ></el-date-picker>
+      </el-form-item>
       <el-form-item label="入住状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择入住状态" clearable>
           <el-option label="待办理" value="0" />
@@ -378,6 +389,7 @@ export default {
       facilityGroups: [],
       confirmedFacilityGroups: [],  // 用户确认时的设施快照（从remark解析）
       projectList: [],
+      daterangeCreateTime: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -387,6 +399,7 @@ export default {
         houseNo: null,
         phone: null,
         status: null,
+        params: {},
       }
     };
   },
@@ -402,6 +415,11 @@ export default {
   methods: {
     getList() {
       this.loading = true;
+      this.queryParams.params = {};
+      if (this.daterangeCreateTime && this.daterangeCreateTime.length === 2) {
+        this.queryParams.params["beginCreateTime"] = this.daterangeCreateTime[0];
+        this.queryParams.params["endCreateTime"] = this.daterangeCreateTime[1];
+      }
       listCheckIn(this.queryParams).then(response => {
         this.checkInList = response.rows;
         this.total = response.total;
@@ -429,7 +447,9 @@ export default {
         houseNo: null,
         phone: null,
         status: null,
+        params: {},
       };
+      this.daterangeCreateTime = [];
       this.handleQuery();
     },
     handleSelectionChange(selection) {

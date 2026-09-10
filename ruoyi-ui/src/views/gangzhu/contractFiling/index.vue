@@ -10,6 +10,10 @@
         <el-input v-model="queryParams.signName" placeholder="签约人姓名" clearable
           style="width:140px" @keyup.enter.native="handleQuery" />
       </el-form-item>
+      <el-form-item label="签订单位" prop="signUnit">
+        <el-input v-model="queryParams.signUnit" placeholder="签订单位名称" clearable
+          style="width:160px" @keyup.enter.native="handleQuery" />
+      </el-form-item>
       <el-form-item label="审批状态" prop="approveStatus">
         <el-select v-model="queryParams.approveStatus" placeholder="审批状态" clearable style="width:130px">
           <el-option v-for="dict in dict.type.hz_filing_approve_status"
@@ -164,6 +168,7 @@ export default {
         pageSize: 10,
         filingNo: null,
         signName: null,
+        signUnit: null,
         approveStatus: null
       }
     };

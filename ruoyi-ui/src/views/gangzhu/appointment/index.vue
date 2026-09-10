@@ -13,6 +13,33 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="预约人" prop="visitorName">
+        <el-input
+          v-model="queryParams.visitorName"
+          placeholder="请输入预约人"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="手机号" prop="visitorPhone">
+        <el-input
+          v-model="queryParams.visitorPhone"
+          placeholder="请输入手机号"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="预约时间">
+        <el-date-picker
+          v-model="daterangeAppointmentDate"
+          style="width: 240px"
+          value-format="yyyy-MM-dd"
+          type="daterange"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+        ></el-date-picker>
+      </el-form-item>
       <el-form-item label="预约状态" prop="appointmentStatus">
         <el-select v-model="queryParams.appointmentStatus" placeholder="请选择预约状态" clearable>
           <el-option label="待确认预约" value="0" />
@@ -305,6 +332,7 @@ export default {
       multiple: true,
       showSearch: true,
       total: 0,
+      daterangeAppointmentDate: [],
       appointmentList: [],
       title: "",
       open: false,
@@ -314,7 +342,10 @@ export default {
         pageNum: 1,
         pageSize: 10,
         appointmentNo: null,
+        visitorName: null,
+        visitorPhone: null,
         appointmentStatus: null,
+        params: {},
       },
       form: {},
       rules: {
@@ -349,6 +380,11 @@ export default {
   methods: {
     getList() {
       this.loading = true;
+      this.queryParams.params = {};
+      if (this.daterangeAppointmentDate && this.daterangeAppointmentDate.length === 2) {
+        this.queryParams.params["beginAppointmentDate"] = this.daterangeAppointmentDate[0];
+        this.queryParams.params["endAppointmentDate"] = this.daterangeAppointmentDate[1];
+      }
       listAppointment(this.queryParams).then(response => {
         this.appointmentList = response.rows;
         this.total = response.total;
@@ -382,6 +418,7 @@ export default {
       this.getList();
     },
     resetQuery() {
+      this.daterangeAppointmentDate = [];
       this.resetForm("queryForm");
       this.handleQuery();
     },

@@ -33,3 +33,12 @@ export function delAppeal(appealIds) {
     method: 'delete'
   })
 }
+
+// 导出申诉列表
+export function exportAppeal(query) {
+  return request({
+    url: '/system/qualificationAppeal/export',
+    method: 'post',
+    params: query
+  })
+}

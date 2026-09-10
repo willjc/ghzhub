@@ -55,6 +55,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         LEFT JOIN hz_unit new_u ON new_h.unit_id = new_u.unit_id
         WHERE e.del_flag = '0'
         <if test="tenantId != null"> AND e.tenant_id = #{tenantId} </if>
+        <if test="tenantName != null and tenantName != ''">
+            AND EXISTS (SELECT 1 FROM hz_user u_ex WHERE u_ex.user_id = e.tenant_id AND u_ex.real_name LIKE CONCAT('%', #{tenantName}, '%'))
+        </if>
+        <if test="oldHouseCode != null and oldHouseCode != ''"> AND e.old_house_code LIKE CONCAT('%', #{oldHouseCode}, '%') </if>
         <if test="status != null and status != ''"> AND e.status = #{status} </if>
         <if test="approveResult != null and approveResult != ''"> AND e.approve_result = #{approveResult} </if>
         <if test="params != null and params.projectIds != null and params.projectIds.size() > 0">
@@ -98,6 +102,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         LEFT JOIN hz_unit new_u ON new_h.unit_id = new_u.unit_id
         WHERE e.del_flag = '0'
         <if test="exchange.tenantId != null"> AND e.tenant_id = #{exchange.tenantId} </if>
+        <if test="exchange.tenantName != null and exchange.tenantName != ''">
+            AND EXISTS (SELECT 1 FROM hz_user u_ex2 WHERE u_ex2.user_id = e.tenant_id AND u_ex2.real_name LIKE CONCAT('%', #{exchange.tenantName}, '%'))
+        </if>
+        <if test="exchange.oldHouseCode != null and exchange.oldHouseCode != ''"> AND e.old_house_code LIKE CONCAT('%', #{exchange.oldHouseCode}, '%') </if>
         <if test="exchange.status != null and exchange.status != ''"> AND e.status = #{exchange.status} </if>
         <if test="exchange.approveResult != null and exchange.approveResult != ''"> AND e.approve_result = #{exchange.approveResult} </if>
         <if test="exchange.params != null and exchange.params.projectIds != null and exchange.params.projectIds.size() > 0">

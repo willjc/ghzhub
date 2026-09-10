@@ -67,6 +67,8 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "<if test='checkIn.projectId != null'> AND p.project_id = #{checkIn.projectId} </if>" +
             "<if test='checkIn.phone != null and checkIn.phone != \"\"'> AND u.phone LIKE CONCAT('%', #{checkIn.phone}, '%') </if>" +
             "<if test='checkIn.houseNo != null and checkIn.houseNo != \"\"'> AND h.house_no LIKE CONCAT('%', #{checkIn.houseNo}, '%') </if>" +
+            "<if test='checkIn.params != null and checkIn.params.beginCreateTime != null and checkIn.params.beginCreateTime != \"\"'> AND c.create_time &gt;= #{checkIn.params.beginCreateTime} </if>" +
+            "<if test='checkIn.params != null and checkIn.params.endCreateTime != null and checkIn.params.endCreateTime != \"\"'> AND c.create_time &lt;= CONCAT(#{checkIn.params.endCreateTime}, ' 23:59:59') </if>" +
             "ORDER BY c.create_time DESC" +
             "</script>")
     IPage<HzCheckIn> selectCheckInPageWithRelations(Page<HzCheckIn> page, @Param("checkIn") HzCheckIn checkIn);
@@ -153,6 +155,8 @@ public interface HzCheckInMapper extends BaseMapper<HzCheckIn> {
             "<if test='projectId != null'> AND p.project_id = #{projectId} </if>" +
             "<if test='phone != null and phone != \"\"'> AND u.phone LIKE CONCAT('%', #{phone}, '%') </if>" +
             "<if test='houseNo != null and houseNo != \"\"'> AND h.house_no LIKE CONCAT('%', #{houseNo}, '%') </if>" +
+            "<if test='params != null and params.beginCreateTime != null and params.beginCreateTime != \"\"'> AND c.create_time &gt;= #{params.beginCreateTime} </if>" +
+            "<if test='params != null and params.endCreateTime != null and params.endCreateTime != \"\"'> AND c.create_time &lt;= CONCAT(#{params.endCreateTime}, ' 23:59:59') </if>" +
             "ORDER BY c.create_time DESC" +
             "</script>")
     List<HzCheckIn> selectCheckInListWithRelations(HzCheckIn checkIn);

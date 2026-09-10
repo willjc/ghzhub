@@ -39,6 +39,7 @@ public interface HzCoTenantMapper extends BaseMapper<HzCoTenant> {
             "LEFT JOIN hz_contract c ON t.contract_id = c.contract_id " +
             "WHERE t.del_flag = '0' " +
             "<if test='coTenant.tenantName != null and coTenant.tenantName != \"\"'> AND t.tenant_name LIKE CONCAT('%', #{coTenant.tenantName}, '%') </if>" +
+            "<if test='coTenant.mainTenantName != null and coTenant.mainTenantName != \"\"'> AND c.tenant_name LIKE CONCAT('%', #{coTenant.mainTenantName}, '%') </if>" +
             "<if test='coTenant.idCard != null and coTenant.idCard != \"\"'> AND t.id_card LIKE CONCAT('%', #{coTenant.idCard}, '%') </if>" +
             "<if test='coTenant.status != null and coTenant.status != \"\"'> AND t.status = #{coTenant.status} </if>" +
             "ORDER BY t.create_time DESC" +

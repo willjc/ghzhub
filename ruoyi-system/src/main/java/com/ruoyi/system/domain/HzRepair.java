@@ -81,6 +81,10 @@ public class HzRepair extends BaseEntity
     @TableField("del_flag")
     private String delFlag;
 
+    /** 申请人姓名（非表字段，经 hz_user.real_name 查询） */
+    @TableField(exist = false)
+    private String applicantName;
+
     public Long getRepairId()
     {
         return repairId;
@@ -249,6 +253,14 @@ public class HzRepair extends BaseEntity
     public void setDelFlag(String delFlag)
     {
         this.delFlag = delFlag;
+    }
+
+    public String getApplicantName() {
+        return applicantName;
+    }
+
+    public void setApplicantName(String applicantName) {
+        this.applicantName = applicantName;
     }
 
     @Override

@@ -126,6 +126,18 @@ public class HzCheckoutServiceImpl extends ServiceImpl<HzCheckoutApplyMapper, Hz
                .eq(hzCheckoutApply.getApplyStatus() != null, HzCheckoutApply::getApplyStatus, hzCheckoutApply.getApplyStatus())
                .orderByDesc(HzCheckoutApply::getApplyTime);
 
+        // 申请时间范围（前端 params.beginApplyTime / endApplyTime）
+        if (hzCheckoutApply.getParams() != null) {
+            Object beginApply = hzCheckoutApply.getParams().get("beginApplyTime");
+            Object endApply = hzCheckoutApply.getParams().get("endApplyTime");
+            if (beginApply != null && StringUtils.isNotEmpty(beginApply.toString())) {
+                wrapper.ge(HzCheckoutApply::getApplyTime, beginApply.toString() + " 00:00:00");
+            }
+            if (endApply != null && StringUtils.isNotEmpty(endApply.toString())) {
+                wrapper.le(HzCheckoutApply::getApplyTime, endApply.toString() + " 23:59:59");
+            }
+        }
+
         // 项目权限过滤：通过houseId关联house表的projectId
         List<Long> projectIds = roleProjectService.getCurrentUserProjectIds();
         if (projectIds != null) {

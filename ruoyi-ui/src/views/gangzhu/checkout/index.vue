@@ -45,6 +45,17 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="申请时间">
+        <el-date-picker
+          v-model="daterangeApplyTime"
+          style="width: 240px"
+          value-format="yyyy-MM-dd"
+          type="daterange"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+        ></el-date-picker>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -774,6 +785,7 @@ export default {
       projectList: [],
 
       // 查询参数
+      daterangeApplyTime: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -782,6 +794,7 @@ export default {
         tenantName: null,
         projectId: null,
         houseNo: null,
+        params: {},
       },
 
       // 当前选中行
@@ -996,6 +1009,11 @@ export default {
     },
     getList() {
       this.loading = true;
+      this.queryParams.params = {};
+      if (this.daterangeApplyTime && this.daterangeApplyTime.length === 2) {
+        this.queryParams.params["beginApplyTime"] = this.daterangeApplyTime[0];
+        this.queryParams.params["endApplyTime"] = this.daterangeApplyTime[1];
+      }
       listCheckout(this.queryParams).then(response => {
         this.checkOutList = response.rows;
         this.total = response.total;
@@ -1019,6 +1037,7 @@ export default {
     },
 
     resetQuery() {
+      this.daterangeApplyTime = [];
       this.resetForm("queryForm");
       this.handleQuery();
     },

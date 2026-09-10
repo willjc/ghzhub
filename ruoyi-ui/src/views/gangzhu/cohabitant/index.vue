@@ -1,10 +1,18 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
-      <el-form-item label="申请人姓名" prop="tenantName">
+      <el-form-item label="申请人" prop="mainTenantName">
+        <el-input
+          v-model="queryParams.mainTenantName"
+          placeholder="请输入申请人姓名"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="合住人" prop="tenantName">
         <el-input
           v-model="queryParams.tenantName"
-          placeholder="请输入申请人姓名"
+          placeholder="请输入合住人姓名"
           clearable
           @keyup.enter.native="handleQuery"
         />
@@ -180,6 +188,7 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
+        mainTenantName: null,
         tenantName: null,
         status: null
       }

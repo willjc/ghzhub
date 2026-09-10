@@ -154,6 +154,10 @@ public class HzExchangeAppController extends BaseController {
             if (contract == null || contract.getContractNo() == null) {
                 continue;
             }
+            // 仅已签署(2)/履行中(3)的合同可发起调换，已到期/已解约的不可再换房
+            if (!"2".equals(contract.getContractStatus()) && !"3".equals(contract.getContractStatus())) {
+                continue;
+            }
 
             Map<String, Object> item = new HashMap<>();
             item.put("recordId", checkIn.getRecordId());

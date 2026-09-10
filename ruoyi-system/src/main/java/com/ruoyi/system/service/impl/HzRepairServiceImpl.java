@@ -7,8 +7,11 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.HzRepair;
+import com.ruoyi.system.domain.HzUser;
 import com.ruoyi.system.mapper.HzRepairMapper;
+import com.ruoyi.system.mapper.HzUserMapper;
 import com.ruoyi.system.service.IHzRepairService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +27,9 @@ import java.util.List;
 @Service
 public class HzRepairServiceImpl extends ServiceImpl<HzRepairMapper, HzRepair> implements IHzRepairService
 {
+    @Autowired
+    private HzUserMapper userMapper;
+
     @Override
     public IPage<HzRepair> selectRepairPage(HzRepair repair, int pageNum, int pageSize)
     {
@@ -149,8 +155,34 @@ public class HzRepairServiceImpl extends ServiceImpl<HzRepairMapper, HzRepair> i
                .eq(StringUtils.isNotEmpty(repair.getStatus()), HzRepair::getStatus, repair.getStatus())
                .eq(StringUtils.isNotEmpty(repair.getRepairNo()), HzRepair::getRepairNo, repair.getRepairNo())
                .like(StringUtils.isNotEmpty(repair.getLocation()), HzRepair::getLocation, repair.getLocation())
+               .like(StringUtils.isNotEmpty(repair.getPhone()), HzRepair::getPhone, repair.getPhone())
                .eq(HzRepair::getDelFlag, "0")
                .orderByDesc(HzRepair::getCreateTime);
+
+        // 申请人姓名：hz_repair 无姓名冗余，经 hz_user.real_name 解析
+        if (StringUtils.isNotEmpty(repair.getApplicantName())) {
+            List<HzUser> users = userMapper.selectList(new LambdaQueryWrapper<HzUser>()
+                    .like(HzUser::getRealName, repair.getApplicantName())
+                    .select(HzUser::getUserId));
+            if (users.isEmpty()) {
+                // 无匹配用户，直接返回空结果
+                wrapper.apply("1 = 0");
+            } else {
+                wrapper.in(HzRepair::getUserId, users.stream().map(HzUser::getUserId).collect(java.util.stream.Collectors.toList()));
+            }
+        }
+
+        // 申请时间范围（前端 params.beginCreateTime / endCreateTime）
+        if (repair.getParams() != null) {
+            Object begin = repair.getParams().get("beginCreateTime");
+            Object end = repair.getParams().get("endCreateTime");
+            if (begin != null && StringUtils.isNotEmpty(begin.toString())) {
+                wrapper.ge(HzRepair::getCreateTime, begin.toString() + " 00:00:00");
+            }
+            if (end != null && StringUtils.isNotEmpty(end.toString())) {
+                wrapper.le(HzRepair::getCreateTime, end.toString() + " 23:59:59");
+            }
+        }
         return wrapper;
     }
 }

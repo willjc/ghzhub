@@ -46,6 +46,20 @@ public class HzQualificationAppealController extends BaseController {
     }
 
     /**
+     * 导出资格申述列表
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:qualification:export')")
+    @Log(title = "资格申述", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    public void export(jakarta.servlet.http.HttpServletResponse response, HzQualificationAppealVO appeal) {
+        // 复用分页查询取全量（导出场景单页上限设为10万）
+        IPage<HzQualificationAppealVO> page = appealService.selectAppealVOPage(appeal, 1, 100000);
+        com.ruoyi.common.utils.poi.ExcelUtil<HzQualificationAppealVO> util =
+                new com.ruoyi.common.utils.poi.ExcelUtil<>(HzQualificationAppealVO.class);
+        util.exportExcel(response, page.getRecords(), "资格申诉数据");
+    }
+
+    /**
      * 获取资格申述详细信息
      */
     @PreAuthorize("@ss.hasPermi('gangzhu:qualification:query')")

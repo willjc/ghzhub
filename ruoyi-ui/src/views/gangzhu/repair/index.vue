@@ -2,14 +2,34 @@
   <div class="app-container">
     <!-- 搜索栏 -->
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
-      <el-form-item label="用户ID" prop="userId">
+      <el-form-item label="申请人" prop="applicantName">
         <el-input
-          v-model="queryParams.userId"
-          placeholder="请输入用户ID"
+          v-model="queryParams.applicantName"
+          placeholder="请输入申请人姓名"
           clearable
-          style="width: 200px"
+          style="width: 160px"
           @keyup.enter.native="handleQuery"
         />
+      </el-form-item>
+      <el-form-item label="联系电话" prop="phone">
+        <el-input
+          v-model="queryParams.phone"
+          placeholder="请输入联系电话"
+          clearable
+          style="width: 160px"
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="申请时间">
+        <el-date-picker
+          v-model="daterangeCreateTime"
+          style="width: 240px"
+          value-format="yyyy-MM-dd"
+          type="daterange"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+        ></el-date-picker>
       </el-form-item>
       <el-form-item label="处理状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px">
@@ -238,11 +258,14 @@ export default {
       // 图片访问地址
       baseUrl: process.env.VUE_APP_BASE_API,
       // 查询参数
+      daterangeCreateTime: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        userId: null,
-        status: null
+        applicantName: null,
+        phone: null,
+        status: null,
+        params: {}
       }
     };
   },
@@ -273,6 +296,11 @@ export default {
     /** 查询物业报修列表 */
     getList() {
       this.loading = true;
+      this.queryParams.params = {};
+      if (this.daterangeCreateTime && this.daterangeCreateTime.length === 2) {
+        this.queryParams.params["beginCreateTime"] = this.daterangeCreateTime[0];
+        this.queryParams.params["endCreateTime"] = this.daterangeCreateTime[1];
+      }
       listRepair(this.queryParams).then(response => {
         this.repairList = response.rows;
         this.total = response.total;
@@ -286,6 +314,7 @@ export default {
     },
     /** 重置按钮操作 */
     resetQuery() {
+      this.daterangeCreateTime = [];
       this.resetForm("queryForm");
       this.handleQuery();
     },
