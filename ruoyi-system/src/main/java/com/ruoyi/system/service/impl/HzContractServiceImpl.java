@@ -212,10 +212,10 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
             Object depositStatus = contract.getParams().get("depositStatus");
             if (depositStatus != null && StringUtils.isNotEmpty(depositStatus.toString())) {
                 if ("1".equals(depositStatus.toString())) {
-                    wrapper.apply("EXISTS (SELECT 1 FROM hz_bill b WHERE b.contract_id = contract_id "
+                    wrapper.apply("EXISTS (SELECT 1 FROM hz_bill b WHERE b.contract_id = hz_contract.contract_id "
                             + "AND b.bill_type = '1' AND b.bill_status = '1' AND b.del_flag = '0')");
                 } else if ("0".equals(depositStatus.toString())) {
-                    wrapper.apply("NOT EXISTS (SELECT 1 FROM hz_bill b WHERE b.contract_id = contract_id "
+                    wrapper.apply("NOT EXISTS (SELECT 1 FROM hz_bill b WHERE b.contract_id = hz_contract.contract_id "
                             + "AND b.bill_type = '1' AND b.bill_status = '1' AND b.del_flag = '0')");
                 }
             }
@@ -335,6 +335,36 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
             }
             if (end != null && StringUtils.isNotEmpty(end.toString())) {
                 wrapper.le(HzContract::getSignTime, end.toString() + " 23:59:59");
+            }
+            // 发起时间范围（create_time）
+            Object beginCreate = contract.getParams().get("beginCreateTime");
+            Object endCreate = contract.getParams().get("endCreateTime");
+            if (beginCreate != null && StringUtils.isNotEmpty(beginCreate.toString())) {
+                wrapper.ge(HzContract::getCreateTime, beginCreate.toString() + " 00:00:00");
+            }
+            if (endCreate != null && StringUtils.isNotEmpty(endCreate.toString())) {
+                wrapper.le(HzContract::getCreateTime, endCreate.toString() + " 23:59:59");
+            }
+            // 到期时间范围（end_date，库内为纯日期 00:00:00）
+            Object beginEnd = contract.getParams().get("beginEndDate");
+            Object endEnd = contract.getParams().get("endEndDate");
+            if (beginEnd != null && StringUtils.isNotEmpty(beginEnd.toString())) {
+                wrapper.ge(HzContract::getEndDate, beginEnd.toString());
+            }
+            if (endEnd != null && StringUtils.isNotEmpty(endEnd.toString())) {
+                wrapper.le(HzContract::getEndDate, endEnd.toString() + " 23:59:59");
+            }
+            // 押金状态（'1'=存在已支付押金账单；'0'=不存在）。子查询列必须用表名限定，
+            // 否则 contract_id 被解析为内层 b.contract_id 导致关联失效（恒真/恒假）
+            Object depositStatus = contract.getParams().get("depositStatus");
+            if (depositStatus != null && StringUtils.isNotEmpty(depositStatus.toString())) {
+                if ("1".equals(depositStatus.toString())) {
+                    wrapper.apply("EXISTS (SELECT 1 FROM hz_bill b WHERE b.contract_id = hz_contract.contract_id "
+                            + "AND b.bill_type = '1' AND b.bill_status = '1' AND b.del_flag = '0')");
+                } else if ("0".equals(depositStatus.toString())) {
+                    wrapper.apply("NOT EXISTS (SELECT 1 FROM hz_bill b WHERE b.contract_id = hz_contract.contract_id "
+                            + "AND b.bill_type = '1' AND b.bill_status = '1' AND b.del_flag = '0')");
+                }
             }
         }
 
