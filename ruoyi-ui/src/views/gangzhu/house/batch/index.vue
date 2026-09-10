@@ -146,12 +146,19 @@
           <el-tag v-else-if="scope.row.approveStatus === '2'" type="danger" size="small">已拒绝</el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="批次状态" align="center" prop="batchStatus" width="100">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.batchStatus === '0'" type="warning" size="small">待分配</el-tag>
+          <el-tag v-else-if="scope.row.batchStatus === '1'" type="success" size="small">分配中</el-tag>
+          <el-tag v-else-if="scope.row.batchStatus === '2'" type="info" size="small">已作废</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="申请时间" align="center" prop="applyTime" width="160">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.applyTime, '{y}-{m}-{d} {h}:{i}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right">
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -174,6 +181,15 @@
             @click="handleUpdate(scope.row)"
             v-hasPermi="['gangzhu:batch:edit']"
           >修改</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-circle-close"
+            @click="handleCancel(scope.row)"
+            v-if="scope.row.batchStatus !== '2'"
+            v-hasPermi="['gangzhu:batch:cancel']"
+            style="color: #E6A23C"
+          >作废</el-button>
           <el-button
             size="mini"
             type="text"
@@ -564,7 +580,7 @@
 </template>
 
 <script>
-import { listBatch, getBatch, addBatch, updateBatch, delBatch, getAvailableHouses, downloadTenantTemplate, importTenants, saveBatchAllocation, getBatchHouses, getBatchTenants, approveBatch } from "@/api/gangzhu/batch";
+import { listBatch, getBatch, addBatch, updateBatch, delBatch, cancelBatch, getAvailableHouses, downloadTenantTemplate, importTenants, saveBatchAllocation, getBatchHouses, getBatchTenants, approveBatch } from "@/api/gangzhu/batch";
 import { listProject } from "@/api/gangzhu/project";
 
 export default {
@@ -996,6 +1012,16 @@ export default {
           });
         }
       });
+    },
+    /** 作废按钮操作 */
+    handleCancel(row) {
+      this.$modal.confirm('是否确认作废配租批次"' + row.batchName + '"？作废后：该批次的房源分配与人员分配全部解除（已预订房源释放为修缮中，已出租房源不受影响），批次记录保留并标记为"已作废"便于查询，不可再用于选房签约。')
+        .then(function() {
+          return cancelBatch(row.batchId);
+        }).then(() => {
+          this.getList();
+          this.$modal.msgSuccess("作废成功");
+        }).catch(() => {});
     },
     /** 删除按钮操作 */
     handleDelete(row) {

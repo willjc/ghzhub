@@ -192,6 +192,14 @@ public class HzBatchAllocationServiceImpl extends ServiceImpl<HzBatchAllocationM
     @Override
     @Transactional
     public int cancelBatchAllocation(Long batchId) {
+        HzBatchAllocation existing = this.getById(batchId);
+        if (existing == null) {
+            throw new ServiceException("配租批次不存在");
+        }
+        if ("2".equals(existing.getBatchStatus())) {
+            throw new ServiceException("该批次已作废，请勿重复操作");
+        }
+
         // 作废前释放房源状态
         releaseHouseStatusByBatch(batchId);
 
