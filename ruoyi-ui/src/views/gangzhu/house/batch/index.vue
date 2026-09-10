@@ -52,7 +52,7 @@
         <el-select v-model="queryParams.batchStatus" placeholder="请选择批次状态" clearable style="width: 120px">
           <el-option label="待分配" value="0" />
           <el-option label="分配中" value="1" />
-          <el-option label="已完成" value="2" />
+          <el-option label="已作废" value="2" />
         </el-select>
       </el-form-item>
       <el-form-item>
