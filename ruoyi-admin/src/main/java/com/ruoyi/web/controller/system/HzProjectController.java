@@ -92,7 +92,9 @@ public class HzProjectController extends BaseController
         demo.setStatus("0");
         demo.setSortOrder(1);
         sample.add(demo);
-        util.init(sample, "项目数据", "", Excel.Type.IMPORT);
+        // 注意：必须用 Type.EXPORT —— ExcelUtil.writeSheet 仅在 EXPORT 类型下调用 fillExcelData 写入数据行，
+        // 用 Type.IMPORT 时模板只输出表头，示例行不会出现（下拉校验逻辑两种类型一致，不受影响）
+        util.init(sample, "项目数据", "", Excel.Type.EXPORT);
         util.exportExcel(response);
     }
 
