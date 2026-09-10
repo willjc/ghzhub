@@ -231,8 +231,9 @@ public class HzCheckInAppController extends BaseController {
                 contract = contractService.selectContractById(checkIn.getContractId());
             }
 
-            // 续租场景：只保留履行中的合同
-            if ("renew".equals(type) && (contract == null || !"3".equals(contract.getContractStatus()))) {
+            // 续租场景：只保留履行中且未续租过的合同（已续租的应在新合同上继续续租）
+            if ("renew".equals(type) && (contract == null || !"3".equals(contract.getContractStatus())
+                    || "1".equals(contract.getIsRenewed()))) {
                 continue;
             }
 
@@ -256,8 +257,8 @@ public class HzCheckInAppController extends BaseController {
                 .filter(c -> {
                     String status = c.getContractStatus();
                     if ("renew".equals(type)) {
-                        // 续租：只保留履行中的合同
-                        return "3".equals(status);
+                        // 续租：只保留履行中且未续租过的合同
+                        return "3".equals(status) && !"1".equals(c.getIsRenewed());
                     }
                     // 退租/默认：保留已签署、履行中，排除已到期(4)、已解约(5)、超时失效(6)
                     return "2".equals(status) || "3".equals(status);

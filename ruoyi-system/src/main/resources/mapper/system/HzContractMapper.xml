@@ -11,6 +11,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             c.contract_no,
             c.contract_status,
             c.contract_type,
+            c.is_renewed,
             c.start_date,
             c.end_date,
             c.rent_price,
