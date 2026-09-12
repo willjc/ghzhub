@@ -22,6 +22,6 @@ public interface HzCheckoutApplyMapper extends BaseMapper<HzCheckoutApply> {
      * @param tenantId 租户ID
      * @return 退租申请集合
      */
-    @Select("SELECT * FROM hz_checkout_apply WHERE tenant_id = #{tenantId} AND del_flag = '0' ORDER BY create_time DESC")
+    @Select("SELECT * FROM hz_checkout_apply WHERE tenant_id = #{tenantId} AND del_flag = '0' ORDER BY apply_time DESC")
     List<HzCheckoutApply> selectByTenantId(@Param("tenantId") Long tenantId);
 }

@@ -191,10 +191,14 @@
 			// 合并退租列表：退租申请优先于入住单
 			mergeCheckoutList(checkinList, checkoutList) {
 				const result = []
+				// 活跃状态（审批中/待确认/待管理员审批）优先展示，避免同合同多笔申请时
+				// 因排序问题把待签字的申请藏掉（只显示历史驳回卡片）
+				const activeStatuses = ['pending', 'approved', 'wait_confirm']
 
 				// 遍历入住单，检查是否有对应的退租申请
 				checkinList.forEach(checkinItem => {
-					const checkoutItem = checkoutList.find(c => c.contractId === checkinItem.contractId)
+					const applies = checkoutList.filter(c => c.contractId === checkinItem.contractId)
+					const checkoutItem = applies.find(c => activeStatuses.includes(c.status)) || applies[0]
 
 					if (checkoutItem) {
 						// 有退租申请，使用申请数据

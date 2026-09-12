@@ -177,6 +177,7 @@ public class HzCheckOutAppController extends BaseController {
             apply.setCheckoutReason(checkoutReason);
             apply.setTenantSignature(signature);
             apply.setApplyTime(new Date()); // 更新申请时间
+            apply.setCreateTime(new Date());
             apply.setApplyStatus("0"); // 状态改为审批中
             apply.setApproveBy(null);
             apply.setApproveTime(null);
@@ -193,6 +194,7 @@ public class HzCheckOutAppController extends BaseController {
             apply.setCheckoutReason(checkoutReason);
             apply.setTenantSignature(signature);
             apply.setApplyTime(new Date());
+            apply.setCreateTime(new Date());
             apply.setApplyStatus("0"); // 初始状态为审批中
             apply.setCreateBy("用户端");
         }
