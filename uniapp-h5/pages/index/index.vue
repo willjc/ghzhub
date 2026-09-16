@@ -97,7 +97,7 @@
 			<view class="banner-section">
 				<swiper class="banner-swiper" :indicator-dots="false" :autoplay="true" :interval="3000" :duration="500" @change="onBannerChange">
 					<swiper-item v-for="(item, index) in bannerList" :key="index">
-						<image class="banner-image" :src="item.image" mode="widthFix"></image>
+						<image class="banner-image" :src="item.image" mode="widthFix" @click="handleBannerClick(item)"></image>
 					</swiper-item>
 				</swiper>
 				<!-- 自定义指示点 -->
@@ -423,6 +423,22 @@
 			 */
 			onBannerChange(e) {
 				this.currentBannerIndex = e.detail.current
+			},
+
+			handleBannerClick(item) {
+				if (!item || item.linkType !== 'page') return
+				const linkUrl = (item.linkUrl || '').trim()
+				if (!/^\/(pages|subpkg)\//.test(linkUrl)) return
+
+				const pagePath = linkUrl.split('?')[0]
+				const tabBarPages = ['/pages/index/index', '/pages/affairs/index', '/pages/service/index', '/pages/my/index']
+				const isTabBarPage = tabBarPages.includes(pagePath)
+				const options = {
+					url: isTabBarPage ? pagePath : linkUrl,
+					fail: () => uni.showToast({ title: '页面暂时无法打开', icon: 'none' })
+				}
+				if (isTabBarPage) uni.switchTab(options)
+				else uni.navigateTo(options)
 			},
 
 			/**

@@ -166,14 +166,21 @@
           <el-input v-model="form.content" type="textarea" :rows="3" placeholder="请输入内容描述" maxlength="500" show-word-limit />
         </el-form-item>
         <el-form-item label="链接类型" prop="linkType">
-          <el-radio-group v-model="form.linkType">
-            <el-radio label="page">页面路径</el-radio>
-            <el-radio label="url">外部链接</el-radio>
+          <el-radio-group v-model="form.linkType" @change="handleLinkTypeChange">
+            <el-radio label="page">通知页面</el-radio>
             <el-radio label="none">无链接</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="链接地址" prop="linkUrl" v-if="form.linkType !== 'none'">
-          <el-input v-model="form.linkUrl" placeholder="页面路径示例：/pages/talent/index 或外部链接：https://example.com" />
+        <el-form-item label="跳转通知" prop="linkUrl" v-if="form.linkType === 'page'">
+          <el-select v-model="form.linkUrl" placeholder="请选择通知页面" filterable style="width: 100%">
+            <el-option label="通知公告列表" value="/pages/notice/list" />
+            <el-option
+              v-for="notice in noticeOptions"
+              :key="notice.noticeId"
+              :label="notice.noticeTitle"
+              :value="`/pages/notice/detail?noticeId=${notice.noticeId}`"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="排序号" prop="sortOrder">
           <el-input-number v-model="form.sortOrder" :min="0" :max="9999" controls-position="right" style="width: 150px" />
@@ -220,8 +227,8 @@
         </el-descriptions-item>
         <el-descriptions-item label="内容描述" :span="2">{{ viewForm.content || '无' }}</el-descriptions-item>
         <el-descriptions-item label="链接类型">
-          <span v-if="viewForm.linkType === 'page'">页面路径</span>
-          <span v-else-if="viewForm.linkType === 'url'">外部链接</span>
+          <span v-if="viewForm.linkType === 'page'">通知页面</span>
+          <span v-else-if="viewForm.linkType === 'url'">已停用的外部链接</span>
           <span v-else>无链接</span>
         </el-descriptions-item>
         <el-descriptions-item label="链接地址">{{ viewForm.linkUrl || '无' }}</el-descriptions-item>
@@ -240,6 +247,7 @@
 
 <script>
 import { listConfig, getConfig, delConfig, addConfig, updateConfig } from "@/api/gangzhu/config";
+import { listNotice } from "@/api/system/notice";
 import ImageUpload from '@/components/ImageUpload';
 
 export default {
@@ -263,6 +271,8 @@ export default {
       total: 0,
       // 运营配置表格数据
       configList: [],
+      // 可跳转的通知公告
+      noticeOptions: [],
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -303,6 +313,7 @@ export default {
   },
   created() {
     this.getList();
+    this.loadNoticeOptions();
   },
   methods: {
     /** 获取图片完整URL - 遵循RuoYi标准 */
@@ -326,6 +337,12 @@ export default {
         this.configList = response.rows;
         this.total = response.total;
         this.loading = false;
+      });
+    },
+    /** 查询可跳转的通知公告 */
+    loadNoticeOptions() {
+      listNotice({ pageNum: 1, pageSize: 100, status: "0" }).then(response => {
+        this.noticeOptions = response.rows || [];
       });
     },
     /** 取消按钮 */
@@ -384,9 +401,23 @@ export default {
       const configId = row.configId || this.ids
       getConfig(configId).then(response => {
         this.form = response.data;
+        if (this.form.linkType !== "none" && !this.isNoticeLink(this.form.linkUrl)) {
+          this.form.linkType = "none";
+          this.form.linkUrl = null;
+        }
         this.open = true;
         this.title = "修改运营配置";
       });
+    },
+    /** 链接类型修改 */
+    handleLinkTypeChange(linkType) {
+      if (linkType === "none") {
+        this.form.linkUrl = null;
+      }
+    },
+    /** 是否为允许配置的通知页面 */
+    isNoticeLink(linkUrl) {
+      return linkUrl === "/pages/notice/list" || /^\/pages\/notice\/detail\?noticeId=\d+$/.test(linkUrl || "");
     },
     /** 状态修改 */
     handleStatusChange(row) {
@@ -403,6 +434,14 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          if (this.form.linkType === "page") {
+            const linkUrl = (this.form.linkUrl || "").trim();
+            if (!this.isNoticeLink(linkUrl)) {
+              this.$modal.msgError("请选择需要跳转的通知页面");
+              return;
+            }
+            this.form.linkUrl = linkUrl;
+          }
           if (this.form.configId != null) {
             updateConfig(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
