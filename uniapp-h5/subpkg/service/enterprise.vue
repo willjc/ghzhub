@@ -179,7 +179,7 @@
 				<template v-else>
 					<view class="upload-area" @click="handleChooseFile">
 						<image class="upload-icon" src="/static/上传文件@2x.png" mode="aspectFit"></image>
-						<text class="upload-text">点击上传文件</text>
+						<text class="upload-text">请先将填写好的人员名单文件发送至文件传输助手，再从聊天记录中选择上传</text>
 					</view>
 
 					<!-- 已上传文件列表 -->
@@ -1216,13 +1216,15 @@ export default {
 	/* 上传区域 */
 	.upload-area {
 		width: 622rpx;
-		height: 96rpx;
+		min-height: 96rpx;
 		border-radius: 12rpx;
 		border: 2rpx dashed #cdced5;
 		background: #fafbff;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		padding: 20rpx 24rpx;
+		box-sizing: border-box;
 		margin: 0 40rpx 24rpx;
 	}
 
@@ -1230,11 +1232,13 @@ export default {
 		width: 24rpx;
 		height: 24rpx;
 		margin-right: 12rpx;
+		flex-shrink: 0;
 	}
 
 	.upload-text {
 		color: #999999;
 		font-size: 26rpx;
+		line-height: 38rpx;
 		font-weight: normal;
 		font-family: "PingFang SC", "苹方-简", sans-serif;
 	}
