@@ -5,18 +5,12 @@ import { get, post } from '@/utils/request'
 
 /** 可领取列表（公开，登录可标记 hasReceived） */
 export function getAvailableCoupons(tenantId) {
-  const q = tenantId ? `?tenantId=${tenantId}` : ''
-  return get(`/h5/app/coupon/available${q}`)
+  return get('/h5/app/coupon/available', { tenantId })
 }
 
 /** 我的已领取列表 */
 export function getMyCoupons(tenantId, receiveStatus) {
-  const usp = new URLSearchParams()
-  usp.append('tenantId', tenantId)
-  if (receiveStatus !== undefined && receiveStatus !== null && receiveStatus !== '') {
-    usp.append('receiveStatus', receiveStatus)
-  }
-  return get(`/h5/app/coupon/myList?${usp.toString()}`)
+  return get('/h5/app/coupon/myList', { tenantId, receiveStatus })
 }
 
 /** 领取优惠券 */

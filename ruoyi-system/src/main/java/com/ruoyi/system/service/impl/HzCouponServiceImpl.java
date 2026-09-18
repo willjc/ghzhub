@@ -9,8 +9,10 @@ import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.HzCoupon;
 import com.ruoyi.system.domain.HzCouponReceive;
+import com.ruoyi.system.domain.HzUser;
 import com.ruoyi.system.mapper.HzCouponMapper;
 import com.ruoyi.system.mapper.HzCouponReceiveMapper;
+import com.ruoyi.system.mapper.HzUserMapper;
 import com.ruoyi.system.service.IHzCouponService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
@@ -33,6 +35,9 @@ public class HzCouponServiceImpl extends ServiceImpl<HzCouponMapper, HzCoupon> i
 {
     @Autowired
     private HzCouponReceiveMapper couponReceiveMapper;
+
+    @Autowired
+    private HzUserMapper userMapper;
 
     @Override
     public IPage<HzCoupon> selectCouponPage(HzCoupon coupon, int pageNum, int pageSize)
@@ -111,11 +116,11 @@ public class HzCouponServiceImpl extends ServiceImpl<HzCouponMapper, HzCoupon> i
     @Override
     public List<Map<String, Object>> selectAvailableCoupons(Long tenantId)
     {
-        Date now = new Date();
+        Date today = DateUtils.toDate(java.time.LocalDate.now());
         LambdaQueryWrapper<HzCoupon> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzCoupon::getStatus, "0")
-                .le(HzCoupon::getValidStartDate, now)
-                .ge(HzCoupon::getValidEndDate, now)
+                .le(HzCoupon::getValidStartDate, today)
+                .ge(HzCoupon::getValidEndDate, today)
                 .orderByDesc(HzCoupon::getCouponId);
         List<HzCoupon> list = baseMapper.selectList(wrapper);
 
@@ -192,12 +197,12 @@ public class HzCouponServiceImpl extends ServiceImpl<HzCouponMapper, HzCoupon> i
         {
             throw new ServiceException("优惠券已停用");
         }
-        Date now = new Date();
-        if (c.getValidStartDate() != null && now.before(c.getValidStartDate()))
+        Date today = DateUtils.toDate(java.time.LocalDate.now());
+        if (c.getValidStartDate() != null && today.before(c.getValidStartDate()))
         {
             throw new ServiceException("优惠券未到生效时间");
         }
-        if (c.getValidEndDate() != null && now.after(c.getValidEndDate()))
+        if (c.getValidEndDate() != null && today.after(c.getValidEndDate()))
         {
             throw new ServiceException("优惠券已过期");
         }
@@ -210,6 +215,7 @@ public class HzCouponServiceImpl extends ServiceImpl<HzCouponMapper, HzCoupon> i
         }
 
         // 2) 写领取记录（唯一键防重复）
+        Date now = new Date();
         HzCouponReceive r = new HzCouponReceive();
         r.setCouponId(couponId);
         r.setTenantId(tenantId);
@@ -245,13 +251,18 @@ public class HzCouponServiceImpl extends ServiceImpl<HzCouponMapper, HzCoupon> i
 
         List<HzCouponReceive> records = page.getRecords();
         Map<Long, HzCoupon> couponMap = new HashMap<>();
+        Map<Long, HzUser> userMap = new HashMap<>();
         if (!records.isEmpty())
         {
             List<Long> ids = records.stream().map(HzCouponReceive::getCouponId).distinct().collect(Collectors.toList());
             couponMap = baseMapper.selectBatchIds(ids).stream()
                     .collect(Collectors.toMap(HzCoupon::getCouponId, c -> c));
+            List<Long> tenantIds = records.stream().map(HzCouponReceive::getTenantId).distinct().collect(Collectors.toList());
+            userMap = userMapper.selectBatchIds(tenantIds).stream()
+                    .collect(Collectors.toMap(HzUser::getUserId, u -> u));
         }
         final Map<Long, HzCoupon> finalMap = couponMap;
+        final Map<Long, HzUser> finalUserMap = userMap;
         IPage<Map<String, Object>> resultPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
         List<Map<String, Object>> mapList = records.stream().map(r -> {
             Map<String, Object> m = new HashMap<>();
@@ -262,6 +273,12 @@ public class HzCouponServiceImpl extends ServiceImpl<HzCouponMapper, HzCoupon> i
             m.put("receiveStatus", r.getReceiveStatus());
             m.put("useTime", r.getUseTime());
             m.put("orderId", r.getOrderId());
+            HzUser user = finalUserMap.get(r.getTenantId());
+            if (user != null)
+            {
+                String tenantName = user.getRealName();
+                m.put("tenantName", tenantName == null || tenantName.isBlank() ? user.getNickname() : tenantName);
+            }
             HzCoupon c = finalMap.get(r.getCouponId());
             if (c != null)
             {

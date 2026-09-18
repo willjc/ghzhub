@@ -22,21 +22,21 @@
 		<!-- 优惠券列表 -->
 		<scroll-view class="scroll-content" scroll-y v-if="list.length > 0">
 			<view class="coupon-list">
-				<view class="coupon-item" v-for="item in list" :key="item.id">
+				<view class="coupon-item" v-for="item in list" :key="item.receiveId">
 					<view
 						class="coupon-card"
-						:class="{ expired: item.receiveStatus !== 1 }"
+						:class="{ expired: item.receiveStatus !== '0' }"
 					>
 						<view class="coupon-card-content">
 							<view
 								class="coupon-left"
 								:class="{
-									'coupon-bg-expired': item.receiveStatus !== 1,
-									'coupon-bg-normal': item.receiveStatus === 1
+									'coupon-bg-expired': item.receiveStatus !== '0',
+									'coupon-bg-normal': item.receiveStatus === '0'
 								}"
 							>
 								<view class="coupon-amount-wrapper">
-									<template v-if="item.couponType === 2">
+									<template v-if="item.couponType === '2'">
 										<text class="coupon-amount">{{ item.discountRate }}</text>
 										<text class="coupon-symbol">%</text>
 									</template>
@@ -55,7 +55,7 @@
 										<text class="coupon-validity">有效期至{{ formatDate(item.validEndDate) }}</text>
 									</view>
 									<view class="coupon-action">
-										<view class="status-tag" :class="{ unused: item.receiveStatus === 1, used: item.receiveStatus === 2, expired: item.receiveStatus !== 1 && item.receiveStatus !== 2 }">
+										<view class="status-tag" :class="{ unused: item.receiveStatus === '0', used: item.receiveStatus === '1', expired: item.receiveStatus === '2' }">
 											<text>{{ statusText(item) }}</text>
 										</view>
 									</view>
@@ -80,9 +80,9 @@
 				status: '',
 				statusOptions: [
 					{ label: '全部', value: '' },
-					{ label: '未使用', value: 1 },
-					{ label: '已使用', value: 2 },
-					{ label: '已过期', value: 3 }
+					{ label: '未使用', value: '0' },
+					{ label: '已使用', value: '1' },
+					{ label: '已过期', value: '2' }
 				],
 				list: []
 			}
@@ -115,7 +115,7 @@
 				}
 			},
 			buildCondition(item) {
-				if (item.couponType === 2) {
+				if (item.couponType === '2') {
 					return item.minAmount > 0 ? `满${item.minAmount}元可用` : '全场通用'
 				}
 				return item.minAmount > 0 ? `满${item.minAmount}元可用` : '无门槛'
@@ -125,12 +125,12 @@
 				return s.substring(0, 10).replace(/-/g, '.')
 			},
 			statusText(item) {
-				const map = { 1: '未使用', 2: '已使用', 3: '已过期' }
+				const map = { 0: '未使用', 1: '已使用', 2: '已过期' }
 				return map[item.receiveStatus] || '-'
 			},
 			statusClass(item) {
-				if (item.receiveStatus === 1) return 'unused'
-				if (item.receiveStatus === 2) return 'used'
+				if (item.receiveStatus === '0') return 'unused'
+				if (item.receiveStatus === '1') return 'used'
 				return 'expired'
 			}
 		}

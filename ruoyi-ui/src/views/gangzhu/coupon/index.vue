@@ -173,7 +173,11 @@
       </el-form>
       <el-table v-loading="receiveLoading" :data="receiveList">
         <el-table-column label="领取ID" prop="receiveId" width="100" />
-        <el-table-column label="租户ID" prop="tenantId" width="100" />
+        <el-table-column label="租户姓名" prop="tenantName" width="120">
+          <template slot-scope="scope">
+            <span>{{ scope.row.tenantName || '-' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="领取时间" prop="receiveTime" width="160">
           <template slot-scope="scope">
             <span>{{ parseTime(scope.row.receiveTime, '{y}-{m}-{d} {h}:{i}') }}</span>

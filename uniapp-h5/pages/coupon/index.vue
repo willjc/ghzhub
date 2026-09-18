@@ -22,7 +22,7 @@
 				<view
 					class="coupon-item"
 					v-for="(item, index) in couponList"
-					:key="item.id"
+					:key="item.couponId"
 				>
 					<view
 						class="coupon-card"
@@ -35,7 +35,7 @@
 								:class="{ 'coupon-bg-expired': isExpired(item), 'coupon-bg-normal': !isExpired(item) }"
 							>
 								<view class="coupon-amount-wrapper">
-									<template v-if="item.couponType === 2">
+									<template v-if="item.couponType === '2'">
 										<text class="coupon-amount">{{ item.discountRate }}</text>
 										<text class="coupon-symbol">%</text>
 									</template>
@@ -110,10 +110,11 @@
 			},
 			isExpired(item) {
 				if (!item.validEndDate) return false
-				return new Date(item.validEndDate.replace(/-/g, '/')).getTime() < Date.now()
+				const [year, month, day] = item.validEndDate.substring(0, 10).split('-').map(Number)
+				return new Date(year, month - 1, day + 1).getTime() <= Date.now()
 			},
 			buildCondition(item) {
-				if (item.couponType === 2) {
+				if (item.couponType === '2') {
 					return item.minAmount > 0 ? `满${item.minAmount}元可用` : '全场通用'
 				}
 				return item.minAmount > 0 ? `满${item.minAmount}元可用` : '无门槛'
@@ -135,7 +136,7 @@
 					return
 				}
 				try {
-					await receiveCoupon(item.id, this.tenantId)
+					await receiveCoupon(item.couponId, this.tenantId)
 					uni.showToast({ title: '领取成功', icon: 'success' })
 					this.loadList()
 				} catch (e) {
@@ -438,4 +439,3 @@
 		line-height: 34rpx;
 	}
 </style>
-
