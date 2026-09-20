@@ -225,10 +225,7 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
             }
         }
 
-        LambdaQueryWrapper<HzCheckoutRecord> recordWrapper = new LambdaQueryWrapper<>();
-        recordWrapper.eq(HzCheckoutRecord::getApplyId, checkout.getApplyId())
-                     .last("LIMIT 1");
-        HzCheckoutRecord record = checkoutRecordMapper.selectOne(recordWrapper);
+        HzCheckoutRecord record = checkoutRecordMapper.selectByApplyId(checkout.getApplyId());
 
         String refundStatusVal = "0";
         String approveStatusVal = "0";
