@@ -7,10 +7,13 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.PageUtils;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
-import com.ruoyi.system.domain.HzTenant;
-import com.ruoyi.system.service.IHzTenantService;
+import com.ruoyi.system.domain.HzUser;
+import com.ruoyi.system.domain.vo.HzTenantVO;
+import com.ruoyi.system.mapper.HzUserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -28,17 +31,17 @@ import java.util.List;
 public class HzTenantController extends BaseController
 {
     @Autowired
-    private IHzTenantService tenantService;
+    private HzUserMapper userMapper;
 
     /**
      * 查询租户列表
      */
     @PreAuthorize("@ss.hasPermi('gangzhu:tenant:list')")
     @GetMapping("/list")
-    public TableDataInfo list(HzTenant tenant)
+    public TableDataInfo list(HzTenantVO tenant)
     {
-        Page<HzTenant> page = PageUtils.getPage();
-        IPage<HzTenant> pageResult = tenantService.selectTenantPage(tenant, (int)page.getCurrent(), (int)page.getSize());
+        Page<HzTenantVO> page = PageUtils.getPage();
+        IPage<HzTenantVO> pageResult = userMapper.selectTenantPage(page, tenant);
 
         TableDataInfo rspData = new TableDataInfo();
         rspData.setCode(200);
@@ -54,10 +57,10 @@ public class HzTenantController extends BaseController
     @PreAuthorize("@ss.hasPermi('gangzhu:tenant:export')")
     @Log(title = "租户管理", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
-    public void export(HttpServletResponse response, HzTenant tenant)
+    public void export(HttpServletResponse response, HzTenantVO tenant)
     {
-        List<HzTenant> list = tenantService.selectTenantList(tenant);
-        ExcelUtil<HzTenant> util = new ExcelUtil<HzTenant>(HzTenant.class);
+        List<HzTenantVO> list = userMapper.selectTenantList(tenant);
+        ExcelUtil<HzTenantVO> util = new ExcelUtil<>(HzTenantVO.class);
         util.exportExcel(response, list, "租户数据");
     }
 
@@ -65,10 +68,10 @@ public class HzTenantController extends BaseController
      * 获取租户详细信息
      */
     @PreAuthorize("@ss.hasPermi('gangzhu:tenant:query')")
-    @GetMapping(value = "/{tenantId}")
-    public AjaxResult getInfo(@PathVariable("tenantId") Long tenantId)
+    @GetMapping(value = "/{userId}")
+    public AjaxResult getInfo(@PathVariable("userId") Long userId)
     {
-        return success(tenantService.selectTenantById(tenantId));
+        return success(userMapper.selectTenantByUserId(userId));
     }
 
     /**
@@ -77,8 +80,27 @@ public class HzTenantController extends BaseController
     @PreAuthorize("@ss.hasPermi('gangzhu:tenant:edit')")
     @Log(title = "租户管理", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(@RequestBody HzTenant tenant)
+    public AjaxResult edit(@RequestBody HzUser tenant)
     {
-        return toAjax(tenantService.updateTenant(tenant));
+        if (tenant == null || tenant.getUserId() == null) {
+            return error("用户ID不能为空");
+        }
+        if (StringUtils.isEmpty(tenant.getPhone()) || !tenant.getPhone().matches("^1[3-9]\\d{9}$")) {
+            return error("请输入正确的手机号码");
+        }
+        if (!"0".equals(tenant.getStatus()) && !"1".equals(tenant.getStatus())) {
+            return error("用户状态无效");
+        }
+        HzUser existing = userMapper.selectById(tenant.getUserId());
+        if (existing == null || !"0".equals(existing.getDelFlag())) {
+            return error("用户不存在");
+        }
+        HzUser update = new HzUser();
+        update.setUserId(tenant.getUserId());
+        update.setPhone(tenant.getPhone());
+        update.setStatus(tenant.getStatus());
+        update.setRemark(tenant.getRemark());
+        update.setUpdateTime(DateUtils.getNowDate());
+        return toAjax(userMapper.updateById(update));
     }
 }

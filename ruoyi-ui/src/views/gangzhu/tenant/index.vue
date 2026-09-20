@@ -1,31 +1,43 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
-      <el-form-item label="租户姓名" prop="tenantName">
-        <el-input
-          v-model="queryParams.tenantName"
-          placeholder="请输入租户姓名"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
+    <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" v-show="showSearch" label-width="110px">
+      <el-form-item label="租户姓名" prop="realName">
+        <el-input v-model="queryParams.realName" placeholder="请输入租户姓名" clearable @keyup.enter.native="handleQuery" />
       </el-form-item>
       <el-form-item label="身份证号" prop="idCard">
-        <el-input
-          v-model="queryParams.idCard"
-          placeholder="请输入身份证号"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
+        <el-input v-model="queryParams.idCard" placeholder="请输入身份证号" clearable @keyup.enter.native="handleQuery" />
       </el-form-item>
       <el-form-item label="手机号" prop="phone">
-        <el-input
-          v-model="queryParams.phone"
-          placeholder="请输入手机号"
-          clearable
-          @keyup.enter.native="handleQuery"
+        <el-input v-model="queryParams.phone" placeholder="请输入手机号" clearable @keyup.enter.native="handleQuery" />
+      </el-form-item>
+      <el-form-item label="学历" prop="education">
+        <el-select v-model="queryParams.education" placeholder="请选择学历" clearable>
+          <el-option v-for="item in dict.type.hz_education_type" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="职业（身份类型）" prop="identityType">
+        <el-select v-model="queryParams.identityType" placeholder="请选择职业" clearable>
+          <el-option v-for="item in dict.type.hz_identity_type" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="是否配租" prop="allocated">
+        <el-select v-model="queryParams.allocated" placeholder="请选择" clearable>
+          <el-option label="已配租" value="1" />
+          <el-option label="未配租" value="0" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="申请时间">
+        <el-date-picker
+          v-model="applyTimeRange"
+          type="daterange"
+          value-format="yyyy-MM-dd"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          style="width: 240px"
         />
       </el-form-item>
-      <el-form-item label="状态" prop="status">
+      <el-form-item label="用户状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
           <el-option label="正常" value="0" />
           <el-option label="停用" value="1" />
@@ -48,136 +60,159 @@
           v-hasPermi="['gangzhu:tenant:export']"
         >导出</el-button>
       </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
     </el-row>
 
-    <el-table v-loading="loading" :data="tenantList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="租户姓名" align="center" prop="tenantName" width="120" />
+    <el-table v-loading="loading" :data="tenantList">
+      <el-table-column label="租户姓名" align="center" prop="realName" width="110" />
       <el-table-column label="身份证号" align="center" prop="idCard" width="180" />
       <el-table-column label="手机号" align="center" prop="phone" width="120" />
-      <el-table-column label="性别" align="center" prop="gender" width="80">
+      <el-table-column label="性别" align="center" prop="gender" width="70">
         <template slot-scope="scope">
-          <span v-if="scope.row.gender === '1'">男</span>
-          <span v-else-if="scope.row.gender === '2'">女</span>
+          <dict-tag :options="dict.type.hz_user_sex" :value="scope.row.gender" />
         </template>
       </el-table-column>
-      <el-table-column label="工作单位" align="center" prop="workUnit" show-overflow-tooltip />
-      <el-table-column label="职务" align="center" prop="position" width="120" />
-      <el-table-column label="月收入(元)" align="center" prop="monthlyIncome" width="120" />
-      <el-table-column label="租户类型" align="center" prop="tenantType" width="100">
+      <el-table-column label="学历" align="center" prop="education" width="100">
         <template slot-scope="scope">
-          <el-tag v-if="scope.row.tenantType === '1'" type="success">个人</el-tag>
-          <el-tag v-else-if="scope.row.tenantType === '2'" type="primary">家庭</el-tag>
+          <dict-tag v-if="scope.row.education" :options="dict.type.hz_education_type" :value="scope.row.education" />
+          <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status" width="80">
+      <el-table-column label="职业（身份类型）" align="center" prop="identityType" width="140">
+        <template slot-scope="scope">
+          <dict-tag v-if="scope.row.identityType" :options="dict.type.hz_identity_type" :value="scope.row.identityType" />
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="工作单位" align="center" prop="workUnit" min-width="150" show-overflow-tooltip />
+      <el-table-column label="是否配租" align="center" prop="allocated" width="90">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.allocated === '1'" type="success" size="small">已配租</el-tag>
+          <el-tag v-else type="info" size="small">未配租</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="申请时间" align="center" prop="applyTime" width="160">
+        <template slot-scope="scope">
+          <span>{{ scope.row.applyTime || '-' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="用户状态" align="center" prop="status" width="90">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.status === '0'" type="success" size="small">正常</el-tag>
           <el-tag v-else type="danger" size="small">停用</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right">
         <template slot-scope="scope">
+          <el-button size="mini" type="text" icon="el-icon-view" @click="handleView(scope.row)" v-hasPermi="['gangzhu:tenant:query']">详情</el-button>
+          <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)" v-hasPermi="['gangzhu:tenant:edit']">修改</el-button>
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-view"
-            @click="handleView(scope.row)"
-            v-hasPermi="['gangzhu:tenant:query']"
-          >详情</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['gangzhu:tenant:edit']"
-          >修改</el-button>
+            icon="el-icon-circle-close"
+            style="color: #E6A23C"
+            @click="handleAddBlacklist(scope.row)"
+            v-hasPermi="['gangzhu:blacklist:add']"
+          >资格退出</el-button>
         </template>
       </el-table-column>
     </el-table>
 
     <pagination
-      v-show="total>0"
+      v-show="total > 0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
 
-    <!-- 租户详情对话框 -->
-    <el-dialog title="租户详情" :visible.sync="viewOpen" width="900px" append-to-body>
+    <el-dialog title="租户详情" :visible.sync="viewOpen" width="800px" append-to-body>
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="租户姓名">{{ tenant.tenantName }}</el-descriptions-item>
-        <el-descriptions-item label="身份证号">{{ tenant.idCard }}</el-descriptions-item>
-        <el-descriptions-item label="手机号">{{ tenant.phone }}</el-descriptions-item>
+        <el-descriptions-item label="租户姓名">{{ tenant.realName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="身份证号">{{ tenant.idCard || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="手机号">{{ tenant.phone || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="联系电话">{{ tenant.contactPhone || '-' }}</el-descriptions-item>
         <el-descriptions-item label="性别">
-          <span v-if="tenant.gender === '1'">男</span>
-          <span v-else-if="tenant.gender === '2'">女</span>
+          <dict-tag :options="dict.type.hz_user_sex" :value="tenant.gender" />
         </el-descriptions-item>
-        <el-descriptions-item label="出生日期">{{ tenant.birthDate }}</el-descriptions-item>
-        <el-descriptions-item label="民族">{{ tenant.nation }}</el-descriptions-item>
-        <el-descriptions-item label="学历">{{ tenant.education }}</el-descriptions-item>
-        <el-descriptions-item label="婚姻状况">{{ tenant.maritalStatus }}</el-descriptions-item>
-        <el-descriptions-item label="户籍地址" :span="2">{{ tenant.householdAddress }}</el-descriptions-item>
-        <el-descriptions-item label="现住址" :span="2">{{ tenant.currentAddress }}</el-descriptions-item>
-        <el-descriptions-item label="工作单位">{{ tenant.workUnit }}</el-descriptions-item>
-        <el-descriptions-item label="单位性质">{{ tenant.workUnitType }}</el-descriptions-item>
-        <el-descriptions-item label="职务">{{ tenant.position }}</el-descriptions-item>
-        <el-descriptions-item label="月收入">{{ tenant.monthlyIncome }}元</el-descriptions-item>
-        <el-descriptions-item label="紧急联系人">{{ tenant.emergencyContact }}</el-descriptions-item>
-        <el-descriptions-item label="紧急联系电话">{{ tenant.emergencyPhone }}</el-descriptions-item>
-        <el-descriptions-item label="租户类型">
-          <el-tag v-if="tenant.tenantType === '1'" type="success">个人</el-tag>
-          <el-tag v-else-if="tenant.tenantType === '2'" type="primary">家庭</el-tag>
+        <el-descriptions-item label="学历">
+          <dict-tag v-if="tenant.education" :options="dict.type.hz_education_type" :value="tenant.education" />
+          <span v-else>-</span>
         </el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-tag v-if="tenant.status === '0'" type="success">正常</el-tag>
-          <el-tag v-else type="danger">停用</el-tag>
+        <el-descriptions-item label="职业（身份类型）">
+          <dict-tag v-if="tenant.identityType" :options="dict.type.hz_identity_type" :value="tenant.identityType" />
+          <span v-else>-</span>
         </el-descriptions-item>
+        <el-descriptions-item label="工作单位">{{ tenant.workUnit || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="单位性质">
+          <dict-tag v-if="tenant.unitNature" :options="dict.type.hz_unit_nature" :value="tenant.unitNature" />
+          <span v-else>-</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="婚姻状态">
+          <dict-tag v-if="tenant.marriageStatus" :options="dict.type.hz_marriage_status" :value="tenant.marriageStatus" />
+          <span v-else>-</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="是否配租">{{ tenant.allocated === '1' ? '已配租' : '未配租' }}</el-descriptions-item>
+        <el-descriptions-item label="申请时间">{{ tenant.applyTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="申请类型">
+          <span v-if="tenant.applyType === '1'">人才公寓</span>
+          <span v-else-if="tenant.applyType === '2'">保障性租赁住房</span>
+          <span v-else-if="tenant.applyType === '3'">市场化租赁</span>
+          <span v-else>-</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="资格结果">
+          <span v-if="tenant.qualificationResult === '1'">通过</span>
+          <span v-else-if="tenant.qualificationResult === '0'">未通过</span>
+          <span v-else>-</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="用户状态">{{ tenant.status === '0' ? '正常' : '停用' }}</el-descriptions-item>
+        <el-descriptions-item label="备注">{{ tenant.remark || '-' }}</el-descriptions-item>
       </el-descriptions>
       <div slot="footer" class="dialog-footer">
         <el-button @click="viewOpen = false">关 闭</el-button>
       </div>
     </el-dialog>
 
-    <!-- 修改租户对话框 -->
-    <el-dialog title="修改租户" :visible.sync="open" width="800px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="110px">
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="租户姓名" prop="tenantName">
-              <el-input v-model="form.tenantName" disabled />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="身份证号" prop="idCard">
-              <el-input v-model="form.idCard" disabled />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="手机号" prop="phone">
-              <el-input v-model="form.phone" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态" prop="status">
-              <el-radio-group v-model="form.status">
-                <el-radio label="0">正常</el-radio>
-                <el-radio label="1">停用</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-        </el-row>
+    <el-dialog title="修改租户" :visible.sync="editOpen" width="600px" append-to-body>
+      <el-form ref="form" :model="form" :rules="rules" label-width="90px">
+        <el-form-item label="租户姓名">
+          <el-input v-model="form.realName" disabled />
+        </el-form-item>
+        <el-form-item label="身份证号">
+          <el-input v-model="form.idCard" disabled />
+        </el-form-item>
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="form.phone" />
+        </el-form-item>
+        <el-form-item label="用户状态" prop="status">
+          <el-radio-group v-model="form.status">
+            <el-radio label="0">正常</el-radio>
+            <el-radio label="1">停用</el-radio>
+          </el-radio-group>
+        </el-form-item>
         <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" :rows="3" />
+          <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <el-button @click="editOpen = false">取 消</el-button>
+      </div>
+    </el-dialog>
+
+    <el-dialog title="资格退出/加入黑名单" :visible.sync="blacklistOpen" width="500px" append-to-body>
+      <el-form ref="blacklistForm" :model="blacklistForm" label-width="90px">
+        <el-form-item label="用户">
+          <span>{{ blacklistForm.tenantName }}{{ blacklistForm.idCard ? '（' + blacklistForm.idCard + '）' : '' }}</span>
+        </el-form-item>
+        <el-form-item label="退出原因" prop="reason" :rules="[{ required: true, message: '请填写退出原因', trigger: 'blur' }]">
+          <el-input v-model="blacklistForm.reason" type="textarea" :rows="4" placeholder="请输入资格退出原因" />
+        </el-form-item>
+        <div style="color: #E6A23C; font-size: 12px; padding-left: 90px;">加入黑名单后，该用户将无法登录小程序</div>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitBlacklist">确 定</el-button>
+        <el-button @click="blacklistOpen = false">取 消</el-button>
       </div>
     </el-dialog>
   </div>
@@ -185,31 +220,40 @@
 
 <script>
 import { listTenant, getTenant, updateTenant } from "@/api/gangzhu/tenant";
+import { addBlacklist } from "@/api/gangzhu/blacklist";
 
 export default {
   name: "Tenant",
+  dicts: ['hz_user_sex', 'hz_education_type', 'hz_identity_type', 'hz_unit_nature', 'hz_marriage_status'],
   data() {
     return {
       loading: true,
-      ids: [],
-      single: true,
-      multiple: true,
       showSearch: true,
       total: 0,
       tenantList: [],
-      title: "",
-      open: false,
+      applyTimeRange: [],
       viewOpen: false,
+      editOpen: false,
+      blacklistOpen: false,
       tenant: {},
+      form: {},
+      blacklistForm: {
+        tenantId: null,
+        tenantName: '',
+        idCard: '',
+        reason: ''
+      },
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        tenantName: null,
+        realName: null,
         idCard: null,
         phone: null,
-        status: null,
+        education: null,
+        identityType: null,
+        allocated: null,
+        status: null
       },
-      form: {},
       rules: {
         phone: [
           { required: true, message: "手机号不能为空", trigger: "blur" },
@@ -224,70 +268,78 @@ export default {
   methods: {
     getList() {
       this.loading = true;
-      listTenant(this.queryParams).then(response => {
+      listTenant(this.addDateRange(this.queryParams, this.applyTimeRange, 'ApplyTime')).then(response => {
         this.tenantList = response.rows;
         this.total = response.total;
         this.loading = false;
       });
-    },
-    cancel() {
-      this.open = false;
-      this.reset();
-    },
-    reset() {
-      this.form = {
-        tenantId: null,
-        tenantName: null,
-        idCard: null,
-        phone: null,
-        status: "0",
-        remark: null
-      };
-      this.resetForm("form");
     },
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
     },
     resetQuery() {
+      this.applyTimeRange = [];
       this.resetForm("queryForm");
       this.handleQuery();
     },
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.tenantId)
-      this.single = selection.length !== 1
-      this.multiple = !selection.length
-    },
     handleView(row) {
-      this.viewOpen = true;
-      const tenantId = row.tenantId;
-      getTenant(tenantId).then(response => {
+      getTenant(row.userId).then(response => {
         this.tenant = response.data;
+        this.viewOpen = true;
       });
     },
     handleUpdate(row) {
-      this.reset();
-      const tenantId = row.tenantId;
-      getTenant(tenantId).then(response => {
+      getTenant(row.userId).then(response => {
         this.form = response.data;
-        this.open = true;
+        this.editOpen = true;
       });
     },
     submitForm() {
-      this.$refs["form"].validate(valid => {
+      this.$refs.form.validate(valid => {
         if (valid) {
-          updateTenant(this.form).then(response => {
+          updateTenant({
+            userId: this.form.userId,
+            phone: this.form.phone,
+            status: this.form.status,
+            remark: this.form.remark
+          }).then(() => {
             this.$modal.msgSuccess("修改成功");
-            this.open = false;
+            this.editOpen = false;
             this.getList();
           });
         }
       });
     },
+    handleAddBlacklist(row) {
+      this.blacklistForm = {
+        tenantId: row.userId,
+        tenantName: row.realName || '',
+        idCard: row.idCard || '',
+        reason: ''
+      };
+      this.blacklistOpen = true;
+    },
+    submitBlacklist() {
+      this.$refs.blacklistForm.validate(valid => {
+        if (valid) {
+          this.$modal.confirm('确认将用户"' + this.blacklistForm.tenantName + '"加入黑名单？加入后该用户将无法登录小程序。').then(() => {
+            return addBlacklist({
+              tenantId: this.blacklistForm.tenantId,
+              reason: this.blacklistForm.reason
+            });
+          }).then(() => {
+            this.$modal.msgSuccess("资格退出成功");
+            this.blacklistOpen = false;
+            this.getList();
+          }).catch(() => {});
+        }
+      });
+    },
     handleExport() {
       this.download('system/tenant/export', {
-        ...this.queryParams
-      }, `tenant_${new Date().getTime()}.xlsx`)
+        ...this.addDateRange(this.queryParams, this.applyTimeRange, 'ApplyTime')
+      }, `tenant_${new Date().getTime()}.xlsx`);
     }
   }
 };

@@ -1,7 +1,10 @@
 package com.ruoyi.system.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.system.domain.HzUser;
+import com.ruoyi.system.domain.vo.HzTenantVO;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -16,6 +19,12 @@ import java.util.List;
  */
 @Mapper
 public interface HzUserMapper extends BaseMapper<HzUser> {
+
+    IPage<HzTenantVO> selectTenantPage(Page<HzTenantVO> page, @Param("tenant") HzTenantVO tenant);
+
+    List<HzTenantVO> selectTenantList(@Param("tenant") HzTenantVO tenant);
+
+    HzTenantVO selectTenantByUserId(@Param("userId") Long userId);
 
     /**
      * 查询用户列表
