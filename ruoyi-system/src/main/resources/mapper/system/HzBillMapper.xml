@@ -175,19 +175,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     </when>
                 </choose>
             </if>
-            <!-- 账单日期范围查询 -->
-            <if test="bill.params.beginBillDate != null and bill.params.beginBillDate != ''">
-                AND DATE(b.bill_date) &gt;= #{bill.params.beginBillDate}
+            <!-- 账单开始时间范围查询 -->
+            <if test="bill.params.beginPeriodStartDate != null and bill.params.beginPeriodStartDate != ''">
+                AND DATE(b.period_start_date) &gt;= #{bill.params.beginPeriodStartDate}
             </if>
-            <if test="bill.params.endBillDate != null and bill.params.endBillDate != ''">
-                AND DATE(b.bill_date) &lt;= #{bill.params.endBillDate}
+            <if test="bill.params.endPeriodStartDate != null and bill.params.endPeriodStartDate != ''">
+                AND DATE(b.period_start_date) &lt;= #{bill.params.endPeriodStartDate}
             </if>
-            <!-- 应付日期范围查询 -->
-            <if test="bill.params.beginDueDate != null and bill.params.beginDueDate != ''">
-                AND DATE(b.due_date) &gt;= #{bill.params.beginDueDate}
+            <!-- 账单支付时间范围查询 -->
+            <if test="bill.params.beginPayTime != null and bill.params.beginPayTime != ''">
+                AND DATE(b.pay_time) &gt;= #{bill.params.beginPayTime}
             </if>
-            <if test="bill.params.endDueDate != null and bill.params.endDueDate != ''">
-                AND DATE(b.due_date) &lt;= #{bill.params.endDueDate}
+            <if test="bill.params.endPayTime != null and bill.params.endPayTime != ''">
+                AND DATE(b.pay_time) &lt;= #{bill.params.endPayTime}
             </if>
         </where>
         ORDER BY b.create_time DESC
@@ -255,19 +255,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     </when>
                 </choose>
             </if>
-            <!-- 账单日期范围查询 -->
-            <if test="bill.params.beginBillDate != null and bill.params.beginBillDate != ''">
-                AND DATE(b.bill_date) &gt;= #{bill.params.beginBillDate}
+            <!-- 账单开始时间范围查询 -->
+            <if test="bill.params.beginPeriodStartDate != null and bill.params.beginPeriodStartDate != ''">
+                AND DATE(b.period_start_date) &gt;= #{bill.params.beginPeriodStartDate}
             </if>
-            <if test="bill.params.endBillDate != null and bill.params.endBillDate != ''">
-                AND DATE(b.bill_date) &lt;= #{bill.params.endBillDate}
+            <if test="bill.params.endPeriodStartDate != null and bill.params.endPeriodStartDate != ''">
+                AND DATE(b.period_start_date) &lt;= #{bill.params.endPeriodStartDate}
             </if>
-            <!-- 应付日期范围查询 -->
-            <if test="bill.params.beginDueDate != null and bill.params.beginDueDate != ''">
-                AND DATE(b.due_date) &gt;= #{bill.params.beginDueDate}
+            <!-- 账单支付时间范围查询 -->
+            <if test="bill.params.beginPayTime != null and bill.params.beginPayTime != ''">
+                AND DATE(b.pay_time) &gt;= #{bill.params.beginPayTime}
             </if>
-            <if test="bill.params.endDueDate != null and bill.params.endDueDate != ''">
-                AND DATE(b.due_date) &lt;= #{bill.params.endDueDate}
+            <if test="bill.params.endPayTime != null and bill.params.endPayTime != ''">
+                AND DATE(b.pay_time) &lt;= #{bill.params.endPayTime}
             </if>
         </where>
         ORDER BY b.create_time DESC

@@ -17,8 +17,8 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-            <el-form-item label="审核状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="审核状态" clearable>
+            <el-form-item label="调换状态" prop="status">
+        <el-select v-model="queryParams.status" placeholder="调换状态" clearable>
           <el-option label="待审核" value="0" />
           <el-option label="已完成" value="1" />
           <el-option label="已拒绝" value="2" />
@@ -43,7 +43,7 @@
       <el-table-column label="房间地址" align="center" prop="oldFullAddress" min-width="180" show-overflow-tooltip />
       <el-table-column label="申请调换时间" align="center" prop="applyTime" width="110" />
       <el-table-column label="申请原因" align="center" prop="exchangeReason" min-width="120" show-overflow-tooltip />
-      <el-table-column label="审核状态" align="center" prop="status" width="100">
+      <el-table-column label="调换状态" align="center" prop="status" width="100">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.status === '0'" type="warning">待审核</el-tag>
           <el-tag v-else-if="scope.row.status === '1'" type="success">已完成</el-tag>
@@ -104,7 +104,7 @@
         <el-descriptions-item label="申请调换时间">{{ detailForm.applyTime }}</el-descriptions-item>
         <el-descriptions-item label="换房时间" v-if="detailForm.exchangeTime">{{ detailForm.exchangeTime }}</el-descriptions-item>
         <el-descriptions-item label="申请原因">{{ detailForm.exchangeReason }}</el-descriptions-item>
-        <el-descriptions-item label="审核状态">
+        <el-descriptions-item label="调换状态">
           <el-tag v-if="detailForm.status === '0'" type="warning">待审核</el-tag>
           <el-tag v-else-if="detailForm.status === '1'" type="success">已完成</el-tag>
           <el-tag v-else-if="detailForm.status === '2'" type="danger">已拒绝</el-tag>

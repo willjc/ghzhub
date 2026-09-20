@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
       <el-form-item label="账单编号" prop="billNo">
         <el-input
           v-model="queryParams.billNo"
@@ -77,9 +77,9 @@
           <el-option label="集中分配" value="集中分配" />
         </el-select>
       </el-form-item>
-      <el-form-item label="账单日期" prop="billDateRange">
+      <el-form-item label="账单开始时间" prop="periodStartDateRange">
         <el-date-picker
-          v-model="billDateRange"
+          v-model="periodStartDateRange"
           type="daterange"
           range-separator="-"
           start-placeholder="开始日期"
@@ -87,9 +87,9 @@
           value-format="yyyy-MM-dd"
         />
       </el-form-item>
-      <el-form-item label="应付日期" prop="dueDateRange">
+      <el-form-item label="账单支付时间" prop="payTimeRange">
         <el-date-picker
-          v-model="dueDateRange"
+          v-model="payTimeRange"
           type="daterange"
           range-separator="-"
           start-placeholder="开始日期"
@@ -158,7 +158,8 @@
           <span v-else>{{ scope.row.billPeriod }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="应付日期" align="center" prop="dueDate" width="120" />
+      <el-table-column label="账单开始时间" align="center" prop="periodStartDate" width="130" />
+      <el-table-column label="账单支付时间" align="center" prop="payTime" width="160" />
       <el-table-column label="账单状态" align="center" prop="billStatus" width="100">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.billStatus === '0'" type="warning">待支付</el-tag>
@@ -232,8 +233,8 @@
           <span style="color: #909399; margin-left: 8px;">(来源：{{ detailData.carryOverSource || '上期合同结转' }})</span>
         </el-descriptions-item>
         <el-descriptions-item label="滞纳金">{{ detailData.lateFee || 0 }} 元</el-descriptions-item>
-        <el-descriptions-item label="账单日期">{{ detailData.billDate }}</el-descriptions-item>
-        <el-descriptions-item label="应付日期">{{ detailData.dueDate }}</el-descriptions-item>
+        <el-descriptions-item label="账单开始时间">{{ detailData.periodStartDate || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="账单支付时间">{{ detailData.payTime || '-' }}</el-descriptions-item>
         <el-descriptions-item label="账单状态">
           <el-tag v-if="detailData.billStatus === '0'" type="warning">待支付</el-tag>
           <el-tag v-else-if="detailData.billStatus === '1'" type="success">已支付</el-tag>
@@ -245,7 +246,6 @@
           <span v-if="detailData.overdueDays > 0" style="color: red;">{{ detailData.overdueDays }} 天</span>
           <span v-else>未逾期</span>
         </el-descriptions-item>
-        <el-descriptions-item label="支付时间">{{ detailData.payTime || '-' }}</el-descriptions-item>
         <el-descriptions-item label="支付方式">{{ detailData.payMethod || '-' }}</el-descriptions-item>
         <el-descriptions-item label="交易流水号" :span="2">{{ detailData.transactionNo || '-' }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ detailData.createTime }}</el-descriptions-item>
@@ -274,8 +274,8 @@ export default {
       total: 0,
       billList: [],
       detailOpen: false,
-      billDateRange: [],
-      dueDateRange: [],
+      periodStartDateRange: [],
+      payTimeRange: [],
       projectList: [],
       queryParams: {
         pageNum: 1,
@@ -301,13 +301,13 @@ export default {
       this.loading = true;
       // 处理日期范围参数和合同编号/房源编号参数（后端通过 params 读取）
       this.queryParams.params = {};
-      if (this.billDateRange && this.billDateRange.length === 2) {
-        this.queryParams.params["beginBillDate"] = this.billDateRange[0];
-        this.queryParams.params["endBillDate"] = this.billDateRange[1];
+      if (this.periodStartDateRange && this.periodStartDateRange.length === 2) {
+        this.queryParams.params["beginPeriodStartDate"] = this.periodStartDateRange[0];
+        this.queryParams.params["endPeriodStartDate"] = this.periodStartDateRange[1];
       }
-      if (this.dueDateRange && this.dueDateRange.length === 2) {
-        this.queryParams.params["beginDueDate"] = this.dueDateRange[0];
-        this.queryParams.params["endDueDate"] = this.dueDateRange[1];
+      if (this.payTimeRange && this.payTimeRange.length === 2) {
+        this.queryParams.params["beginPayTime"] = this.payTimeRange[0];
+        this.queryParams.params["endPayTime"] = this.payTimeRange[1];
       }
       if (this.queryParams.contractNo) {
         this.queryParams.params["contractNo"] = this.queryParams.contractNo;
@@ -346,8 +346,8 @@ export default {
       this.getList();
     },
     resetQuery() {
-      this.billDateRange = [];
-      this.dueDateRange = [];
+      this.periodStartDateRange = [];
+      this.payTimeRange = [];
       this.resetForm("queryForm");
       this.handleQuery();
     },
@@ -365,13 +365,13 @@ export default {
     handleExport() {
       // 导出时与列表查询保持一致的筛选参数
       this.queryParams.params = {};
-      if (this.billDateRange && this.billDateRange.length === 2) {
-        this.queryParams.params["beginBillDate"] = this.billDateRange[0];
-        this.queryParams.params["endBillDate"] = this.billDateRange[1];
+      if (this.periodStartDateRange && this.periodStartDateRange.length === 2) {
+        this.queryParams.params["beginPeriodStartDate"] = this.periodStartDateRange[0];
+        this.queryParams.params["endPeriodStartDate"] = this.periodStartDateRange[1];
       }
-      if (this.dueDateRange && this.dueDateRange.length === 2) {
-        this.queryParams.params["beginDueDate"] = this.dueDateRange[0];
-        this.queryParams.params["endDueDate"] = this.dueDateRange[1];
+      if (this.payTimeRange && this.payTimeRange.length === 2) {
+        this.queryParams.params["beginPayTime"] = this.payTimeRange[0];
+        this.queryParams.params["endPayTime"] = this.payTimeRange[1];
       }
       if (this.queryParams.contractNo) {
         this.queryParams.params["contractNo"] = this.queryParams.contractNo;

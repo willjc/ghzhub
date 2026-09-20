@@ -9,10 +9,10 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="姓名" prop="tenantName">
+      <el-form-item label="申请人" prop="tenantName">
         <el-input
           v-model="queryParams.tenantName"
-          placeholder="请输入租户姓名"
+          placeholder="请输入申请人"
           clearable
           @keyup.enter.native="handleQuery"
         />
@@ -68,7 +68,7 @@
 
     <el-table v-loading="loading" :data="checkOutList" @selection-change="handleSelectionChange">
       <el-table-column label="申请ID" align="center" prop="applyId" width="80" />
-      <el-table-column label="姓名" align="center" prop="tenantName" width="100" show-overflow-tooltip />
+      <el-table-column label="申请人" align="center" prop="tenantName" width="100" show-overflow-tooltip />
       <el-table-column label="合同编号" align="center" prop="contractNo" width="150" show-overflow-tooltip />
       <el-table-column label="项目名称" align="center" prop="projectName" width="140" show-overflow-tooltip />
       <el-table-column label="房间号" align="center" prop="houseNo" width="100" />
@@ -170,7 +170,7 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="用户姓名">
+            <el-form-item label="申请人">
               <span>{{ currentForm.tenantName || '-' }}</span>
             </el-form-item>
           </el-col>
@@ -568,7 +568,7 @@
       <el-divider content-position="left">申请信息</el-divider>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="申请ID">{{ detailForm.applyId }}</el-descriptions-item>
-        <el-descriptions-item label="姓名">{{ detailForm.tenantName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="申请人">{{ detailForm.tenantName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="合同编号">{{ detailForm.contractNo || '-' }}</el-descriptions-item>
         <el-descriptions-item label="房源">
           <span v-if="detailForm.projectName || detailForm.buildingName || detailForm.houseNo">
@@ -1511,7 +1511,7 @@ export default {
 <h2>一、申请信息</h2>
 <table class="info-table">
   <tr><td>申请ID</td><td>${stamp(f.applyId)}</td><td>合同编号</td><td>${stamp(f.contractNo)}</td></tr>
-  <tr><td>租户姓名</td><td>${stamp(f.tenantName)}</td><td>房源</td><td>${stamp(f.houseCode)} / ${stamp(f.houseNo)}</td></tr>
+  <tr><td>申请人</td><td>${stamp(f.tenantName)}</td><td>房源</td><td>${stamp(f.houseCode)} / ${stamp(f.houseNo)}</td></tr>
   <tr><td>项目名称</td><td>${stamp(f.projectName)}</td><td>楼栋/单元</td><td>${stamp(f.buildingName)} ${stamp(f.unitName)}</td></tr>
   <tr><td>退租原因</td><td colspan="3">${stamp(f.checkoutReason)}</td></tr>
   <tr><td>计划退租日期</td><td>${stamp(f.planCheckoutDate)}</td><td>申请时间</td><td>${stamp(f.applyTime)}</td></tr>
@@ -1677,7 +1677,7 @@ export default {
 <h2>一、申请信息</h2>
 <table class="info-table">
   <tr><td>申请ID</td><td>${stamp(f.applyId)}</td><td>合同编号</td><td>${stamp(f.contractNo)}</td></tr>
-  <tr><td>租户姓名</td><td>${stamp(f.tenantName)}</td><td>房源</td><td>${this.formatHouseInfo(f)}</td></tr>
+  <tr><td>申请人</td><td>${stamp(f.tenantName)}</td><td>房源</td><td>${this.formatHouseInfo(f)}</td></tr>
   <tr><td>退租原因</td><td colspan="3">${stamp(f.checkoutReason)}</td></tr>
   <tr><td>计划退租日期</td><td>${stamp(f.planCheckoutDate)}</td><td>申请时间</td><td>${stamp(f.applyTime)}</td></tr>
   <tr><td>申请状态</td><td>${this.formatApplyStatus(f.applyStatus)}</td><td>审批人</td><td>${stamp(f.approveBy)}</td></tr>

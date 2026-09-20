@@ -14,8 +14,8 @@
         <el-input v-model="queryParams.signUnit" placeholder="签订单位名称" clearable
           style="width:160px" @keyup.enter.native="handleQuery" />
       </el-form-item>
-      <el-form-item label="审批状态" prop="approveStatus">
-        <el-select v-model="queryParams.approveStatus" placeholder="审批状态" clearable style="width:130px">
+      <el-form-item label="申请状态" prop="approveStatus">
+        <el-select v-model="queryParams.approveStatus" placeholder="申请状态" clearable style="width:130px">
           <el-option v-for="dict in dict.type.hz_filing_approve_status"
             :key="dict.value" :label="dict.label" :value="dict.value" />
         </el-select>
@@ -48,7 +48,7 @@
           <span>{{ parseTime(scope.row.signDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="审批状态" align="center" prop="approveStatus" width="100">
+      <el-table-column label="申请状态" align="center" prop="approveStatus" width="100">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.hz_filing_approve_status" :value="scope.row.approveStatus" />
         </template>
@@ -84,7 +84,7 @@
     <el-dialog title="合同备案详情" :visible.sync="detailOpen" width="720px" append-to-body>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="备案编号">{{ detail.filingNo }}</el-descriptions-item>
-        <el-descriptions-item label="审批状态">
+        <el-descriptions-item label="申请状态">
           <dict-tag :options="dict.type.hz_filing_approve_status" :value="detail.approveStatus" />
         </el-descriptions-item>
         <el-descriptions-item label="签约人">{{ detail.signName }}</el-descriptions-item>

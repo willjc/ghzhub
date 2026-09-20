@@ -9,10 +9,10 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="真实姓名" prop="realName">
+      <el-form-item label="申请人" prop="realName">
         <el-input
           v-model="queryParams.realName"
-          placeholder="请输入真实姓名"
+          placeholder="请输入申请人"
           clearable
           @keyup.enter.native="handleQuery"
         />
@@ -54,8 +54,8 @@
           end-placeholder="结束日期"
         ></el-date-picker>
       </el-form-item>
-      <el-form-item label="入住状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择入住状态" clearable>
+      <el-form-item label="申请状态" prop="status">
+        <el-select v-model="queryParams.status" placeholder="请选择申请状态" clearable>
           <el-option label="待办理" value="0" />
           <el-option label="待审核" value="1" />
           <el-option label="待入住确认" value="2" />
@@ -88,7 +88,7 @@
     <el-table v-loading="loading" :data="checkInList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="入住单号" align="center" prop="checkinNo" width="180" show-overflow-tooltip />
-      <el-table-column label="真实姓名" align="center" prop="realName" width="100" show-overflow-tooltip />
+      <el-table-column label="申请人" align="center" prop="realName" width="100" show-overflow-tooltip />
       <el-table-column label="联系电话" align="center" prop="phone" width="120" show-overflow-tooltip />
       <el-table-column label="年龄" align="center" prop="age" width="70">
         <template slot-scope="scope">
@@ -141,7 +141,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="入住状态" align="center" prop="status" width="110">
+      <el-table-column label="申请状态" align="center" prop="status" width="110">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.status === '0'" type="info">待办理</el-tag>
           <el-tag v-else-if="scope.row.status === '1'" type="warning">待审核</el-tag>
@@ -175,7 +175,7 @@
       <div class="detail-section">
         <div class="detail-section-title">基本信息</div>
         <el-descriptions :column="2" border size="small">
-          <el-descriptions-item label="真实姓名">{{ detailForm.realName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="申请人">{{ detailForm.realName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="身份证号">{{ detailForm.idCard || '-' }}</el-descriptions-item>
           <el-descriptions-item label="年龄">{{ (detailForm.age !== null && detailForm.age !== undefined) ? detailForm.age : '-' }}</el-descriptions-item>
           <el-descriptions-item label="联系电话">{{ detailForm.phone || '-' }}</el-descriptions-item>
@@ -222,7 +222,7 @@
         <div class="detail-section-title">入住信息</div>
         <el-descriptions :column="2" border size="small">
           <el-descriptions-item label="入住单号">{{ detailForm.checkinNo || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="入住状态">
+          <el-descriptions-item label="申请状态">
             <el-tag v-if="detailForm.status === '0'" type="info">待办理</el-tag>
             <el-tag v-else-if="detailForm.status === '1'" type="warning">待审核</el-tag>
             <el-tag v-else-if="detailForm.status === '2'" type="primary">待入住确认</el-tag>

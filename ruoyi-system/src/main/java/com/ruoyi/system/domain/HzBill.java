@@ -73,7 +73,8 @@ public class HzBill extends BaseEntity {
     @TableField("bill_seq")
     private Integer billSeq;
 
-    /** 本期起始日 */
+    /** 账单开始时间 */
+    @Excel(name = "账单开始时间", sort = 11)
     @TableField("period_start_date")
     private String periodStartDate;
 
@@ -96,12 +97,10 @@ public class HzBill extends BaseEntity {
     private BigDecimal unpaidAmount;
 
     /** 账单日期 */
-    @Excel(name = "账单日期", sort = 11)
     @TableField("bill_date")
     private String billDate;
 
     /** 应付日期 */
-    @Excel(name = "应付日期", sort = 12)
     @TableField("due_date")
     private String dueDate;
 
@@ -118,8 +117,8 @@ public class HzBill extends BaseEntity {
     @TableField("invoice_status")
     private String invoiceStatus;
 
-    /** 支付时间 */
-    @Excel(name = "支付时间", sort = 15)
+    /** 账单支付时间 */
+    @Excel(name = "账单支付时间", sort = 12)
     @TableField("pay_time")
     private String payTime;
 
