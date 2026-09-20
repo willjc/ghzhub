@@ -22,8 +22,6 @@ public interface HzUserMapper extends BaseMapper<HzUser> {
 
     IPage<HzTenantVO> selectTenantPage(Page<HzTenantVO> page, @Param("tenant") HzTenantVO tenant);
 
-    List<HzTenantVO> selectTenantList(@Param("tenant") HzTenantVO tenant);
-
     HzTenantVO selectTenantByUserId(@Param("userId") Long userId);
 
     /**

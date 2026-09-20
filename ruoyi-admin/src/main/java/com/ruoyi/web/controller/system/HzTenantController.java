@@ -7,6 +7,7 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.StringUtils;
@@ -19,7 +20,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.List;
 
 /**
  * 租户管理Controller
@@ -30,6 +30,8 @@ import java.util.List;
 @RequestMapping("/system/tenant")
 public class HzTenantController extends BaseController
 {
+    private static final int MAX_EXPORT_ROWS = 10000;
+
     @Autowired
     private HzUserMapper userMapper;
 
@@ -59,9 +61,12 @@ public class HzTenantController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, HzTenantVO tenant)
     {
-        List<HzTenantVO> list = userMapper.selectTenantList(tenant);
+        IPage<HzTenantVO> page = userMapper.selectTenantPage(new Page<>(1, MAX_EXPORT_ROWS), tenant);
+        if (page.getTotal() > MAX_EXPORT_ROWS) {
+            throw new ServiceException("导出数据超过10000条，请增加筛选条件后重试");
+        }
         ExcelUtil<HzTenantVO> util = new ExcelUtil<>(HzTenantVO.class);
-        util.exportExcel(response, list, "租户数据");
+        util.exportExcel(response, page.getRecords(), "租户数据");
     }
 
     /**
@@ -94,6 +99,10 @@ public class HzTenantController extends BaseController
         HzUser existing = userMapper.selectById(tenant.getUserId());
         if (existing == null || !"0".equals(existing.getDelFlag())) {
             return error("用户不存在");
+        }
+        HzUser phoneOwner = userMapper.selectByPhoneIgnoreLogicDelete(tenant.getPhone());
+        if (phoneOwner != null && !tenant.getUserId().equals(phoneOwner.getUserId())) {
+            return error("手机号已存在，请更换后重试");
         }
         HzUser update = new HzUser();
         update.setUserId(tenant.getUserId());

@@ -112,35 +112,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                u.work_unit,
                u.unit_nature,
                u.marriage_status,
-               CASE WHEN active_contract.tenant_id IS NULL THEN '0' ELSE '1' END AS allocated,
+               CASE WHEN EXISTS (
+                   SELECT 1
+                   FROM hz_contract c
+                   WHERE c.tenant_id = u.user_id
+                     AND c.del_flag = '0'
+                     AND c.contract_status IN ('2', '3')
+               ) THEN '1' ELSE '0' END AS allocated,
                q.apply_time,
                q.apply_type,
                q.final_result AS qualification_result,
                u.status,
                u.remark
         FROM hz_user u
-        LEFT JOIN (
-            SELECT tenant_id, apply_time, apply_type, final_result
-            FROM (
-                SELECT tenant_id,
-                       apply_time,
-                       apply_type,
-                       final_result,
-                       ROW_NUMBER() OVER (
-                           PARTITION BY tenant_id
-                           ORDER BY apply_time DESC, qualification_id DESC
-                       ) AS row_num
-                FROM hz_qualification
-                WHERE del_flag = '0'
-            ) ranked_qualification
-            WHERE row_num = 1
-        ) q ON q.tenant_id = u.user_id
-        LEFT JOIN (
-            SELECT DISTINCT tenant_id
-            FROM hz_contract
-            WHERE del_flag = '0'
-              AND contract_status IN ('2', '3')
-        ) active_contract ON active_contract.tenant_id = u.user_id
+        LEFT JOIN hz_qualification q ON q.qualification_id = (
+            SELECT latest_q.qualification_id
+            FROM hz_qualification latest_q
+            WHERE latest_q.tenant_id = u.user_id
+              AND latest_q.del_flag = '0'
+            ORDER BY latest_q.apply_time DESC, latest_q.qualification_id DESC
+            LIMIT 1
+        )
     </sql>
 
     <sql id="tenantViewWhere">
@@ -164,10 +156,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             AND u.status = #{tenant.status}
         </if>
         <if test="tenant.allocated != null and tenant.allocated == &quot;1&quot;">
-            AND active_contract.tenant_id IS NOT NULL
+            AND EXISTS (
+                SELECT 1
+                FROM hz_contract c
+                WHERE c.tenant_id = u.user_id
+                  AND c.del_flag = '0'
+                  AND c.contract_status IN ('2', '3')
+            )
         </if>
         <if test="tenant.allocated != null and tenant.allocated == &quot;0&quot;">
-            AND active_contract.tenant_id IS NULL
+            AND NOT EXISTS (
+                SELECT 1
+                FROM hz_contract c
+                WHERE c.tenant_id = u.user_id
+                  AND c.del_flag = '0'
+                  AND c.contract_status IN ('2', '3')
+            )
         </if>
         <if test="tenant.params.beginApplyTime != null and tenant.params.beginApplyTime != ''">
             AND q.apply_time &gt;= CONCAT(#{tenant.params.beginApplyTime}, ' 00:00:00')
@@ -180,13 +184,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectTenantPage" resultMap="HzTenantViewResult">
         <include refid="selectTenantView" />
         <include refid="tenantViewWhere" />
-        ORDER BY q.apply_time DESC, u.user_id DESC
-    </select>
-
-    <select id="selectTenantList" resultMap="HzTenantViewResult">
-        <include refid="selectTenantView" />
-        <include refid="tenantViewWhere" />
-        ORDER BY q.apply_time DESC, u.user_id DESC
+        ORDER BY u.user_id DESC
     </select>
 
     <select id="selectTenantByUserId" resultMap="HzTenantViewResult">
