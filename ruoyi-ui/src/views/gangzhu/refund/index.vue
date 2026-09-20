@@ -86,6 +86,16 @@
     </el-form>
 
     <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          plain
+          icon="el-icon-download"
+          size="mini"
+          @click="handleExport"
+          v-hasPermi="['gangzhu:refund:list']"
+        >导出</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -409,7 +419,14 @@ export default {
     },
     getList() {
       this.loading = true;
-      // 发起时间范围
+      this.setQueryDateRanges();
+      listRefund(this.queryParams).then(response => {
+        this.refundList = response.rows;
+        this.total = response.total;
+        this.loading = false;
+      });
+    },
+    setQueryDateRanges() {
       if (this.daterangeApplyTime && this.daterangeApplyTime.length === 2) {
         this.queryParams.beginApplyTime = this.daterangeApplyTime[0];
         this.queryParams.endApplyTime = this.daterangeApplyTime[1];
@@ -424,11 +441,6 @@ export default {
         this.queryParams.beginApproveTime = null;
         this.queryParams.endApproveTime = null;
       }
-      listRefund(this.queryParams).then(response => {
-        this.refundList = response.rows;
-        this.total = response.total;
-        this.loading = false;
-      });
     },
     handleQuery() {
       this.queryParams.pageNum = 1;
@@ -439,6 +451,12 @@ export default {
       this.daterangeApplyTime = [];
       this.daterangeApproveTime = [];
       this.handleQuery();
+    },
+    handleExport() {
+      this.setQueryDateRanges();
+      this.download('gangzhu/refund/export', {
+        ...this.queryParams
+      }, `refund_${new Date().getTime()}.xlsx`);
     },
     // 查看详情
     handleDetail(row) {

@@ -1,6 +1,7 @@
 package com.ruoyi.system.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.ruoyi.common.annotation.Excel;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -20,12 +21,14 @@ public class HzRefundApplyVO implements Serializable {
     private Long refundId;
 
     /** 退款编号（实际是退租申请ID） */
+    @Excel(name = "退款编号")
     private String refundNo;
 
     /** 所属项目ID（仅用于查询过滤） */
     private Long projectId;
 
     /** 合同编号 */
+    @Excel(name = "合同编号")
     private String contractNo;
 
     /** 合同ID */
@@ -35,31 +38,42 @@ public class HzRefundApplyVO implements Serializable {
     private Long tenantId;
 
     /** 租户姓名 */
+    @Excel(name = "申请人")
     private String tenantName;
 
+    /** 联系电话 */
+    @Excel(name = "联系电话")
+    private String tenantPhone;
+
     /** 退款金额 */
+    @Excel(name = "退款金额")
     private BigDecimal refundAmount;
 
     /** 退款原因 */
+    @Excel(name = "退款原因")
     private String refundReason;
 
     /** 退款状态（0=待退还 1=已退还） */
+    @Excel(name = "退款状态", readConverterExp = "0=待退还,1=已退还")
     private String refundStatus;
 
     /** 退款状态文本 */
     private String refundStatusText;
 
     /** 审批状态（0=待审批 1=已审批，由退款状态和退款时间推导） */
+    @Excel(name = "审批状态", readConverterExp = "0=待审批,1=已审批")
     private String approveStatus;
 
     /** 退款类型（checkout=退租退款 / auto-cancel-checkin=入住超时自动退款） */
     private String refundType;
 
     /** 退款类型文本 */
+    @Excel(name = "退款类型")
     private String refundTypeText;
 
     /** 申请时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "发起时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date applyTime;
 
     /** 审批人 */
@@ -67,6 +81,7 @@ public class HzRefundApplyVO implements Serializable {
 
     /** 审批时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "审批时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date approveTime;
 
     /** 审批意见 */
@@ -195,6 +210,14 @@ public class HzRefundApplyVO implements Serializable {
 
     public void setTenantName(String tenantName) {
         this.tenantName = tenantName;
+    }
+
+    public String getTenantPhone() {
+        return tenantPhone;
+    }
+
+    public void setTenantPhone(String tenantPhone) {
+        this.tenantPhone = tenantPhone;
     }
 
     public BigDecimal getRefundAmount() {

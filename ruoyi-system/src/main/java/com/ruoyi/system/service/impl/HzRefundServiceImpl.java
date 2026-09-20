@@ -227,6 +227,7 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
             if (contract != null) {
                 vo.setContractNo(contract.getContractNo());
                 vo.setTenantName(contract.getTenantName());
+                vo.setTenantPhone(contract.getTenantPhone());
             }
         }
 

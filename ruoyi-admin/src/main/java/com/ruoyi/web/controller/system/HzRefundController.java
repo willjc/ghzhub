@@ -10,6 +10,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.system.domain.HzBill;
 import com.ruoyi.system.domain.HzCheckoutApply;
 import com.ruoyi.system.domain.HzCheckoutRecord;
@@ -23,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -58,7 +60,25 @@ public class HzRefundController extends BaseController {
     @PreAuthorize("@ss.hasPermi('gangzhu:refund:list')")
     @GetMapping("/list")
     public TableDataInfo list(HzRefundApplyVO query) {
-        Page<HzCheckoutApply> page = PageUtils.getPage();
+        return selectRefunds(PageUtils.getPage(), query);
+    }
+
+    /**
+     * 导出退款列表
+     */
+    @PreAuthorize("@ss.hasPermi('gangzhu:refund:list')")
+    @Log(title = "退款管理", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    public void export(HttpServletResponse response, HzRefundApplyVO query) {
+        TableDataInfo data = selectRefunds(new Page<>(1, 10000), query);
+        List<HzRefundApplyVO> list = data.getRows().stream()
+                .map(HzRefundApplyVO.class::cast)
+                .toList();
+        ExcelUtil<HzRefundApplyVO> util = new ExcelUtil<>(HzRefundApplyVO.class);
+        util.exportExcel(response, list, "退款管理数据");
+    }
+
+    private TableDataInfo selectRefunds(Page<HzCheckoutApply> page, HzRefundApplyVO query) {
         return refundService.selectRefundList(page,
                 query.getRefundNo(),
                 query.getContractNo(),
