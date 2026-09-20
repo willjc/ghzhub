@@ -8,6 +8,7 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.PageUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
@@ -39,6 +40,8 @@ import java.util.Map;
 @RequestMapping("/gangzhu/refund")
 public class HzRefundController extends BaseController {
 
+    private static final int MAX_EXPORT_ROWS = 10000;
+
     @Autowired
     private IHzRefundService refundService;
 
@@ -66,11 +69,14 @@ public class HzRefundController extends BaseController {
     /**
      * 导出退款列表
      */
-    @PreAuthorize("@ss.hasPermi('gangzhu:refund:list')")
+    @PreAuthorize("@ss.hasPermi('gangzhu:refund:export')")
     @Log(title = "退款管理", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, HzRefundApplyVO query) {
-        TableDataInfo data = selectRefunds(new Page<>(1, 10000), query);
+        TableDataInfo data = selectRefunds(new Page<>(1, MAX_EXPORT_ROWS), query);
+        if (data.getTotal() > MAX_EXPORT_ROWS) {
+            throw new ServiceException("导出数据超过10000条，请增加筛选条件后重试");
+        }
         List<HzRefundApplyVO> list = data.getRows().stream()
                 .map(HzRefundApplyVO.class::cast)
                 .toList();
