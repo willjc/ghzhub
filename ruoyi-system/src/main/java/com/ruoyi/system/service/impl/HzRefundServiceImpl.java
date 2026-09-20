@@ -47,7 +47,9 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
     private HzHouseMapper houseMapper;
 
     @Override
-    public TableDataInfo selectRefundList(Page<HzCheckoutApply> page, String refundNo, String contractNo, String refundStatus, Long projectId, String refundType, String tenantName, String beginApplyTime, String endApplyTime) {
+    public TableDataInfo selectRefundList(Page<HzCheckoutApply> page, String refundNo, String contractNo,
+            String refundStatus, String approveStatus, Long projectId, String refundType, String tenantName,
+            String beginApplyTime, String endApplyTime, String beginApproveTime, String endApproveTime) {
         // 构建退租申请查询条件（已确认且有退款金额）
         LambdaQueryWrapper<HzCheckoutApply> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzCheckoutApply::getApplyStatus, "5")
@@ -116,16 +118,24 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
             wrapper.in(HzCheckoutApply::getHouseId, houseIds);
         }
 
-        // 退款状态过滤：先查出匹配的 applyId 集合
+        // 退款状态过滤
         if (refundStatus != null && !refundStatus.isEmpty()) {
-            LambdaQueryWrapper<HzCheckoutRecord> recordWrapper = new LambdaQueryWrapper<>();
-            recordWrapper.eq(HzCheckoutRecord::getRefundStatus, refundStatus);
-            List<Long> applyIds = checkoutRecordMapper.selectList(recordWrapper)
-                    .stream().map(HzCheckoutRecord::getApplyId).collect(Collectors.toList());
-            if (applyIds.isEmpty()) {
-                return emptyResult();
-            }
-            wrapper.in(HzCheckoutApply::getApplyId, applyIds);
+            wrapper.exists("SELECT 1 FROM hz_checkout_record r WHERE r.apply_id = hz_checkout_apply.apply_id "
+                    + "AND r.del_flag = '0' AND r.refund_status = {0}", refundStatus);
+        }
+
+        String approvedRefund = "SELECT 1 FROM hz_checkout_record r WHERE r.apply_id = hz_checkout_apply.apply_id "
+                + "AND r.del_flag = '0' AND r.refund_status = '1' AND r.refund_time IS NOT NULL";
+        if ("1".equals(approveStatus)) {
+            wrapper.exists(approvedRefund);
+        } else if ("0".equals(approveStatus)) {
+            wrapper.notExists(approvedRefund);
+        }
+        if (beginApproveTime != null && !beginApproveTime.isEmpty()) {
+            wrapper.exists(approvedRefund + " AND r.refund_time >= {0}", beginApproveTime + " 00:00:00");
+        }
+        if (endApproveTime != null && !endApproveTime.isEmpty()) {
+            wrapper.exists(approvedRefund + " AND r.refund_time <= {0}", endApproveTime + " 23:59:59");
         }
 
         // 分页查询
@@ -185,10 +195,7 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
         vo.setTenantId(checkout.getTenantId());
         vo.setRefundAmount(checkout.getRefundAmount());
         vo.setRefundReason(checkout.getCheckoutReason());
-        vo.setApplyTime(checkout.getApproveTime());
-        vo.setApproveBy(checkout.getApproveBy());
-        vo.setApproveTime(checkout.getApproveTime());
-        vo.setApproveOpinion(checkout.getApproveOpinion());
+        vo.setApplyTime(checkout.getApplyTime());
 
         // 退款类型识别：根据 checkout_reason 区分
         if (checkout.getCheckoutReason() != null && checkout.getCheckoutReason().contains("入住超时自动解约")) {
@@ -224,6 +231,7 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
         HzCheckoutRecord record = checkoutRecordMapper.selectOne(recordWrapper);
 
         String refundStatusVal = "0";
+        String approveStatusVal = "0";
         if (record != null) {
             if (record.getRefundStatus() != null) {
                 refundStatusVal = record.getRefundStatus();
@@ -233,9 +241,15 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
             vo.setPaymentVoucher(record.getPaymentVoucher());
             vo.setPaymentRemark(record.getPaymentRemark());
             vo.setPaymentTime(record.getRefundTime());
+            if ("1".equals(record.getRefundStatus()) && record.getRefundTime() != null) {
+                approveStatusVal = "1";
+                vo.setApproveBy(record.getUpdateBy());
+                vo.setApproveTime(record.getRefundTime());
+            }
         }
         vo.setRefundStatus(refundStatusVal);
         vo.setRefundStatusText(getRefundStatusText(refundStatusVal));
+        vo.setApproveStatus(approveStatusVal);
 
         return vo;
     }

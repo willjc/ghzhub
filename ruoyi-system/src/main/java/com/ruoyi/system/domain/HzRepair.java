@@ -1,6 +1,7 @@
 package com.ruoyi.system.domain;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
 /**
@@ -82,6 +83,7 @@ public class HzRepair extends BaseEntity
     private String delFlag;
 
     /** 申请人姓名（非表字段，经 hz_user.real_name 查询） */
+    @Excel(name = "申请人")
     @TableField(exist = false)
     private String applicantName;
 

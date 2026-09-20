@@ -35,6 +35,12 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item label="审批状态" prop="approveStatus">
+        <el-select v-model="queryParams.approveStatus" placeholder="审批状态" clearable>
+          <el-option label="待审批" value="0" />
+          <el-option label="已审批" value="1" />
+        </el-select>
+      </el-form-item>
       <el-form-item label="所属项目" prop="projectId">
         <el-select v-model="queryParams.projectId" placeholder="请选择项目" clearable filterable style="width: 200px">
           <el-option
@@ -54,6 +60,17 @@
       <el-form-item label="发起时间">
         <el-date-picker
           v-model="daterangeApplyTime"
+          style="width: 240px"
+          value-format="yyyy-MM-dd"
+          type="daterange"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+        ></el-date-picker>
+      </el-form-item>
+      <el-form-item label="审批时间">
+        <el-date-picker
+          v-model="daterangeApproveTime"
           style="width: 240px"
           value-format="yyyy-MM-dd"
           type="daterange"
@@ -94,7 +111,16 @@
           <el-tag v-else-if="scope.row.refundStatus === '1'" type="success">已退还</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="申请时间" align="center" prop="applyTime" width="160" />
+      <el-table-column label="审批状态" align="center" prop="approveStatus" width="100">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.approveStatus === '1'" type="success">已审批</el-tag>
+          <el-tag v-else type="warning">待审批</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="发起时间" align="center" prop="applyTime" width="160" />
+      <el-table-column label="审批时间" align="center" prop="approveTime" width="160">
+        <template slot-scope="scope">{{ scope.row.approveTime || '-' }}</template>
+      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200" fixed="right">
         <template slot-scope="scope">
           <el-button
@@ -154,8 +180,12 @@
           <el-tag v-if="detailForm.refundStatus === '0'" type="warning">待退还</el-tag>
           <el-tag v-else-if="detailForm.refundStatus === '1'" type="success">已退还</el-tag>
         </el-descriptions-item>
+        <el-descriptions-item label="审批状态">
+          <el-tag v-if="detailForm.approveStatus === '1'" type="success">已审批</el-tag>
+          <el-tag v-else type="warning">待审批</el-tag>
+        </el-descriptions-item>
         <el-descriptions-item label="退款原因" :span="2">{{ detailForm.refundReason || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="申请时间">{{ detailForm.applyTime }}</el-descriptions-item>
+        <el-descriptions-item label="发起时间">{{ detailForm.applyTime || '-' }}</el-descriptions-item>
         <el-descriptions-item label="审批人">{{ detailForm.approveBy || '-' }}</el-descriptions-item>
         <el-descriptions-item label="审批时间" :span="2">{{ detailForm.approveTime || '-' }}</el-descriptions-item>
       </el-descriptions>
@@ -293,6 +323,7 @@ export default {
       refundList: [],
       projectList: [],
       daterangeApplyTime: [],
+      daterangeApproveTime: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -300,10 +331,13 @@ export default {
         tenantName: null,
         contractNo: null,
         refundStatus: null,
+        approveStatus: null,
         projectId: null,
         refundType: null,
         beginApplyTime: null,
-        endApplyTime: null
+        endApplyTime: null,
+        beginApproveTime: null,
+        endApproveTime: null
       },
       // 详情
       detailOpen: false,
@@ -383,6 +417,13 @@ export default {
         this.queryParams.beginApplyTime = null;
         this.queryParams.endApplyTime = null;
       }
+      if (this.daterangeApproveTime && this.daterangeApproveTime.length === 2) {
+        this.queryParams.beginApproveTime = this.daterangeApproveTime[0];
+        this.queryParams.endApproveTime = this.daterangeApproveTime[1];
+      } else {
+        this.queryParams.beginApproveTime = null;
+        this.queryParams.endApproveTime = null;
+      }
       listRefund(this.queryParams).then(response => {
         this.refundList = response.rows;
         this.total = response.total;
@@ -396,6 +437,7 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.daterangeApplyTime = [];
+      this.daterangeApproveTime = [];
       this.handleQuery();
     },
     // 查看详情

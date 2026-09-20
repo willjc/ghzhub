@@ -75,7 +75,7 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" align="center" prop="repairId" width="70" />
       <el-table-column label="报修编号" align="center" prop="repairNo" width="130" />
-      <el-table-column label="用户ID" align="center" prop="userId" width="90" />
+      <el-table-column label="申请人" align="center" prop="applicantName" width="100" show-overflow-tooltip />
       <el-table-column label="所在位置" align="center" prop="location" min-width="150" show-overflow-tooltip />
       <el-table-column label="房间号" align="center" prop="roomNo" width="90" />
       <el-table-column label="联系电话" align="center" prop="phone" width="120" />
@@ -135,7 +135,7 @@
       <el-descriptions :column="1" border>
         <el-descriptions-item label="报修ID">{{ detailData.repairId }}</el-descriptions-item>
         <el-descriptions-item label="报修编号">{{ detailData.repairNo }}</el-descriptions-item>
-        <el-descriptions-item label="用户ID">{{ detailData.userId }}</el-descriptions-item>
+        <el-descriptions-item label="申请人">{{ detailData.applicantName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="所在位置">{{ detailData.location }}</el-descriptions-item>
         <el-descriptions-item label="房间号">{{ detailData.roomNo }}</el-descriptions-item>
         <el-descriptions-item label="联系电话">{{ detailData.phone }}</el-descriptions-item>

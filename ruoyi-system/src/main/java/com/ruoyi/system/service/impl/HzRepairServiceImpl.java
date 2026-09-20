@@ -16,8 +16,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 物业报修Service业务层处理
@@ -35,14 +40,18 @@ public class HzRepairServiceImpl extends ServiceImpl<HzRepairMapper, HzRepair> i
     {
         LambdaQueryWrapper<HzRepair> wrapper = buildQueryWrapper(repair);
         Page<HzRepair> page = new Page<>(pageNum, pageSize);
-        return this.page(page, wrapper);
+        IPage<HzRepair> result = this.page(page, wrapper);
+        fillApplicantNames(result.getRecords());
+        return result;
     }
 
     @Override
     public List<HzRepair> selectRepairList(HzRepair repair)
     {
         LambdaQueryWrapper<HzRepair> wrapper = buildQueryWrapper(repair);
-        return this.list(wrapper);
+        List<HzRepair> repairs = this.list(wrapper);
+        fillApplicantNames(repairs);
+        return repairs;
     }
 
     @Override
@@ -52,7 +61,9 @@ public class HzRepairServiceImpl extends ServiceImpl<HzRepairMapper, HzRepair> i
         wrapper.eq(HzRepair::getUserId, userId)
                .eq(HzRepair::getDelFlag, "0")
                .orderByDesc(HzRepair::getCreateTime);
-        return this.list(wrapper);
+        List<HzRepair> repairs = this.list(wrapper);
+        fillApplicantNames(repairs);
+        return repairs;
     }
 
     @Override
@@ -61,7 +72,9 @@ public class HzRepairServiceImpl extends ServiceImpl<HzRepairMapper, HzRepair> i
         LambdaQueryWrapper<HzRepair> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HzRepair::getRepairId, repairId)
                .eq(HzRepair::getDelFlag, "0");
-        return this.getOne(wrapper);
+        HzRepair repair = this.getOne(wrapper);
+        fillApplicantNames(repair == null ? Collections.emptyList() : Collections.singletonList(repair));
+        return repair;
     }
 
     @Override
@@ -184,5 +197,23 @@ public class HzRepairServiceImpl extends ServiceImpl<HzRepairMapper, HzRepair> i
             }
         }
         return wrapper;
+    }
+
+    private void fillApplicantNames(List<HzRepair> repairs)
+    {
+        List<Long> userIds = repairs.stream()
+                .map(HzRepair::getUserId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        if (userIds.isEmpty()) {
+            return;
+        }
+        Map<Long, HzUser> users = userMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(HzUser::getUserId, Function.identity(), (first, ignored) -> first));
+        repairs.forEach(repair -> {
+            HzUser user = users.get(repair.getUserId());
+            repair.setApplicantName(user == null ? null : user.getRealName());
+        });
     }
 }

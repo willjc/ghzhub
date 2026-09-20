@@ -49,6 +49,9 @@ public class HzRefundApplyVO implements Serializable {
     /** 退款状态文本 */
     private String refundStatusText;
 
+    /** 审批状态（0=待审批 1=已审批，由退款状态和退款时间推导） */
+    private String approveStatus;
+
     /** 退款类型（checkout=退租退款 / auto-cancel-checkin=入住超时自动退款） */
     private String refundType;
 
@@ -74,6 +77,12 @@ public class HzRefundApplyVO implements Serializable {
 
     /** 发起时间范围-结束（查询条件，yyyy-MM-dd） */
     private String endApplyTime;
+
+    /** 审批时间范围-开始（查询条件，yyyy-MM-dd） */
+    private String beginApproveTime;
+
+    /** 审批时间范围-结束（查询条件，yyyy-MM-dd） */
+    private String endApproveTime;
 
     /** 开户银行名称 */
     private String bankName;
@@ -220,6 +229,14 @@ public class HzRefundApplyVO implements Serializable {
         this.refundStatusText = refundStatusText;
     }
 
+    public String getApproveStatus() {
+        return approveStatus;
+    }
+
+    public void setApproveStatus(String approveStatus) {
+        this.approveStatus = approveStatus;
+    }
+
     public String getRefundType() {
         return refundType;
     }
@@ -282,6 +299,22 @@ public class HzRefundApplyVO implements Serializable {
 
     public void setEndApplyTime(String endApplyTime) {
         this.endApplyTime = endApplyTime;
+    }
+
+    public String getBeginApproveTime() {
+        return beginApproveTime;
+    }
+
+    public void setBeginApproveTime(String beginApproveTime) {
+        this.beginApproveTime = beginApproveTime;
+    }
+
+    public String getEndApproveTime() {
+        return endApproveTime;
+    }
+
+    public void setEndApproveTime(String endApproveTime) {
+        this.endApproveTime = endApproveTime;
     }
 
     public String getBankName() {
