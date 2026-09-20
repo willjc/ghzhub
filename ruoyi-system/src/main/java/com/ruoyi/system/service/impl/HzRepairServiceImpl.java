@@ -18,10 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -174,15 +174,8 @@ public class HzRepairServiceImpl extends ServiceImpl<HzRepairMapper, HzRepair> i
 
         // 申请人姓名：hz_repair 无姓名冗余，经 hz_user.real_name 解析
         if (StringUtils.isNotEmpty(repair.getApplicantName())) {
-            List<HzUser> users = userMapper.selectList(new LambdaQueryWrapper<HzUser>()
-                    .like(HzUser::getRealName, repair.getApplicantName())
-                    .select(HzUser::getUserId));
-            if (users.isEmpty()) {
-                // 无匹配用户，直接返回空结果
-                wrapper.apply("1 = 0");
-            } else {
-                wrapper.in(HzRepair::getUserId, users.stream().map(HzUser::getUserId).collect(java.util.stream.Collectors.toList()));
-            }
+            wrapper.exists("SELECT 1 FROM hz_user u WHERE u.user_id = hz_repair.user_id "
+                    + "AND u.real_name LIKE CONCAT('%', {0}, '%')", repair.getApplicantName());
         }
 
         // 申请时间范围（前端 params.beginCreateTime / endCreateTime）
@@ -201,6 +194,7 @@ public class HzRepairServiceImpl extends ServiceImpl<HzRepairMapper, HzRepair> i
 
     private void fillApplicantNames(List<HzRepair> repairs)
     {
+        repairs.forEach(repair -> repair.setApplyTime(repair.getCreateTime()));
         List<Long> userIds = repairs.stream()
                 .map(HzRepair::getUserId)
                 .filter(Objects::nonNull)
@@ -209,8 +203,12 @@ public class HzRepairServiceImpl extends ServiceImpl<HzRepairMapper, HzRepair> i
         if (userIds.isEmpty()) {
             return;
         }
-        Map<Long, HzUser> users = userMapper.selectBatchIds(userIds).stream()
-                .collect(Collectors.toMap(HzUser::getUserId, Function.identity(), (first, ignored) -> first));
+        Map<Long, HzUser> users = new HashMap<>();
+        for (int start = 0; start < userIds.size(); start += 1000) {
+            int end = Math.min(start + 1000, userIds.size());
+            userMapper.selectBatchIds(userIds.subList(start, end))
+                    .forEach(user -> users.putIfAbsent(user.getUserId(), user));
+        }
         repairs.forEach(repair -> {
             HzUser user = users.get(repair.getUserId());
             repair.setApplicantName(user == null ? null : user.getRealName());

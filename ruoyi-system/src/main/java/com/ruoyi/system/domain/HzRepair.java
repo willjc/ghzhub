@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.*;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
+import java.util.Date;
+
 /**
  * 物业报修对象 hz_repair
  *
@@ -19,6 +21,7 @@ public class HzRepair extends BaseEntity
     private Long repairId;
 
     /** 报修编号 */
+    @Excel(name = "报修编号")
     @TableField("repair_no")
     private String repairNo;
 
@@ -39,14 +42,17 @@ public class HzRepair extends BaseEntity
     private Long unitId;
 
     /** 所在位置(拼接字符串) */
+    @Excel(name = "所在位置")
     @TableField("location")
     private String location;
 
     /** 房间号 */
+    @Excel(name = "房间号")
     @TableField("room_no")
     private String roomNo;
 
     /** 联系电话 */
+    @Excel(name = "联系电话")
     @TableField("phone")
     private String phone;
 
@@ -63,6 +69,7 @@ public class HzRepair extends BaseEntity
     private String repairDate;
 
     /** 状态：0-待处理，1-已完成，2-已取消 */
+    @Excel(name = "处理状态", readConverterExp = "0=待处理,1=已完成,2=已取消")
     @TableField("status")
     private String status;
 
@@ -86,6 +93,11 @@ public class HzRepair extends BaseEntity
     @Excel(name = "申请人")
     @TableField(exist = false)
     private String applicantName;
+
+    /** 申请时间（导出字段，来源于 createTime） */
+    @Excel(name = "申请时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
+    @TableField(exist = false)
+    private Date applyTime;
 
     public Long getRepairId()
     {
@@ -263,6 +275,14 @@ public class HzRepair extends BaseEntity
 
     public void setApplicantName(String applicantName) {
         this.applicantName = applicantName;
+    }
+
+    public Date getApplyTime() {
+        return applyTime;
+    }
+
+    public void setApplyTime(Date applyTime) {
+        this.applyTime = applyTime;
     }
 
     @Override

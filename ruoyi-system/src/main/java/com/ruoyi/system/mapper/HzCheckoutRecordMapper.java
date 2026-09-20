@@ -22,4 +22,12 @@ public interface HzCheckoutRecordMapper extends BaseMapper<HzCheckoutRecord> {
      */
     @Select("SELECT * FROM hz_checkout_record WHERE apply_id = #{applyId} AND del_flag = '0' LIMIT 1")
     HzCheckoutRecord selectByApplyId(@Param("applyId") Long applyId);
+
+    /**
+     * 查询同一申请最新一条有效已退款记录
+     */
+    @Select("SELECT * FROM hz_checkout_record WHERE apply_id = #{applyId} AND del_flag = '0' "
+            + "AND refund_status = '1' AND refund_time IS NOT NULL "
+            + "ORDER BY refund_time DESC, record_id DESC LIMIT 1")
+    HzCheckoutRecord selectLatestRefundedByApplyId(@Param("applyId") Long applyId);
 }

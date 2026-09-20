@@ -118,23 +118,28 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
             wrapper.in(HzCheckoutApply::getHouseId, houseIds);
         }
 
-        // 退款状态过滤
-        if (refundStatus != null && !refundStatus.isEmpty()) {
-            wrapper.exists("SELECT 1 FROM hz_checkout_record r WHERE r.apply_id = hz_checkout_apply.apply_id "
-                    + "AND r.del_flag = '0' AND r.refund_status = {0}", refundStatus);
-        }
-
         String approvedRefund = "SELECT 1 FROM hz_checkout_record r WHERE r.apply_id = hz_checkout_apply.apply_id "
-                + "AND r.del_flag = '0' AND r.refund_status = '1' AND r.refund_time IS NOT NULL";
+                + "AND r.del_flag = '0' AND r.refund_status = '1' AND r.refund_time IS NOT NULL "
+                + "AND r.record_id = (SELECT r2.record_id FROM hz_checkout_record r2 "
+                + "WHERE r2.apply_id = r.apply_id AND r2.del_flag = '0' AND r2.refund_status = '1' "
+                + "AND r2.refund_time IS NOT NULL ORDER BY r2.refund_time DESC, r2.record_id DESC LIMIT 1)";
+        if ("1".equals(refundStatus)) {
+            wrapper.exists(approvedRefund);
+        } else if ("0".equals(refundStatus)) {
+            wrapper.notExists(approvedRefund);
+        }
         if ("1".equals(approveStatus)) {
             wrapper.exists(approvedRefund);
         } else if ("0".equals(approveStatus)) {
             wrapper.notExists(approvedRefund);
         }
-        if (beginApproveTime != null && !beginApproveTime.isEmpty()) {
+        if (beginApproveTime != null && !beginApproveTime.isEmpty()
+                && endApproveTime != null && !endApproveTime.isEmpty()) {
+            wrapper.exists(approvedRefund + " AND r.refund_time >= {0} AND r.refund_time <= {1}",
+                    beginApproveTime + " 00:00:00", endApproveTime + " 23:59:59");
+        } else if (beginApproveTime != null && !beginApproveTime.isEmpty()) {
             wrapper.exists(approvedRefund + " AND r.refund_time >= {0}", beginApproveTime + " 00:00:00");
-        }
-        if (endApproveTime != null && !endApproveTime.isEmpty()) {
+        } else if (endApproveTime != null && !endApproveTime.isEmpty()) {
             wrapper.exists(approvedRefund + " AND r.refund_time <= {0}", endApproveTime + " 23:59:59");
         }
 
@@ -225,24 +230,20 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
             }
         }
 
-        HzCheckoutRecord record = checkoutRecordMapper.selectByApplyId(checkout.getApplyId());
+        HzCheckoutRecord record = checkoutRecordMapper.selectLatestRefundedByApplyId(checkout.getApplyId());
 
         String refundStatusVal = "0";
         String approveStatusVal = "0";
         if (record != null) {
-            if (record.getRefundStatus() != null) {
-                refundStatusVal = record.getRefundStatus();
-            }
+            refundStatusVal = "1";
+            approveStatusVal = "1";
             vo.setPaymentMethod(record.getPaymentMethod());
             vo.setPaymentMethodText(getPaymentMethodText(record.getPaymentMethod()));
             vo.setPaymentVoucher(record.getPaymentVoucher());
             vo.setPaymentRemark(record.getPaymentRemark());
             vo.setPaymentTime(record.getRefundTime());
-            if ("1".equals(record.getRefundStatus()) && record.getRefundTime() != null) {
-                approveStatusVal = "1";
-                vo.setApproveBy(record.getUpdateBy());
-                vo.setApproveTime(record.getRefundTime());
-            }
+            vo.setApproveBy(record.getUpdateBy());
+            vo.setApproveTime(record.getRefundTime());
         }
         vo.setRefundStatus(refundStatusVal);
         vo.setRefundStatusText(getRefundStatusText(refundStatusVal));
