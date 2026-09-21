@@ -27,12 +27,9 @@
       </el-form-item>
       <el-form-item label="退款状态" prop="refundStatus">
         <el-select v-model="queryParams.refundStatus" placeholder="退款状态" clearable>
-          <el-option
-            v-for="dict in dict.type.refund_status"
-            :key="dict.value"
-            :label="dict.label"
-            :value="dict.value"
-          />
+          <el-option label="待退还" value="0" />
+          <el-option label="部分退还" value="2" />
+          <el-option label="已退还" value="1" />
         </el-select>
       </el-form-item>
       <el-form-item label="审批状态" prop="approveStatus">
@@ -119,6 +116,7 @@
         <template slot-scope="scope">
           <el-tag v-if="scope.row.refundStatus === '0'" type="warning">待退还</el-tag>
           <el-tag v-else-if="scope.row.refundStatus === '1'" type="success">已退还</el-tag>
+          <el-tag v-else-if="scope.row.refundStatus === '2'" type="danger">部分退还</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="审批状态" align="center" prop="approveStatus" width="100">
@@ -145,7 +143,7 @@
             icon="el-icon-money"
             style="color: #07c160;"
             @click="handleWechatRefund(scope.row)"
-            v-if="scope.row.refundStatus === '0'"
+            v-if="scope.row.refundStatus === '0' || scope.row.refundStatus === '2'"
             v-hasPermi="['gangzhu:refund:payment']"
           >微信退款</el-button>
           <el-button
@@ -189,6 +187,7 @@
         <el-descriptions-item label="退款状态">
           <el-tag v-if="detailForm.refundStatus === '0'" type="warning">待退还</el-tag>
           <el-tag v-else-if="detailForm.refundStatus === '1'" type="success">已退还</el-tag>
+          <el-tag v-else-if="detailForm.refundStatus === '2'" type="danger">部分退还</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="审批状态">
           <el-tag v-if="detailForm.approveStatus === '1'" type="success">已审批</el-tag>
@@ -256,6 +255,12 @@
           <template slot-scope="scope">{{ scope.row.transactionNo || '-' }}</template>
         </el-table-column>
         <el-table-column label="付款时间" prop="payTime" width="160" />
+        <el-table-column label="退款进度" width="100" align="center">
+          <template slot-scope="scope">
+            <el-tag v-if="splitRefunded(scope.row.billType)" type="success" size="mini">已退还</el-tag>
+            <el-tag v-else type="warning" size="mini">待退还</el-tag>
+          </template>
+        </el-table-column>
       </el-table>
       <div v-if="splitRows.length" style="margin-top: 8px; color: #909399; font-size: 12px;">
         提示：微信原路退款将按上述账单分别发起退款请求（押金笔退至原押金支付通道，租金笔退至对应租金账单）。
@@ -263,7 +268,7 @@
 
       <!-- 付款信息 -->
       <el-divider content-position="left">付款信息</el-divider>
-      <el-descriptions :column="2" border v-if="detailForm.refundStatus === '1'">
+      <el-descriptions :column="2" border v-if="detailForm.paymentRemark">
         <el-descriptions-item label="付款方式">{{ detailForm.paymentMethodText || '-' }}</el-descriptions-item>
         <el-descriptions-item label="付款时间">{{ detailForm.paymentTime || '-' }}</el-descriptions-item>
         <el-descriptions-item label="付款备注" :span="2">{{ detailForm.paymentRemark || '-' }}</el-descriptions-item>
@@ -324,7 +329,6 @@ import { getContractBills } from "@/api/gangzhu/checkout";
 
 export default {
   name: "Refund",
-  dicts: ['refund_status'],
   data() {
     return {
       loading: true,
@@ -478,11 +482,16 @@ export default {
     handleWechatRefund(row) {
       // 拉取账单明细组装弹窗文案，用于二次确认
       const buildAndConfirm = (bills) => {
-        const depositBills = bills.filter(b => b.billType === '1' && b.billStatus === '1');
-        const rentBills = bills.filter(b => b.billType === '2' && b.billStatus === '1');
+        const depositBills = bills.filter(b => b.billType === '1' && b.billStatus === '1'
+          && row.depositRefundStatus !== '1');
+        const rentBills = bills.filter(b => b.billType === '2' && b.billStatus === '1'
+          && row.rentRefundStatus !== '1');
         const lines = [];
         lines.push(`合同编号：${row.contractNo || '-'}`);
         lines.push(`总退款金额：¥${row.refundAmount} 元`);
+        if (row.refundStatus === '2') {
+          lines.push('本次仅重试尚未成功的退款款项。');
+        }
         if (depositBills.length || rentBills.length) {
           lines.push('');
           lines.push('将按以下账单原路退款：');
@@ -497,7 +506,7 @@ export default {
           lines.push('（未查询到已付账单明细，将直接按总额发起退款）');
         }
         lines.push('');
-        lines.push('退款后状态将自动更新为"已退还"，操作不可撤销。');
+        lines.push('系统将按每笔实际结果更新退款进度，操作不可撤销。');
         const message = lines.join('\n');
         this.$confirm(message, '微信原路退款确认', {
           confirmButtonText: '确认退款',
@@ -509,7 +518,11 @@ export default {
           const loading = this.$loading({ lock: true, text: '退款处理中...', background: 'rgba(0,0,0,0.7)' });
           wechatRefund(row.refundId).then(res => {
             loading.close();
-            this.$modal.msgSuccess(res.msg || '微信退款申请成功，预计2分钟内到账');
+            if (res.data && res.data.refundStatus === '2') {
+              this.$modal.msgWarning(res.msg);
+            } else {
+              this.$modal.msgSuccess(res.msg || '微信退款申请成功，预计2分钟内到账');
+            }
             this.getList();
           }).catch(() => {
             loading.close();
@@ -526,6 +539,11 @@ export default {
       } else {
         buildAndConfirm([]);
       }
+    },
+    splitRefunded(billType) {
+      return billType === '1'
+        ? this.detailForm.depositRefundStatus === '1'
+        : this.detailForm.rentRefundStatus === '1';
     },
     // 提交付款信息
     handlePaymentInfo(row) {

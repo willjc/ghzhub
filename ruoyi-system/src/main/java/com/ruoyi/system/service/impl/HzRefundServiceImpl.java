@@ -118,15 +118,17 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
             wrapper.in(HzCheckoutApply::getHouseId, houseIds);
         }
 
-        String approvedRefund = "SELECT 1 FROM hz_checkout_record r WHERE r.apply_id = hz_checkout_apply.apply_id "
-                + "AND r.del_flag = '0' AND r.refund_status = '1' AND r.refund_time IS NOT NULL "
-                + "AND r.record_id = (SELECT r2.record_id FROM hz_checkout_record r2 "
-                + "WHERE r2.apply_id = r.apply_id AND r2.del_flag = '0' AND r2.refund_status = '1' "
-                + "AND r2.refund_time IS NOT NULL ORDER BY r2.refund_time DESC, r2.record_id DESC LIMIT 1)";
+        String latestRefund = "SELECT 1 FROM hz_checkout_record r WHERE r.apply_id = hz_checkout_apply.apply_id "
+                + "AND r.del_flag = '0' AND r.record_id = (SELECT r2.record_id FROM hz_checkout_record r2 "
+                + "WHERE r2.apply_id = r.apply_id AND r2.del_flag = '0' "
+                + "ORDER BY r2.record_id DESC LIMIT 1)";
+        String approvedRefund = latestRefund + " AND r.refund_status = '1' AND r.refund_time IS NOT NULL";
         if ("1".equals(refundStatus)) {
             wrapper.exists(approvedRefund);
+        } else if ("2".equals(refundStatus)) {
+            wrapper.exists(latestRefund + " AND r.refund_status = '2'");
         } else if ("0".equals(refundStatus)) {
-            wrapper.notExists(approvedRefund);
+            wrapper.notExists(latestRefund + " AND r.refund_status IN ('1', '2')");
         }
         if ("1".equals(approveStatus)) {
             wrapper.exists(approvedRefund);
@@ -231,20 +233,24 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
             }
         }
 
-        HzCheckoutRecord record = checkoutRecordMapper.selectLatestRefundedByApplyId(checkout.getApplyId());
+        HzCheckoutRecord record = checkoutRecordMapper.selectByApplyId(checkout.getApplyId());
 
         String refundStatusVal = "0";
         String approveStatusVal = "0";
         if (record != null) {
-            refundStatusVal = "1";
-            approveStatusVal = "1";
+            refundStatusVal = record.getRefundStatus() != null ? record.getRefundStatus() : "0";
+            if ("1".equals(refundStatusVal) && record.getRefundTime() != null) {
+                approveStatusVal = "1";
+                vo.setApproveBy(record.getUpdateBy());
+                vo.setApproveTime(record.getRefundTime());
+            }
+            vo.setDepositRefundStatus(record.getDepositRefundStatus());
+            vo.setRentRefundStatus(record.getRentRefundStatus());
             vo.setPaymentMethod(record.getPaymentMethod());
             vo.setPaymentMethodText(getPaymentMethodText(record.getPaymentMethod()));
             vo.setPaymentVoucher(record.getPaymentVoucher());
             vo.setPaymentRemark(record.getPaymentRemark());
-            vo.setPaymentTime(record.getRefundTime());
-            vo.setApproveBy(record.getUpdateBy());
-            vo.setApproveTime(record.getRefundTime());
+            vo.setPaymentTime(record.getRefundTime() != null ? record.getRefundTime() : record.getUpdateTime());
         }
         vo.setRefundStatus(refundStatusVal);
         vo.setRefundStatusText(getRefundStatusText(refundStatusVal));
@@ -264,6 +270,7 @@ public class HzRefundServiceImpl extends ServiceImpl<HzRefundApplyMapper, HzRefu
         switch (status) {
             case "0": return "待退还";
             case "1": return "已退还";
+            case "2": return "部分退还";
             default: return "待退还";
         }
     }

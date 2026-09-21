@@ -750,6 +750,7 @@
         <el-descriptions-item label="退款状态">
           <el-tag v-if="recordForm.refundStatus === '0'" type="warning">待退还</el-tag>
           <el-tag v-else-if="recordForm.refundStatus === '1'" type="success">已退还</el-tag>
+          <el-tag v-else-if="recordForm.refundStatus === '2'" type="danger">部分退还</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="退款时间">
           {{ recordForm.refundTime || '-' }}
@@ -1645,7 +1646,7 @@ export default {
         : '';
       // 签字信息区块（有退租记录才输出）
       const signBlock = this.recordForm.recordId
-        ? `<h2>八、签字信息</h2>\n<table class="info-table">\n  <tr><td>退租时间</td><td>${stamp(this.recordForm.checkoutDate)}</td><td>钥匙归还</td><td>${stamp(this.recordForm.keyReturned)} 把</td></tr>\n  <tr><td>退款状态</td><td>${this.recordForm.refundStatus === '1' ? '已退还' : '待退还'}</td><td>退款时间</td><td>${stamp(this.recordForm.refundTime)}</td></tr>\n  <tr><td>租户签字</td><td colspan="3">${sigHtml}</td></tr>\n</table>`
+        ? `<h2>八、签字信息</h2>\n<table class="info-table">\n  <tr><td>退租时间</td><td>${stamp(this.recordForm.checkoutDate)}</td><td>钥匙归还</td><td>${stamp(this.recordForm.keyReturned)} 把</td></tr>\n  <tr><td>退款状态</td><td>${this.recordForm.refundStatus === '1' ? '已退还' : (this.recordForm.refundStatus === '2' ? '部分退还' : '待退还')}</td><td>退款时间</td><td>${stamp(this.recordForm.refundTime)}</td></tr>\n  <tr><td>租户签字</td><td colspan="3">${sigHtml}</td></tr>\n</table>`
         : `<h2>八、签字信息</h2>\n<table class="info-table">\n  <tr><td>租户签字</td><td colspan="3">${sigHtml}</td></tr>\n</table>`;
 
       // 组装完整 HTML

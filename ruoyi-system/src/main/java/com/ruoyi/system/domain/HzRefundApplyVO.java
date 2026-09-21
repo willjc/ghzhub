@@ -53,12 +53,18 @@ public class HzRefundApplyVO implements Serializable {
     @Excel(name = "退款原因")
     private String refundReason;
 
-    /** 退款状态（0=待退还 1=已退还） */
-    @Excel(name = "退款状态", readConverterExp = "0=待退还,1=已退还")
+    /** 退款状态（0=待退还 1=已退还 2=部分退还） */
+    @Excel(name = "退款状态", readConverterExp = "0=待退还,1=已退还,2=部分退还")
     private String refundStatus;
 
     /** 退款状态文本 */
     private String refundStatusText;
+
+    /** 押金退款状态（0=待退还 1=已退还） */
+    private String depositRefundStatus;
+
+    /** 租金退款状态（0=待退还 1=已退还） */
+    private String rentRefundStatus;
 
     /** 审批状态（0=待审批 1=已审批，由退款状态和退款时间推导） */
     @Excel(name = "审批状态", readConverterExp = "0=待审批,1=已审批")
@@ -250,6 +256,22 @@ public class HzRefundApplyVO implements Serializable {
 
     public void setRefundStatusText(String refundStatusText) {
         this.refundStatusText = refundStatusText;
+    }
+
+    public String getDepositRefundStatus() {
+        return depositRefundStatus;
+    }
+
+    public void setDepositRefundStatus(String depositRefundStatus) {
+        this.depositRefundStatus = depositRefundStatus;
+    }
+
+    public String getRentRefundStatus() {
+        return rentRefundStatus;
+    }
+
+    public void setRentRefundStatus(String rentRefundStatus) {
+        this.rentRefundStatus = rentRefundStatus;
     }
 
     public String getApproveStatus() {

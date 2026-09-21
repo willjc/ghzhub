@@ -682,7 +682,7 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
      * 入住超时自动解约（DB 部分，事务）。
      * 不调微信退款 API，仅完成数据库 6 件事并落地一条 hz_checkout_apply（applyStatus='5' 已完成）+
      * hz_checkout_record（refundStatus='0' 待退还）。
-     * 调用方在事务外发起微信退款后，再调 markCheckoutRecordRefunded 把 refundStatus 改为 1。
+     * 调用方在事务外发起微信退款后，再保存押金、租金各自结果。
      */
     @Override
     @Transactional
@@ -792,30 +792,20 @@ public class HzContractServiceImpl extends ServiceImpl<HzContractMapper, HzContr
 
     @Override
     @Transactional
-    public void markCheckoutRecordRefunded(Long applyId, String paymentRemark) {
+    public void markCheckoutRecordRefundResult(Long applyId, boolean depositOk, boolean rentOk,
+            String paymentRemark) {
         if (applyId == null) {
             return;
         }
         Date now = new Date();
+        String refundStatus = HzCheckoutRecord.resolveRefundStatus(true, depositOk, true, rentOk);
         checkoutRecordMapper.update(null, new LambdaUpdateWrapper<HzCheckoutRecord>()
                 .eq(HzCheckoutRecord::getApplyId, applyId)
-                .set(HzCheckoutRecord::getRefundStatus, "1")
-                .set(HzCheckoutRecord::getRefundTime, now)
+                .set(HzCheckoutRecord::getRefundStatus, refundStatus)
+                .set(HzCheckoutRecord::getDepositRefundStatus, depositOk ? "1" : "0")
+                .set(HzCheckoutRecord::getRentRefundStatus, rentOk ? "1" : "0")
+                .set(HzCheckoutRecord::getRefundTime, "1".equals(refundStatus) ? now : null)
                 .set(HzCheckoutRecord::getPaymentMethod, "3")
-                .set(HzCheckoutRecord::getPaymentRemark, paymentRemark)
-                .set(HzCheckoutRecord::getUpdateBy, "system-auto-cancel")
-                .set(HzCheckoutRecord::getUpdateTime, now));
-    }
-
-    @Override
-    @Transactional
-    public void markCheckoutRecordRefundFailed(Long applyId, String paymentRemark) {
-        if (applyId == null) {
-            return;
-        }
-        Date now = new Date();
-        checkoutRecordMapper.update(null, new LambdaUpdateWrapper<HzCheckoutRecord>()
-                .eq(HzCheckoutRecord::getApplyId, applyId)
                 .set(HzCheckoutRecord::getPaymentRemark, paymentRemark)
                 .set(HzCheckoutRecord::getUpdateBy, "system-auto-cancel")
                 .set(HzCheckoutRecord::getUpdateTime, now));

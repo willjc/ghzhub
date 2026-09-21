@@ -707,7 +707,7 @@ public class ContractExpireTask {
     /**
      * 真实自动解约 + 微信退款。
      * 流程：先调事务方法落地 hz_checkout_apply + hz_checkout_record + 改合同状态 + 释放房源 + 软删入住单 + 发消息；
-     *       再事务外调微信退款 API；最后短事务更新 record.refund_status。
+     *       再事务外调微信退款 API；最后短事务保存押金、租金各自退款状态。
      */
     private boolean doAutoCancelAndRefund(HzContract contract, HzBill depositBill, HzBill firstRentBill) {
         BigDecimal depositAmt = depositBill.getBillAmount() != null ? depositBill.getBillAmount() : BigDecimal.ZERO;
@@ -780,13 +780,10 @@ public class ContractExpireTask {
             }
         }
 
-        // 3. 短事务：更新 record 状态
-        if (depositOk && rentOk) {
-            contractService.markCheckoutRecordRefunded(applyId, "微信原路退款成功 | " + remark);
-        } else {
-            contractService.markCheckoutRecordRefundFailed(applyId,
-                    "微信退款部分失败，请管理员在退款管理重试 | " + remark);
-        }
+        // 3. 短事务：分别保存两笔结果，后台只重试失败款项
+        contractService.markCheckoutRecordRefundResult(applyId, depositOk, rentOk,
+                (depositOk && rentOk ? "微信原路退款成功 | " : "微信退款部分失败，可在退款管理重试 | ")
+                        + remark);
         return true;
     }
 

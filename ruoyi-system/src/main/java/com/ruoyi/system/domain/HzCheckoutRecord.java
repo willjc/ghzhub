@@ -66,8 +66,14 @@ public class HzCheckoutRecord extends BaseEntity {
     @Excel(name = "押金退款")
     private BigDecimal depositRefund;
 
-    @Excel(name = "退款状态", readConverterExp = "0=待退还,1=已退还")
+    @Excel(name = "退款状态", readConverterExp = "0=待退还,1=已退还,2=部分退还")
     private String refundStatus;
+
+    /** 押金退款状态（0=待退还 1=已退还） */
+    private String depositRefundStatus;
+
+    /** 租金退款状态（0=待退还 1=已退还） */
+    private String rentRefundStatus;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Excel(name = "退款时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
@@ -252,6 +258,29 @@ public class HzCheckoutRecord extends BaseEntity {
         return refundStatus;
     }
 
+    public void setDepositRefundStatus(String depositRefundStatus) {
+        this.depositRefundStatus = depositRefundStatus;
+    }
+
+    public String getDepositRefundStatus() {
+        return depositRefundStatus;
+    }
+
+    public void setRentRefundStatus(String rentRefundStatus) {
+        this.rentRefundStatus = rentRefundStatus;
+    }
+
+    public String getRentRefundStatus() {
+        return rentRefundStatus;
+    }
+
+    public static String resolveRefundStatus(boolean depositRequired, boolean depositOk,
+            boolean rentRequired, boolean rentOk) {
+        boolean allSuccess = (!depositRequired || depositOk) && (!rentRequired || rentOk);
+        boolean anySuccess = (depositRequired && depositOk) || (rentRequired && rentOk);
+        return allSuccess ? "1" : (anySuccess ? "2" : "0");
+    }
+
     public void setRefundTime(Date refundTime) {
         this.refundTime = refundTime;
     }
@@ -347,6 +376,8 @@ public class HzCheckoutRecord extends BaseEntity {
                 .append("penaltyAmount", getPenaltyAmount())
                 .append("depositRefund", getDepositRefund())
                 .append("refundStatus", getRefundStatus())
+                .append("depositRefundStatus", getDepositRefundStatus())
+                .append("rentRefundStatus", getRentRefundStatus())
                 .append("refundTime", getRefundTime())
                 .append("tenantSignature", getTenantSignature())
                 .append("managerSignature", getManagerSignature())

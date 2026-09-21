@@ -1,6 +1,5 @@
 package com.ruoyi.web.controller.system;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.common.annotation.Log;
@@ -144,7 +143,7 @@ public class HzRefundController extends BaseController {
      * 拆分策略：
      * - 押金部分走【押金账单】对应的 transaction_no 原路退（不超过押金已付金额）
      * - 租金部分走【首期已付租金账单】对应的 transaction_no 原路退（不超过该笔账单已付金额）
-     * - 两笔互相独立调用，任一成功即更新 record 为已退还，失败明细写入 paymentRemark
+     * - 两笔互相独立记录状态；部分成功时只允许重试失败款项
      * <p>
      * refundId 实际对应 hz_checkout_apply.apply_id
      */
@@ -162,10 +161,8 @@ public class HzRefundController extends BaseController {
             return error("退款金额无效");
         }
 
-        // 2. 防重：检查退租记录是否已退还
-        LambdaQueryWrapper<HzCheckoutRecord> recordQuery = new LambdaQueryWrapper<>();
-        recordQuery.eq(HzCheckoutRecord::getApplyId, refundId).last("LIMIT 1");
-        HzCheckoutRecord record = checkoutRecordMapper.selectOne(recordQuery);
+        // 2. 防重：整体完成后禁止重复操作；部分完成时仅重试失败款项
+        HzCheckoutRecord record = checkoutRecordMapper.selectByApplyId(refundId);
         if (record == null) {
             return error("退租确认记录不存在，用户尚未完成退租确认");
         }
@@ -198,10 +195,14 @@ public class HzRefundController extends BaseController {
             return error("应退押金不能超过应退总额");
         }
         BigDecimal rentRefund = totalRefund.subtract(depositRefund);
+        boolean depositRequired = depositRefund.compareTo(BigDecimal.ZERO) > 0;
+        boolean rentRequired = rentRefund.compareTo(BigDecimal.ZERO) > 0;
+        boolean depositOk = !depositRequired || "1".equals(record.getDepositRefundStatus());
+        boolean rentOk = !rentRequired || "1".equals(record.getRentRefundStatus());
 
         // 4. 查押金账单（bill_type='1' 押金，wechat 已支付）
         HzBill depositBill = null;
-        if (depositRefund.compareTo(BigDecimal.ZERO) > 0) {
+        if (depositRequired && !depositOk) {
             // 用原生 SQL 绕过全局逻辑删除：失效/退租合同的账单已被软删(del_flag=2)
             depositBill = billMapper.selectWechatDepositBillForRefund(apply.getContractId());
             if (depositBill == null) {
@@ -219,7 +220,7 @@ public class HzRefundController extends BaseController {
 
         // 5. 查已付租金账单（bill_type='2' 租金，wechat 已支付）—— 取第一笔有 transaction_no 的
         HzBill rentBill = null;
-        if (rentRefund.compareTo(BigDecimal.ZERO) > 0) {
+        if (rentRequired && !rentOk) {
             // 用原生 SQL 绕过全局逻辑删除：失效/退租合同的账单已被软删(del_flag=2)
             List<HzBill> rentBills = billMapper.selectWechatRentBillsForRefund(apply.getContractId());
             // 选一个已付金额 >= rentRefund 的账单作为退款载体
@@ -239,9 +240,16 @@ public class HzRefundController extends BaseController {
 
         // 6. 调用微信退款 API（事务外，不可回滚）
         long ts = System.currentTimeMillis();
-        boolean depositOk = false;
-        boolean rentOk = false;
         StringBuilder remark = new StringBuilder();
+        if ("2".equals(record.getRefundStatus()) && record.getPaymentRemark() != null) {
+            remark.append("上次:").append(truncate(record.getPaymentRemark(), 180)).append(" | 本次:");
+        }
+        if (depositRequired && depositOk) {
+            remark.append("押金此前已退款，本次跳过; ");
+        }
+        if (rentRequired && rentOk) {
+            remark.append("租金此前已退款，本次跳过; ");
+        }
 
         if (depositBill != null) {
             String outRefundDeposit = "REFUND_DEP" + ts + refundId;
@@ -293,36 +301,36 @@ public class HzRefundController extends BaseController {
             }
         }
 
-        // 7. 判定整体状态并更新退租记录
-        boolean depositRequired = depositBill != null;
-        boolean rentRequired = rentBill != null;
-        boolean allSuccess = (!depositRequired || depositOk) && (!rentRequired || rentOk);
-        boolean anySuccess = depositOk || rentOk;
-
-        if (!anySuccess) {
-            // 全部失败：保留 refund_status=0，允许重试。详细原因已写日志，页面只给友好提示
-            return error("微信退款失败，请稍后重试；如多次失败请联系管理员在微信商户平台核对");
-        }
-
-        // 任一成功就标记已退还（防止重复退已成功的笔），失败明细写 remark 由管理员人工补救
-        String finalRemark = (allSuccess ? "微信原路退款成功 | " : "微信退款部分成功，请人工核对剩余金额 | ") + remark;
+        // 7. 按押金、租金各自结果保存进度；只有全部成功才标记整体已退还
+        String refundStatus = HzCheckoutRecord.resolveRefundStatus(
+                depositRequired, depositOk, rentRequired, rentOk);
+        boolean allSuccess = "1".equals(refundStatus);
+        boolean anySuccess = "2".equals(refundStatus);
+        String finalRemark = (allSuccess ? "微信原路退款成功 | "
+                : anySuccess ? "微信退款部分成功，可重试失败款项 | " : "微信退款失败 | ") + remark;
         // 兜底截断，避免超出 payment_remark(varchar 500) 长度导致写库失败
         finalRemark = truncate(finalRemark, 480);
+        Date now = new Date();
         LambdaUpdateWrapper<HzCheckoutRecord> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(HzCheckoutRecord::getApplyId, refundId)
-                     .set(HzCheckoutRecord::getRefundStatus, "1")
-                     .set(HzCheckoutRecord::getRefundTime, new Date())
+                     .set(HzCheckoutRecord::getRefundStatus, refundStatus)
+                     .set(HzCheckoutRecord::getDepositRefundStatus, depositOk ? "1" : "0")
+                     .set(HzCheckoutRecord::getRentRefundStatus, rentOk ? "1" : "0")
+                     .set(HzCheckoutRecord::getRefundTime, allSuccess ? now : null)
                      .set(HzCheckoutRecord::getPaymentMethod, "3")   // 3=微信
                      .set(HzCheckoutRecord::getPaymentRemark, finalRemark)
                      .set(HzCheckoutRecord::getUpdateBy, SecurityUtils.getUsername())
-                     .set(HzCheckoutRecord::getUpdateTime, new Date());
+                     .set(HzCheckoutRecord::getUpdateTime, now);
         checkoutRecordMapper.update(null, updateWrapper);
 
         if (allSuccess) {
             return AjaxResult.success("微信退款申请成功，预计2分钟内到账");
-        } else {
-            return AjaxResult.warn("退款部分成功，剩余款项将由管理员人工核对处理");
         }
+        if (anySuccess) {
+            return AjaxResult.success("退款部分成功，可在补足商户余额后重试失败款项",
+                    Map.of("refundStatus", "2"));
+        }
+        return error("微信退款失败，请稍后重试；如多次失败请联系管理员在微信商户平台核对");
     }
 
     /**
@@ -353,6 +361,8 @@ public class HzRefundController extends BaseController {
                .set(HzCheckoutRecord::getPaymentVoucher, vo.getPaymentVoucher())
                .set(HzCheckoutRecord::getPaymentRemark, vo.getPaymentRemark())
                .set(HzCheckoutRecord::getRefundStatus, "1")  // 已退还
+               .set(HzCheckoutRecord::getDepositRefundStatus, "1")
+               .set(HzCheckoutRecord::getRentRefundStatus, "1")
                .set(HzCheckoutRecord::getRefundTime, new Date())
                .set(HzCheckoutRecord::getUpdateBy, SecurityUtils.getUsername())
                .set(HzCheckoutRecord::getUpdateTime, new Date());
