@@ -309,11 +309,13 @@ public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> impleme
 
         if (phoneUser != null) {
             // 手机号已存在
-            if (com.ruoyi.common.utils.StringUtils.isNotEmpty(phoneUser.getWechatOpenid()) && !phoneUser.getWechatOpenid().equals(openid)) {
+            if (com.ruoyi.common.utils.StringUtils.isNotEmpty(phoneUser.getWechatOpenid())
+                    && !phoneUser.getWechatOpenid().equals(openid)
+                    && !canRebindWechatOpenid(phoneUser)) {
                 // 已绑定其他微信openid，拒绝
                 throw new RuntimeException("该手机号已被其他账号绑定");
             }
-            // 手机号存在但未绑定openid，绑定openid和unionid
+            // 手机号未绑定openid，或未实名且资料未完善时，绑定本次微信账号
             phoneUser.setWechatOpenid(openid);
             if (com.ruoyi.common.utils.StringUtils.isNotEmpty(unionid)) {
                 phoneUser.setWechatUnionid(unionid);
@@ -363,6 +365,10 @@ public class HzUserServiceImpl extends ServiceImpl<HzUserMapper, HzUser> impleme
         }
 
         return newUser;
+    }
+
+    static boolean canRebindWechatOpenid(HzUser user) {
+        return "0".equals(user.getAuthStatus()) && "0".equals(user.getIsInfoCompleted());
     }
 
     /**
