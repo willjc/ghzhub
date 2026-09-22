@@ -840,7 +840,7 @@ public class HzContractAppController extends BaseController {
                     .notIn(HzContract::getContractStatus, "5", "6")  // 排除已解约、已失效
                     .eq(HzContract::getDelFlag, "0"));
             if (existingRenewals != null && !existingRenewals.isEmpty()) {
-                return error("已存在续租合同，请勿重复提交");
+                return error("已存在续租合同，请前往“我的合同”点击“去签署”继续完成签署");
             }
             // 判断原合同是否已到期
             boolean isExpired = false;

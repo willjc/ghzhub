@@ -472,7 +472,7 @@ export default {
         await this.callInitSign()
       } catch (e) {
         this.step = 'error'
-        this.errorMsg = e.message || '操作失败'
+        this.errorMsg = e.msg || e.message || '操作失败'
       } finally {
         this.submitting = false
         uni.hideLoading()
