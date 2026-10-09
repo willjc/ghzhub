@@ -214,6 +214,12 @@ public class HzHouseExchangeServiceImpl extends ServiceImpl<HzHouseExchangeMappe
                 throw new RuntimeException("目标房源不存在");
             }
 
+            // 目标房源仅允许维修中(3)：选房后到审核前状态可能被变更，审核通过时复检
+            if (!"3".equals(newHouse.getHouseStatus())) {
+                logger.error("目标房源状态已变更: houseId={}, houseStatus={}", exchange.getNewHouseId(), newHouse.getHouseStatus());
+                throw new RuntimeException("目标房源状态已变更，请重新选择维修中的目标房源");
+            }
+
             // 6. 创建新合同草稿（status=0，等待用户签署后生效）
             HzContract newContract = new HzContract();
             newContract.setContractNo(contractService.generateContractNo());

@@ -100,7 +100,7 @@ public interface IHzHouseExchangeService {
     public List<Map<String, Object>> getUnitsByBuildingId(Long buildingId);
 
     /**
-     * 获取单元下的可用房间列表（空置状态）
+     * 获取单元下的可用房间列表（维修中状态）
      *
      * @param projectId 项目ID
      * @param buildingId 楼栋ID

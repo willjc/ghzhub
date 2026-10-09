@@ -205,8 +205,8 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="目标房间" prop="newHouseId">
-          <el-select v-model="selectForm.newHouseId" placeholder="请选择目标房间" clearable filterable style="width: 100%">
+            <el-form-item label="目标房间" prop="newHouseId">
+              <el-select v-model="selectForm.newHouseId" placeholder="请选择目标房间（仅维修中）" clearable filterable style="width: 100%">
             <el-option
               v-for="item in availableRooms"
               :key="item.houseId"

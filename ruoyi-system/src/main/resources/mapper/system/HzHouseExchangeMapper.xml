@@ -174,7 +174,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ORDER BY sort_order ASC, unit_id ASC
     </select>
 
-    <!-- 获取单元下的可用房间列表（空置状态） -->
+    <!-- 获取单元下的可用房间列表（维修中状态） -->
     <select id="selectAvailableRooms" resultType="java.util.HashMap">
         SELECT h.house_id AS houseId, h.house_code AS houseCode, h.house_no AS houseNo,
                h.floor AS floor, h.house_type_name AS houseTypeName, h.area AS area, h.rent_price AS rentPrice,
@@ -186,7 +186,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE h.project_id = #{projectId}
           AND h.building_id = #{buildingId}
           AND (#{unitId} IS NULL OR h.unit_id = #{unitId})
-          AND h.house_status = '0'
+          AND h.house_status = '3'
           AND h.del_flag = '0'
         ORDER BY h.floor ASC, h.house_no ASC
     </select>
