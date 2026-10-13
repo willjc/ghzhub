@@ -228,6 +228,15 @@ public class SecurityUtils
     }
 
     /**
+     * 判断当前用户是否为全局只读审计角色
+     */
+    public static boolean isAuditRole()
+    {
+        return getLoginUser().getUser().getRoles().stream()
+                .anyMatch(role -> Constants.AUDIT_ROLE.equals(role.getRoleKey()));
+    }
+
+    /**
      * 判断是否包含角色
      * 
      * @param roles 角色列表

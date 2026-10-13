@@ -154,6 +154,21 @@ public class PermissionService
      */
     private boolean hasPermissions(Set<String> permissions, String permission)
     {
+        if (SecurityUtils.isAuditRole() && !isAuditReadOnlyPermission(permission))
+        {
+            return false;
+        }
         return permissions.contains(Constants.ALL_PERMISSION) || permissions.contains(StringUtils.trim(permission));
+    }
+
+    private boolean isAuditReadOnlyPermission(String permission)
+    {
+        String action = permission.substring(permission.lastIndexOf(':') + 1);
+        return "list".equals(action) || "query".equals(action) || "export".equals(action)
+                || "download".equals(action) || "print".equals(action) || "view".equals(action)
+                || "detail".equals(action) || "get".equals(action) || "status".equals(action)
+                || "page".equals(action) || "tree".equals(action) || "select".equals(action)
+                || "info".equals(action) || "count".equals(action) || "custom".equals(action)
+                || "receipt".equals(action);
     }
 }

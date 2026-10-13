@@ -81,6 +81,11 @@ public class Constants
     public static final String SUPER_ADMIN = "admin";
 
     /**
+     * 全局只读审计角色标识
+     */
+    public static final String AUDIT_ROLE = "audit";
+
+    /**
      * 角色权限分隔符
      */
     public static final String ROLE_DELIMETER = ",";

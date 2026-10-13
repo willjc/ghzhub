@@ -2,6 +2,7 @@ package com.ruoyi.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.common.constant.Constants;
 import com.ruoyi.common.core.domain.entity.SysRole;
 import com.ruoyi.common.core.domain.model.LoginUser;
 import com.ruoyi.common.utils.SecurityUtils;
@@ -31,11 +32,12 @@ public class HzRoleProjectServiceImpl extends ServiceImpl<HzRoleProjectMapper, H
             return null;
         }
 
-        // 检查是否包含管理方角色（管理方不限制）
+        // 管理方和审计角色不限制项目
         List<SysRole> roles = loginUser.getUser().getRoles();
         if (roles != null) {
             for (SysRole role : roles) {
-                if ("manager".equals(role.getRoleKey()) || "admin".equals(role.getRoleKey())) {
+                if ("manager".equals(role.getRoleKey()) || "admin".equals(role.getRoleKey())
+                        || Constants.AUDIT_ROLE.equals(role.getRoleKey())) {
                     return null;
                 }
             }
