@@ -247,3 +247,4 @@ ghz:
   debug-switch:
     enabled: ${GHZ_DEBUG_SWITCH_ENABLED:true}
     operator-phone: ${GHZ_DEBUG_SWITCH_OPERATOR_PHONE:18539279011}
+    extra-operator-phone: ${GHZ_DEBUG_SWITCH_EXTRA_OPERATOR_PHONE:15232180101}

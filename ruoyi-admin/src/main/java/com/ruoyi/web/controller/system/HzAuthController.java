@@ -49,6 +49,9 @@ public class HzAuthController extends BaseController {
     @Value("${ghz.debug-switch.operator-phone:18539279011}")
     private String debugSwitchOperatorPhone;
 
+    @Value("${ghz.debug-switch.extra-operator-phone:15232180101}")
+    private String debugSwitchExtraOperatorPhone;
+
     /**
      * 微信小程序登录
      * 前端传入wx.login()的code和getPhoneNumber的phoneCode
@@ -98,8 +101,8 @@ public class HzAuthController extends BaseController {
 
             // 5. 生成服务端可撤销、可过期的随机Token
             boolean debugSwitchAllowed = debugSwitchEnabled
-                    && debugSwitchOperatorPhone != null
-                    && debugSwitchOperatorPhone.equals(user.getPhone());
+                    && (debugSwitchOperatorPhone.equals(user.getPhone())
+                            || debugSwitchExtraOperatorPhone.equals(user.getPhone()));
             String token = hzUserTokenService.createToken(user.getUserId(), debugSwitchAllowed);
 
             // 6. 构造返回数据
