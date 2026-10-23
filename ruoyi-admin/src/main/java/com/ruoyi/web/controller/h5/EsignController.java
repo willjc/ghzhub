@@ -156,7 +156,6 @@ public class EsignController extends BaseController {
         HzContract contract = contractMapper.selectById(contractId);
         if (contract == null) return error("合同不存在");
         SecurityUtils.requireCurrentHzUser(contract.getTenantId());
-        if ("2".equals(contract.getContractStatus())) return error("合同已签署");
 
         HzUser user = userMapper.selectById(userId);
         if (user == null) return error("用户信息不存在");
@@ -165,13 +164,6 @@ public class EsignController extends BaseController {
         if (psnId == null || psnId.isEmpty()) return error("请先完成实名认证");
 
         try {
-            String signFlowId = contract.getEsignFlowId();
-            if (signFlowId != null && !signFlowId.isEmpty()) {
-                String signUrl = esignService.getSignUrl(signFlowId, user.getPhone(), redirectUrl);
-                Map<String, String> r = new HashMap<>();
-                r.put("signUrl", signUrl);
-                return success(r);
-            }
             String signUrl = esignService.initSign(contractId, psnId, redirectUrl);
             Map<String, String> r = new HashMap<>();
             r.put("signUrl", signUrl);

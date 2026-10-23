@@ -286,22 +286,51 @@ public class EsignServiceImpl implements EsignService {
         HzContract contract = contractMapper.selectById(contractId);
         if (contract == null) throw new RuntimeException("合同不存在: " + contractId);
 
-        // 如果已有签署流，直接复用获取签署链接（避免重复创建文件/流导致e签宝报错）
+        String contractStatus = contract.getContractStatus();
+        if ("2".equals(contractStatus) || "3".equals(contractStatus)) {
+            throw new RuntimeException("合同已签署，请勿重复发起");
+        }
+        if ("4".equals(contractStatus)) {
+            throw new RuntimeException("合同已到期，无法发起签署");
+        }
+        if ("5".equals(contractStatus) || "6".equals(contractStatus)) {
+            throw new RuntimeException("合同已失效，请重新发起续租");
+        }
+
+        // 复用签署流前先确认流程仍在进行中，避免复用已拒签/已终止的流程
         String existingFlowId = contract.getEsignFlowId();
         if (existingFlowId != null && !existingFlowId.isEmpty()) {
-            try {
-                HzUser signUser = userMapper.selectById(contract.getTenantId());
-                String mobile = signUser != null ? signUser.getPhone() : "";
-                String signUrl = getSignUrl(existingFlowId, mobile, redirectUrl);
-                log.info("复用已有签署流 contractId={}, flowId={}", contractId, existingFlowId);
-                return signUrl;
-            } catch (Exception e) {
-                log.warn("已有签署流获取URL失败，将重新创建 contractId={}, flowId={}, error={}",
-                        contractId, existingFlowId, e.getMessage());
-                // 清除旧flow，后续重新创建
+            String flowStatus = getSignFlowStatus(existingFlowId);
+            if ("2".equals(flowStatus) || "FINISH".equals(flowStatus)) {
+                try {
+                    checkAndFinalizeSignFlow(contractId);
+                } catch (Exception e) {
+                    log.error("签署流已完成但终态处理失败 contractId={}, flowId={}", contractId, existingFlowId, e);
+                }
+                throw new RuntimeException("合同已签署，请返回合同列表查看");
+            }
+            if (isTerminalSignFlowStatus(flowStatus)) {
+                log.info("签署流已处于终态，清除后重新创建 contractId={}, flowId={}, status={}",
+                        contractId, existingFlowId, flowStatus);
                 contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
                         .eq(HzContract::getContractId, contractId)
                         .set(HzContract::getEsignFlowId, null));
+            } else {
+                try {
+                    HzUser signUser = userMapper.selectById(contract.getTenantId());
+                    String mobile = signUser != null ? signUser.getPhone() : "";
+                    String signUrl = getSignUrl(existingFlowId, mobile, redirectUrl);
+                    log.info("复用已有签署流 contractId={}, flowId={}, status={}",
+                            contractId, existingFlowId, flowStatus);
+                    return signUrl;
+                } catch (Exception e) {
+                    log.warn("已有签署流获取URL失败，将重新创建 contractId={}, flowId={}, error={}",
+                            contractId, existingFlowId, e.getMessage());
+                    // 清除旧flow，后续重新创建
+                    contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                            .eq(HzContract::getContractId, contractId)
+                            .set(HzContract::getEsignFlowId, null));
+                }
             }
         }
 
@@ -977,10 +1006,19 @@ public class EsignServiceImpl implements EsignService {
     public String getSignUrl(String signFlowId, String mobile, String redirectUrl) throws Exception {
         String jsonParm = "{\"clientType\":\"ALL\",\"needLogin\":false,\"operator\":{\"psnAccount\":\"" + mobile + "\"},"
                 + "\"redirectConfig\":{\"redirectUrl\":\"" + redirectUrl + "\"},\"urlType\":2}";
-        log.info("获取签署链接: signFlowId={}, mobile={}, request={}", signFlowId, mobile, jsonParm);
+        log.info("获取签署链接: signFlowId={}", signFlowId);
         EsignHttpResponse resp = callApi("POST", "/v3/sign-flow/" + signFlowId + "/sign-url", jsonParm);
-        log.info("获取签署链接响应: {}", resp.getBody());
-        return gson.fromJson(resp.getBody(), JsonObject.class).getAsJsonObject("data").get("url").getAsString();
+        JsonObject root = gson.fromJson(resp.getBody(), JsonObject.class);
+        if (root == null || root.get("code") == null || root.get("code").getAsInt() != 0) {
+            String message = root != null && root.has("message") ? root.get("message").getAsString() : "未知错误";
+            log.warn("获取签署链接失败 signFlowId={}, message={}", signFlowId, message);
+            throw new RuntimeException("e签宝返回错误：" + message);
+        }
+        JsonObject data = root.getAsJsonObject("data");
+        if (data == null || !data.has("url") || data.get("url").isJsonNull()) {
+            throw new RuntimeException("e签宝未返回签署链接");
+        }
+        return data.get("url").getAsString();
     }
 
     // ==================== 主动查询签署状态（不依赖回调）====================
@@ -1016,7 +1054,10 @@ public class EsignServiceImpl implements EsignService {
                 ? data.get("signFlowStatus").getAsString() : "";
         log.info("e签宝签署流状态 signFlowId={}, status={}", signFlowId, flowStatus);
 
-        if (!"FINISH".equals(flowStatus)) {
+        if (!"FINISH".equals(flowStatus) && !"2".equals(flowStatus)) {
+            if (isTerminalSignFlowStatus(flowStatus)) {
+                markSignFlowTerminated(contract, flowStatus);
+            }
             return false;
         }
 
@@ -1092,6 +1133,75 @@ public class EsignServiceImpl implements EsignService {
         return true;
     }
 
+    /** e签宝签署流终态：3-已撤销 4-已终止 5-已过期 6-已删除 7-已拒签 */
+    private boolean isTerminalSignFlowStatus(String flowStatus) {
+        return "3".equals(flowStatus) || "4".equals(flowStatus)
+                || "5".equals(flowStatus) || "6".equals(flowStatus)
+                || "7".equals(flowStatus);
+    }
+
+    /** 查询签署流状态，失败时返回空串（调用方按“状态未知”处理） */
+    private String getSignFlowStatus(String signFlowId) {
+        try {
+            EsignHttpResponse resp = callApi("GET", "/v3/sign-flow/" + signFlowId, null);
+            JsonObject root = gson.fromJson(resp.getBody(), JsonObject.class);
+            if (root == null || root.get("code") == null || root.get("code").getAsInt() != 0) {
+                log.warn("查询签署流状态失败 signFlowId={}, resp={}", signFlowId, resp.getBody());
+                return "";
+            }
+            JsonObject data = root.getAsJsonObject("data");
+            return data != null && data.has("signFlowStatus")
+                    ? data.get("signFlowStatus").getAsString() : "";
+        } catch (Exception e) {
+            log.warn("查询签署流状态异常 signFlowId={}, error={}", signFlowId, e.getMessage());
+            return "";
+        }
+    }
+
+    /** 签署流进入终态但合同仍待签署：置为已失效，释放续租/新签入口 */
+    private void markSignFlowTerminated(HzContract contract, String flowStatus) {
+        String contractStatus = contract.getContractStatus();
+        if (!"0".equals(contractStatus) && !"1".equals(contractStatus)) {
+            return;
+        }
+        String reason = signFlowStatusText(flowStatus);
+        int updated = contractMapper.update(null, new LambdaUpdateWrapper<HzContract>()
+                .eq(HzContract::getContractId, contract.getContractId())
+                .in(HzContract::getContractStatus, "0", "1")
+                .set(HzContract::getContractStatus, "6")
+                .set(HzContract::getRemark, appendContractRemark(contract.getRemark(),
+                        "[e签宝签署流" + reason + "，合同作废]")));
+        if (updated <= 0) {
+            return;
+        }
+        log.info("签署流进入终态，合同置为已失效 contractId={}, flowId={}, flowStatus={}",
+                contract.getContractId(), contract.getEsignFlowId(), flowStatus);
+        try {
+            String msg = "2".equals(contract.getContractType())
+                    ? "您的续租合同 " + contract.getContractNo() + " " + reason + "，已失效，可重新发起续租"
+                    : "您的合同 " + contract.getContractNo() + " " + reason + "，已失效，请返回合同列表重新办理";
+            messageService.sendMessage(contract.getTenantId(), "contract", "合同签署未完成", msg);
+        } catch (Exception e) {
+            log.warn("发送合同失效消息失败，不影响主流程: {}", e.getMessage());
+        }
+    }
+
+    private String signFlowStatusText(String flowStatus) {
+        switch (flowStatus) {
+            case "3": return "已撤销";
+            case "4": return "已终止";
+            case "5": return "已过期";
+            case "6": return "已删除";
+            case "7": return "已拒签";
+            default: return "已结束";
+        }
+    }
+
+    private String appendContractRemark(String remark, String note) {
+        String merged = remark == null || remark.trim().isEmpty() ? note : remark.trim() + " " + note;
+        return merged.length() > 480 ? merged.substring(0, 480) : merged;
+    }
+
     // ==================== 回调处理 ====================
 
     @Override
@@ -1136,12 +1246,10 @@ public class EsignServiceImpl implements EsignService {
         int signResult = nb.has("signResult") ? nb.get("signResult").getAsInt() : -1;
         int signOrder = nb.has("signOrder") ? nb.get("signOrder").getAsInt() : 0;
         log.info("e签宝回调 action={} flowId={} signResult={} signOrder={}", action, flowId, signResult, signOrder);
-        // 只处理签署完成回调，且必须是个人签署完成（signOrder=2）或整个流程完成
-        // signOrder=1 是企业自动盖章，不应触发账单生成
-        if (!"SIGN_MISSON_COMPLETE".equals(action) && !"SIGN_FLOW_UPDATE".equals(action)) return;
-        if (signResult != 2) return;
-        if (signOrder == 1) {
-            log.info("企业自动盖章完成（signOrder=1），等待个人签署，flowId={}", flowId);
+        // 只处理签署相关回调；signOrder=1 是企业自动盖章，不应触发账单生成
+        if (!"SIGN_MISSON_COMPLETE".equals(action)
+                && !"SIGN_FLOW_UPDATE".equals(action)
+                && !"SIGN_FLOW_COMPLETE".equals(action)) {
             return;
         }
 
@@ -1150,6 +1258,34 @@ public class EsignServiceImpl implements EsignService {
         if ("2".equals(contract.getContractStatus()) || "3".equals(contract.getContractStatus())) { log.info("合同已处理，忽略重复回调 flowId={}", flowId); return; }
         // 拦截超时失效的合同：预订单过期后定时任务已将合同标记为6，不允许e签宝回调"复活"已失效合同
         if ("6".equals(contract.getContractStatus())) { log.warn("合同已超时失效，拒绝e签宝回调 flowId={} contractId={}", flowId, contract.getContractId()); return; }
+
+        // 拒签：合同置为已失效，释放重新发起入口
+        if (signResult == 4) {
+            log.info("签署流被拒签，合同置为已失效 flowId={} contractId={}", flowId, contract.getContractId());
+            markSignFlowTerminated(contract, "7");
+            return;
+        }
+
+        // 流程完成回调可能不带签署结果，以 e签宝流程状态为准
+        if ("SIGN_FLOW_COMPLETE".equals(action) && signResult != 2) {
+            String flowStatus = getSignFlowStatus(flowId);
+            if ("2".equals(flowStatus) || "FINISH".equals(flowStatus)) {
+                signResult = 2;
+                signOrder = 2;
+            } else if (isTerminalSignFlowStatus(flowStatus)) {
+                markSignFlowTerminated(contract, flowStatus);
+                return;
+            } else {
+                log.info("签署流程完成回调状态未终结，等待后续回调 flowId={}, status={}", flowId, flowStatus);
+                return;
+            }
+        }
+
+        if (signResult != 2) return;
+        if (signOrder == 1) {
+            log.info("企业自动盖章完成（signOrder=1），等待个人签署，flowId={}", flowId);
+            return;
+        }
 
         // 1. 更新合同状态：续租/换房直接进入履行中(3)，新签进入已签署(2)
         String newStatus = ("2".equals(contract.getContractType()) || "3".equals(contract.getContractType())) ? "3" : "2";
